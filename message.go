@@ -100,7 +100,7 @@ func parseFields(msg interface{}) map[int]*fieldInfo {
 	}
 	for i := 0; i < v.NumField(); i++ {
 		if isPtrOrInterface(v.Field(i).Kind()) && v.Field(i).IsNil() {
-		 	continue
+			continue
 		}
 
 		sf := v.Type().Field(i)
