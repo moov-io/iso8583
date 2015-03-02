@@ -118,24 +118,52 @@ func (a *Alphanumeric) Load(raw []byte, encoder, lenEncoder, length int) (int, e
 	return length, nil
 }
 
-type Llvar struct {
-	Value string
+type Binary struct {
+	Value []byte
 }
 
-func NewLlvar(val string) *Llvar {
+func NewBinary(d []byte) *Binary {
+	return &Binary{d}
+}
+
+func (b *Binary) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
+	if length == -1 {
+		panic(ERR_MISSING_LENGTH)
+	}
+	if len(b.Value) > length {
+		return nil, errors.New(ERR_VALUE_TOO_LONG)
+	}
+	if len(b.Value) < length {
+		return append(b.Value, make([]byte, length-len(b.Value))...), nil
+	}
+	return b.Value, nil
+}
+
+func (b *Binary) Load(raw []byte, encoder, lenEncoder, length int) (int, error) {
+	if length == -1 {
+		panic(ERR_MISSING_LENGTH)
+	}
+	b.Value = raw[:length]
+	return length, nil
+}
+
+type Llvar struct {
+	Value []byte
+}
+
+func NewLlvar(val []byte) *Llvar {
 	return &Llvar{val}
 }
 
 func (l *Llvar) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
-	val := []byte(l.Value)
-	if length != -1 && len(val) > length {
+	if length != -1 && len(l.Value) > length {
 		return nil, errors.New(ERR_VALUE_TOO_LONG)
 	}
 	if encoder != ASCII {
 		panic(ERR_INVALID_ENCODER)
 	}
 
-	lenStr := fmt.Sprintf("%02d", len(val))
+	lenStr := fmt.Sprintf("%02d", len(l.Value))
 	contentLen := []byte(lenStr)
 	var lenVal []byte
 	switch lenEncoder {
@@ -152,7 +180,7 @@ func (l *Llvar) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	default:
 		panic(ERR_INVALID_ENCODER)
 	}
-	return append(lenVal, val...), nil
+	return append(lenVal, l.Value...), nil
 }
 
 func (l *Llvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, err error) {
@@ -176,12 +204,11 @@ func (l *Llvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, err
 	}
 
 	// parse body:
-	body := raw[read : read+contentLen]
+	l.Value = raw[read : read+contentLen]
 	read += contentLen
 	if encoder != ASCII {
 		panic(ERR_INVALID_ENCODER)
 	}
-	l.Value = string(body)
 
 	return read, nil
 }
@@ -265,28 +292,22 @@ func (l *Llnumeric) Load(raw []byte, encoder, lenEncoder, length int) (read int,
 }
 
 type Lllvar struct {
-	Value string
+	Value []byte
 }
 
-func NewLllvar(val string) *Lllvar {
+func NewLllvar(val []byte) *Lllvar {
 	return &Lllvar{val}
 }
 
 func (l *Lllvar) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
-	val := []byte(l.Value)
-	if length != -1 && len(val) > length {
+	if length != -1 && len(l.Value) > length {
 		return nil, errors.New(ERR_VALUE_TOO_LONG)
 	}
-
-	switch encoder {
-	case ASCII:
-	case BCD:
-		val = lbcd(val)
-	default:
+	if encoder != ASCII {
 		panic(ERR_INVALID_ENCODER)
 	}
 
-	lenStr := fmt.Sprintf("%03d", len(val))
+	lenStr := fmt.Sprintf("%03d", len(l.Value))
 	contentLen := []byte(lenStr)
 	var lenVal []byte
 	switch lenEncoder {
@@ -301,7 +322,7 @@ func (l *Lllvar) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 		}
 		lenVal = rbcd(contentLen)
 	}
-	return append(lenVal, val...), nil
+	return append(lenVal, l.Value...), nil
 }
 
 func (l *Lllvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, err error) {
@@ -316,7 +337,7 @@ func (l *Lllvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, er
 		}
 	case BCD:
 		read = 2
-		contentLen, err = strconv.Atoi(string(bcdr2Ascii(raw[:read], 2)))
+		contentLen, err = strconv.Atoi(string(bcdr2Ascii(raw[:read], 3)))
 		if err != nil {
 			return 0, errors.New(ERR_PARSE_LENGTH_FAILED + ": " + string(raw[:2]))
 		}
@@ -325,12 +346,11 @@ func (l *Lllvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, er
 	}
 
 	// parse body:
-	body := raw[read : read+contentLen]
+	l.Value = raw[read : read+contentLen]
 	read += contentLen
 	if encoder != ASCII {
 		panic(ERR_INVALID_ENCODER)
 	}
-	l.Value = string(body)
 
 	return read, nil
 }
