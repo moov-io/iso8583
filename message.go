@@ -113,8 +113,8 @@ func parseFields(msg interface{}) map[int]*fieldInfo {
 			panic("value of field must be numeric")
 		}
 
-		encode := -1
-		lenEncode := -1
+		encode := 0
+		lenEncode := 0
 		if raw := sf.Tag.Get(TAG_ENCODE); raw != "" {
 			enc := strings.Split(raw, ",")
 			if len(enc) == 2 {

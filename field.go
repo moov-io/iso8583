@@ -120,13 +120,18 @@ func (a *Alphanumeric) Load(raw []byte, encoder, lenEncoder, length int) (int, e
 
 type Binary struct {
 	Value []byte
+	FixLen int
 }
 
 func NewBinary(d []byte) *Binary {
-	return &Binary{d}
+	return &Binary{d, -1}
 }
 
-func (b *Binary) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
+func (b *Binary) Bytes(encoder, lenEncoder, l int) ([]byte, error) {
+	length := l
+	if b.FixLen != -1 {
+		length = b.FixLen
+	}
 	if length == -1 {
 		panic(ERR_MISSING_LENGTH)
 	}
