@@ -28,6 +28,9 @@ type Iso8583Type interface {
 	// Load unmarshal byte value into Iso8583Type according to the
 	// specific arguments. It returns the number of bytes actually read.
 	Load(raw []byte, encoder, lenEncoder, length int) (int, error)
+
+	// проверка пустое ли значение у данного поля
+	IsEmpty() bool
 }
 
 // A Numeric contains numeric value only in fix length. It holds numeric
@@ -39,6 +42,10 @@ type Numeric struct {
 
 func NewNumeric(val string) *Numeric {
 	return &Numeric{val}
+}
+
+func (n *Numeric) IsEmpty() bool {
+	return len(n.Value) == 0;
 }
 
 func (n *Numeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
@@ -96,6 +103,10 @@ func NewAlphanumeric(val string) *Alphanumeric {
 	return &Alphanumeric{Value: val}
 }
 
+func (a *Alphanumeric) IsEmpty() bool {
+	return len(a.Value) == 0;
+}
+
 func (a *Alphanumeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	val := []byte(a.Value)
 	if length == -1 {
@@ -125,6 +136,10 @@ type Binary struct {
 
 func NewBinary(d []byte) *Binary {
 	return &Binary{d, -1}
+}
+
+func (b *Binary) IsEmpty() bool {
+	return len(b.Value) == 0;
 }
 
 func (b *Binary) Bytes(encoder, lenEncoder, l int) ([]byte, error) {
@@ -158,6 +173,10 @@ type Llvar struct {
 
 func NewLlvar(val []byte) *Llvar {
 	return &Llvar{val}
+}
+
+func (l *Llvar) IsEmpty() bool {
+	return len(l.Value) == 0;
 }
 
 func (l *Llvar) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
@@ -224,6 +243,10 @@ type Llnumeric struct {
 
 func NewLlnumeric(val string) *Llnumeric {
 	return &Llnumeric{val}
+}
+
+func (l *Llnumeric) IsEmpty() bool {
+	return len(l.Value) == 0;
 }
 
 func (l *Llnumeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
@@ -304,6 +327,10 @@ func NewLllvar(val []byte) *Lllvar {
 	return &Lllvar{val}
 }
 
+func (l *Lllvar) IsEmpty() bool {
+	return len(l.Value) == 0;
+}
+
 func (l *Lllvar) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	if length != -1 && len(l.Value) > length {
 		return nil, errors.New(ERR_VALUE_TOO_LONG)
@@ -366,6 +393,10 @@ type Lllnumeric struct {
 
 func NewLllnumeric(val string) *Lllnumeric {
 	return &Lllnumeric{val}
+}
+
+func (l *Lllnumeric) IsEmpty() bool {
+	return len(l.Value) == 0;
 }
 
 func (l *Lllnumeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {

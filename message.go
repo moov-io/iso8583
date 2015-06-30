@@ -55,8 +55,22 @@ func (m *Message) Bytes() ([]byte, error) {
 
 	for byteIndex := 0; byteIndex < byteNum; byteIndex++ {
 		for bitIndex := 0; bitIndex < 8; bitIndex++ {
+
 			i := byteIndex*8 + bitIndex + 1
+
+			// если есть вторая секция битовой карты (еще 8 байт) то обязательно ставим первый бит
+			if m.SecondBitmap && i == 1{
+				step := uint(7 - bitIndex)
+				bitmap[byteIndex] |= (0x01 << step)
+			}
+
 			if info, ok := fields[i]; ok {
+
+				// если поле пустое, то нельзя его добавлять, как и ставить его бит
+				if info.Field.IsEmpty() {
+					continue
+				}
+
 				// mark 1 in bitmap:
 				step := uint(7 - bitIndex)
 				bitmap[byteIndex] |= (0x01 << step)
