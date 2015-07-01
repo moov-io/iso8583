@@ -33,8 +33,15 @@ func NewMessage(mti string, data interface{}) *Message {
 	return &Message{mti, ASCII, false, data}
 }
 
-func (m *Message) Bytes() ([]byte, error) {
-	ret := make([]byte, 0)
+func (m *Message) Bytes() (ret []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("Critical error:" + fmt.Sprint(r))
+			ret = nil
+		}
+	}()
+
+	ret = make([]byte, 0)
 
 	// generate MTI:
 	mtiBytes, err := m.encodeMti()
@@ -91,10 +98,10 @@ func (m *Message) Bytes() ([]byte, error) {
 
 func (m *Message) encodeMti() ([]byte, error) {
 	if m.Mti == "" {
-		panic("MTI is required")
+		return nil, errors.New("MTI is required")
 	}
 	if len(m.Mti) != 4 {
-		panic("MTI is invalid")
+		return nil, errors.New("MTI is invalid")
 	}
 
 	switch m.MtiEncode {
@@ -171,6 +178,12 @@ func parseEncodeStr(str string) int {
 }
 
 func (m *Message) Load(raw []byte) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("Critical error:" + fmt.Sprint(r))
+		}
+	}()
+
 	if m.Mti == "" {
 		m.Mti, err = decodeMti(raw, m.MtiEncode)
 		if err != nil {
