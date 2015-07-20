@@ -3,15 +3,17 @@ A golang implementation to marshal and unmarshal iso8583 message.
 
 [![Build Status](https://travis-ci.org/ideazxy/iso8583.svg?branch=master)](https://travis-ci.org/ideazxy/iso8583)
 
+Length encode and MTI encode types:
+
+* bcd - BCD encoding of field length (only for Ll* and Lll* fields)
+* ascii - ASCII encoding of field length (only for Ll* and Lll* fields)
+
 
 Encode types:
-bcd - BCD encoding
-rbcd - BCD encoding with "right-aligned" value with odd length (for ex. "643" as [6 67] == "0643"), only for Numeric, Llnumeric and Lllnumeric fields
-ascii - ASCII encoding
 
-Length encode and MTI encode types:
-bcd - BCD encoding of field length (only for Ll* and Lll* fields)
-ascii - ASCII encoding of field length (only for Ll* and Lll* fields)
+* bcd - BCD encoding
+* rbcd - BCD encoding with "right-aligned" value with odd length (for ex. "643" as [6 67] == "0643"), only for Numeric, Llnumeric and Lllnumeric fields
+* ascii - ASCII encoding
 
 ### Example
 
@@ -57,3 +59,5 @@ Then you will get:
 ```
 08 00 20 00 00 40 02 0c 00 01 00 11 11 32 32 6f 6b 06 61 62 63 30 30 31 00 14 e4 bd a0 e5 a5 bd 20 67 6f 6c 61 6e 67 21 61 31 73 32 64 33 66 34
 ```
+
+Additional example you can see in iso8583_test.go
