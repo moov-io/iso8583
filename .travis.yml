@@ -5,4 +5,4 @@ go:
   - tip
 
 install:
-  - github.com/stretchr/testify/assert
+  - go get github.com/stretchr/testify/assert
