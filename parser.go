@@ -5,11 +5,13 @@ import (
 	"reflect"
 )
 
+// Parser for ISO 8583 messages
 type Parser struct {
 	messages  map[string]reflect.Type
 	MtiEncode int
 }
 
+// Register MTI
 func (p *Parser) Register(mti string, tpl interface{}) {
 	if len(mti) != 4 {
 		panic("MTI must be a 4 digit numeric field")
@@ -42,7 +44,7 @@ func decodeMti(raw []byte, encode int) (string, error) {
 	}
 	return mti, nil
 }
-
+//Parse MTI
 func (p *Parser) Parse(raw []byte) (*Message, error) {
 	mti, err := decodeMti(raw, p.MtiEncode)
 	if err != nil {

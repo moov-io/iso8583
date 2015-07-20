@@ -3,6 +3,16 @@ A golang implementation to marshal and unmarshal iso8583 message.
 
 [![Build Status](https://travis-ci.org/ideazxy/iso8583.svg?branch=master)](https://travis-ci.org/ideazxy/iso8583)
 
+
+Encode types:
+bcd - BCD encoding
+rbcd - BCD encoding with "right-aligned" value with odd length (for ex. "643" as [6 67] == "0643"), only for Numeric, Llnumeric and Lllnumeric fields
+ascii - ASCII encoding
+
+Length encode and MTI encode types:
+bcd - BCD encoding of field length (only for Ll* and Lll* fields)
+ascii - ASCII encoding of field length (only for Ll* and Lll* fields)
+
 ### Example
 
 ```go
@@ -15,10 +25,10 @@ import (
 )
 
 type Data struct {
-	No   *iso8583.Numeric      `field:"3" length:"6" encode:"bcd"`
-	Oper *iso8583.Numeric      `field:"26" length:"2" encode:"ascii"`
+	No   *iso8583.Numeric      `field:"3" length:"6" encode:"bcd"` // bcd value encoding
+	Oper *iso8583.Numeric      `field:"26" length:"2" encode:"ascii"` // ascii value encoding
 	Ret  *iso8583.Alphanumeric `field:"39" length:"2"`
-	Sn   *iso8583.Llvar        `field:"45" length:"23" encode:"bcd,ascii"`
+	Sn   *iso8583.Llvar        `field:"45" length:"23" encode:"bcd,ascii"` // bcd length encoding, ascii value encoding
 	Info *iso8583.Lllvar       `field:"46" length:"42" encode:"bcd,ascii"`
 	Mac  *iso8583.Binary       `field:"64" length:"8"`
 }

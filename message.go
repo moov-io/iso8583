@@ -22,6 +22,7 @@ type fieldInfo struct {
 	Field     Iso8583Type
 }
 
+// Message is structure for ISO 8583 message encode and decode
 type Message struct {
 	Mti          string
 	MtiEncode    int
@@ -29,10 +30,12 @@ type Message struct {
 	Data         interface{}
 }
 
+// NewMessage creates new Message structure
 func NewMessage(mti string, data interface{}) *Message {
 	return &Message{mti, ASCII, false, data}
 }
 
+// Bytes marshall Message to bytes
 func (m *Message) Bytes() (ret []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -65,7 +68,7 @@ func (m *Message) Bytes() (ret []byte, err error) {
 
 			i := byteIndex*8 + bitIndex + 1
 
-			// если есть вторая секция битовой карты (еще 8 байт) то обязательно ставим первый бит
+			// if we need second bitmap (additional 8 bytes) - set first bit in first bitmap
 			if m.SecondBitmap && i == 1{
 				step := uint(7 - bitIndex)
 				bitmap[byteIndex] |= (0x01 << step)
@@ -73,7 +76,7 @@ func (m *Message) Bytes() (ret []byte, err error) {
 
 			if info, ok := fields[i]; ok {
 
-				// если поле пустое, то нельзя его добавлять, как и ставить его бит
+				// if field is empty, then we can't add it to bitmap
 				if info.Field.IsEmpty() {
 					continue
 				}
@@ -171,12 +174,17 @@ func parseEncodeStr(str string) int {
 	switch str {
 	case "ascii":
 		return ASCII
+	case "lbcd":
+		fallthrough
 	case "bcd":
 		return BCD
+	case "rbcd":
+		return rBCD
 	}
 	return -1
 }
 
+// Load unmarshall Message from bytes
 func (m *Message) Load(raw []byte) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -220,7 +228,7 @@ func (m *Message) Load(raw []byte) (err error) {
 			}
 			f, ok := fields[i]
 			if !ok {
-				return errors.New(fmt.Sprintf("field %d not defined", i))
+				return fmt.Errorf("field %d not defined", i)
 			}
 			l, err := f.Field.Load(raw[start:], f.Encode, f.LenEncode, f.Length)
 			if err != nil {
