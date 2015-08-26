@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -48,7 +49,7 @@ func TestEncode(t *testing.T) {
 		F32:  &Llnumeric{"123456"},
 		F35:  &Llnumeric{"4276555555555555=12345678901234567890"},
 		F37:  &Alphanumeric{"987654321001"},
-		F39:  &Alphanumeric{},
+		F39:  NewAlphanumeric(""),
 		F41:  &Alphanumeric{"00000321"},
 		F42:  &Alphanumeric{"120000000000034"},
 		F43:  &Alphanumeric{"Test text"},
@@ -265,30 +266,78 @@ func TestParser(t *testing.T) {
 	}
 }
 
+func TestMessage(t *testing.T) {
+	type TestIso struct {
+		DataIso
+		AB *Llnumeric `field:"ab" length:"19"`
+	}
+
+	iso := Message{"", ASCII, true, TestIso{*newDataIso(), NewLlnumeric("")}}
+
+	input := []byte{48, 49, 48, 48, 114, 60, 36, 129, 40, 224, 152, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48}
+
+	err := iso.Load(input)
+
+	assert.EqualError(t, err, "Critical error:value of field must be numeric")
+
+	type TestIso2 struct {
+		F2 *Llnumeric `field:"2" length:"19"`
+	}
+
+	iso = Message{"", ASCII, true, TestIso2{}}
+
+	err = iso.Load(input)
+
+	assert.EqualError(t, err, "field 2 not defined")
+
+}
+
+func TestBCD(t *testing.T) {
+
+	b := []byte("954")
+	r := rbcd(b)
+	assert.Equal(t, "0954", fmt.Sprintf("%X", r))
+
+	r = lbcd(b)
+	assert.Equal(t, "9540", fmt.Sprintf("%X", r))
+
+	b = []byte("31")
+	r = lbcd(b)
+	assert.Equal(t, "31", fmt.Sprintf("%X", r))
+	r = rbcd(b)
+	assert.Equal(t, "31", fmt.Sprintf("%X", r))
+
+	assert.Panics(t,
+		func() {
+			bcd([]byte{0})
+		}, "Calling bcd() with len(data) % 2 != 0 should panic")
+
+}
+
 // newDataIso creates DataIso
 func newDataIso() *DataIso {
 	return &DataIso{
-		F2:   &Llnumeric{},
-		F3:   &Numeric{},
-		F4:   &Numeric{},
-		F7:   &Numeric{},
-		F11:  &Numeric{},
-		F12:  &Numeric{},
-		F13:  &Numeric{},
-		F14:  &Numeric{},
-		F19:  &Numeric{},
-		F22:  &Numeric{},
-		F25:  &Numeric{},
-		F32:  &Llnumeric{},
-		F35:  &Llnumeric{},
-		F37:  &Alphanumeric{},
-		F39:  &Alphanumeric{},
-		F41:  &Alphanumeric{},
-		F42:  &Alphanumeric{},
-		F43:  &Alphanumeric{},
-		F49:  &Numeric{},
+		F2:   NewLlnumeric(""),
+		F3:   NewNumeric(""),
+		F4:   NewNumeric(""),
+		F7:   NewNumeric(""),
+		F11:  NewNumeric(""),
+		F12:  NewNumeric(""),
+		F13:  NewNumeric(""),
+		F14:  NewNumeric(""),
+		F19:  NewNumeric(""),
+		F22:  NewNumeric(""),
+		F25:  NewNumeric(""),
+		F32:  NewLlnumeric(""),
+		F35:  NewLlnumeric(""),
+		F37:  NewAlphanumeric(""),
+		F39:  NewAlphanumeric(""),
+		F41:  NewAlphanumeric(""),
+		F42:  NewAlphanumeric(""),
+		F43:  NewAlphanumeric(""),
+		F49:  NewNumeric(""),
 		F52:  NewBinary(nil),
-		F53:  &Numeric{},
-		F120: &Lllnumeric{},
+		F53:  NewNumeric(""),
+		F120: NewLllnumeric(""),
 	}
 }
