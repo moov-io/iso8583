@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -12,9 +13,15 @@ type Parser struct {
 }
 
 // Register MTI
-func (p *Parser) Register(mti string, tpl interface{}) {
+func (p *Parser) Register(mti string, tpl interface{}) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("Critical error:" + fmt.Sprint(r))
+		}
+	}()
+
 	if len(mti) != 4 {
-		panic("MTI must be a 4 digit numeric field")
+		return errors.New("MTI must be a 4 digit numeric field")
 	}
 	v := reflect.ValueOf(tpl)
 	// TODO do more check
@@ -22,6 +29,8 @@ func (p *Parser) Register(mti string, tpl interface{}) {
 		p.messages = make(map[string]reflect.Type)
 	}
 	p.messages[mti] = reflect.Indirect(v).Type()
+
+	return nil
 }
 
 func decodeMti(raw []byte, encode int) (string, error) {
@@ -40,12 +49,20 @@ func decodeMti(raw []byte, encode int) (string, error) {
 	case BCD:
 		mti = string(bcd2Ascii(raw[:mtiLen]))
 	default:
-		panic("invalid encode type")
+		return "", errors.New("invalid encode type")
 	}
 	return mti, nil
 }
+
 //Parse MTI
-func (p *Parser) Parse(raw []byte) (*Message, error) {
+func (p *Parser) Parse(raw []byte) (ret *Message, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("Critical error:" + fmt.Sprint(r))
+			ret = nil
+		}
+	}()
+
 	mti, err := decodeMti(raw, p.MtiEncode)
 	if err != nil {
 		return nil, err
