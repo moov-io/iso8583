@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-type DataIso struct {
+type TestISO struct {
 	F2  *Llnumeric `field:"2" length:"19"`
 	F3  *Numeric   `field:"3" length:"6"`
 	F4  *Numeric   `field:"4" length:"12"`
@@ -33,30 +33,65 @@ type DataIso struct {
 	F120 *Lllnumeric   `field:"120" length:"999"`
 }
 
+type TestISO2 struct {
+	F2  *Llnumeric    `field:"2" length:"19" encode:"bcd,rbcd"`
+	F3  *Numeric      `field:"3" length:"6" encode:"bcd"`
+	F4  *Numeric      `field:"4" length:"12" encode:"ascii"`
+	F7  *Numeric      `field:"7" length:"10" encode:"bcd"`
+	F11 *Numeric      `field:"11" length:"6" encode:"bcd"`
+	F12 *Numeric      `field:"12" length:"6" encode:"bcd"`
+	F13 *Numeric      `field:"13" length:"4" encode:"bcd"`
+	F14 *Numeric      `field:"14" length:"4" encode:"bcd"`
+	F19 *Numeric      `field:"19" length:"3" encode:"rbcd"`
+	F22 *Numeric      `field:"22" length:"3" encode:"rbcd"`
+	F25 *Numeric      `field:"25" length:"2" encode:"bcd"`
+	F26 *Numeric      `field:"26" length:"2" encode:"bcd"`
+	F28 *Alphanumeric `field:"28" length:"9"`
+	F32 *Llnumeric    `field:"32" length:"11" encode:"bcd,rbcd"`
+	F35 *Llnumeric    `field:"35" length:"37" encode:"bcd,ascii"`
+	F37 *Alphanumeric `field:"37" length:"12"`
+	F39 *Alphanumeric `field:"39" length:"2"`
+	F41 *Alphanumeric `field:"41" length:"8"`
+	F42 *Alphanumeric `field:"42" length:"15"`
+	F43 *Alphanumeric `field:"43" length:"40"`
+	F45 *Llnumeric    `field:"45" length:"75" encode:"ascii,bcd"`
+	F49 *Numeric      `field:"49" length:"3" encode:"rbcd"`
+	F52 *Binary       `field:"52" length:"8"`
+	F53 *Numeric      `field:"53" length:"16" encode:"bcd"`
+	F54 *Llvar        `field:"54" length:"255" encode:"ascii,ascii"`
+	F55 *Llvar        `field:"55" length:"255" encode:"bcd,ascii"`
+	F56 *Lllvar       `field:"56" length:"255" encode:"bcd,ascii"`
+	F57 *Lllvar       `field:"57" length:"255" encode:"rbcd,ascii"`
+	F58 *Lllvar       `field:"58" length:"255" encode:"ascii,ascii"`
+	F60 *Lllnumeric   `field:"60" length:"999" encode:"bcd,ascii"`
+	F63 *Lllnumeric   `field:"63" length:"999" encode:"bcd,ascii"`
+	F64 *Binary       `field:"64" length:"32"`
+}
+
 func TestEncode(t *testing.T) {
-	data := &DataIso{
-		F2:   &Llnumeric{"4276555555555555"},
-		F3:   &Numeric{"000000"},
-		F4:   &Numeric{"000000077700"},
-		F7:   &Numeric{"0701111844"},
-		F11:  &Numeric{"000123"},
-		F12:  &Numeric{"131844"},
-		F13:  &Numeric{"0701"},
-		F14:  &Numeric{"1902"},
-		F19:  &Numeric{"643"},
-		F22:  &Numeric{"901"},
-		F25:  &Numeric{"02"},
-		F32:  &Llnumeric{"123456"},
-		F35:  &Llnumeric{"4276555555555555=12345678901234567890"},
-		F37:  &Alphanumeric{"987654321001"},
+	data := &TestISO{
+		F2:   NewLlnumeric("4276555555555555"),
+		F3:   NewNumeric("000000"),
+		F4:   NewNumeric("000000077700"),
+		F7:   NewNumeric("0701111844"),
+		F11:  NewNumeric("000123"),
+		F12:  NewNumeric("131844"),
+		F13:  NewNumeric("0701"),
+		F14:  NewNumeric("1902"),
+		F19:  NewNumeric("643"),
+		F22:  NewNumeric("901"),
+		F25:  NewNumeric("02"),
+		F32:  NewLlnumeric("123456"),
+		F35:  NewLlnumeric("4276555555555555=12345678901234567890"),
+		F37:  NewAlphanumeric("987654321001"),
 		F39:  NewAlphanumeric(""),
-		F41:  &Alphanumeric{"00000321"},
-		F42:  &Alphanumeric{"120000000000034"},
-		F43:  &Alphanumeric{"Test text"},
-		F49:  &Numeric{"643"},
+		F41:  NewAlphanumeric("00000321"),
+		F42:  NewAlphanumeric("120000000000034"),
+		F43:  NewAlphanumeric("Test text"),
+		F49:  NewNumeric("643"),
 		F52:  NewBinary([]byte{1, 2, 3, 4, 5, 6, 7, 8}),
-		F53:  &Numeric{"1234000000000000"},
-		F120: &Lllnumeric{"Another test text"},
+		F53:  NewNumeric("1234000000000000"),
+		F120: NewLllnumeric("Another test text"),
 	}
 
 	iso := Message{"0100", ASCII, true, data}
@@ -88,7 +123,7 @@ func TestDecode(t *testing.T) {
 		t.Error("ISO Decode error:", err)
 	}
 
-	resultFields := iso.Data.(*DataIso)
+	resultFields := iso.Data.(*TestISO)
 
 	// check BCD numeric values length
 	assert.Equal(t, 3, len(resultFields.F19.Value))
@@ -104,7 +139,7 @@ func TestDecode(t *testing.T) {
 	iso.SecondBitmap = true
 
 	// before encode add "0" to left of F19 for testing rBCD encoding
-	iso.Data.(*DataIso).F19.Value = "0" + iso.Data.(*DataIso).F19.Value
+	iso.Data.(*TestISO).F19.Value = "0" + iso.Data.(*TestISO).F19.Value
 
 	// encode iso struct to bytes
 	res, err = iso.Bytes()
@@ -121,7 +156,7 @@ func TestDecode(t *testing.T) {
 	}
 
 	// set field 120 value to empty string
-	iso.Data.(*DataIso).F120.Value = ""
+	iso.Data.(*TestISO).F120.Value = ""
 
 	iso.SecondBitmap = false
 
@@ -143,6 +178,55 @@ func TestDecode(t *testing.T) {
 
 	if bytes.Compare(res, sample) != 0 {
 		t.Error("ISO Encode error!")
+	}
+}
+
+func TestEncodeDecode(t *testing.T) {
+
+	data := &TestISO2{
+		F2:  NewLlnumeric("4276555555555555"),
+		F3:  NewNumeric("000000"),
+		F4:  NewNumeric("000000077700"),
+		F7:  NewNumeric("0701111844"),
+		F11: NewNumeric("000123"),
+		F12: NewNumeric("131844"),
+		F13: NewNumeric("0701"),
+		F14: NewNumeric("1902"),
+		F19: NewNumeric("643"),
+		F22: NewNumeric("901"),
+		F25: NewNumeric("02"),
+		F28: NewAlphanumeric("abcd12345"),
+		F32: NewLlnumeric("123456"),
+		F35: NewLlnumeric("4276555555555555=12345678901234567890"),
+		F37: NewAlphanumeric("987654321001"),
+		F39: NewAlphanumeric("00"),
+		F41: NewAlphanumeric("00000321"),
+		F42: NewAlphanumeric("120000000000034"),
+		F43: NewAlphanumeric("Test text"),
+		F45: NewLlnumeric("test test"),
+		F49: NewNumeric("643"),
+		F52: NewBinary([]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+		F53: NewNumeric("1234000000000000"),
+		F54: NewLlvar([]byte{7, 8, 56, 71, 35}),
+		F55: NewLlvar([]byte{0, 1, 2, 5, 51, 47, 45, 32, 158}),
+		F56: NewLllvar([]byte("test data1")),
+		F57: NewLllvar([]byte("test data2")),
+		F58: NewLllvar([]byte("test data3")),
+		F60: NewLllnumeric("another test text"),
+	}
+
+	iso := Message{"0110", ASCII, false, data}
+
+	res, err := iso.Bytes()
+
+	if err != nil {
+		t.Error("ISO Encode error:", err)
+	}
+
+	err = iso.Load(res)
+
+	if err != nil {
+		t.Error("ISO Encode error:", err)
 	}
 }
 
@@ -208,7 +292,7 @@ func TestParser(t *testing.T) {
 		t.Error("ISO Decode error:", err)
 	}
 
-	resultFields := iso.Data.(*DataIso)
+	resultFields := iso.Data.(*TestISO)
 
 	// check BCD numeric values length
 	assert.Equal(t, 3, len(resultFields.F19.Value))
@@ -224,7 +308,7 @@ func TestParser(t *testing.T) {
 	iso.SecondBitmap = true
 
 	// before encode add "0" to left of F19 for testing rBCD encoding
-	iso.Data.(*DataIso).F19.Value = "0" + iso.Data.(*DataIso).F19.Value
+	iso.Data.(*TestISO).F19.Value = "0" + iso.Data.(*TestISO).F19.Value
 
 	// encode iso struct to bytes
 	res, err = iso.Bytes()
@@ -241,7 +325,7 @@ func TestParser(t *testing.T) {
 	}
 
 	// set field 120 value to empty string
-	iso.Data.(*DataIso).F120.Value = ""
+	iso.Data.(*TestISO).F120.Value = ""
 
 	iso.SecondBitmap = false
 
@@ -268,7 +352,7 @@ func TestParser(t *testing.T) {
 
 func TestMessage(t *testing.T) {
 	type TestIso struct {
-		DataIso
+		TestISO
 		AB *Llnumeric `field:"ab" length:"19"`
 	}
 
@@ -315,8 +399,8 @@ func TestBCD(t *testing.T) {
 }
 
 // newDataIso creates DataIso
-func newDataIso() *DataIso {
-	return &DataIso{
+func newDataIso() *TestISO {
+	return &TestISO{
 		F2:   NewLlnumeric(""),
 		F3:   NewNumeric(""),
 		F4:   NewNumeric(""),
