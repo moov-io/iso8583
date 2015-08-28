@@ -6,3 +6,7 @@ go:
 
 install:
   - go get github.com/stretchr/testify/assert
+  - go get -v github.com/axw/gocov/gocov
+  - go get -v github.com/mattn/goveralls
+script:
+  - $HOME/gopath/bin/goveralls -service=travis-ci $COVERALLS_TOKEN
