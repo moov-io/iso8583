@@ -69,7 +69,7 @@ func (m *Message) Bytes() (ret []byte, err error) {
 			i := byteIndex*8 + bitIndex + 1
 
 			// if we need second bitmap (additional 8 bytes) - set first bit in first bitmap
-			if m.SecondBitmap && i == 1{
+			if m.SecondBitmap && i == 1 {
 				step := uint(7 - bitIndex)
 				bitmap[byteIndex] |= (0x01 << step)
 			}

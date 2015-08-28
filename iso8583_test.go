@@ -48,7 +48,7 @@ type TestISO2 struct {
 	F26 *Numeric      `field:"26" length:"2" encode:"bcd"`
 	F28 *Alphanumeric `field:"28" length:"9"`
 	F32 *Llnumeric    `field:"32" length:"11" encode:"bcd,rbcd"`
-	F35 *Llnumeric    `field:"35" length:"37" encode:"bcd,ascii"`
+	F35 *Llnumeric    `field:"35" length:"37" encode:"rbcd,ascii"`
 	F37 *Alphanumeric `field:"37" length:"12"`
 	F39 *Alphanumeric `field:"39" length:"2"`
 	F41 *Alphanumeric `field:"41" length:"8"`
@@ -64,7 +64,8 @@ type TestISO2 struct {
 	F57 *Lllvar       `field:"57" length:"255" encode:"rbcd,ascii"`
 	F58 *Lllvar       `field:"58" length:"255" encode:"ascii,ascii"`
 	F60 *Lllnumeric   `field:"60" length:"999" encode:"bcd,ascii"`
-	F63 *Lllnumeric   `field:"63" length:"999" encode:"bcd,ascii"`
+	F61 *Lllnumeric   `field:"60" length:"999" encode:"bcd,rbcd"`
+	F63 *Lllnumeric   `field:"63" length:"999" encode:"rbcd,bcd"`
 	F64 *Binary       `field:"64" length:"32"`
 }
 
@@ -188,7 +189,7 @@ func TestEncodeDecode(t *testing.T) {
 		F3:  NewNumeric("000000"),
 		F4:  NewNumeric("000000077700"),
 		F7:  NewNumeric("0701111844"),
-		F11: NewNumeric("000123"),
+		F11: NewNumeric("123"),
 		F12: NewNumeric("131844"),
 		F13: NewNumeric("0701"),
 		F14: NewNumeric("1902"),
@@ -205,7 +206,7 @@ func TestEncodeDecode(t *testing.T) {
 		F43: NewAlphanumeric("Test text"),
 		F45: NewLlnumeric("test test"),
 		F49: NewNumeric("643"),
-		F52: NewBinary([]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+		F52: NewBinary([]byte{1, 2, 3, 4, 5}),
 		F53: NewNumeric("1234000000000000"),
 		F54: NewLlvar([]byte{7, 8, 56, 71, 35}),
 		F55: NewLlvar([]byte{0, 1, 2, 5, 51, 47, 45, 32, 158}),
@@ -213,6 +214,8 @@ func TestEncodeDecode(t *testing.T) {
 		F57: NewLllvar([]byte("test data2")),
 		F58: NewLllvar([]byte("test data3")),
 		F60: NewLllnumeric("another test text"),
+		F61: NewLllnumeric("another test text"),
+		F63: NewLllnumeric("another test text"),
 	}
 
 	iso := Message{"0110", ASCII, false, data}
@@ -223,11 +226,415 @@ func TestEncodeDecode(t *testing.T) {
 		t.Error("ISO Encode error:", err)
 	}
 
-	err = iso.Load(res)
+	iso2 := Message{"0110", ASCII, false, data}
+
+	err = iso2.Load(res)
 
 	if err != nil {
 		t.Error("ISO Encode error:", err)
 	}
+
+	// check data after encode/decode
+	assert.Equal(t, iso, iso2)
+}
+
+func TestFieldNumericEncodeErrors(t *testing.T) {
+
+	type test1 struct {
+		F2 *Numeric `field:"2" length:"6" encode:"test"`
+	}
+
+	data1 := &test1{
+		F2: NewNumeric("123456"),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	_, err := iso.Bytes()
+
+	assert.EqualError(t, err, "invalid encoder")
+
+	type test2 struct {
+		F2 *Numeric `field:"2"`
+	}
+
+	data2 := &test2{
+		F2: NewNumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "missing length")
+
+	type test3 struct {
+		F2 *Numeric `field:"2" length:"3"`
+	}
+
+	data3 := &test3{
+		F2: NewNumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "length of value is longer than definition; type=Numeric, def_len=3, len=6")
+}
+
+func TestFieldAlphanumericEncodeErrors(t *testing.T) {
+
+	type test1 struct {
+		F2 *Alphanumeric `field:"2"`
+	}
+
+	data1 := &test1{
+		F2: NewAlphanumeric("abcdef"),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	_, err := iso.Bytes()
+
+	assert.EqualError(t, err, "missing length")
+
+	type test2 struct {
+		F2 *Alphanumeric `field:"2" length:"3"`
+	}
+
+	data2 := &test2{
+		F2: NewAlphanumeric("abcdef"),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "length of value is longer than definition; type=Alphanumeric, def_len=3, len=6")
+}
+
+func TestFieldBinaryEncodeErrors(t *testing.T) {
+
+	type test1 struct {
+		F2 *Binary `field:"2"`
+	}
+
+	data1 := &test1{
+		F2: NewBinary([]byte("abcdef")),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	_, err := iso.Bytes()
+
+	assert.EqualError(t, err, "missing length")
+
+	type test2 struct {
+		F2 *Binary `field:"2" length:"3"`
+	}
+
+	data2 := &test2{
+		F2: NewBinary([]byte("abcdef")),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "length of value is longer than definition; type=Binary, def_len=3, len=6")
+}
+
+func TestFieldLlnumericEncodeErrors(t *testing.T) {
+
+	type test1 struct {
+		F2 *Llnumeric `field:"2" length:"6" encode:"test"`
+	}
+
+	data1 := &test1{
+		F2: NewLlnumeric("123456"),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	_, err := iso.Bytes()
+
+	assert.EqualError(t, err, "invalid encoder")
+
+	type test2 struct {
+		F2 *Llnumeric `field:"2" length:"3"`
+	}
+
+	data2 := &test2{
+		F2: NewLlnumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "length of value is longer than definition; type=Llnumeric, def_len=3, len=6")
+
+	type test3 struct {
+		F2 *Llnumeric `field:"2" encode:"ascii,ascii"`
+	}
+
+	data3 := &test3{
+		F2: NewLlnumeric(string(bytes.Repeat([]byte("a"), 100))),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length head")
+
+	type test4 struct {
+		F2 *Llnumeric `field:"2" length:"100" encode:"bcd,ascii"`
+	}
+
+	data4 := &test4{
+		F2: NewLlnumeric(string(bytes.Repeat([]byte("a"), 100))),
+	}
+
+	iso = Message{"0110", ASCII, false, data4}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length head")
+
+	type test5 struct {
+		F2 *Llnumeric `field:"2" length:"6" encode:"test,ascii"`
+	}
+
+	data5 := &test5{
+		F2: NewLlnumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data5}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length encoder")
+}
+
+func TestFieldLllnumericEncodeErrors(t *testing.T) {
+
+	type test1 struct {
+		F2 *Lllnumeric `field:"2" length:"6" encode:"test"`
+	}
+
+	data1 := &test1{
+		F2: NewLllnumeric("123456"),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	_, err := iso.Bytes()
+
+	assert.EqualError(t, err, "invalid encoder")
+
+	type test2 struct {
+		F2 *Lllnumeric `field:"2" length:"3"`
+	}
+
+	data2 := &test2{
+		F2: NewLllnumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "length of value is longer than definition; type=Lllnumeric, def_len=3, len=6")
+
+	type test3 struct {
+		F2 *Lllnumeric `field:"2" encode:"ascii,ascii"`
+	}
+
+	data3 := &test3{
+		F2: NewLllnumeric(string(bytes.Repeat([]byte("a"), 1000))),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length head")
+
+	type test4 struct {
+		F2 *Lllnumeric `field:"2" length:"1000" encode:"bcd,ascii"`
+	}
+
+	data4 := &test4{
+		F2: NewLllnumeric(string(bytes.Repeat([]byte("a"), 1000))),
+	}
+
+	iso = Message{"0110", ASCII, false, data4}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length head")
+
+	type test5 struct {
+		F2 *Lllnumeric `field:"2" length:"6" encode:"test,ascii"`
+	}
+
+	data5 := &test5{
+		F2: NewLllnumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data5}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length encoder")
+}
+
+func TestFieldLlvarEncodeErrors(t *testing.T) {
+
+	type test1 struct {
+		F2 *Llvar `field:"2" length:"6" encode:"test"`
+	}
+
+	data1 := &test1{
+		F2: NewLlvar([]byte("123456")),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	_, err := iso.Bytes()
+
+	assert.EqualError(t, err, "invalid encoder")
+
+	type test2 struct {
+		F2 *Llvar `field:"2" length:"3"`
+	}
+
+	data2 := &test2{
+		F2: NewLlvar([]byte("123456")),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "length of value is longer than definition; type=Llvar, def_len=3, len=6")
+
+	type test3 struct {
+		F2 *Llvar `field:"2" encode:"ascii,ascii"`
+	}
+
+	data3 := &test3{
+		F2: NewLlvar(bytes.Repeat([]byte("a"), 100)),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length head")
+
+	type test4 struct {
+		F2 *Llvar `field:"2" length:"100" encode:"bcd,ascii"`
+	}
+
+	data4 := &test4{
+		F2: NewLlvar(bytes.Repeat([]byte("a"), 100)),
+	}
+
+	iso = Message{"0110", ASCII, false, data4}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length head")
+
+	type test5 struct {
+		F2 *Llvar `field:"2" length:"6" encode:"test,ascii"`
+	}
+
+	data5 := &test5{
+		F2: NewLlvar([]byte("123456")),
+	}
+
+	iso = Message{"0110", ASCII, false, data5}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length encoder")
+}
+
+func TestFieldLllvarEncodeErrors(t *testing.T) {
+
+	type test1 struct {
+		F2 *Lllvar `field:"2" length:"6" encode:"test"`
+	}
+
+	data1 := &test1{
+		F2: NewLllvar([]byte("123456")),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	_, err := iso.Bytes()
+
+	assert.EqualError(t, err, "invalid encoder")
+
+	type test2 struct {
+		F2 *Lllvar `field:"2" length:"3"`
+	}
+
+	data2 := &test2{
+		F2: NewLllvar([]byte("123456")),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "length of value is longer than definition; type=Lllvar, def_len=3, len=6")
+
+	type test3 struct {
+		F2 *Lllvar `field:"2" encode:"ascii,ascii"`
+	}
+
+	data3 := &test3{
+		F2: NewLllvar(bytes.Repeat([]byte("a"), 1000)),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length head")
+
+	type test4 struct {
+		F2 *Lllvar `field:"2" length:"1000" encode:"bcd,ascii"`
+	}
+
+	data4 := &test4{
+		F2: NewLllvar(bytes.Repeat([]byte("a"), 1000)),
+	}
+
+	iso = Message{"0110", ASCII, false, data4}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length head")
+
+	type test5 struct {
+		F2 *Lllvar `field:"2" length:"6" encode:"test,ascii"`
+	}
+
+	data5 := &test5{
+		F2: NewLllvar([]byte("123456")),
+	}
+
+	iso = Message{"0110", ASCII, false, data5}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "invalid length encoder")
 }
 
 func TestParserErrors(t *testing.T) {
