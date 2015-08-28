@@ -1,7 +1,7 @@
 # iso8583
 A golang implementation to marshal and unmarshal iso8583 message.
 
-[![Build Status](https://travis-ci.org/ideazxy/iso8583.svg?branch=master)](https://travis-ci.org/ideazxy/iso8583)
+[![Build Status](https://travis-ci.org/ideazxy/iso8583.svg?branch=master)](https://travis-ci.org/ideazxy/iso8583) [![Coverage Status](https://coveralls.io/repos/Ayvan/iso8583/badge.svg?branch=master&service=github)](https://coveralls.io/github/Ayvan/iso8583?branch=master)
 
 Length encode and MTI encode types:
 
