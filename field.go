@@ -158,6 +158,9 @@ func (a *Alphanumeric) Load(raw []byte, encoder, lenEncoder, length int) (int, e
 	if length == -1 {
 		return 0, errors.New(ERR_MISSING_LENGTH)
 	}
+	if len(raw) < length {
+		return 0, errors.New(ERR_BAD_RAW)
+	}
 	a.Value = string(raw[:length])
 	return length, nil
 }
@@ -200,6 +203,9 @@ func (b *Binary) Bytes(encoder, lenEncoder, l int) ([]byte, error) {
 func (b *Binary) Load(raw []byte, encoder, lenEncoder, length int) (int, error) {
 	if length == -1 {
 		return 0, errors.New(ERR_MISSING_LENGTH)
+	}
+	if len(raw) < length {
+		return 0, errors.New(ERR_BAD_RAW)
 	}
 	b.Value = raw[:length]
 	b.FixLen = length
@@ -274,7 +280,9 @@ func (l *Llvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, err
 	default:
 		return 0, errors.New(ERR_INVALID_LENGTH_ENCODER)
 	}
-
+	if len(raw) < (read + contentLen) {
+		return 0, errors.New(ERR_BAD_RAW)
+	}
 	// parse body:
 	l.Value = raw[read : read+contentLen]
 	read += contentLen
@@ -368,12 +376,18 @@ func (l *Llnumeric) Load(raw []byte, encoder, lenEncoder, length int) (read int,
 	// parse body:
 	switch encoder {
 	case ASCII:
+		if len(raw) < (read + contentLen) {
+			return 0, errors.New(ERR_BAD_RAW)
+		}
 		l.Value = string(raw[read : read+contentLen])
 		read += contentLen
 	case rBCD:
 		fallthrough
 	case BCD:
 		bcdLen := (contentLen + 1) / 2
+		if len(raw) < (read + bcdLen) {
+			return 0, errors.New(ERR_BAD_RAW)
+		}
 		l.Value = string(bcdl2Ascii(raw[read:read+bcdLen], contentLen))
 		read += bcdLen
 	default:
@@ -450,7 +464,9 @@ func (l *Lllvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, er
 	default:
 		return 0, errors.New(ERR_INVALID_LENGTH_ENCODER)
 	}
-
+	if len(raw) < (read + contentLen) {
+		return 0, errors.New(ERR_BAD_RAW)
+	}
 	// parse body:
 	l.Value = raw[read : read+contentLen]
 	read += contentLen
@@ -544,12 +560,18 @@ func (l *Lllnumeric) Load(raw []byte, encoder, lenEncoder, length int) (read int
 	// parse body:
 	switch encoder {
 	case ASCII:
+		if len(raw) < (read + contentLen) {
+			return 0, errors.New(ERR_BAD_RAW)
+		}
 		l.Value = string(raw[read : read+contentLen])
 		read += contentLen
 	case rBCD:
 		fallthrough
 	case BCD:
 		bcdLen := (contentLen + 1) / 2
+		if len(raw) < (read + bcdLen) {
+			return 0, errors.New(ERR_BAD_RAW)
+		}
 		l.Value = string(bcdl2Ascii(raw[read:read+bcdLen], contentLen))
 		read += bcdLen
 	default:

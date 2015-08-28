@@ -63,6 +63,7 @@ type TestISO2 struct {
 	F56 *Lllvar       `field:"56" length:"255" encode:"bcd,ascii"`
 	F57 *Lllvar       `field:"57" length:"255" encode:"rbcd,ascii"`
 	F58 *Lllvar       `field:"58" length:"255" encode:"ascii,ascii"`
+	F59 *Llvar        `field:"59" length:"255" encode:"rbcd,ascii"`
 	F60 *Lllnumeric   `field:"60" length:"999" encode:"bcd,ascii"`
 	F61 *Lllnumeric   `field:"60" length:"999" encode:"bcd,rbcd"`
 	F63 *Lllnumeric   `field:"63" length:"999" encode:"rbcd,bcd"`
@@ -213,6 +214,7 @@ func TestEncodeDecode(t *testing.T) {
 		F56: NewLllvar([]byte("test data1")),
 		F57: NewLllvar([]byte("test data2")),
 		F58: NewLllvar([]byte("test data3")),
+		F59: NewLlvar([]byte("test data4")),
 		F60: NewLllnumeric("another test text"),
 		F61: NewLllnumeric("another test text"),
 		F63: NewLllnumeric("another test text"),
@@ -637,6 +639,752 @@ func TestFieldLllvarEncodeErrors(t *testing.T) {
 	assert.EqualError(t, err, "invalid length encoder")
 }
 
+func TestFieldNumericDecodeErrors(t *testing.T) {
+	type test1 struct {
+		F2 *Numeric `field:"2" length:"10" encode:"ascii"`
+	}
+
+	data1 := &test1{
+		F2: NewNumeric("123456"),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	isoBytes, err := iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test2 struct {
+		F2 *Numeric `field:"2" length:"10" encode:"bcd"`
+	}
+
+	data2 := &test2{
+		F2: NewNumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test3 struct {
+		F2 *Numeric `field:"2" length:"10" encode:"rbcd"`
+	}
+
+	data3 := &test3{
+		F2: NewNumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test4 struct {
+		F2 *Numeric `field:"2" encode:"rbcd"`
+	}
+
+	data4 := &test4{
+		F2: NewNumeric(""),
+	}
+
+	iso = Message{"0110", ASCII, false, data4}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "missing length")
+
+	type test5 struct {
+		F2 *Numeric `field:"2" length:"10" encode:"test"`
+	}
+
+	data5 := &test5{
+		F2: NewNumeric(""),
+	}
+
+	iso = Message{"0110", ASCII, false, data5}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "invalid encoder")
+}
+
+func TestFieldLlnumericDecodeErrors(t *testing.T) {
+	type test1 struct {
+		F2 *Llnumeric `field:"2" length:"10" encode:"ascii"`
+	}
+
+	data1 := &test1{
+		F2: NewLlnumeric("123456"),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	isoBytes, err := iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test2 struct {
+		F2 *Llnumeric `field:"2" length:"10" encode:"bcd"`
+	}
+
+	data2 := &test2{
+		F2: NewLlnumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test3 struct {
+		F2 *Llnumeric `field:"2" length:"10" encode:"rbcd"`
+	}
+
+	data3 := &test3{
+		F2: NewLlnumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test4 struct {
+		F2 *Llnumeric `field:"2" length:"10" encode:"test"`
+	}
+
+	data4 := &test4{
+		F2: NewLlnumeric(""),
+	}
+
+	iso = Message{"0110", ASCII, false, data4}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "invalid encoder")
+
+	type test5 struct {
+		F2 *Llnumeric `field:"2" length:"10" encode:"bcd,ascii"`
+	}
+
+	data5 := &test5{
+		F2: NewLlnumeric("543210"),
+	}
+
+	iso = Message{"0110", ASCII, false, data5}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes[12] = 123
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {")
+
+	type test6 struct {
+		F2 *Llnumeric `field:"2" length:"10" encode:"rbcd,ascii"`
+	}
+
+	data6 := &test6{
+		F2: NewLlnumeric(""),
+	}
+
+	iso = Message{"0110", ASCII, false, data6}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {")
+
+	type test7 struct {
+		F2 *Llnumeric `field:"2" length:"10" encode:"ascii,ascii"`
+	}
+
+	data7 := &test7{
+		F2: NewLlnumeric("543210"),
+	}
+
+	iso = Message{"0110", ASCII, false, data7}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes[12] = 123
+	isoBytes[13] = 125
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {}")
+
+	type test8 struct {
+		F2 *Llnumeric `field:"2" length:"10" encode:"test,ascii"`
+	}
+
+	data8 := &test8{
+		F2: NewLlnumeric(""),
+	}
+
+	iso = Message{"0110", ASCII, false, data8}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "invalid length encoder")
+}
+
+func TestFieldLllnumericDecodeErrors(t *testing.T) {
+	type test1 struct {
+		F2 *Lllnumeric `field:"2" length:"10" encode:"ascii"`
+	}
+
+	data1 := &test1{
+		F2: NewLllnumeric("123456"),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	isoBytes, err := iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test2 struct {
+		F2 *Lllnumeric `field:"2" length:"10" encode:"bcd"`
+	}
+
+	data2 := &test2{
+		F2: NewLllnumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test3 struct {
+		F2 *Lllnumeric `field:"2" length:"10" encode:"rbcd"`
+	}
+
+	data3 := &test3{
+		F2: NewLllnumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test4 struct {
+		F2 *Lllnumeric `field:"2" length:"10" encode:"test"`
+	}
+
+	data4 := &test4{
+		F2: NewLllnumeric(""),
+	}
+
+	iso = Message{"0110", ASCII, false, data4}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "invalid encoder")
+
+	type test5 struct {
+		F2 *Lllnumeric `field:"2" length:"10" encode:"bcd,ascii"`
+	}
+
+	data5 := &test5{
+		F2: NewLllnumeric("543210"),
+	}
+
+	iso = Message{"0110", ASCII, false, data5}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes[12] = 123
+	isoBytes[13] = 125
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {}")
+
+	type test6 struct {
+		F2 *Lllnumeric `field:"2" length:"10" encode:"rbcd,ascii"`
+	}
+
+	data6 := &test6{
+		F2: NewLllnumeric(""),
+	}
+
+	iso = Message{"0110", ASCII, false, data6}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {}")
+
+	type test7 struct {
+		F2 *Lllnumeric `field:"2" length:"10" encode:"ascii,ascii"`
+	}
+
+	data7 := &test7{
+		F2: NewLllnumeric("543210"),
+	}
+
+	iso = Message{"0110", ASCII, false, data7}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes[12] = 123
+	isoBytes[13] = 124
+	isoBytes[14] = 125
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {|}")
+
+	type test8 struct {
+		F2 *Lllnumeric `field:"2" length:"10" encode:"test,ascii"`
+	}
+
+	data8 := &test8{
+		F2: NewLllnumeric(""),
+	}
+
+	iso = Message{"0110", ASCII, false, data8}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "invalid length encoder")
+}
+
+func TestFieldLlvarDecodeErrors(t *testing.T) {
+	type test1 struct {
+		F2 *Llvar `field:"2" length:"10" encode:"ascii"`
+	}
+
+	data1 := &test1{
+		F2: NewLlvar([]byte("123456")),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	isoBytes, err := iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test2 struct {
+		F2 *Llvar `field:"2" length:"10" encode:"bcd,ascii"`
+	}
+
+	data2 := &test2{
+		F2: NewLlvar([]byte("123456")),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test3 struct {
+		F2 *Llvar `field:"2" length:"10" encode:"rbcd,ascii"`
+	}
+
+	data3 := &test3{
+		F2: NewLlvar([]byte("123456")),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes2 := isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes2)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test4 struct {
+		F2 *Llvar `field:"2" length:"10" encode:"rbcd,test"`
+	}
+
+	data4 := &test4{
+		F2: NewLlvar(nil),
+	}
+
+	iso = Message{"0110", ASCII, false, data4}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "invalid encoder")
+
+	type test5 struct {
+		F2 *Llvar `field:"2" length:"10" encode:"bcd,ascii"`
+	}
+
+	data5 := &test5{
+		F2: NewLlvar([]byte("543210")),
+	}
+
+	iso = Message{"0110", ASCII, false, data5}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes[12] = 123
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {")
+
+	type test6 struct {
+		F2 *Llvar `field:"2" length:"10" encode:"rbcd,ascii"`
+	}
+
+	data6 := &test6{
+		F2: NewLlvar(nil),
+	}
+
+	iso = Message{"0110", ASCII, false, data6}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {")
+
+	type test7 struct {
+		F2 *Llvar `field:"2" length:"10" encode:"ascii,ascii"`
+	}
+
+	data7 := &test7{
+		F2: NewLlvar([]byte("543210")),
+	}
+
+	iso = Message{"0110", ASCII, false, data7}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes[12] = 123
+	isoBytes[13] = 125
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {}")
+
+	type test8 struct {
+		F2 *Llvar `field:"2" length:"10" encode:"test,ascii"`
+	}
+
+	data8 := &test8{
+		F2: NewLlvar(nil),
+	}
+
+	iso = Message{"0110", ASCII, false, data8}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "invalid length encoder")
+}
+
+func TestFieldLllvarDecodeErrors(t *testing.T) {
+	type test1 struct {
+		F2 *Lllvar `field:"2" length:"10" encode:"ascii"`
+	}
+
+	data1 := &test1{
+		F2: NewLllvar([]byte("123456")),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	isoBytes, err := iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test2 struct {
+		F2 *Lllvar `field:"2" length:"10" encode:"bcd,ascii"`
+	}
+
+	data2 := &test2{
+		F2: NewLllvar([]byte("123456")),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test3 struct {
+		F2 *Lllvar `field:"2" length:"10" encode:"rbcd,ascii"`
+	}
+
+	data3 := &test3{
+		F2: NewLllvar([]byte("123456")),
+	}
+
+	iso = Message{"0110", ASCII, false, data3}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes2 := isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes2)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test4 struct {
+		F2 *Lllvar `field:"2" length:"10" encode:"rbcd,test"`
+	}
+
+	data4 := &test4{
+		F2: NewLllvar(nil),
+	}
+
+	iso = Message{"0110", ASCII, false, data4}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "invalid encoder")
+
+	type test5 struct {
+		F2 *Lllvar `field:"2" length:"10" encode:"bcd,ascii"`
+	}
+
+	data5 := &test5{
+		F2: NewLllvar([]byte("543210")),
+	}
+
+	iso = Message{"0110", ASCII, false, data5}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes[12] = 123
+	isoBytes[13] = 125
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {}")
+
+	type test6 struct {
+		F2 *Lllvar `field:"2" length:"10" encode:"rbcd,ascii"`
+	}
+
+	data6 := &test6{
+		F2: NewLllvar(nil),
+	}
+
+	iso = Message{"0110", ASCII, false, data6}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {}")
+
+	type test7 struct {
+		F2 *Lllvar `field:"2" length:"10" encode:"ascii,ascii"`
+	}
+
+	data7 := &test7{
+		F2: NewLllvar([]byte("543210")),
+	}
+
+	iso = Message{"0110", ASCII, false, data7}
+
+	isoBytes, err = iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes[12] = 123
+	isoBytes[13] = 124
+	isoBytes[14] = 125
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "parse length head failed: {|}")
+
+	type test8 struct {
+		F2 *Lllvar `field:"2" length:"10" encode:"test,ascii"`
+	}
+
+	data8 := &test8{
+		F2: NewLllvar(nil),
+	}
+
+	iso = Message{"0110", ASCII, false, data8}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "invalid length encoder")
+}
+
+func TestFieldAlphanumericDecodeErrors(t *testing.T) {
+	type test1 struct {
+		F2 *Alphanumeric `field:"2" length:"10"`
+	}
+
+	data1 := &test1{
+		F2: NewAlphanumeric("123456"),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	isoBytes, err := iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test2 struct {
+		F2 *Alphanumeric `field:"2"`
+	}
+
+	data2 := &test2{
+		F2: NewAlphanumeric("123456"),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "missing length")
+}
+
+func TestFieldBinaryDecodeErrors(t *testing.T) {
+	type test1 struct {
+		F2 *Binary `field:"2" length:"10"`
+	}
+
+	data1 := &test1{
+		F2: NewBinary([]byte("123456")),
+	}
+
+	iso := Message{"0110", ASCII, false, data1}
+
+	isoBytes, err := iso.Bytes()
+
+	assert.Empty(t, err)
+
+	isoBytes = isoBytes[0 : len(isoBytes)-1]
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "bad raw data")
+
+	type test2 struct {
+		F2 *Binary `field:"2"`
+	}
+
+	data2 := &test2{
+		F2: NewBinary([]byte("123456")),
+	}
+
+	iso = Message{"0110", ASCII, false, data2}
+
+	err = iso.Load(isoBytes)
+
+	assert.EqualError(t, err, "missing length")
+}
+
 func TestParserErrors(t *testing.T) {
 
 	parser := Parser{}
@@ -673,7 +1421,7 @@ func TestParserErrors(t *testing.T) {
 
 	_, err = parser.Parse(input[0:23])
 
-	assert.EqualError(t, err, "Critical error:runtime error: slice bounds out of range")
+	assert.EqualError(t, err, "bad raw data")
 
 	parser.messages["0100"] = nil
 
