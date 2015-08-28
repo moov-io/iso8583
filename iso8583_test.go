@@ -40,8 +40,8 @@ type TestISO2 struct {
 	F7  *Numeric      `field:"7" length:"10" encode:"bcd"`
 	F11 *Numeric      `field:"11" length:"6" encode:"bcd"`
 	F12 *Numeric      `field:"12" length:"6" encode:"bcd"`
-	F13 *Numeric      `field:"13" length:"4" encode:"bcd"`
-	F14 *Numeric      `field:"14" length:"4" encode:"bcd"`
+	F13 *Numeric      `field:"13" length:"4" encode:"lbcd"`
+	F14 *Numeric      `field:"14" length:"4" encode:"lbcd"`
 	F19 *Numeric      `field:"19" length:"3" encode:"rbcd"`
 	F22 *Numeric      `field:"22" length:"3" encode:"rbcd"`
 	F25 *Numeric      `field:"25" length:"2" encode:"bcd"`
@@ -1399,7 +1399,7 @@ func TestParserErrors(t *testing.T) {
 
 	_, err = parser.Parse([]byte{0})
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "bad MTI raw data")
 
 	parser.MtiEncode = BCD
 
@@ -1551,6 +1551,106 @@ func TestBCD(t *testing.T) {
 			bcd([]byte{0})
 		}, "Calling bcd() with len(data) % 2 != 0 should panic")
 
+}
+
+func TestMTIError(t *testing.T) {
+	data := &TestISO{
+		F2: NewLlnumeric("4276555555555555"),
+	}
+
+	iso := Message{"01000", ASCII, true, data}
+
+	_, err := iso.Bytes()
+
+	assert.EqualError(t, err, "MTI is invalid")
+
+	iso.Mti = ""
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "MTI is required")
+
+	iso = Message{"0100", BCD, true, data}
+
+	res, err := iso.Bytes()
+
+	assert.Empty(t, err)
+
+	iso = Message{"", BCD, true, data}
+
+	err = iso.Load(res[0:1])
+
+	assert.EqualError(t, err, "bad MTI raw data")
+}
+
+func TestMTIBCD(t *testing.T) {
+	data := &TestISO{
+		F2: NewLlnumeric("4276555555555555"),
+	}
+
+	iso := Message{"0100", BCD, true, data}
+
+	res, err := iso.Bytes()
+
+	assert.Empty(t, err)
+
+	iso2 := Message{"0100", BCD, true, data}
+
+	err = iso2.Load(res)
+
+	assert.Empty(t, err)
+
+	assert.Equal(t, iso, iso2)
+}
+
+func TestParseFieldsErrors(t *testing.T) {
+	type test1 struct {
+		F2 *Llnumeric `field:"abc" length:"19"`
+	}
+
+	data1 := &test1{
+		F2: NewLlnumeric("4276555555555555"),
+	}
+
+	iso := Message{"0100", BCD, true, data1}
+
+	_, err := iso.Bytes()
+
+	assert.EqualError(t, err, "Critical error:value of field must be numeric")
+
+	type test2 struct {
+		F2 *Llnumeric `field:"2" length:"abc"`
+	}
+
+	data2 := &test2{
+		F2: NewLlnumeric("4276555555555555"),
+	}
+
+	iso = Message{"0100", BCD, true, data2}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "Critical error:value of length must be numeric")
+
+	type test3 struct {
+		F2 string `field:"2" length:"2"`
+	}
+
+	data3 := &test3{
+		F2: string("123abc"),
+	}
+
+	iso = Message{"0100", BCD, true, data3}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "Critical error:field must be Iso8583Type")
+
+	iso = Message{"0100", BCD, true, nil}
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "Critical error:data must be a struct")
 }
 
 // newDataIso creates DataIso

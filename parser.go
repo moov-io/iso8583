@@ -39,7 +39,7 @@ func decodeMti(raw []byte, encode int) (string, error) {
 		mtiLen = 2
 	}
 	if len(raw) < mtiLen {
-		return "", errors.New("bad raw data")
+		return "", errors.New("bad MTI raw data")
 	}
 
 	var mti string
