@@ -107,6 +107,11 @@ func (m *Message) encodeMti() ([]byte, error) {
 		return nil, errors.New("MTI is invalid")
 	}
 
+	// check MTI, it must contain only digits
+	if _, err := strconv.Atoi(m.Mti); err != nil {
+		return nil, errors.New("MTI is invalid")
+	}
+
 	switch m.MtiEncode {
 	case BCD:
 		return bcd([]byte(m.Mti)), nil

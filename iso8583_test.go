@@ -1564,6 +1564,12 @@ func TestMTIError(t *testing.T) {
 
 	assert.EqualError(t, err, "MTI is invalid")
 
+	iso.Mti = "abca"
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "MTI is invalid")
+
 	iso.Mti = ""
 
 	_, err = iso.Bytes()
@@ -1581,6 +1587,13 @@ func TestMTIError(t *testing.T) {
 	err = iso.Load(res[0:1])
 
 	assert.EqualError(t, err, "bad MTI raw data")
+
+	iso.Mti = "abca"
+
+	_, err = iso.Bytes()
+
+	assert.EqualError(t, err, "MTI is invalid")
+
 }
 
 func TestMTIBCD(t *testing.T) {
