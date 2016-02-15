@@ -22,6 +22,7 @@ type fieldInfo struct {
 	Field     Iso8583Type
 }
 
+// Message is structure for ISO 8583 message encode and decode
 type Message struct {
 	Mti          string
 	MtiEncode    int
@@ -29,12 +30,21 @@ type Message struct {
 	Data         interface{}
 }
 
+// NewMessage creates new Message structure
 func NewMessage(mti string, data interface{}) *Message {
 	return &Message{mti, ASCII, false, data}
 }
 
-func (m *Message) Bytes() ([]byte, error) {
-	ret := make([]byte, 0)
+// Bytes marshall Message to bytes
+func (m *Message) Bytes() (ret []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("Critical error:" + fmt.Sprint(r))
+			ret = nil
+		}
+	}()
+
+	ret = make([]byte, 0)
 
 	// generate MTI:
 	mtiBytes, err := m.encodeMti()
@@ -55,8 +65,22 @@ func (m *Message) Bytes() ([]byte, error) {
 
 	for byteIndex := 0; byteIndex < byteNum; byteIndex++ {
 		for bitIndex := 0; bitIndex < 8; bitIndex++ {
+
 			i := byteIndex*8 + bitIndex + 1
+
+			// if we need second bitmap (additional 8 bytes) - set first bit in first bitmap
+			if m.SecondBitmap && i == 1 {
+				step := uint(7 - bitIndex)
+				bitmap[byteIndex] |= (0x01 << step)
+			}
+
 			if info, ok := fields[i]; ok {
+
+				// if field is empty, then we can't add it to bitmap
+				if info.Field.IsEmpty() {
+					continue
+				}
+
 				// mark 1 in bitmap:
 				step := uint(7 - bitIndex)
 				bitmap[byteIndex] |= (0x01 << step)
@@ -77,10 +101,15 @@ func (m *Message) Bytes() ([]byte, error) {
 
 func (m *Message) encodeMti() ([]byte, error) {
 	if m.Mti == "" {
-		panic("MTI is required")
+		return nil, errors.New("MTI is required")
 	}
 	if len(m.Mti) != 4 {
-		panic("MTI is invalid")
+		return nil, errors.New("MTI is invalid")
+	}
+
+	// check MTI, it must contain only digits
+	if _, err := strconv.Atoi(m.Mti); err != nil {
+		return nil, errors.New("MTI is invalid")
 	}
 
 	switch m.MtiEncode {
@@ -150,13 +179,24 @@ func parseEncodeStr(str string) int {
 	switch str {
 	case "ascii":
 		return ASCII
+	case "lbcd":
+		fallthrough
 	case "bcd":
 		return BCD
+	case "rbcd":
+		return rBCD
 	}
 	return -1
 }
 
+// Load unmarshall Message from bytes
 func (m *Message) Load(raw []byte) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("Critical error:" + fmt.Sprint(r))
+		}
+	}()
+
 	if m.Mti == "" {
 		m.Mti, err = decodeMti(raw, m.MtiEncode)
 		if err != nil {
@@ -193,7 +233,7 @@ func (m *Message) Load(raw []byte) (err error) {
 			}
 			f, ok := fields[i]
 			if !ok {
-				return errors.New(fmt.Sprintf("field %d not defined", i))
+				return fmt.Errorf("field %d not defined", i)
 			}
 			l, err := f.Field.Load(raw[start:], f.Encode, f.LenEncode, f.Length)
 			if err != nil {
