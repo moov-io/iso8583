@@ -237,7 +237,7 @@ func (m *Message) Load(raw []byte) (err error) {
 			}
 			l, err := f.Field.Load(raw[start:], f.Encode, f.LenEncode, f.Length)
 			if err != nil {
-				return err
+				return fmt.Errorf("field %d: %s", i, err)
 			}
 			start += l
 		}
