@@ -658,7 +658,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test2 struct {
 		F2 *Numeric `field:"2" length:"10" encode:"bcd"`
@@ -678,7 +678,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test3 struct {
 		F2 *Numeric `field:"2" length:"10" encode:"rbcd"`
@@ -698,7 +698,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test4 struct {
 		F2 *Numeric `field:"2" encode:"rbcd"`
@@ -712,7 +712,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "missing length")
+	assert.EqualError(t, err, "field 2: missing length")
 
 	type test5 struct {
 		F2 *Numeric `field:"2" length:"10" encode:"test"`
@@ -726,7 +726,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "invalid encoder")
+	assert.EqualError(t, err, "field 2: invalid encoder")
 }
 
 func TestFieldLlnumericDecodeErrors(t *testing.T) {
@@ -748,7 +748,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test2 struct {
 		F2 *Llnumeric `field:"2" length:"10" encode:"bcd"`
@@ -768,7 +768,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test3 struct {
 		F2 *Llnumeric `field:"2" length:"10" encode:"rbcd"`
@@ -788,7 +788,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test4 struct {
 		F2 *Llnumeric `field:"2" length:"10" encode:"test"`
@@ -802,7 +802,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "invalid encoder")
+	assert.EqualError(t, err, "field 2: invalid encoder")
 
 	type test5 struct {
 		F2 *Llnumeric `field:"2" length:"10" encode:"bcd,ascii"`
@@ -822,7 +822,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {")
+	assert.EqualError(t, err, "field 2: parse length head failed: {")
 
 	type test6 struct {
 		F2 *Llnumeric `field:"2" length:"10" encode:"rbcd,ascii"`
@@ -836,7 +836,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {")
+	assert.EqualError(t, err, "field 2: parse length head failed: {")
 
 	type test7 struct {
 		F2 *Llnumeric `field:"2" length:"10" encode:"ascii,ascii"`
@@ -857,7 +857,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {}")
+	assert.EqualError(t, err, "field 2: parse length head failed: {}")
 
 	type test8 struct {
 		F2 *Llnumeric `field:"2" length:"10" encode:"test,ascii"`
@@ -871,7 +871,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "invalid length encoder")
+	assert.EqualError(t, err, "field 2: invalid length encoder")
 }
 
 func TestFieldLllnumericDecodeErrors(t *testing.T) {
@@ -893,7 +893,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test2 struct {
 		F2 *Lllnumeric `field:"2" length:"10" encode:"bcd"`
@@ -913,7 +913,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test3 struct {
 		F2 *Lllnumeric `field:"2" length:"10" encode:"rbcd"`
@@ -933,7 +933,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test4 struct {
 		F2 *Lllnumeric `field:"2" length:"10" encode:"test"`
@@ -947,7 +947,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "invalid encoder")
+	assert.EqualError(t, err, "field 2: invalid encoder")
 
 	type test5 struct {
 		F2 *Lllnumeric `field:"2" length:"10" encode:"bcd,ascii"`
@@ -968,7 +968,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {}")
+	assert.EqualError(t, err, "field 2: parse length head failed: {}")
 
 	type test6 struct {
 		F2 *Lllnumeric `field:"2" length:"10" encode:"rbcd,ascii"`
@@ -982,7 +982,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {}")
+	assert.EqualError(t, err, "field 2: parse length head failed: {}")
 
 	type test7 struct {
 		F2 *Lllnumeric `field:"2" length:"10" encode:"ascii,ascii"`
@@ -1004,7 +1004,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {|}")
+	assert.EqualError(t, err, "field 2: parse length head failed: {|}")
 
 	type test8 struct {
 		F2 *Lllnumeric `field:"2" length:"10" encode:"test,ascii"`
@@ -1018,7 +1018,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "invalid length encoder")
+	assert.EqualError(t, err, "field 2: invalid length encoder")
 }
 
 func TestFieldLlvarDecodeErrors(t *testing.T) {
@@ -1040,7 +1040,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test2 struct {
 		F2 *Llvar `field:"2" length:"10" encode:"bcd,ascii"`
@@ -1060,7 +1060,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test3 struct {
 		F2 *Llvar `field:"2" length:"10" encode:"rbcd,ascii"`
@@ -1080,7 +1080,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes2)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test4 struct {
 		F2 *Llvar `field:"2" length:"10" encode:"rbcd,test"`
@@ -1094,7 +1094,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "invalid encoder")
+	assert.EqualError(t, err, "field 2: invalid encoder")
 
 	type test5 struct {
 		F2 *Llvar `field:"2" length:"10" encode:"bcd,ascii"`
@@ -1114,7 +1114,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {")
+	assert.EqualError(t, err, "field 2: parse length head failed: {")
 
 	type test6 struct {
 		F2 *Llvar `field:"2" length:"10" encode:"rbcd,ascii"`
@@ -1128,7 +1128,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {")
+	assert.EqualError(t, err, "field 2: parse length head failed: {")
 
 	type test7 struct {
 		F2 *Llvar `field:"2" length:"10" encode:"ascii,ascii"`
@@ -1149,7 +1149,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {}")
+	assert.EqualError(t, err, "field 2: parse length head failed: {}")
 
 	type test8 struct {
 		F2 *Llvar `field:"2" length:"10" encode:"test,ascii"`
@@ -1163,7 +1163,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "invalid length encoder")
+	assert.EqualError(t, err, "field 2: invalid length encoder")
 }
 
 func TestFieldLllvarDecodeErrors(t *testing.T) {
@@ -1185,7 +1185,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test2 struct {
 		F2 *Lllvar `field:"2" length:"10" encode:"bcd,ascii"`
@@ -1205,7 +1205,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test3 struct {
 		F2 *Lllvar `field:"2" length:"10" encode:"rbcd,ascii"`
@@ -1225,7 +1225,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes2)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test4 struct {
 		F2 *Lllvar `field:"2" length:"10" encode:"rbcd,test"`
@@ -1239,7 +1239,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "invalid encoder")
+	assert.EqualError(t, err, "field 2: invalid encoder")
 
 	type test5 struct {
 		F2 *Lllvar `field:"2" length:"10" encode:"bcd,ascii"`
@@ -1260,7 +1260,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {}")
+	assert.EqualError(t, err, "field 2: parse length head failed: {}")
 
 	type test6 struct {
 		F2 *Lllvar `field:"2" length:"10" encode:"rbcd,ascii"`
@@ -1274,7 +1274,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {}")
+	assert.EqualError(t, err, "field 2: parse length head failed: {}")
 
 	type test7 struct {
 		F2 *Lllvar `field:"2" length:"10" encode:"ascii,ascii"`
@@ -1296,7 +1296,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "parse length head failed: {|}")
+	assert.EqualError(t, err, "field 2: parse length head failed: {|}")
 
 	type test8 struct {
 		F2 *Lllvar `field:"2" length:"10" encode:"test,ascii"`
@@ -1310,7 +1310,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "invalid length encoder")
+	assert.EqualError(t, err, "field 2: invalid length encoder")
 }
 
 func TestFieldAlphanumericDecodeErrors(t *testing.T) {
@@ -1332,7 +1332,7 @@ func TestFieldAlphanumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test2 struct {
 		F2 *Alphanumeric `field:"2"`
@@ -1346,7 +1346,7 @@ func TestFieldAlphanumericDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "missing length")
+	assert.EqualError(t, err, "field 2: missing length")
 }
 
 func TestFieldBinaryDecodeErrors(t *testing.T) {
@@ -1368,7 +1368,7 @@ func TestFieldBinaryDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	type test2 struct {
 		F2 *Binary `field:"2"`
@@ -1382,7 +1382,7 @@ func TestFieldBinaryDecodeErrors(t *testing.T) {
 
 	err = iso.Load(isoBytes)
 
-	assert.EqualError(t, err, "missing length")
+	assert.EqualError(t, err, "field 2: missing length")
 }
 
 func TestParserErrors(t *testing.T) {
@@ -1421,7 +1421,7 @@ func TestParserErrors(t *testing.T) {
 
 	_, err = parser.Parse(input[0:23])
 
-	assert.EqualError(t, err, "bad raw data")
+	assert.EqualError(t, err, "field 2: bad raw data")
 
 	parser.messages["0100"] = nil
 
