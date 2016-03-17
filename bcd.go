@@ -1,30 +1,31 @@
 package iso8583
 
+import (
+	"encoding/hex"
+)
+
 func lbcd(data []byte) []byte {
 	if len(data)%2 != 0 {
-		return bcd(append(data, "\x00"...))
+		return bcd(append(data, "0"...))
 	}
 	return bcd(data)
 }
 
 func rbcd(data []byte) []byte {
 	if len(data)%2 != 0 {
-		return bcd(append([]byte("\x00"), data...))
+		return bcd(append([]byte("0"), data...))
 	}
 	return bcd(data)
 }
 
 // Encode numeric in ascii into bsd (be sure len(data) % 2 == 0)
 func bcd(data []byte) []byte {
-	if len(data)%2 != 0 {
-		panic("length of raw data must be even")
+	out := make([]byte, len(data)/2+1)
+	n, err := hex.Decode(out, data)
+	if err != nil {
+		panic(err.Error())
 	}
-	out := make([]byte, len(data)/2)
-	for i, j := 0, 0; i < len(out); i++ {
-		out[i] = ((data[j] & 0x0f) << 4) | (data[j+1] & 0x0f)
-		j += 2
-	}
-	return out
+	return out[:n]
 }
 
 func bcdl2Ascii(data []byte, length int) []byte {
@@ -37,17 +38,7 @@ func bcdr2Ascii(data []byte, length int) []byte {
 }
 
 func bcd2Ascii(data []byte) []byte {
-	outLen := len(data) * 2
-	out := make([]byte, outLen)
-	for i := 0; i < outLen; i++ {
-		bcdIndex := i / 2
-		if i%2 == 0 {
-			// higher order bits to ascii:
-			out[i] = (data[bcdIndex] >> 4) + '0'
-		} else {
-			// lower order bits to ascii:
-			out[i] = (data[bcdIndex] & 0x0f) + '0'
-		}
-	}
-	return out
+	out := make([]byte, len(data)*2)
+	n := hex.Encode(out, data)
+	return out[:n]
 }

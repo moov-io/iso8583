@@ -2,7 +2,6 @@ package iso8583
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -205,7 +204,7 @@ func TestEncodeDecode(t *testing.T) {
 		F41: NewAlphanumeric("00000321"),
 		F42: NewAlphanumeric("120000000000034"),
 		F43: NewAlphanumeric("Test text"),
-		F45: NewLlnumeric("test test"),
+		F45: NewLlnumeric("1230abc"),
 		F49: NewNumeric("643"),
 		F52: NewBinary([]byte{1, 2, 3, 4, 5}),
 		F53: NewNumeric("1234000000000000"),
@@ -215,9 +214,9 @@ func TestEncodeDecode(t *testing.T) {
 		F57: NewLllvar([]byte("test data2")),
 		F58: NewLllvar([]byte("test data3")),
 		F59: NewLlvar([]byte("test data4")),
-		F60: NewLllnumeric("another test text"),
-		F61: NewLllnumeric("another test text"),
-		F63: NewLllnumeric("another test text"),
+		F60: NewLllnumeric("123456789"),
+		F61: NewLllnumeric("abcdef"),
+		F63: NewLllnumeric("123abc456ef7890"),
 	}
 
 	iso := Message{"0110", ASCII, false, data}
@@ -1528,28 +1527,6 @@ func TestMessage(t *testing.T) {
 	err = iso.Load(input)
 
 	assert.EqualError(t, err, "field 2 not defined")
-
-}
-
-func TestBCD(t *testing.T) {
-
-	b := []byte("954")
-	r := rbcd(b)
-	assert.Equal(t, "0954", fmt.Sprintf("%X", r))
-
-	r = lbcd(b)
-	assert.Equal(t, "9540", fmt.Sprintf("%X", r))
-
-	b = []byte("31")
-	r = lbcd(b)
-	assert.Equal(t, "31", fmt.Sprintf("%X", r))
-	r = rbcd(b)
-	assert.Equal(t, "31", fmt.Sprintf("%X", r))
-
-	assert.Panics(t,
-		func() {
-			bcd([]byte{0})
-		}, "Calling bcd() with len(data) % 2 != 0 should panic")
 
 }
 
