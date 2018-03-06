@@ -2,8 +2,9 @@ package iso8583
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type TestISO struct {
@@ -95,7 +96,7 @@ func TestEncode(t *testing.T) {
 		F120: NewLllnumeric("Another test text"),
 	}
 
-	iso := Message{"0100", ASCII, true, data}
+	iso := Message{"0100", ASCII, true, false, data}
 
 	res, err := iso.Bytes()
 
@@ -115,7 +116,7 @@ func TestDecode(t *testing.T) {
 	input := []byte{48, 49, 48, 48, 242, 60, 36, 129, 40, 224, 152, 0, 0, 0, 0, 0, 0, 0, 1, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 55, 65, 110, 111, 116, 104, 101, 114, 32, 116, 101, 115, 116, 32, 116, 101, 120, 116}
 
 	// init empty iso message struct
-	iso := Message{"", ASCII, true, newDataIso()}
+	iso := Message{"", ASCII, true, false, newDataIso()}
 
 	// parse data from bytes to iso struct
 	err := iso.Load(input)
@@ -182,6 +183,46 @@ func TestDecode(t *testing.T) {
 	}
 }
 
+func TestEncodeAsciiBitmap(t *testing.T) {
+	data := &TestISO{
+		F2:   NewLlnumeric("4276555555555555"),
+		F3:   NewNumeric("000000"),
+		F4:   NewNumeric("000000077700"),
+		F7:   NewNumeric("0701111844"),
+		F11:  NewNumeric("000123"),
+		F12:  NewNumeric("131844"),
+		F13:  NewNumeric("0701"),
+		F14:  NewNumeric("1902"),
+		F19:  NewNumeric("643"),
+		F22:  NewNumeric("901"),
+		F25:  NewNumeric("02"),
+		F32:  NewLlnumeric("123456"),
+		F35:  NewLlnumeric("4276555555555555=12345678901234567890"),
+		F37:  NewAlphanumeric("987654321001"),
+		F39:  NewAlphanumeric(""),
+		F41:  NewAlphanumeric("00000321"),
+		F42:  NewAlphanumeric("120000000000034"),
+		F43:  NewAlphanumeric("Test text"),
+		F49:  NewNumeric("643"),
+		F52:  NewBinary([]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+		F53:  NewNumeric("1234000000000000"),
+		F120: NewLllnumeric("Another test text"),
+	}
+
+	iso := Message{"0100", ASCII, true, true, data}
+
+	res, err := iso.Bytes()
+
+	if err != nil {
+		t.Error("ISO Encode error:", err)
+	}
+
+	expected := "0100F23C248128E098000000000000000100164276555555555555000000000000077700070111184400012313184407011902C9010206123456374276555555555555=1234567890123456789098765432100100000321120000000000034                               Test textd01234000000000000017Another test text"
+	if string(res) != expected {
+		t.Error("ISO Encode error!")
+	}
+}
+
 func TestEncodeDecode(t *testing.T) {
 
 	data := &TestISO2{
@@ -219,7 +260,7 @@ func TestEncodeDecode(t *testing.T) {
 		F63: NewLllnumeric("123abc456ef7890"),
 	}
 
-	iso := Message{"0110", ASCII, false, data}
+	iso := NewMessage("0110", data)
 
 	res, err := iso.Bytes()
 
@@ -227,7 +268,7 @@ func TestEncodeDecode(t *testing.T) {
 		t.Error("ISO Encode error:", err)
 	}
 
-	iso2 := Message{"0110", ASCII, false, data}
+	iso2 := NewMessage("0110", data)
 
 	err = iso2.Load(res)
 
@@ -249,7 +290,7 @@ func TestFieldNumericEncodeErrors(t *testing.T) {
 		F2: NewNumeric("123456"),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	_, err := iso.Bytes()
 
@@ -263,7 +304,7 @@ func TestFieldNumericEncodeErrors(t *testing.T) {
 		F2: NewNumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	_, err = iso.Bytes()
 
@@ -277,7 +318,7 @@ func TestFieldNumericEncodeErrors(t *testing.T) {
 		F2: NewNumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	_, err = iso.Bytes()
 
@@ -294,7 +335,7 @@ func TestFieldAlphanumericEncodeErrors(t *testing.T) {
 		F2: NewAlphanumeric("abcdef"),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	_, err := iso.Bytes()
 
@@ -308,7 +349,7 @@ func TestFieldAlphanumericEncodeErrors(t *testing.T) {
 		F2: NewAlphanumeric("abcdef"),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	_, err = iso.Bytes()
 
@@ -325,7 +366,7 @@ func TestFieldBinaryEncodeErrors(t *testing.T) {
 		F2: NewBinary([]byte("abcdef")),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	_, err := iso.Bytes()
 
@@ -339,7 +380,7 @@ func TestFieldBinaryEncodeErrors(t *testing.T) {
 		F2: NewBinary([]byte("abcdef")),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	_, err = iso.Bytes()
 
@@ -356,7 +397,7 @@ func TestFieldLlnumericEncodeErrors(t *testing.T) {
 		F2: NewLlnumeric("123456"),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	_, err := iso.Bytes()
 
@@ -370,7 +411,7 @@ func TestFieldLlnumericEncodeErrors(t *testing.T) {
 		F2: NewLlnumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	_, err = iso.Bytes()
 
@@ -384,7 +425,7 @@ func TestFieldLlnumericEncodeErrors(t *testing.T) {
 		F2: NewLlnumeric(string(bytes.Repeat([]byte("a"), 100))),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	_, err = iso.Bytes()
 
@@ -398,7 +439,7 @@ func TestFieldLlnumericEncodeErrors(t *testing.T) {
 		F2: NewLlnumeric(string(bytes.Repeat([]byte("a"), 100))),
 	}
 
-	iso = Message{"0110", ASCII, false, data4}
+	iso = NewMessage("0110", data4)
 
 	_, err = iso.Bytes()
 
@@ -412,7 +453,7 @@ func TestFieldLlnumericEncodeErrors(t *testing.T) {
 		F2: NewLlnumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data5}
+	iso = NewMessage("0110", data5)
 
 	_, err = iso.Bytes()
 
@@ -429,7 +470,7 @@ func TestFieldLllnumericEncodeErrors(t *testing.T) {
 		F2: NewLllnumeric("123456"),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	_, err := iso.Bytes()
 
@@ -443,7 +484,7 @@ func TestFieldLllnumericEncodeErrors(t *testing.T) {
 		F2: NewLllnumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	_, err = iso.Bytes()
 
@@ -457,7 +498,7 @@ func TestFieldLllnumericEncodeErrors(t *testing.T) {
 		F2: NewLllnumeric(string(bytes.Repeat([]byte("a"), 1000))),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	_, err = iso.Bytes()
 
@@ -471,7 +512,7 @@ func TestFieldLllnumericEncodeErrors(t *testing.T) {
 		F2: NewLllnumeric(string(bytes.Repeat([]byte("a"), 1000))),
 	}
 
-	iso = Message{"0110", ASCII, false, data4}
+	iso = NewMessage("0110", data4)
 
 	_, err = iso.Bytes()
 
@@ -485,7 +526,7 @@ func TestFieldLllnumericEncodeErrors(t *testing.T) {
 		F2: NewLllnumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data5}
+	iso = NewMessage("0110", data5)
 
 	_, err = iso.Bytes()
 
@@ -502,7 +543,7 @@ func TestFieldLlvarEncodeErrors(t *testing.T) {
 		F2: NewLlvar([]byte("123456")),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	_, err := iso.Bytes()
 
@@ -516,7 +557,7 @@ func TestFieldLlvarEncodeErrors(t *testing.T) {
 		F2: NewLlvar([]byte("123456")),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	_, err = iso.Bytes()
 
@@ -530,7 +571,7 @@ func TestFieldLlvarEncodeErrors(t *testing.T) {
 		F2: NewLlvar(bytes.Repeat([]byte("a"), 100)),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	_, err = iso.Bytes()
 
@@ -544,7 +585,7 @@ func TestFieldLlvarEncodeErrors(t *testing.T) {
 		F2: NewLlvar(bytes.Repeat([]byte("a"), 100)),
 	}
 
-	iso = Message{"0110", ASCII, false, data4}
+	iso = NewMessage("0110", data4)
 
 	_, err = iso.Bytes()
 
@@ -558,7 +599,7 @@ func TestFieldLlvarEncodeErrors(t *testing.T) {
 		F2: NewLlvar([]byte("123456")),
 	}
 
-	iso = Message{"0110", ASCII, false, data5}
+	iso = NewMessage("0110", data5)
 
 	_, err = iso.Bytes()
 
@@ -575,7 +616,7 @@ func TestFieldLllvarEncodeErrors(t *testing.T) {
 		F2: NewLllvar([]byte("123456")),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	_, err := iso.Bytes()
 
@@ -589,7 +630,7 @@ func TestFieldLllvarEncodeErrors(t *testing.T) {
 		F2: NewLllvar([]byte("123456")),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	_, err = iso.Bytes()
 
@@ -603,7 +644,7 @@ func TestFieldLllvarEncodeErrors(t *testing.T) {
 		F2: NewLllvar(bytes.Repeat([]byte("a"), 1000)),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	_, err = iso.Bytes()
 
@@ -617,7 +658,7 @@ func TestFieldLllvarEncodeErrors(t *testing.T) {
 		F2: NewLllvar(bytes.Repeat([]byte("a"), 1000)),
 	}
 
-	iso = Message{"0110", ASCII, false, data4}
+	iso = NewMessage("0110", data4)
 
 	_, err = iso.Bytes()
 
@@ -631,7 +672,7 @@ func TestFieldLllvarEncodeErrors(t *testing.T) {
 		F2: NewLllvar([]byte("123456")),
 	}
 
-	iso = Message{"0110", ASCII, false, data5}
+	iso = NewMessage("0110", data5)
 
 	_, err = iso.Bytes()
 
@@ -647,7 +688,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 		F2: NewNumeric("123456"),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	isoBytes, err := iso.Bytes()
 
@@ -667,7 +708,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 		F2: NewNumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	isoBytes, err = iso.Bytes()
 
@@ -687,7 +728,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 		F2: NewNumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	isoBytes, err = iso.Bytes()
 
@@ -707,7 +748,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 		F2: NewNumeric(""),
 	}
 
-	iso = Message{"0110", ASCII, false, data4}
+	iso = NewMessage("0110", data4)
 
 	err = iso.Load(isoBytes)
 
@@ -721,7 +762,7 @@ func TestFieldNumericDecodeErrors(t *testing.T) {
 		F2: NewNumeric(""),
 	}
 
-	iso = Message{"0110", ASCII, false, data5}
+	iso = NewMessage("0110", data5)
 
 	err = iso.Load(isoBytes)
 
@@ -737,7 +778,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 		F2: NewLlnumeric("123456"),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	isoBytes, err := iso.Bytes()
 
@@ -757,7 +798,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 		F2: NewLlnumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	isoBytes, err = iso.Bytes()
 
@@ -777,7 +818,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 		F2: NewLlnumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	isoBytes, err = iso.Bytes()
 
@@ -797,7 +838,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 		F2: NewLlnumeric(""),
 	}
 
-	iso = Message{"0110", ASCII, false, data4}
+	iso = NewMessage("0110", data4)
 
 	err = iso.Load(isoBytes)
 
@@ -811,7 +852,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 		F2: NewLlnumeric("543210"),
 	}
 
-	iso = Message{"0110", ASCII, false, data5}
+	iso = NewMessage("0110", data5)
 
 	isoBytes, err = iso.Bytes()
 
@@ -831,7 +872,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 		F2: NewLlnumeric(""),
 	}
 
-	iso = Message{"0110", ASCII, false, data6}
+	iso = NewMessage("0110", data6)
 
 	err = iso.Load(isoBytes)
 
@@ -845,7 +886,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 		F2: NewLlnumeric("543210"),
 	}
 
-	iso = Message{"0110", ASCII, false, data7}
+	iso = NewMessage("0110", data7)
 
 	isoBytes, err = iso.Bytes()
 
@@ -866,7 +907,7 @@ func TestFieldLlnumericDecodeErrors(t *testing.T) {
 		F2: NewLlnumeric(""),
 	}
 
-	iso = Message{"0110", ASCII, false, data8}
+	iso = NewMessage("0110", data8)
 
 	err = iso.Load(isoBytes)
 
@@ -882,7 +923,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 		F2: NewLllnumeric("123456"),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	isoBytes, err := iso.Bytes()
 
@@ -902,7 +943,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 		F2: NewLllnumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	isoBytes, err = iso.Bytes()
 
@@ -922,7 +963,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 		F2: NewLllnumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	isoBytes, err = iso.Bytes()
 
@@ -942,7 +983,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 		F2: NewLllnumeric(""),
 	}
 
-	iso = Message{"0110", ASCII, false, data4}
+	iso = NewMessage("0110", data4)
 
 	err = iso.Load(isoBytes)
 
@@ -956,7 +997,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 		F2: NewLllnumeric("543210"),
 	}
 
-	iso = Message{"0110", ASCII, false, data5}
+	iso = NewMessage("0110", data5)
 
 	isoBytes, err = iso.Bytes()
 
@@ -977,7 +1018,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 		F2: NewLllnumeric(""),
 	}
 
-	iso = Message{"0110", ASCII, false, data6}
+	iso = NewMessage("0110", data6)
 
 	err = iso.Load(isoBytes)
 
@@ -991,7 +1032,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 		F2: NewLllnumeric("543210"),
 	}
 
-	iso = Message{"0110", ASCII, false, data7}
+	iso = NewMessage("0110", data7)
 
 	isoBytes, err = iso.Bytes()
 
@@ -1013,7 +1054,7 @@ func TestFieldLllnumericDecodeErrors(t *testing.T) {
 		F2: NewLllnumeric(""),
 	}
 
-	iso = Message{"0110", ASCII, false, data8}
+	iso = NewMessage("0110", data8)
 
 	err = iso.Load(isoBytes)
 
@@ -1029,7 +1070,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 		F2: NewLlvar([]byte("123456")),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	isoBytes, err := iso.Bytes()
 
@@ -1049,7 +1090,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 		F2: NewLlvar([]byte("123456")),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	isoBytes, err = iso.Bytes()
 
@@ -1069,7 +1110,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 		F2: NewLlvar([]byte("123456")),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	isoBytes, err = iso.Bytes()
 
@@ -1089,7 +1130,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 		F2: NewLlvar(nil),
 	}
 
-	iso = Message{"0110", ASCII, false, data4}
+	iso = NewMessage("0110", data4)
 
 	err = iso.Load(isoBytes)
 
@@ -1103,7 +1144,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 		F2: NewLlvar([]byte("543210")),
 	}
 
-	iso = Message{"0110", ASCII, false, data5}
+	iso = NewMessage("0110", data5)
 
 	isoBytes, err = iso.Bytes()
 
@@ -1123,7 +1164,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 		F2: NewLlvar(nil),
 	}
 
-	iso = Message{"0110", ASCII, false, data6}
+	iso = NewMessage("0110", data6)
 
 	err = iso.Load(isoBytes)
 
@@ -1137,7 +1178,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 		F2: NewLlvar([]byte("543210")),
 	}
 
-	iso = Message{"0110", ASCII, false, data7}
+	iso = NewMessage("0110", data7)
 
 	isoBytes, err = iso.Bytes()
 
@@ -1158,7 +1199,7 @@ func TestFieldLlvarDecodeErrors(t *testing.T) {
 		F2: NewLlvar(nil),
 	}
 
-	iso = Message{"0110", ASCII, false, data8}
+	iso = NewMessage("0110", data8)
 
 	err = iso.Load(isoBytes)
 
@@ -1174,7 +1215,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 		F2: NewLllvar([]byte("123456")),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	isoBytes, err := iso.Bytes()
 
@@ -1194,7 +1235,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 		F2: NewLllvar([]byte("123456")),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	isoBytes, err = iso.Bytes()
 
@@ -1214,7 +1255,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 		F2: NewLllvar([]byte("123456")),
 	}
 
-	iso = Message{"0110", ASCII, false, data3}
+	iso = NewMessage("0110", data3)
 
 	isoBytes, err = iso.Bytes()
 
@@ -1234,7 +1275,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 		F2: NewLllvar(nil),
 	}
 
-	iso = Message{"0110", ASCII, false, data4}
+	iso = NewMessage("0110", data4)
 
 	err = iso.Load(isoBytes)
 
@@ -1248,7 +1289,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 		F2: NewLllvar([]byte("543210")),
 	}
 
-	iso = Message{"0110", ASCII, false, data5}
+	iso = NewMessage("0110", data5)
 
 	isoBytes, err = iso.Bytes()
 
@@ -1269,7 +1310,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 		F2: NewLllvar(nil),
 	}
 
-	iso = Message{"0110", ASCII, false, data6}
+	iso = NewMessage("0110", data6)
 
 	err = iso.Load(isoBytes)
 
@@ -1283,7 +1324,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 		F2: NewLllvar([]byte("543210")),
 	}
 
-	iso = Message{"0110", ASCII, false, data7}
+	iso = NewMessage("0110", data7)
 
 	isoBytes, err = iso.Bytes()
 
@@ -1305,7 +1346,7 @@ func TestFieldLllvarDecodeErrors(t *testing.T) {
 		F2: NewLllvar(nil),
 	}
 
-	iso = Message{"0110", ASCII, false, data8}
+	iso = NewMessage("0110", data8)
 
 	err = iso.Load(isoBytes)
 
@@ -1321,7 +1362,7 @@ func TestFieldAlphanumericDecodeErrors(t *testing.T) {
 		F2: NewAlphanumeric("123456"),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	isoBytes, err := iso.Bytes()
 
@@ -1341,7 +1382,7 @@ func TestFieldAlphanumericDecodeErrors(t *testing.T) {
 		F2: NewAlphanumeric("123456"),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	err = iso.Load(isoBytes)
 
@@ -1357,7 +1398,7 @@ func TestFieldBinaryDecodeErrors(t *testing.T) {
 		F2: NewBinary([]byte("123456")),
 	}
 
-	iso := Message{"0110", ASCII, false, data1}
+	iso := NewMessage("0110", data1)
 
 	isoBytes, err := iso.Bytes()
 
@@ -1377,7 +1418,7 @@ func TestFieldBinaryDecodeErrors(t *testing.T) {
 		F2: NewBinary([]byte("123456")),
 	}
 
-	iso = Message{"0110", ASCII, false, data2}
+	iso = NewMessage("0110", data2)
 
 	err = iso.Load(isoBytes)
 
@@ -1510,7 +1551,7 @@ func TestMessage(t *testing.T) {
 		AB *Llnumeric `field:"ab" length:"19"`
 	}
 
-	iso := Message{"", ASCII, true, TestIso{*newDataIso(), NewLlnumeric("")}}
+	iso := Message{"", ASCII, true, false, TestIso{*newDataIso(), NewLlnumeric("")}}
 
 	input := []byte{48, 49, 48, 48, 114, 60, 36, 129, 40, 224, 152, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48}
 
@@ -1522,7 +1563,7 @@ func TestMessage(t *testing.T) {
 		F2 *Llnumeric `field:"2" length:"19"`
 	}
 
-	iso = Message{"", ASCII, true, TestIso2{}}
+	iso = Message{"", ASCII, true, false, TestIso2{}}
 
 	err = iso.Load(input)
 
@@ -1535,7 +1576,7 @@ func TestMTIError(t *testing.T) {
 		F2: NewLlnumeric("4276555555555555"),
 	}
 
-	iso := Message{"01000", ASCII, true, data}
+	iso := Message{"01000", ASCII, true, false, data}
 
 	_, err := iso.Bytes()
 
@@ -1553,13 +1594,13 @@ func TestMTIError(t *testing.T) {
 
 	assert.EqualError(t, err, "MTI is required")
 
-	iso = Message{"0100", BCD, true, data}
+	iso = Message{"0100", BCD, true, false, data}
 
 	res, err := iso.Bytes()
 
 	assert.Empty(t, err)
 
-	iso = Message{"", BCD, true, data}
+	iso = Message{"", BCD, true, false, data}
 
 	err = iso.Load(res[0:1])
 
@@ -1578,13 +1619,13 @@ func TestMTIBCD(t *testing.T) {
 		F2: NewLlnumeric("4276555555555555"),
 	}
 
-	iso := Message{"0100", BCD, true, data}
+	iso := Message{"0100", BCD, true, false, data}
 
 	res, err := iso.Bytes()
 
 	assert.Empty(t, err)
 
-	iso2 := Message{"0100", BCD, true, data}
+	iso2 := Message{"0100", BCD, true, false, data}
 
 	err = iso2.Load(res)
 
@@ -1602,7 +1643,7 @@ func TestParseFieldsErrors(t *testing.T) {
 		F2: NewLlnumeric("4276555555555555"),
 	}
 
-	iso := Message{"0100", BCD, true, data1}
+	iso := Message{"0100", BCD, true, false, data1}
 
 	_, err := iso.Bytes()
 
@@ -1616,7 +1657,7 @@ func TestParseFieldsErrors(t *testing.T) {
 		F2: NewLlnumeric("4276555555555555"),
 	}
 
-	iso = Message{"0100", BCD, true, data2}
+	iso = Message{"0100", BCD, true, false, data2}
 
 	_, err = iso.Bytes()
 
@@ -1630,13 +1671,13 @@ func TestParseFieldsErrors(t *testing.T) {
 		F2: string("123abc"),
 	}
 
-	iso = Message{"0100", BCD, true, data3}
+	iso = Message{"0100", BCD, true, false, data3}
 
 	_, err = iso.Bytes()
 
 	assert.EqualError(t, err, "Critical error:field must be Iso8583Type")
 
-	iso = Message{"0100", BCD, true, nil}
+	iso = Message{"0100", BCD, true, false, nil}
 
 	_, err = iso.Bytes()
 

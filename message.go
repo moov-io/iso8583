@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"reflect"
@@ -27,12 +28,13 @@ type Message struct {
 	Mti          string
 	MtiEncode    int
 	SecondBitmap bool
+	AsciiBitmap  bool
 	Data         interface{}
 }
 
 // NewMessage creates new Message structure
 func NewMessage(mti string, data interface{}) *Message {
-	return &Message{mti, ASCII, false, data}
+	return &Message{mti, ASCII, false, false, data}
 }
 
 // Bytes marshall Message to bytes
@@ -92,6 +94,10 @@ func (m *Message) Bytes() (ret []byte, err error) {
 				data = append(data, d...)
 			}
 		}
+	}
+
+	if m.AsciiBitmap {
+		bitmap = []byte(strings.ToUpper(hex.EncodeToString(bitmap)))
 	}
 	ret = append(ret, bitmap...)
 	ret = append(ret, data...)
