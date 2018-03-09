@@ -183,7 +183,7 @@ func TestDecode(t *testing.T) {
 	}
 }
 
-func TestEncodeAsciiBitmap(t *testing.T) {
+func TestEncodeASCIIBitmap(t *testing.T) {
 	data := &TestISO{
 		F2:   NewLlnumeric("4276555555555555"),
 		F3:   NewNumeric("000000"),
@@ -221,6 +221,39 @@ func TestEncodeAsciiBitmap(t *testing.T) {
 	if string(res) != expected {
 		t.Error("ISO Encode error!")
 	}
+}
+func TestDecodeASCIIBitmap(t *testing.T) {
+	input := []byte("0100F23C248128E098000000000000000100164276555555555555000000000000077700070111184400012313184407011902C9010206123456374276555555555555=1234567890123456789098765432100100000321120000000000034                               Test textd01234000000000000017Another test text")
+
+	iso := Message{"", ASCII, true, true, newDataIso()}
+	err := iso.Load(input)
+
+	assert.NoError(t, err, "ISO Decode error:")
+
+	resultFields := iso.Data.(*TestISO)
+
+	assert.Equal(t, "4276555555555555", resultFields.F2.Value)
+	assert.Equal(t, "000000", resultFields.F3.Value)
+	assert.Equal(t, "000000077700", resultFields.F4.Value)
+	assert.Equal(t, "0701111844", resultFields.F7.Value)
+	assert.Equal(t, "000123", resultFields.F11.Value)
+	assert.Equal(t, "131844", resultFields.F12.Value)
+	assert.Equal(t, "0701", resultFields.F13.Value)
+	assert.Equal(t, "1902", resultFields.F14.Value)
+	assert.Equal(t, "643", resultFields.F19.Value)
+	assert.Equal(t, "901", resultFields.F22.Value)
+	assert.Equal(t, "02", resultFields.F25.Value)
+	assert.Equal(t, "123456", resultFields.F32.Value)
+	assert.Equal(t, "4276555555555555=12345678901234567890", resultFields.F35.Value)
+	assert.Equal(t, "987654321001", resultFields.F37.Value)
+	assert.Equal(t, "", resultFields.F39.Value)
+	assert.Equal(t, "00000321", resultFields.F41.Value)
+	assert.Equal(t, "120000000000034", resultFields.F42.Value)
+	assert.Equal(t, "                               Test text", resultFields.F43.Value)
+	assert.Equal(t, "643", resultFields.F49.Value)
+	assert.Equal(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, resultFields.F52.Value)
+	assert.Equal(t, "1234000000000000", resultFields.F53.Value)
+	assert.Equal(t, "Another test text", resultFields.F120.Value)
 }
 
 func TestEncodeDecode(t *testing.T) {

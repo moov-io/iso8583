@@ -28,7 +28,7 @@ type Message struct {
 	Mti          string
 	MtiEncode    int
 	SecondBitmap bool
-	AsciiBitmap  bool
+	ASCIIBitmap  bool
 	Data         interface{}
 }
 
@@ -96,7 +96,7 @@ func (m *Message) Bytes() (ret []byte, err error) {
 		}
 	}
 
-	if m.AsciiBitmap {
+	if m.ASCIIBitmap {
 		bitmap = []byte(strings.ToUpper(hex.EncodeToString(bitmap)))
 	}
 	ret = append(ret, bitmap...)
@@ -217,13 +217,31 @@ func (m *Message) Load(raw []byte) (err error) {
 	fields := parseFields(m.Data)
 
 	byteNum := 8
-	if raw[start]&0x80 == 0x80 {
-		// 1st bit == 1
-		m.SecondBitmap = true
-		byteNum = 16
+	var bitByte []byte
+
+	if m.ASCIIBitmap {
+		b, err := hex.DecodeString(fmt.Sprintf("%s", raw[start:start+byteNum*2]))
+		if err != nil {
+			return fmt.Errorf("Bitmap isn't ASCII formatted: %s", err)
+		}
+
+		if b[0]&0x80 == 0x80 {
+			m.SecondBitmap = true
+			byteNum = 16
+		}
+
+		bitByte, err = hex.DecodeString(fmt.Sprintf("%s", raw[start:start+byteNum*2]))
+		start += byteNum * 2
+	} else {
+		if raw[start]&0x80 == 0x80 {
+			// 1st bit == 1
+			m.SecondBitmap = true
+			byteNum = 16
+		}
+		bitByte = raw[start : start+byteNum]
+		start += byteNum
+
 	}
-	bitByte := raw[start : start+byteNum]
-	start += byteNum
 
 	for byteIndex := 0; byteIndex < byteNum; byteIndex++ {
 		for bitIndex := 0; bitIndex < 8; bitIndex++ {
