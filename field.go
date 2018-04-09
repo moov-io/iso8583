@@ -396,6 +396,87 @@ func (l *Llnumeric) Load(raw []byte, encoder, lenEncoder, length int) (read int,
 	return read, nil
 }
 
+// L8var contains bytes in non-fixed length field, first 8 symbols of field contains length
+type L8var struct {
+	Value []byte
+}
+
+// NewL8var create new L8var field
+func NewL8var(val []byte) *L8var {
+	return &L8var{val}
+}
+
+// IsEmpty check Lllvar field for empty value
+func (l *L8var) IsEmpty() bool {
+	return len(l.Value) == 0
+}
+
+// Bytes encode Lllvar field to bytes
+func (l *L8var) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
+	if length != -1 && len(l.Value) > length {
+		return nil, errors.New(fmt.Sprintf(ERR_VALUE_TOO_LONG, "L8var", length, len(l.Value)))
+	}
+	if encoder != ASCII {
+		return nil, errors.New(ERR_INVALID_ENCODER)
+	}
+
+	lenStr := fmt.Sprintf("%08d", len(l.Value))
+	contentLen := []byte(lenStr)
+	var lenVal []byte
+	switch lenEncoder {
+	case ASCII:
+		lenVal = contentLen
+		if len(lenVal) > 8 {
+			return nil, errors.New(ERR_INVALID_LENGTH_HEAD)
+		}
+	case rBCD:
+		fallthrough
+	case BCD:
+		lenVal = rbcd(contentLen)
+		if len(lenVal) > 7 || len(contentLen) > 8 {
+			return nil, errors.New(ERR_INVALID_LENGTH_HEAD)
+		}
+	default:
+		return nil, errors.New(ERR_INVALID_LENGTH_ENCODER)
+	}
+	return append(lenVal, l.Value...), nil
+}
+
+// Load decode Lllvar field from bytes
+func (l *L8var) Load(raw []byte, encoder, lenEncoder, length int) (read int, err error) {
+	// parse length head:
+	var contentLen int
+	switch lenEncoder {
+	case ASCII:
+		read = 8
+		contentLen, err = strconv.Atoi(string(raw[:read]))
+		if err != nil {
+			return 0, errors.New(ERR_PARSE_LENGTH_FAILED + ": " + string(raw[:8]))
+		}
+	case rBCD:
+		fallthrough
+	case BCD:
+		read = 7
+		contentLen, err = strconv.Atoi(string(bcdr2Ascii(raw[:read], 8)))
+		if err != nil {
+			return 0, errors.New(ERR_PARSE_LENGTH_FAILED + ": " + string(raw[:8]))
+		}
+	default:
+		return 0, errors.New(ERR_INVALID_LENGTH_ENCODER)
+	}
+	if len(raw) < (read + contentLen) {
+		return 0, errors.New(ERR_BAD_RAW)
+	}
+	// parse body:
+	l.Value = raw[read : read+contentLen]
+	read += contentLen
+	if encoder != ASCII {
+		return 0, errors.New(ERR_INVALID_ENCODER)
+	}
+
+	return read, nil
+}
+
 // Lllvar contains bytes in non-fixed length field, first 3 symbols of field contains length
 type Lllvar struct {
 	Value []byte
