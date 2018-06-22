@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1743,4 +1744,53 @@ func newDataIso() *TestISO {
 		F53:  NewNumeric(""),
 		F120: NewLllnumeric(""),
 	}
+}
+
+func TestWindows1252(t *testing.T) {
+	type testIso struct {
+		F2 *Llvar        `field:"2" length:"10" encode:"ascii"`
+		F3 *Lllvar       `field:"3" length:"999" encode:"ascii"`
+		F4 *Alphanumeric `field:"4" length:"10" encode:"ascii"`
+		F5 *L8var        `field:"5" length:"99999999" encode:"ascii"`
+	}
+
+	data := &testIso{
+		F2: NewLlvar([]byte("garçon!")),
+		F3: NewLllvar([]byte("coração")),
+		F4: NewAlphanumeric("solução"),
+		F5: NewL8var([]byte("bota mais feijão ai meu irmão")),
+	}
+	iso := Message{
+		Mti:          "0800",
+		MtiEncode:    ASCII,
+		SecondBitmap: true,
+		ASCIIBitmap:  true,
+		Data:         data,
+	}
+
+	result, err := iso.Bytes()
+	assert.NoError(t, err)
+	expected := "0800F800000000000000000000000000000007gar\xe7on!007cora\xe7\xe3o   solu\xe7\xe3o00000029bota mais feij\xe3o ai meu irm\xe3o"
+	assert.Equal(t, expected, fmt.Sprintf("%s", result))
+
+	emptyData := &testIso{
+		F2: NewLlvar([]byte("")),
+		F3: NewLllvar([]byte("")),
+		F4: NewAlphanumeric(""),
+		F5: NewL8var([]byte("")),
+	}
+	iso = Message{
+		Mti:          "",
+		MtiEncode:    ASCII,
+		SecondBitmap: true,
+		ASCIIBitmap:  true,
+		Data:         emptyData,
+	}
+	err = iso.Load(result)
+	assert.NoError(t, err)
+	resultFields := iso.Data.(*testIso)
+	assert.Equal(t, resultFields.F2.Value, []byte("gar\xe7on!"))
+	assert.Equal(t, resultFields.F3.Value, []byte("cora\xe7\xe3o"))
+	assert.Equal(t, resultFields.F4.Value, "   solu\xe7\xe3o")
+	assert.Equal(t, resultFields.F5.Value, []byte("bota mais feij\xe3o ai meu irm\xe3o"))
 }

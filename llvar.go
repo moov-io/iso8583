@@ -59,11 +59,11 @@ func (l *Llvar) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 
 // Load decode Llvar field from bytes
 func (l *Llvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, err error) {
-	raw, err = UTF8ToWindows1252(l.Value)
+	raw, err = UTF8ToWindows1252(raw)
 	if err != nil {
 		return 0, err
 	}
-	// parse length head:
+	//parse length head:
 	var contentLen int
 	switch lenEncoder {
 	case ASCII:
