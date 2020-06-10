@@ -26,12 +26,12 @@ const (
 	ErrParseLengthFailed string = "parse length head failed"
 )
 
-// Iso8583Type interface for ISO 8583 fields
-type Iso8583Type interface {
+// DataField interface for ISO 8583 fields
+type DataField interface {
 	// Byte representation of current field.
 	Bytes(encoder, lenEncoder, length int) ([]byte, error)
 
-	// Load unmarshal byte value into Iso8583Type according to the
+	// Load unmarshal byte value into DataField according to the
 	// specific arguments. It returns the number of bytes actually read.
 	Load(raw []byte, encoder, lenEncoder, length int) (int, error)
 

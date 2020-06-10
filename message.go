@@ -24,7 +24,7 @@ type fieldInfo struct {
 	LenEncode int
 	Length    int
 	//Field are ISO-defined data elements
-	Field Iso8583Type
+	Field DataField
 }
 
 // Message is structure for ISO 8583 message encode and decode
@@ -174,7 +174,7 @@ func parseFields(msg interface{}) map[int]*fieldInfo {
 			}
 		}
 
-		field, ok := v.Field(i).Interface().(Iso8583Type)
+		field, ok := v.Field(i).Interface().(DataField)
 		if !ok {
 			panic("field must be Iso8583Type")
 		}
