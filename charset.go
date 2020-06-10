@@ -15,6 +15,8 @@ func transformEnconding(reader io.Reader, trans transform.Transformer) ([]byte, 
 	ret, err := ioutil.ReadAll(transReader)
 	return ret, err
 }
+
+// UTF8ToWindows1252 converts text encoded in UTF-8 to Windows-1252 or CP-1252 encoding
 func UTF8ToWindows1252(input []byte) ([]byte, error) {
 	if utf8.Valid(input) {
 		reader := bytes.NewReader(input)

@@ -27,7 +27,7 @@ func (n *Numeric) IsEmpty() bool {
 func (n *Numeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	val := []byte(n.Value)
 	if length == -1 {
-		return nil, errors.New(ERR_MISSING_LENGTH)
+		return nil, errors.New(ErrMissingLength)
 	}
 	// if encoder == rBCD then length can be, for example, 3,
 	// but value can be, for example, "0631" (after decode from rBCD, because BCD use 1 byte for 2 digits),
@@ -40,7 +40,7 @@ func (n *Numeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	}
 
 	if len(val) > length {
-		return nil, fmt.Errorf(ERR_VALUE_TOO_LONG, "Numeric", length, len(val))
+		return nil, fmt.Errorf(ErrValueTooLong, "Numeric", length, len(val))
 	}
 	if len(val) < length {
 		val = append([]byte(strings.Repeat("0", length-len(val))), val...)
@@ -53,37 +53,37 @@ func (n *Numeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	case ASCII:
 		return val, nil
 	default:
-		return nil, errors.New(ERR_INVALID_ENCODER)
+		return nil, errors.New(ErrInvalidEncoder)
 	}
 }
 
 // Load decode Numeric field from bytes
 func (n *Numeric) Load(raw []byte, encoder, lenEncoder, length int) (int, error) {
 	if length == -1 {
-		return 0, errors.New(ERR_MISSING_LENGTH)
+		return 0, errors.New(ErrMissingLength)
 	}
 	switch encoder {
 	case BCD:
 		l := (length + 1) / 2
 		if len(raw) < l {
-			return 0, errors.New(ERR_BAD_RAW)
+			return 0, errors.New(ErrBadRaw)
 		}
 		n.Value = string(bcdl2Ascii(raw[:l], length))
 		return l, nil
 	case rBCD:
 		l := (length + 1) / 2
 		if len(raw) < l {
-			return 0, errors.New(ERR_BAD_RAW)
+			return 0, errors.New(ErrBadRaw)
 		}
 		n.Value = string(bcdr2Ascii(raw[0:l], length))
 		return l, nil
 	case ASCII:
 		if len(raw) < length {
-			return 0, errors.New(ERR_BAD_RAW)
+			return 0, errors.New(ErrBadRaw)
 		}
 		n.Value = string(raw[:length])
 		return length, nil
 	default:
-		return 0, errors.New(ERR_INVALID_ENCODER)
+		return 0, errors.New(ErrInvalidEncoder)
 	}
 }

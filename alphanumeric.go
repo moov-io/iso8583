@@ -32,10 +32,10 @@ func (a *Alphanumeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	}
 
 	if length == -1 {
-		return nil, errors.New(ERR_MISSING_LENGTH)
+		return nil, errors.New(ErrMissingLength)
 	}
 	if len(val) > length {
-		return nil, fmt.Errorf(ERR_VALUE_TOO_LONG, "Alphanumeric", length, len(val))
+		return nil, fmt.Errorf(ErrValueTooLong, "Alphanumeric", length, len(val))
 	}
 	if len(val) < length {
 		val = append([]byte(strings.Repeat(" ", length-len(val))), val...)
@@ -50,10 +50,10 @@ func (a *Alphanumeric) Load(raw []byte, encoder, lenEncoder, length int) (int, e
 		return 0, err
 	}
 	if length == -1 {
-		return 0, errors.New(ERR_MISSING_LENGTH)
+		return 0, errors.New(ErrMissingLength)
 	}
 	if len(raw) < length {
-		return 0, errors.New(ERR_BAD_RAW)
+		return 0, errors.New(ErrBadRaw)
 	}
 	a.Value = string(raw[:length])
 	return length, nil
