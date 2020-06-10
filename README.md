@@ -23,7 +23,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/zmwilliam/iso8583"
+	"github.com/moov-io/iso8583"
 )
 
 type Data struct {
