@@ -1,4 +1,3 @@
-// package iso8583 provides ...
 package iso8583
 
 import (
@@ -29,10 +28,10 @@ func (l *Llvar) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 		return nil, err
 	}
 	if length != -1 && len(val) > length {
-		return nil, fmt.Errorf(ERR_VALUE_TOO_LONG, "Llvar", length, len(val))
+		return nil, fmt.Errorf(ErrValueTooLong, "Llvar", length, len(val))
 	}
 	if encoder != ASCII {
-		return nil, errors.New(ERR_INVALID_ENCODER)
+		return nil, errors.New(ErrInvalidEncoder)
 	}
 
 	lenStr := fmt.Sprintf("%02d", len(val))
@@ -42,17 +41,17 @@ func (l *Llvar) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	case ASCII:
 		lenVal = contentLen
 		if len(lenVal) > 2 {
-			return nil, errors.New(ERR_INVALID_LENGTH_HEAD)
+			return nil, errors.New(ErrInvalidLengthHead)
 		}
 	case rBCD:
 		fallthrough
 	case BCD:
 		lenVal = rbcd(contentLen)
 		if len(lenVal) > 1 {
-			return nil, errors.New(ERR_INVALID_LENGTH_HEAD)
+			return nil, errors.New(ErrInvalidLengthHead)
 		}
 	default:
-		return nil, errors.New(ERR_INVALID_LENGTH_ENCODER)
+		return nil, errors.New(ErrInvalidLengthEncoder)
 	}
 	return append(lenVal, val...), nil
 }
@@ -70,7 +69,7 @@ func (l *Llvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, err
 		read = 2
 		contentLen, err = strconv.Atoi(string(raw[:read]))
 		if err != nil {
-			return 0, errors.New(ERR_PARSE_LENGTH_FAILED + ": " + string(raw[:2]))
+			return 0, errors.New(ErrParseLengthFailed + ": " + string(raw[:2]))
 		}
 	case rBCD:
 		fallthrough
@@ -78,19 +77,19 @@ func (l *Llvar) Load(raw []byte, encoder, lenEncoder, length int) (read int, err
 		read = 1
 		contentLen, err = strconv.Atoi(string(bcdr2Ascii(raw[:read], 2)))
 		if err != nil {
-			return 0, errors.New(ERR_PARSE_LENGTH_FAILED + ": " + string(raw[0]))
+			return 0, errors.New(ErrParseLengthFailed + ": " + string(raw[0]))
 		}
 	default:
-		return 0, errors.New(ERR_INVALID_LENGTH_ENCODER)
+		return 0, errors.New(ErrInvalidLengthEncoder)
 	}
 	if len(raw) < (read + contentLen) {
-		return 0, errors.New(ERR_BAD_RAW)
+		return 0, errors.New(ErrBadRaw)
 	}
 	// parse body:
 	l.Value = raw[read : read+contentLen]
 	read += contentLen
 	if encoder != ASCII {
-		return 0, errors.New(ERR_INVALID_ENCODER)
+		return 0, errors.New(ErrInvalidEncoder)
 	}
 
 	return read, nil

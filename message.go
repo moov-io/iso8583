@@ -10,9 +10,12 @@ import (
 )
 
 const (
-	TAG_FIELD  string = "field"
-	TAG_ENCODE string = "encode"
-	TAG_LENGTH string = "length"
+	// TagField defines the data field type
+	TagField string = "field"
+	// TagEncode defines the data encoding type
+	TagEncode string = "encode"
+	// TagLength defines the data encoding length
+	TagLength string = "length"
 )
 
 type fieldInfo struct {
@@ -20,16 +23,19 @@ type fieldInfo struct {
 	Encode    int
 	LenEncode int
 	Length    int
-	Field     Iso8583Type
+	//Field are ISO-defined data elements
+	Field DataField
 }
 
 // Message is structure for ISO 8583 message encode and decode
 type Message struct {
+	// Mti is the Message Type Indicator
 	Mti          string
 	MtiEncode    int
 	SecondBitmap bool
 	ASCIIBitmap  bool
-	Data         interface{}
+	// Data elements are the individual fields carrying the transaction information
+	Data interface{}
 }
 
 // NewMessage creates new Message structure
@@ -139,18 +145,18 @@ func parseFields(msg interface{}) map[int]*fieldInfo {
 		}
 
 		sf := v.Type().Field(i)
-		if sf.Tag == "" || sf.Tag.Get(TAG_FIELD) == "" {
+		if sf.Tag == "" || sf.Tag.Get(TagField) == "" {
 			continue
 		}
 
-		index, err := strconv.Atoi(sf.Tag.Get(TAG_FIELD))
+		index, err := strconv.Atoi(sf.Tag.Get(TagField))
 		if err != nil {
 			panic("value of field must be numeric")
 		}
 
 		encode := 0
 		lenEncode := 0
-		if raw := sf.Tag.Get(TAG_ENCODE); raw != "" {
+		if raw := sf.Tag.Get(TagEncode); raw != "" {
 			enc := strings.Split(raw, ",")
 			if len(enc) == 2 {
 				lenEncode = parseEncodeStr(enc[0])
@@ -161,14 +167,14 @@ func parseFields(msg interface{}) map[int]*fieldInfo {
 		}
 
 		length := -1
-		if l := sf.Tag.Get(TAG_LENGTH); l != "" {
+		if l := sf.Tag.Get(TagLength); l != "" {
 			length, err = strconv.Atoi(l)
 			if err != nil {
 				panic("value of length must be numeric")
 			}
 		}
 
-		field, ok := v.Field(i).Interface().(Iso8583Type)
+		field, ok := v.Field(i).Interface().(DataField)
 		if !ok {
 			panic("field must be Iso8583Type")
 		}

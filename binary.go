@@ -28,10 +28,10 @@ func (b *Binary) Bytes(encoder, lenEncoder, l int) ([]byte, error) {
 		length = b.FixLen
 	}
 	if length == -1 {
-		return nil, errors.New(ERR_MISSING_LENGTH)
+		return nil, errors.New(ErrMissingLength)
 	}
 	if len(b.Value) > length {
-		return nil, errors.New(fmt.Sprintf(ERR_VALUE_TOO_LONG, "Binary", length, len(b.Value)))
+		return nil, fmt.Errorf(ErrValueTooLong, "Binary", length, len(b.Value))
 	}
 	if len(b.Value) < length {
 		return append(b.Value, make([]byte, length-len(b.Value))...), nil
@@ -42,10 +42,10 @@ func (b *Binary) Bytes(encoder, lenEncoder, l int) ([]byte, error) {
 // Load decode Binary field from bytes
 func (b *Binary) Load(raw []byte, encoder, lenEncoder, length int) (int, error) {
 	if length == -1 {
-		return 0, errors.New(ERR_MISSING_LENGTH)
+		return 0, errors.New(ErrMissingLength)
 	}
 	if len(raw) < length {
-		return 0, errors.New(ERR_BAD_RAW)
+		return 0, errors.New(ErrBadRaw)
 	}
 	b.Value = raw[:length]
 	b.FixLen = length

@@ -29,10 +29,10 @@ func (l *L8var) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	}
 
 	if length != -1 && len(val) > length {
-		return nil, fmt.Errorf(ERR_VALUE_TOO_LONG, "L8var", length, len(val))
+		return nil, fmt.Errorf(ErrValueTooLong, "L8var", length, len(val))
 	}
 	if encoder != ASCII {
-		return nil, errors.New(ERR_INVALID_ENCODER)
+		return nil, errors.New(ErrInvalidEncoder)
 	}
 
 	lenStr := fmt.Sprintf("%08d", len(val))
@@ -42,17 +42,17 @@ func (l *L8var) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	case ASCII:
 		lenVal = contentLen
 		if len(lenVal) > 8 {
-			return nil, errors.New(ERR_INVALID_LENGTH_HEAD)
+			return nil, errors.New(ErrInvalidLengthHead)
 		}
 	case rBCD:
 		fallthrough
 	case BCD:
 		lenVal = rbcd(contentLen)
 		if len(lenVal) > 7 || len(contentLen) > 8 {
-			return nil, errors.New(ERR_INVALID_LENGTH_HEAD)
+			return nil, errors.New(ErrInvalidLengthHead)
 		}
 	default:
-		return nil, errors.New(ERR_INVALID_LENGTH_ENCODER)
+		return nil, errors.New(ErrInvalidLengthEncoder)
 	}
 	return append(lenVal, val...), nil
 }
@@ -71,7 +71,7 @@ func (l *L8var) Load(raw []byte, encoder, lenEncoder, length int) (read int, err
 		read = 8
 		contentLen, err = strconv.Atoi(string(raw[:read]))
 		if err != nil {
-			return 0, errors.New(ERR_PARSE_LENGTH_FAILED + ": " + string(raw[:8]))
+			return 0, errors.New(ErrParseLengthFailed + ": " + string(raw[:8]))
 		}
 	case rBCD:
 		fallthrough
@@ -79,19 +79,19 @@ func (l *L8var) Load(raw []byte, encoder, lenEncoder, length int) (read int, err
 		read = 7
 		contentLen, err = strconv.Atoi(string(bcdr2Ascii(raw[:read], 8)))
 		if err != nil {
-			return 0, errors.New(ERR_PARSE_LENGTH_FAILED + ": " + string(raw[:8]))
+			return 0, errors.New(ErrParseLengthFailed + ": " + string(raw[:8]))
 		}
 	default:
-		return 0, errors.New(ERR_INVALID_LENGTH_ENCODER)
+		return 0, errors.New(ErrInvalidLengthEncoder)
 	}
 	if len(raw) < (read + contentLen) {
-		return 0, errors.New(ERR_BAD_RAW)
+		return 0, errors.New(ErrBadRaw)
 	}
 	// parse body:
 	l.Value = raw[read : read+contentLen]
 	read += contentLen
 	if encoder != ASCII {
-		return 0, errors.New(ERR_INVALID_ENCODER)
+		return 0, errors.New(ErrInvalidEncoder)
 	}
 
 	return read, nil
