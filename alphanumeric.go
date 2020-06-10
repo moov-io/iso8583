@@ -11,8 +11,8 @@ import (
 )
 
 // An Alphanumeric contains alphanumeric value in fix length. The only
-// supportted encoder is ascii. Length is required for marshalling and
-// unmarshalling.
+// supported encoder is ASCII. Length is required for marshaling and
+// unmarshaling.
 type Alphanumeric struct {
 	Value string
 }

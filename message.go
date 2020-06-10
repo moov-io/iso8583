@@ -232,7 +232,7 @@ func (m *Message) Load(raw []byte) (err error) {
 	if m.ASCIIBitmap {
 		b, err := hex.DecodeString(fmt.Sprintf("%s", raw[start:start+byteNum*2]))
 		if err != nil {
-			return fmt.Errorf("Bitmap isn't ASCII formatted: %s", err)
+			return fmt.Errorf("bitmap isn't ASCII formatted: %s", err)
 		}
 
 		if b[0]&0x80 == 0x80 {
@@ -241,6 +241,9 @@ func (m *Message) Load(raw []byte) (err error) {
 		}
 
 		bitByte, err = hex.DecodeString(fmt.Sprintf("%s", raw[start:start+byteNum*2]))
+		if err != nil {
+			return err
+		}
 		start += byteNum * 2
 	} else {
 		if raw[start]&0x80 == 0x80 {
