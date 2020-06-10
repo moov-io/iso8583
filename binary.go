@@ -31,7 +31,7 @@ func (b *Binary) Bytes(encoder, lenEncoder, l int) ([]byte, error) {
 		return nil, errors.New(ERR_MISSING_LENGTH)
 	}
 	if len(b.Value) > length {
-		return nil, errors.New(fmt.Sprintf(ERR_VALUE_TOO_LONG, "Binary", length, len(b.Value)))
+		return nil, fmt.Errorf(ERR_VALUE_TOO_LONG, "Binary", length, len(b.Value))
 	}
 	if len(b.Value) < length {
 		return append(b.Value, make([]byte, length-len(b.Value))...), nil

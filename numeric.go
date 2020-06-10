@@ -40,7 +40,7 @@ func (n *Numeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	}
 
 	if len(val) > length {
-		return nil, errors.New(fmt.Sprintf(ERR_VALUE_TOO_LONG, "Numeric", length, len(val)))
+		return nil, fmt.Errorf(ERR_VALUE_TOO_LONG, "Numeric", length, len(val))
 	}
 	if len(val) < length {
 		val = append([]byte(strings.Repeat("0", length-len(val))), val...)

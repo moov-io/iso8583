@@ -27,7 +27,7 @@ func (l *Llnumeric) IsEmpty() bool {
 func (l *Llnumeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 	raw := []byte(l.Value)
 	if length != -1 && len(raw) > length {
-		return nil, errors.New(fmt.Sprintf(ERR_VALUE_TOO_LONG, "Llnumeric", length, len(raw)))
+		return nil, fmt.Errorf(ERR_VALUE_TOO_LONG, "Llnumeric", length, len(raw))
 	}
 
 	val := raw
