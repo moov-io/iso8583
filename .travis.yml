@@ -1,13 +1,36 @@
 language: go
+dist: xenial
+sudo: true
 
-go:
-  - "1.x"
-  - tip
 
-install:
-  - go get github.com/stretchr/testify/assert
-  - go get golang.org/x/text/encoding/charmap
-  - go get -v github.com/axw/gocov/gocov
-  - go get -v github.com/mattn/goveralls
+matrix:
+  include:
+    - os: linux
+      go: 1.14.x
+      cache:
+        directories:
+          - "/home/travis/.cache/go-build" # GOCACHE
+    - os: osx
+      go: 1.14.x
+      cache:
+        directories:
+          - "/Users/travis/Library/Caches/go-build" # GOCACHE
+    - os: windows
+      go: 1.14.x
+      cache:
+        directories: ["C:\\Users\\travis\\AppData\\Local\\go-build"]
+
+before_install:
+  - mkdir ./bin
+  - export PATH=$PATH:$PWD/bin
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y make; fi
+
+before_script:
+  - GOFILES=$(find . -type f -name '*.go' | grep -v client | grep -v vendor)
+  - go mod graph
+
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - make check
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

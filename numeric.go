@@ -12,7 +12,7 @@ import (
 
 // A Numeric contains numeric value only in fix length. It holds numeric
 // value as a string. Supportted encoder are ascii, bcd and rbcd. Length is
-// required for marshalling and unmarshalling.
+// required for marshaling and unmarshaling.
 type Numeric struct {
 	Value string
 }
@@ -40,7 +40,7 @@ func (n *Numeric) Bytes(encoder, lenEncoder, length int) ([]byte, error) {
 		len(val) == (length+1) &&
 		(string(val[0:1]) == "0") {
 		// Cut value to length
-		val = val[1:len(val)]
+		val = val[1:]
 	}
 
 	if len(val) > length {

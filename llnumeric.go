@@ -12,7 +12,7 @@ import (
 
 // A Llnumeric contains numeric value only in non-fix length, contains length in first 2 symbols. It holds numeric
 // value as a string. Supportted encoder are ascii, bcd and rbcd. Length is
-// required for marshalling and unmarshalling.
+// required for marshaling and unmarshalling.
 type Llnumeric struct {
 	Value string
 }
