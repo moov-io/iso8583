@@ -1,7 +1,7 @@
 # iso8583
 A golang implementation to marshal and unmarshal iso8583 message.
 
-[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fmoov-io%2Fiso8583%2Fbadge&style=flat)](https://actions-badge.atrox.dev/moov-io/iso8583/goto)
+[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fmoov-io%2Fiso8583%2Fbadge%3Fref%3Dmaster&style=flat)](https://actions-badge.atrox.dev/moov-io/iso8583/goto?ref=master)
 
 Length encode and MTI encode types:
 
