@@ -1,7 +1,7 @@
 # moov-io/iso8583
 
-[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fmoov-io%2Fiso8583%2Fbadge%3Fref%3Dmaster&style=flat)](https://actions-badge.atrox.dev/moov-io/iso8583/goto?ref=master)
 [![GoDoc](https://godoc.org/github.com/moov-io/ach?status.svg)](https://godoc.org/github.com/moov-io/iso8583)
+[![Build Status](https://github.com/moov-io/iso8583/workflows/Go/badge.svg)](https://github.com/moov-io/iso8583/actions)
 [![Coverage Status](https://codecov.io/gh/moov-io/iso8583/branch/master/graph/badge.svg)](https://codecov.io/gh/moov-io/iso8583)
 [![Go Report Card](https://goreportcard.com/badge/github.com/moov-io/iso8583)](https://goreportcard.com/report/github.com/moov-io/iso8583)
 [![Apache 2 licensed](https://img.shields.io/badge/license-Apache2-blue.svg)](https://raw.githubusercontent.com/moov-io/iso8583/master/LICENSE)
@@ -15,7 +15,7 @@ Moov ISO8583 is under active development.
 Please star the project if you are interested in its progress. If you have layers above ACH to simplify tasks or found bugs we would appreciate an issue or pull request. Thanks!
 
 
-## Usage 
+## Usage
 
 Length encode and MTI encode types:
 
