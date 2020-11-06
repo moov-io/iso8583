@@ -12,9 +12,19 @@ import (
 	"strings"
 )
 
-type Specification struct {
-	Attributes  string
+type Attribute struct {
+	Describe    string // [attribute(b 64, b-64, b..64)]; [format(MMDD, hhmmss)]
 	Description string
+}
+
+type EncodingDefinition struct {
+	MtiEnc       string `json:"mti_enc"`
+	BitmapEnc    string `json:"bmp_enc"`
+	LengthEnc    string `json:"len_enc"`
+	NumberEnc    string `json:"num_enc"`
+	CharacterEnc string `json:"chr_enc"`
+	BinaryEnc    string `json:"bin_enc"`
+	TrackEnc     string `json:"trk_enc"`
 }
 
 var (
@@ -29,19 +39,19 @@ var (
 	variableIndicate = "."
 )
 
-func (s Specification) ElementType() (*CommonType, error) {
-	attributes := s.Attributes
+func (s Attribute) ElementType() (*CommonType, error) {
+	attribute := s.Describe
 	for _, indicate := range digitIndicates {
-		if strings.Contains(attributes, indicate) {
+		if strings.Contains(attribute, indicate) {
 			var format string
-			if strings.Contains(attributes, formatIndicate) {
-				splits := strings.Split(attributes, formatIndicate)
-				attributes = splits[0]
+			if strings.Contains(attribute, formatIndicate) {
+				splits := strings.Split(attribute, formatIndicate)
+				attribute = splits[0]
 				format = strings.TrimSpace(splits[len(splits)-1])
 			}
 
 			isFixed := !strings.Contains(indicate, variableIndicate)
-			splits := strings.Split(attributes, indicate)
+			splits := strings.Split(attribute, indicate)
 			_size, err := strconv.Atoi(strings.TrimSpace(splits[len(splits)-1]))
 			if err != nil ||
 				(!isFixed && _size > int(math.Pow(10, float64(len(indicate))))) {
@@ -60,9 +70,13 @@ func (s Specification) ElementType() (*CommonType, error) {
 	return nil, errors.New("invalid element type")
 }
 
-type Specifications map[int]Specification
+type Attributes map[int]Attribute
+type Specification struct {
+	Elements *Attributes         `json:"elements,omitempty"`
+	Encoding *EncodingDefinition `json:"encoding,omitempty"`
+}
 
-func (s Specifications) Keys() (keys []int) {
+func (s Attributes) Keys() (keys []int) {
 	for k, _ := range s {
 		keys = append(keys, k)
 	}
@@ -70,7 +84,7 @@ func (s Specifications) Keys() (keys []int) {
 	return
 }
 
-func (s Specifications) Get(number int) (*Specification, error) {
+func (s Attributes) Get(number int) (*Attribute, error) {
 	spec, existed := s[number]
 	if !existed {
 		return nil, errors.New("don't exist specification")

@@ -12,63 +12,50 @@ import (
 	"strconv"
 )
 
+// dummy struct for xml un-marshaling
+type xmlDataElement struct {
+	XMLName  xml.Name `xml:"DataElements"`
+	Text     string   `xml:",chardata"`
+	Elements []struct {
+		Text   string `xml:",chardata"`
+		Number int    `xml:"Number,attr"`
+	} `xml:"Element"`
+}
+
 // create data elements of message with specification
-func NewDataElements(spec Specifications) *DataElements {
+func NewDataElements(spec Specification) (*DataElements, error) {
+	if spec.Elements == nil || spec.Encoding == nil {
+		return nil, errors.New("has invalid specification")
+	}
 	return &DataElements{
-		Elements:       make(map[int]*DataElement),
-		Specifications: spec,
-	}
-}
-
-// general element type for all of the data representation attributes
-type CommonType struct {
-	Type   string
-	Length int
-	Fixed  bool
-	Format string
-}
-
-func (e CommonType) DataElement(value []byte) (*DataElement, error) {
-	if value == nil {
-		return nil, errors.New("invalid element value")
-	}
-	_new := DataElement{
-		Type:   e.Type,
-		Length: e.Length,
-		Fixed:  e.Fixed,
-		Format: e.Format,
-		Value:  make([]byte, len(value)),
-	}
-	copy(_new.Value, value)
-
-	return &_new, nil
+		Elements: make(map[int]*Element),
+		Spec:     spec,
+	}, nil
 }
 
 // data element, CommonType + Value
-type DataElement struct {
-	Type   string
-	Length int
-	Fixed  bool
-	Format string
-	Value  []byte
+type Element struct {
+	Type  CommonType
+	Value []byte
 }
 
-func (e *DataElement) SetType(_type *CommonType) {
-	e.Type = _type.Type
-	e.Length = _type.Length
-	e.Fixed = _type.Fixed
-	e.Format = _type.Format
+func (e *Element) SetType(_type *CommonType) {
+	e.Type = *_type
 }
 
-func (e *DataElement) Validate() error {
+func (e *Element) Validate() error {
+	err := e.Type.Validate()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (e *DataElement) String() string {
+func (e *Element) String() string {
 	return fmt.Sprintf("%s", e.Value)
 }
 
-func (e *DataElement) UnmarshalJSON(b []byte) error {
+func (e *Element) UnmarshalJSON(b []byte) error {
 	_, err := strconv.ParseFloat(string(b), 64)
 	if err == nil {
 		e.Value = make([]byte, len(b))
@@ -85,8 +72,8 @@ func (e *DataElement) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (e *DataElement) MarshalJSON() ([]byte, error) {
-	if e.Type == ElementTypeNumeric {
+func (e *Element) MarshalJSON() ([]byte, error) {
+	if e.Type.Type == ElementTypeNumeric {
 		ret, err := strconv.Atoi(string(e.Value))
 		if err != nil {
 			fmt.Println(err)
@@ -97,7 +84,7 @@ func (e *DataElement) MarshalJSON() ([]byte, error) {
 	return json.Marshal(fmt.Sprintf("%s", e.Value))
 }
 
-func (e *DataElement) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
+func (e *Element) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
 	var s string
 	if err := decoder.DecodeElement(&s, &start); err != nil {
 		return err
@@ -107,8 +94,8 @@ func (e *DataElement) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement)
 
 // data elements of the iso8583 message
 type DataElements struct {
-	Elements       map[int]*DataElement
-	Specifications Specifications
+	Elements map[int]*Element
+	Spec     Specification
 }
 
 func (e *DataElements) Validate() error {
@@ -121,13 +108,13 @@ func (e *DataElements) Validate() error {
 }
 
 func (e *DataElements) UnmarshalJSON(b []byte) error {
-	var convert map[int]*DataElement
+	var convert map[int]*Element
 	convert = e.Elements
 	if err := json.Unmarshal(b, &convert); err != nil {
 		return err
 	}
 	for key, elm := range convert {
-		spec, err := e.Specifications.Get(key)
+		spec, err := e.Spec.Elements.Get(key)
 		if err != nil {
 			return errors.New("don't exist specification")
 		}
@@ -167,16 +154,6 @@ func (e *DataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) 
 	return encoder.Flush()
 }
 
-// dummy struct for xml un-marshaling
-type xmlDataElement struct {
-	XMLName  xml.Name `xml:"DataElements"`
-	Text     string   `xml:",chardata"`
-	Elements []struct {
-		Text   string `xml:",chardata"`
-		Number int    `xml:"Number,attr"`
-	} `xml:"Element"`
-}
-
 func (e *DataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
 	var dummy xmlDataElement
 	err := decoder.DecodeElement(&dummy, &start)
@@ -185,9 +162,9 @@ func (e *DataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement
 	}
 
 	for _, element := range dummy.Elements {
-		var dataElement DataElement
+		var dataElement Element
 
-		spec, err := e.Specifications.Get(element.Number)
+		spec, err := e.Spec.Elements.Get(element.Number)
 		if err != nil {
 			return err
 		}

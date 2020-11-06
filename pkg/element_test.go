@@ -20,8 +20,10 @@ func TestElementJsonXmlConvert(t *testing.T) {
 		<Element Number="38">abcdef</Element>
 	</DataElements>`)
 
-	jsonMessage := NewDataElements(ISO8583DataElementsVer1987)
-	err := json.Unmarshal(jsonStr, &jsonMessage)
+	jsonMessage, err := NewDataElements(ISO8583DataElementsVer1987)
+	assert.Equal(t, nil, err)
+
+	err = json.Unmarshal(jsonStr, &jsonMessage)
 	assert.Equal(t, nil, err)
 
 	orgJsonBuf, err := json.MarshalIndent(&jsonMessage, "", "\t")
@@ -30,7 +32,9 @@ func TestElementJsonXmlConvert(t *testing.T) {
 	_, err = xml.MarshalIndent(&jsonMessage, "", "\t")
 	assert.Equal(t, nil, err)
 
-	xmlMessage := NewDataElements(ISO8583DataElementsVer1987)
+	xmlMessage, err := NewDataElements(ISO8583DataElementsVer1987)
+	assert.Equal(t, nil, err)
+
 	err = xml.Unmarshal(xmlStr, &xmlMessage)
 	assert.Equal(t, nil, err)
 
