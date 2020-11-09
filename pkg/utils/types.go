@@ -2,7 +2,7 @@
 // Use of this source code is governed by an Apache License
 // license that can be found in the LICENSE file.
 
-package pkg
+package utils
 
 import (
 	"errors"
@@ -11,21 +11,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-type Attribute struct {
-	Describe    string // [attribute(b 64, b-64, b..64)]; [format(MMDD, hhmmss)]
-	Description string
-}
-
-type EncodingDefinition struct {
-	MtiEnc       string `json:"mti_enc"`
-	BitmapEnc    string `json:"bmp_enc"`
-	LengthEnc    string `json:"len_enc"`
-	NumberEnc    string `json:"num_enc"`
-	CharacterEnc string `json:"chr_enc"`
-	BinaryEnc    string `json:"bin_enc"`
-	TrackEnc     string `json:"trk_enc"`
-}
 
 var (
 	digitIndicates = []string{
@@ -39,7 +24,12 @@ var (
 	variableIndicate = "."
 )
 
-func (s Attribute) ElementType() (*CommonType, error) {
+type Attribute struct {
+	Describe    string // [attribute(b 64, b-64, b..64)]; [format(MMDD, hhmmss)]
+	Description string
+}
+
+func (s Attribute) ElementType() (*ElementType, error) {
 	attribute := s.Describe
 	for _, indicate := range digitIndicates {
 		if strings.Contains(attribute, indicate) {
@@ -58,7 +48,7 @@ func (s Attribute) ElementType() (*CommonType, error) {
 				return nil, errors.New("invalid element length")
 			}
 
-			return &CommonType{
+			return &ElementType{
 				Type:   strings.TrimSpace(splits[0]),
 				Length: _size,
 				Fixed:  isFixed,
@@ -90,4 +80,46 @@ func (s Attributes) Get(number int) (*Attribute, error) {
 		return nil, errors.New("don't exist specification")
 	}
 	return &spec, nil
+}
+
+type EncodingDefinition struct {
+	MtiEnc       string `json:"mti_enc"`
+	BitmapEnc    string `json:"bmp_enc"`
+	LengthEnc    string `json:"len_enc"`
+	NumberEnc    string `json:"num_enc"`
+	CharacterEnc string `json:"chr_enc"`
+	BinaryEnc    string `json:"bin_enc"`
+	TrackEnc     string `json:"trk_enc"`
+}
+
+// general element type for all of the data representation attributes
+type ElementType struct {
+	Type           string
+	Length         int
+	Format         string
+	Encoding       string
+	Fixed          bool
+	LengthEncoding string
+}
+
+func (t *ElementType) Validate() error {
+	return nil
+}
+
+func (t *ElementType) SetEncoding(encoding *EncodingDefinition) {
+	t.LengthEncoding = encoding.LengthEnc
+	switch t.Type {
+	case ElementTypeNumeric:
+		t.Encoding = encoding.NumberEnc
+	case ElementTypeMti:
+		t.Encoding = encoding.MtiEnc
+	case ElementTypeBitmap:
+		t.Encoding = encoding.BitmapEnc
+	case ElementTypeBinary:
+		t.Encoding = encoding.BinaryEnc
+	case ElementTypeMagnetic:
+		t.Encoding = encoding.TrackEnc
+	default:
+		t.Encoding = encoding.CharacterEnc
+	}
 }

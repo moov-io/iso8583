@@ -2,13 +2,15 @@
 // Use of this source code is governed by an Apache License
 // license that can be found in the LICENSE file.
 
-package pkg
+package lib
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
+	"github.com/moov-io/iso8583/pkg/utils"
+	"sort"
 	"strconv"
 )
 
@@ -23,8 +25,8 @@ type xmlDataElement struct {
 }
 
 // create data elements of message with specification
-func NewDataElements(spec Specification) (*DataElements, error) {
-	if spec.Elements == nil || spec.Encoding == nil {
+func NewDataElements(spec *utils.Specification) (*DataElements, error) {
+	if spec == nil && spec.Elements == nil || spec.Encoding == nil {
 		return nil, errors.New("has invalid specification")
 	}
 	return &DataElements{
@@ -33,69 +35,10 @@ func NewDataElements(spec Specification) (*DataElements, error) {
 	}, nil
 }
 
-// data element, CommonType + Value
-type Element struct {
-	Type  CommonType
-	Value []byte
-}
-
-func (e *Element) SetType(_type *CommonType) {
-	e.Type = *_type
-}
-
-func (e *Element) Validate() error {
-	err := e.Type.Validate()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (e *Element) String() string {
-	return fmt.Sprintf("%s", e.Value)
-}
-
-func (e *Element) UnmarshalJSON(b []byte) error {
-	_, err := strconv.ParseFloat(string(b), 64)
-	if err == nil {
-		e.Value = make([]byte, len(b))
-		copy(e.Value, b)
-	} else {
-		var value string
-		err := json.Unmarshal(b, &value)
-		if err != nil {
-			return err
-		}
-		e.Value = make([]byte, len(value))
-		copy(e.Value, value)
-	}
-	return nil
-}
-
-func (e *Element) MarshalJSON() ([]byte, error) {
-	if e.Type.Type == ElementTypeNumeric {
-		ret, err := strconv.Atoi(string(e.Value))
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		return json.Marshal(ret)
-	}
-	return json.Marshal(fmt.Sprintf("%s", e.Value))
-}
-
-func (e *Element) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
-	var s string
-	if err := decoder.DecodeElement(&s, &start); err != nil {
-		return err
-	}
-	return nil
-}
-
 // data elements of the iso8583 message
 type DataElements struct {
 	Elements map[int]*Element
-	Spec     Specification
+	Spec     *utils.Specification `xml:"-" json:"-"`
 }
 
 func (e *DataElements) Validate() error {
@@ -108,6 +51,9 @@ func (e *DataElements) Validate() error {
 }
 
 func (e *DataElements) UnmarshalJSON(b []byte) error {
+	if e.Spec == nil {
+		return errors.New("don't exist specification")
+	}
 	var convert map[int]*Element
 	convert = e.Elements
 	if err := json.Unmarshal(b, &convert); err != nil {
@@ -116,31 +62,70 @@ func (e *DataElements) UnmarshalJSON(b []byte) error {
 	for key, elm := range convert {
 		spec, err := e.Spec.Elements.Get(key)
 		if err != nil {
-			return errors.New("don't exist specification")
+			return err
 		}
 		_type, err := spec.ElementType()
 		if err != nil {
 			return err
 		}
+		_type.SetEncoding(e.Spec.Encoding)
 		elm.SetType(_type)
 	}
 	return nil
 }
 
 func (e *DataElements) MarshalJSON() ([]byte, error) {
-	return json.Marshal(e.Elements)
+	var buf bytes.Buffer
+	var keys []int
+
+	if e.Elements != nil {
+		for k, _ := range e.Elements {
+			keys = append(keys, k)
+		}
+		sort.Ints(keys)
+	}
+
+	buf.WriteString("{")
+	for i, key := range keys {
+		if i != 0 {
+			buf.WriteString(",")
+		}
+		number, err := json.Marshal(strconv.Itoa(key))
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(number)
+		buf.WriteString(":")
+		val, err := json.Marshal(e.Elements[key])
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(val)
+	}
+	buf.WriteString("}")
+
+	return buf.Bytes(), nil
 }
 
 func (e *DataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
 	tokens := []xml.Token{start}
-	for key, value := range e.Elements {
+	var keys []int
+
+	if e.Elements != nil {
+		for k, _ := range e.Elements {
+			keys = append(keys, k)
+		}
+		sort.Ints(keys)
+	}
+
+	for _, key := range keys {
 		t := xml.StartElement{
-			Name: xml.Name{Local: DataElementXmlName},
+			Name: xml.Name{Local: utils.DataElementXmlName},
 			Attr: []xml.Attr{
-				{Name: xml.Name{Local: DataElementAttrNumber}, Value: strconv.Itoa(key)},
+				{Name: xml.Name{Local: utils.DataElementAttrNumber}, Value: strconv.Itoa(key)},
 			},
 		}
-		tokens = append(tokens, t, xml.CharData(value.String()), xml.EndElement{Name: t.Name})
+		tokens = append(tokens, t, xml.CharData(e.Elements[key].String()), xml.EndElement{Name: t.Name})
 	}
 
 	tokens = append(tokens, xml.EndElement{Name: start.Name})
@@ -155,6 +140,10 @@ func (e *DataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) 
 }
 
 func (e *DataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
+	if e.Spec == nil {
+		return errors.New("don't exist specification")
+	}
+
 	var dummy xmlDataElement
 	err := decoder.DecodeElement(&dummy, &start)
 	if err != nil {
@@ -173,6 +162,7 @@ func (e *DataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement
 			return err
 		}
 
+		_type.SetEncoding(e.Spec.Encoding)
 		dataElement.SetType(_type)
 		dataElement.Value = make([]byte, len(element.Text))
 		copy(dataElement.Value, element.Text)

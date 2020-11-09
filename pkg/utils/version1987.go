@@ -2,7 +2,7 @@
 // Use of this source code is governed by an Apache License
 // license that can be found in the LICENSE file.
 
-package pkg
+package utils
 
 var (
 	ISO8583DataElementsVer1987 = Specification{

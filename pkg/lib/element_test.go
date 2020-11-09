@@ -1,8 +1,13 @@
-package pkg
+// Copyright 2020 The Moov Authors
+// Use of this source code is governed by an Apache License
+// license that can be found in the LICENSE file.
+
+package lib
 
 import (
 	"encoding/json"
 	"encoding/xml"
+	"github.com/moov-io/iso8583/pkg/utils"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +25,7 @@ func TestElementJsonXmlConvert(t *testing.T) {
 		<Element Number="38">abcdef</Element>
 	</DataElements>`)
 
-	jsonMessage, err := NewDataElements(ISO8583DataElementsVer1987)
+	jsonMessage, err := NewDataElements(&utils.ISO8583DataElementsVer1987)
 	assert.Equal(t, nil, err)
 
 	err = json.Unmarshal(jsonStr, &jsonMessage)
@@ -29,10 +34,10 @@ func TestElementJsonXmlConvert(t *testing.T) {
 	orgJsonBuf, err := json.MarshalIndent(&jsonMessage, "", "\t")
 	assert.Equal(t, nil, err)
 
-	_, err = xml.MarshalIndent(&jsonMessage, "", "\t")
+	orgXmlBuf, err := xml.MarshalIndent(&jsonMessage, "", "\t")
 	assert.Equal(t, nil, err)
 
-	xmlMessage, err := NewDataElements(ISO8583DataElementsVer1987)
+	xmlMessage, err := NewDataElements(&utils.ISO8583DataElementsVer1987)
 	assert.Equal(t, nil, err)
 
 	err = xml.Unmarshal(xmlStr, &xmlMessage)
@@ -41,8 +46,9 @@ func TestElementJsonXmlConvert(t *testing.T) {
 	jsonBuf, err := json.MarshalIndent(&xmlMessage, "", "\t")
 	assert.Equal(t, nil, err)
 
-	_, err = xml.MarshalIndent(&xmlMessage, "", "\t")
+	xmlBuf, err := xml.MarshalIndent(&xmlMessage, "", "\t")
 	assert.Equal(t, nil, err)
 
 	assert.Equal(t, orgJsonBuf, jsonBuf)
+	assert.Equal(t, orgXmlBuf, xmlBuf)
 }
