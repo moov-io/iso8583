@@ -60,11 +60,12 @@ func (s Attribute) ElementType() (*ElementType, error) {
 	return nil, errors.New("invalid element type")
 }
 
-type Attributes map[int]Attribute
 type Specification struct {
 	Elements *Attributes         `json:"elements,omitempty"`
 	Encoding *EncodingDefinition `json:"encoding,omitempty"`
 }
+
+type Attributes map[int]Attribute
 
 func (s Attributes) Keys() (keys []int) {
 	for k, _ := range s {

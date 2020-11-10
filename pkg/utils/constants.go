@@ -28,6 +28,10 @@ const (
 	EncodingAscii  = "ASCII"
 	EncodingBcd    = "BCD" // packed bcd
 	EncodingRBcd   = "RBCD"
+
+	EncodingCatNumber    = "number"
+	EncodingCatBinary    = "binary"
+	EncodingCatCharacter = "character"
 )
 
 // data representation attributes
@@ -47,10 +51,10 @@ var ElementDataTypes = []string{
 
 // data representation attributes
 var AvailableEncodings = map[string][]string{
-	ElementTypeAlphabetic: {EncodingAscii, EncodingEbcdic},
-
-	ElementTypeNumeric: {EncodingBcd, EncodingRBcd, EncodingChar},
-
+	ElementTypeMti:                 {EncodingChar, EncodingBcd},
+	ElementTypeBitmap:              {EncodingChar, EncodingHex},
+	ElementTypeAlphabetic:          {EncodingAscii, EncodingEbcdic},
+	ElementTypeNumeric:             {EncodingBcd, EncodingRBcd, EncodingChar},
 	ElementTypeSpecial:             {EncodingAscii, EncodingEbcdic},
 	ElementTypeMagnetic:            {EncodingAscii, EncodingEbcdic},
 	ElementTypeIndicate:            {EncodingAscii, EncodingEbcdic},
@@ -60,4 +64,33 @@ var AvailableEncodings = map[string][]string{
 	ElementTypeNumericSpecial:      {EncodingAscii, EncodingEbcdic},
 	ElementTypeAlphaNumericSpecial: {EncodingAscii, EncodingEbcdic},
 	ElementTypeIndicateNumeric:     {EncodingAscii, EncodingEbcdic},
+}
+
+var AvailableTypeCategory = map[string]string{
+	ElementTypeMti:                 EncodingCatNumber,
+	ElementTypeBitmap:              EncodingCatBinary,
+	ElementTypeAlphabetic:          EncodingCatCharacter,
+	ElementTypeNumeric:             EncodingCatNumber,
+	ElementTypeSpecial:             EncodingCatCharacter,
+	ElementTypeMagnetic:            EncodingCatCharacter,
+	ElementTypeIndicate:            EncodingCatCharacter,
+	ElementTypeBinary:              EncodingCatBinary,
+	ElementTypeAlphaNumeric:        EncodingCatCharacter,
+	ElementTypeAlphaSpecial:        EncodingCatCharacter,
+	ElementTypeNumericSpecial:      EncodingCatCharacter,
+	ElementTypeAlphaNumericSpecial: EncodingCatCharacter,
+	ElementTypeIndicateNumeric:     EncodingCatCharacter,
+}
+
+func CheckAvailableEncoding(eType string, encoding string) bool {
+	encodings, exit := AvailableEncodings[eType]
+	if !exit {
+		return false
+	}
+	for _, _encoding := range encodings {
+		if _encoding == encoding {
+			return true
+		}
+	}
+	return false
 }

@@ -5,44 +5,58 @@
 package utils
 
 import (
-	"encoding/hex"
+	"github.com/yerden/go-util/bcd"
 )
 
-func lbcd(data []byte) []byte {
-	if len(data)%2 != 0 {
-		return bcd(append(data, "0"...))
-	}
-	return bcd(data)
-}
+var standard = &bcd.BCD{
+	Map: map[byte]byte{
+		'0': 0x0, '1': 0x1, '2': 0x2, '3': 0x3,
+		'4': 0x4, '5': 0x5, '6': 0x6, '7': 0x7,
+		'8': 0x8, '9': 0x9,
+	},
+	SwapNibbles: false,
+	Filler:      0x0}
 
-func rbcd(data []byte) []byte {
-	if len(data)%2 != 0 {
-		return bcd(append([]byte("0"), data...))
-	}
-	return bcd(data)
-}
-
-// Encode numeric in ascii into bsd (be sure len(data) % 2 == 0)
-func bcd(data []byte) []byte {
-	out := make([]byte, len(data)/2+1)
-	n, err := hex.Decode(out, data)
+func Bcd(src []byte) ([]byte, error) {
+	enc := bcd.NewEncoder(standard)
+	dst := make([]byte, bcd.EncodedLen(len(src)))
+	n, err := enc.Encode(dst, src)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-	return out[:n]
+	return dst[:n], nil
 }
 
-func bcdl2Ascii(data []byte, length int) []byte {
-	return bcd2Ascii(data)[:length]
+func RBcd(src []byte) ([]byte, error) {
+	if len(src)%2 != 0 {
+		src = append([]byte("0"), src...)
+	}
+	return Bcd(src)
 }
 
-func bcdr2Ascii(data []byte, length int) []byte {
-	out := bcd2Ascii(data)
-	return out[len(out)-length:]
+func BcdAscii(src []byte, length int) ([]byte, error) {
+	dec := bcd.NewDecoder(standard)
+	dst := make([]byte, bcd.DecodedLen(len(src)))
+	n, err := dec.Decode(dst, src)
+	if err != nil {
+		return nil, err
+	}
+	if n > length {
+		n = length
+	}
+	return dst[:n], err
 }
 
-func bcd2Ascii(data []byte) []byte {
-	out := make([]byte, len(data)*2)
-	n := hex.Encode(out, data)
-	return out[:n]
+func RBcdAscii(src []byte, length int) ([]byte, error) {
+	dec := bcd.NewDecoder(standard)
+	dst := make([]byte, bcd.DecodedLen(len(src)))
+	n, err := dec.Decode(dst, src)
+	if err != nil {
+		return nil, err
+	}
+	start := n - length
+	if start < 0 {
+		start = 0
+	}
+	return dst[start:n], err
 }

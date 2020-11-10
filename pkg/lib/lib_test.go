@@ -26,29 +26,55 @@ func TestElementJsonXmlConvert(t *testing.T) {
 	</DataElements>`)
 
 	jsonMessage, err := NewDataElements(&utils.ISO8583DataElementsVer1987)
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
 
 	err = json.Unmarshal(jsonStr, &jsonMessage)
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
 
 	orgJsonBuf, err := json.MarshalIndent(&jsonMessage, "", "\t")
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
 
 	orgXmlBuf, err := xml.MarshalIndent(&jsonMessage, "", "\t")
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
 
 	xmlMessage, err := NewDataElements(&utils.ISO8583DataElementsVer1987)
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
 
 	err = xml.Unmarshal(xmlStr, &xmlMessage)
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
 
 	jsonBuf, err := json.MarshalIndent(&xmlMessage, "", "\t")
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
 
 	xmlBuf, err := xml.MarshalIndent(&xmlMessage, "", "\t")
-	assert.Equal(t, nil, err)
+	assert.Nil(t, err)
 
 	assert.Equal(t, orgJsonBuf, jsonBuf)
 	assert.Equal(t, orgXmlBuf, xmlBuf)
+}
+
+func TestIso8583Message(t *testing.T) {
+	jsonStr := []byte(`
+	{
+		"mti": "0800",
+		"bitmap": "823A000000000000040000000000000004200906139000010906130420042000",
+		"message": {
+			"11": 123456,
+			"3": 123456,
+			"38": "abcdef"
+		}
+	}
+	`)
+
+	message, err := NewMessage(&utils.ISO8583DataElementsVer1987)
+	assert.Nil(t, err)
+
+	err = json.Unmarshal(jsonStr, message)
+	assert.Nil(t, err)
+
+	_, err = json.MarshalIndent(message, "", "\t")
+	assert.Nil(t, err)
+
+	_, err = xml.MarshalIndent(message, "", "\t")
+	assert.Nil(t, err)
 }
