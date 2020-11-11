@@ -27,7 +27,7 @@ type xmlDataElement struct {
 // create data elements of message with specification
 func NewDataElements(spec *utils.Specification) (*DataElements, error) {
 	if spec == nil && spec.Elements == nil || spec.Encoding == nil {
-		return nil, errors.New("has invalid specification")
+		return nil, errors.New(utils.ErrInvalidSpecification)
 	}
 	return &DataElements{
 		Elements: make(map[int]*Element),
@@ -50,9 +50,20 @@ func (e *DataElements) Validate() error {
 	return nil
 }
 
+func (e *DataElements) Keys() []int {
+	var keys []int
+	if e.Elements != nil {
+		for k, _ := range e.Elements {
+			keys = append(keys, k)
+		}
+		sort.Ints(keys)
+	}
+	return keys
+}
+
 func (e *DataElements) UnmarshalJSON(b []byte) error {
 	if e.Spec == nil {
-		return errors.New("don't exist specification")
+		return errors.New(utils.ErrNonExistSpecification)
 	}
 	var convert map[int]*Element
 	convert = e.Elements
@@ -76,17 +87,9 @@ func (e *DataElements) UnmarshalJSON(b []byte) error {
 
 func (e *DataElements) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	var keys []int
-
-	if e.Elements != nil {
-		for k, _ := range e.Elements {
-			keys = append(keys, k)
-		}
-		sort.Ints(keys)
-	}
 
 	buf.WriteString("{")
-	for i, key := range keys {
+	for i, key := range e.Keys() {
 		if i != 0 {
 			buf.WriteString(",")
 		}
@@ -109,16 +112,8 @@ func (e *DataElements) MarshalJSON() ([]byte, error) {
 
 func (e *DataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
 	tokens := []xml.Token{start}
-	var keys []int
 
-	if e.Elements != nil {
-		for k, _ := range e.Elements {
-			keys = append(keys, k)
-		}
-		sort.Ints(keys)
-	}
-
-	for _, key := range keys {
+	for _, key := range e.Keys() {
 		t := xml.StartElement{
 			Name: xml.Name{Local: utils.DataElementXmlName},
 			Attr: []xml.Attr{
@@ -141,7 +136,7 @@ func (e *DataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) 
 
 func (e *DataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
 	if e.Spec == nil {
-		return errors.New("don't exist specification")
+		return errors.New(utils.ErrNonExistSpecification)
 	}
 
 	var dummy xmlDataElement
@@ -170,4 +165,20 @@ func (e *DataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement
 	}
 
 	return nil
+}
+
+func (e *DataElements) Bytes() ([]byte, error) {
+	var buf bytes.Buffer
+	for _, key := range e.Keys() {
+		element, exist := e.Elements[key]
+		if exist {
+			value, err := element.Bytes()
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(value)
+		}
+	}
+
+	return buf.Bytes(), nil
 }

@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Intermernet/ebcdic"
 	"github.com/moov-io/iso8583/pkg/utils"
@@ -23,9 +24,8 @@ type Element struct {
 	Encoding       string
 	Fixed          bool
 	LengthEncoding string
-
-	DataLength int
-	Value      []byte
+	DataLength     int
+	Value          []byte // raw data without any encoding, equal size of value and length (data length) of element
 }
 
 func (e *Element) SetType(_type *utils.ElementType) {
@@ -35,10 +35,21 @@ func (e *Element) SetType(_type *utils.ElementType) {
 	e.Encoding = _type.Encoding
 	e.Fixed = _type.Fixed
 	e.LengthEncoding = _type.LengthEncoding
+	e.extendBinaryData()
 }
 
 func (e *Element) Validate() error {
 	return nil
+}
+
+func (e *Element) extendBinaryData() {
+	cat, _ := utils.AvailableTypeCategory[e.Type]
+	if cat == utils.EncodingCatBinary && len(e.Value) < e.Length {
+		newData := fmt.Sprintf("%-"+strconv.Itoa(e.Length)+"s", string(e.Value))
+		newData = strings.ReplaceAll(newData, " ", "0")
+		e.Value = make([]byte, e.Length)
+		copy(e.Value, newData)
+	}
 }
 
 func (e *Element) String() string {
@@ -59,6 +70,7 @@ func (e *Element) UnmarshalJSON(b []byte) error {
 		e.Value = make([]byte, len(value))
 		copy(e.Value, value)
 	}
+	e.extendBinaryData()
 	return nil
 }
 
@@ -95,6 +107,14 @@ func (e *Element) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error
 }
 
 func (e *Element) Bytes() ([]byte, error) {
+	dataLen := e.Length
+	if !e.Fixed {
+		dataLen = e.DataLength
+	}
+	if dataLen > len(e.Value) {
+		return nil, fmt.Errorf(utils.ErrValueTooLong, "byte", dataLen, len(e.Value))
+	}
+
 	cat := utils.AvailableTypeCategory[e.Type]
 	switch cat {
 	case utils.EncodingCatCharacter:
@@ -131,54 +151,72 @@ func (e *Element) characterEncoding() ([]byte, error) {
 	} else {
 		return nil, errors.New(utils.ErrInvalidEncoder)
 	}
-
 	if err != nil {
 		return nil, err
 	}
-	if len(value) > e.Length {
-		return nil, fmt.Errorf(utils.ErrValueTooLong, "character", e.Length, len(value))
-	}
+
 	if e.Fixed {
 		return value, nil
 	}
 
-	lenStr := fmt.Sprintf("%02d", len(value))
-	contentLen := []byte(lenStr)
-	var lenVal []byte
-	switch e.LengthEncoding {
-	case utils.EncodingAscii:
-		lenVal = contentLen
-		if len(lenVal) > 2 {
-			return nil, errors.New(utils.ErrInvalidLengthHead)
-		}
-	case utils.EncodingRBcd:
-		lenVal, err = utils.RBcd(contentLen)
-		if err != nil {
-			return nil, err
-		}
-		if len(lenVal) > 1 {
-			return nil, errors.New(utils.ErrInvalidLengthHead)
-		}
-	case utils.EncodingBcd:
-		lenVal, err = utils.Bcd(contentLen)
-		if err != nil {
-			return nil, err
-		}
-		if len(lenVal) > 1 {
-			return nil, errors.New(utils.ErrInvalidLengthHead)
-		}
-	default:
-		return nil, errors.New(utils.ErrInvalidLengthEncoder)
+	lenEncode, err := e.lengthEncoding(value)
+	if err != nil {
+		return nil, err
 	}
-	return append(lenVal, value...), nil
+
+	return append(lenEncode, value...), nil
 }
 
 func (e *Element) numberEncoding() ([]byte, error) {
-	return nil, nil
+	var value []byte
+	var err error
+
+	if e.Encoding == utils.EncodingChar {
+		value = e.Value
+	} else if e.Encoding == utils.EncodingBcd {
+		value, err = utils.Bcd(e.Value)
+	} else if e.Encoding == utils.EncodingRBcd {
+		value, err = utils.RBcd(e.Value)
+	} else {
+		return nil, errors.New(utils.ErrInvalidEncoder)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if e.Fixed {
+		return value, nil
+	}
+
+	lenEncode, err := e.lengthEncoding(value)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(lenEncode, value...), nil
 }
 
 func (e *Element) binaryEncoding() ([]byte, error) {
-	return nil, nil
+	var value []byte
+
+	if e.Length != len(e.Value) {
+		return nil, errors.New(utils.ErrBadBinary)
+	}
+
+	if e.Encoding == utils.EncodingChar {
+		value = e.Value
+	} else if e.Encoding == utils.EncodingHex {
+		bitNum, err := strconv.ParseUint(string(e.Value), 2, e.Length)
+		if err != nil {
+			return nil, err
+		}
+		hexStr := fmt.Sprintf("%0"+strconv.Itoa(e.Length/4)+"s", strconv.FormatUint(bitNum, 16))
+		value = []byte(hexStr)
+	} else {
+		return nil, errors.New(utils.ErrInvalidEncoder)
+	}
+
+	return value, nil
 }
 
 func (e *Element) characterDecoding(raw []byte) (int, error) {
@@ -252,4 +290,39 @@ func (e *Element) numberDecoding(raw []byte) (int, error) {
 
 func (e *Element) binaryDecoding(raw []byte) (int, error) {
 	return 0, nil
+}
+
+func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
+	contentLen := []byte(fmt.Sprintf("%02d", len(value)))
+
+	var encode []byte
+	var err error
+
+	switch e.LengthEncoding {
+	case utils.EncodingAscii:
+		encode = contentLen
+		if len(encode) > 2 {
+			return nil, errors.New(utils.ErrInvalidLengthHead)
+		}
+	case utils.EncodingRBcd:
+		encode, err = utils.RBcd(contentLen)
+		if err != nil {
+			return nil, err
+		}
+		if len(encode) > 1 {
+			return nil, errors.New(utils.ErrInvalidLengthHead)
+		}
+	case utils.EncodingBcd:
+		encode, err = utils.Bcd(contentLen)
+		if err != nil {
+			return nil, err
+		}
+		if len(encode) > 1 {
+			return nil, errors.New(utils.ErrInvalidLengthHead)
+		}
+	default:
+		return nil, errors.New(utils.ErrInvalidLengthEncoder)
+	}
+
+	return encode, nil
 }
