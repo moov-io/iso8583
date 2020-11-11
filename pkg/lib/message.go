@@ -51,7 +51,7 @@ func NewMessage(spec *utils.Specification) (Iso8583Message, error) {
 type isoMessage struct {
 	Mti          *Element             `xml:"mti,omitempty" json:"mti,omitempty" yaml:"mti,omitempty"`
 	Bitmap       *Element             `xml:"bitmap,omitempty" json:"bitmap,omitempty" yaml:"bitmap,omitempty"`
-	Elements     *DataElements        `xml:"elements,omitempty" json:"message,elements" yaml:"elements,omitempty"`
+	Elements     *DataElements        `xml:"elements,omitempty" json:"elements,omitempty" yaml:"elements,omitempty"`
 	Spec         *utils.Specification `xml:"-" json:"-"`
 	SecondBitmap bool                 `xml:"-" json:"-"`
 	ThirdBitmap  bool                 `xml:"-" json:"-"`

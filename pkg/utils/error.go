@@ -19,4 +19,10 @@ const (
 	ErrNonExistSpecification string = "don't exist specification"
 	// ErrInvalidSpecification is given when there is invalid specification
 	ErrInvalidSpecification string = "has invalid specification"
+	// ErrInvalidBitmapArray is given when bitmap array is invalid
+	ErrInvalidBitmapArray string = "invalid iso8583 bitmap array"
+	// ErrInvalidElementLength is given when the length of the element is invalid
+	ErrInvalidElementLength string = "invalid element length"
+	// ErrInvalidElementType is given when the type of the element is invalid
+	ErrInvalidElementType string = "invalid element type"
 )

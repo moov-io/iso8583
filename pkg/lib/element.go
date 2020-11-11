@@ -43,7 +43,7 @@ func (e *Element) Validate() error {
 }
 
 func (e *Element) extendBinaryData() {
-	cat, _ := utils.AvailableTypeCategory[e.Type]
+	cat := utils.AvailableTypeCategory[e.Type]
 	if cat == utils.EncodingCatBinary && len(e.Value) < e.Length {
 		newData := fmt.Sprintf("%-"+strconv.Itoa(e.Length)+"s", string(e.Value))
 		newData = strings.ReplaceAll(newData, " ", "0")
@@ -272,6 +272,9 @@ func (e *Element) characterDecoding(raw []byte) (int, error) {
 
 	if e.Encoding == utils.EncodingAscii {
 		value, err = utils.UTF8ToWindows1252(raw[read : read+contentLen])
+		if err != nil {
+			return 0, err
+		}
 	} else if e.Encoding == utils.EncodingEbcdic {
 		value = ebcdic.Decode(raw[read : read+contentLen])
 	} else {

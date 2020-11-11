@@ -45,7 +45,7 @@ func (s Attribute) ElementType() (*ElementType, error) {
 			_size, err := strconv.Atoi(strings.TrimSpace(splits[len(splits)-1]))
 			if err != nil ||
 				(!isFixed && _size > int(math.Pow(10, float64(len(indicate))))) {
-				return nil, errors.New("invalid element length")
+				return nil, errors.New(ErrInvalidElementLength)
 			}
 
 			return &ElementType{
@@ -57,7 +57,7 @@ func (s Attribute) ElementType() (*ElementType, error) {
 		}
 	}
 
-	return nil, errors.New("invalid element type")
+	return nil, errors.New(ErrInvalidElementType)
 }
 
 type Specification struct {
@@ -68,7 +68,7 @@ type Specification struct {
 type Attributes map[int]Attribute
 
 func (s Attributes) Keys() (keys []int) {
-	for k, _ := range s {
+	for k := range s {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
@@ -78,7 +78,7 @@ func (s Attributes) Keys() (keys []int) {
 func (s Attributes) Get(number int) (*Attribute, error) {
 	spec, existed := s[number]
 	if !existed {
-		return nil, errors.New("don't exist specification")
+		return nil, errors.New(ErrNonExistSpecification)
 	}
 	return &spec, nil
 }

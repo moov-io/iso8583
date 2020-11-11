@@ -53,7 +53,7 @@ func (e *DataElements) Validate() error {
 func (e *DataElements) Keys() []int {
 	var keys []int
 	if e.Elements != nil {
-		for k, _ := range e.Elements {
+		for k := range e.Elements {
 			keys = append(keys, k)
 		}
 		sort.Ints(keys)
@@ -65,12 +65,10 @@ func (e *DataElements) UnmarshalJSON(b []byte) error {
 	if e.Spec == nil {
 		return errors.New(utils.ErrNonExistSpecification)
 	}
-	var convert map[int]*Element
-	convert = e.Elements
-	if err := json.Unmarshal(b, &convert); err != nil {
+	if err := json.Unmarshal(b, &e.Elements); err != nil {
 		return err
 	}
-	for key, elm := range convert {
+	for key, elm := range e.Elements {
 		spec, err := e.Spec.Elements.Get(key)
 		if err != nil {
 			return err
