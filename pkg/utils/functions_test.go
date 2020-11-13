@@ -45,7 +45,7 @@ func TestBcdEncode(t *testing.T) {
 	assert.Equal(t, "31", fmt.Sprintf("%X", r))
 
 	input := "unacceptable"
-	r, err = Bcd([]byte(input))
+	_, err = Bcd([]byte(input))
 	assert.NotNil(t, err)
 
 }
