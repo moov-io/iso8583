@@ -17,6 +17,12 @@ func TestCheckAvailableEncoding(t *testing.T) {
 
 	b = CheckAvailableEncoding(ElementTypeMti, EncodingAscii)
 	assert.Equal(t, b, false)
+
+	b = CheckAvailableEncoding(ElementTypeMti, EncodingRBcd)
+	assert.Equal(t, b, false)
+
+	b = CheckAvailableEncoding("unknown", EncodingAscii)
+	assert.Equal(t, b, false)
 }
 
 func TestBcdEncode(t *testing.T) {
@@ -38,6 +44,10 @@ func TestBcdEncode(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "31", fmt.Sprintf("%X", r))
 
+	input := "unacceptable"
+	r, err = Bcd([]byte(input))
+	assert.NotNil(t, err)
+
 }
 
 func TestBcdDecode(t *testing.T) {
@@ -52,9 +62,16 @@ func TestBcdDecode(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, []byte("12045"), r)
 
+	_, err = RBcdAscii([]byte("\x12\xa3\x4f"), 6)
+	assert.NotNil(t, err)
+
 	r, err = RBcdAscii([]byte("\x01\x23\x45"), 5)
 	assert.Nil(t, err)
 	assert.Equal(t, []byte("12345"), r)
+
+	r, err = RBcdAscii([]byte("\x01\x23\x45"), 10)
+	assert.Nil(t, err)
+	assert.Equal(t, []byte("012345"), r)
 }
 
 func TestAttributeParse(t *testing.T) {
@@ -74,6 +91,10 @@ func TestAttributeParse(t *testing.T) {
 	}
 	_, err = attribute.Parse()
 	assert.NotNil(t, err)
+
+	attribute.Describe = "lll"
+	_, err = attribute.Parse()
+	assert.NotNil(t, err)
 }
 
 func TestUTF8ToWindows1252(t *testing.T) {
@@ -81,6 +102,10 @@ func TestUTF8ToWindows1252(t *testing.T) {
 	convert, err := UTF8ToWindows1252([]byte(test))
 	assert.Nil(t, err)
 	assert.Equal(t, test, string(convert))
+
+	invalid := []byte{0xff, 0xfe, 0xfd}
+	_, err = UTF8ToWindows1252(invalid)
+	assert.Nil(t, err)
 }
 
 func TestBitmapToIndexArray(t *testing.T) {

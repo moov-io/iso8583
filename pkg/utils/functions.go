@@ -6,13 +6,14 @@ package utils
 
 import (
 	"bytes"
-	"github.com/yerden/go-util/bcd"
-	"golang.org/x/text/encoding/charmap"
-	"golang.org/x/text/transform"
 	"io"
 	"io/ioutil"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/yerden/go-util/bcd"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 )
 
 var standard = &bcd.BCD{
