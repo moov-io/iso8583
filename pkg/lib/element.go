@@ -18,94 +18,27 @@ import (
 
 // data element, CommonType + Value
 type Element struct {
-	Type           string
-	Length         int
-	Format         string
-	Encoding       string
-	Fixed          bool
-	LengthEncoding string
-	DataLength     int
-	Value          []byte // raw data without any encoding, equal size of value and length (data length) of element
+	Type           string `xml:"-" json:"-"`
+	Length         int    `xml:"-" json:"-"`
+	Format         string `xml:"-" json:"-"`
+	Encoding       string `xml:"-" json:"-"`
+	Fixed          bool   `xml:"-" json:"-"`
+	LengthEncoding string `xml:"-" json:"-"`
+	DataLength     int    `xml:"-" json:"-"`
+	Value          []byte `xml:"-" json:"-"` // raw data without any encoding, equal size of value and length (data length) of element
 }
 
-func (e *Element) SetType(_type *utils.ElementType) {
-	e.Type = _type.Type
-	e.Length = _type.Length
-	e.Format = _type.Format
-	e.Encoding = _type.Encoding
-	e.Fixed = _type.Fixed
-	e.LengthEncoding = _type.LengthEncoding
-	e.extendBinaryData()
-}
-
+// Validate check validation of field
 func (e *Element) Validate() error {
 	return nil
 }
 
-func (e *Element) extendBinaryData() {
-	cat := utils.AvailableTypeCategory[e.Type]
-	if cat == utils.EncodingCatBinary && len(e.Value) < e.Length {
-		newData := fmt.Sprintf("%-"+strconv.Itoa(e.Length)+"s", string(e.Value))
-		newData = strings.ReplaceAll(newData, " ", "0")
-		e.Value = make([]byte, e.Length)
-		copy(e.Value, newData)
-	}
-}
-
+// String field to string
 func (e *Element) String() string {
 	return fmt.Sprintf("%s", e.Value)
 }
 
-func (e *Element) UnmarshalJSON(b []byte) error {
-	_, err := strconv.ParseFloat(string(b), 64)
-	if err == nil {
-		e.Value = make([]byte, len(b))
-		copy(e.Value, b)
-	} else {
-		var value string
-		err := json.Unmarshal(b, &value)
-		if err != nil {
-			return err
-		}
-		e.Value = make([]byte, len(value))
-		copy(e.Value, value)
-	}
-	e.extendBinaryData()
-	return nil
-}
-
-func (e *Element) MarshalJSON() ([]byte, error) {
-	if e.Type == utils.ElementTypeNumeric {
-		ret, err := strconv.Atoi(string(e.Value))
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		return json.Marshal(ret)
-	}
-	return json.Marshal(fmt.Sprintf("%s", e.Value))
-}
-
-func (e *Element) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
-	var s string
-	if err := decoder.DecodeElement(&s, &start); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (e *Element) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
-	if e.Type == utils.ElementTypeNumeric {
-		ret, err := strconv.Atoi(string(e.Value))
-		if err != nil {
-			return err
-		}
-		return encoder.EncodeElement(ret, start)
-	}
-	s := fmt.Sprintf("%s", e.Value)
-	return encoder.EncodeElement(s, start)
-}
-
+// Bytes encode field to bytes
 func (e *Element) Bytes() ([]byte, error) {
 	dataLen := e.Length
 	if !e.Fixed {
@@ -127,6 +60,7 @@ func (e *Element) Bytes() ([]byte, error) {
 	return nil, errors.New(utils.ErrInvalidEncoder)
 }
 
+// Load decode field from bytes
 func (e *Element) Load(raw []byte) (int, error) {
 	cat := utils.AvailableTypeCategory[e.Type]
 	switch cat {
@@ -140,6 +74,61 @@ func (e *Element) Load(raw []byte) (int, error) {
 	return 0, errors.New(utils.ErrInvalidEncoder)
 }
 
+// Customize unmarshal of json
+func (e *Element) UnmarshalJSON(b []byte) error {
+	_, err := strconv.ParseFloat(string(b), 64)
+	if err == nil {
+		e.Value = make([]byte, len(b))
+		copy(e.Value, b)
+	} else {
+		var value string
+		err := json.Unmarshal(b, &value)
+		if err != nil {
+			return err
+		}
+		e.Value = make([]byte, len(value))
+		copy(e.Value, value)
+	}
+	e.extendBinaryData()
+	return nil
+}
+
+// Customize marshal of json
+func (e *Element) MarshalJSON() ([]byte, error) {
+	if e.Type == utils.ElementTypeNumeric {
+		ret, err := strconv.Atoi(string(e.Value))
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		return json.Marshal(ret)
+	}
+	return json.Marshal(fmt.Sprintf("%s", e.Value))
+}
+
+// Customize unmarshal of xml
+func (e *Element) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
+	var s string
+	if err := decoder.DecodeElement(&s, &start); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Customize marshal of xml
+func (e *Element) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
+	if e.Type == utils.ElementTypeNumeric {
+		ret, err := strconv.Atoi(string(e.Value))
+		if err != nil {
+			return err
+		}
+		return encoder.EncodeElement(ret, start)
+	}
+	s := fmt.Sprintf("%s", e.Value)
+	return encoder.EncodeElement(s, start)
+}
+
+// private functions ...
 func (e *Element) characterEncoding() ([]byte, error) {
 	var value []byte
 	var err error
@@ -328,4 +317,24 @@ func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
 	}
 
 	return encode, nil
+}
+
+func (e *Element) extendBinaryData() {
+	cat := utils.AvailableTypeCategory[e.Type]
+	if cat == utils.EncodingCatBinary && len(e.Value) < e.Length {
+		newData := fmt.Sprintf("%-"+strconv.Itoa(e.Length)+"s", string(e.Value))
+		newData = strings.ReplaceAll(newData, " ", "0")
+		e.Value = make([]byte, e.Length)
+		copy(e.Value, newData)
+	}
+}
+
+func (e *Element) setType(_type *utils.ElementType) {
+	e.Type = _type.Type
+	e.Length = _type.Length
+	e.Format = _type.Format
+	e.Encoding = _type.Encoding
+	e.Fixed = _type.Fixed
+	e.LengthEncoding = _type.LengthEncoding
+	e.extendBinaryData()
 }

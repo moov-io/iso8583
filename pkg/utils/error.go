@@ -25,4 +25,6 @@ const (
 	ErrInvalidElementLength string = "invalid element length"
 	// ErrInvalidElementType is given when the type of the element is invalid
 	ErrInvalidElementType string = "invalid element type"
+	// ErrMisMatchElementsBitmap is given when mismatch between bitmap and data elements
+	ErrMisMatchElementsBitmap string = "don't match bitmap and data elements"
 )

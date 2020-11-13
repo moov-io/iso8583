@@ -6,8 +6,11 @@ package lib
 
 import (
 	"bytes"
+	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"github.com/moov-io/iso8583/pkg/utils"
+	"reflect"
 )
 
 type Iso8583Message interface {
@@ -24,77 +27,90 @@ func NewMessage(spec *utils.Specification) (Iso8583Message, error) {
 	if spec == nil && spec.Elements == nil || spec.Encoding == nil {
 		return nil, errors.New("has invalid specification")
 	}
-	_elements, err := NewDataElements(spec)
+	elements, err := NewDataElements(spec)
 	if err != nil {
 		return nil, err
 	}
 	return &isoMessage{
-		Mti: &Element{
+		mti: &Element{
 			Type:     utils.ElementTypeMti,
 			Fixed:    true,
 			Length:   4,
 			Encoding: spec.Encoding.MtiEnc,
 		},
-		Bitmap: &Element{
+		bitmap: &Element{
 			Type:     utils.ElementTypeBitmap,
 			Fixed:    true,
 			Length:   64,
 			Encoding: spec.Encoding.BitmapEnc,
 		},
-		Elements: _elements,
-		Spec:     spec,
+		elements: elements,
+		spec:     spec,
 	}, nil
 }
 
 // message instance
 // isoMessage is structure for ISO 8583 message encode and decode
 type isoMessage struct {
-	Mti          *Element             `xml:"mti,omitempty" json:"mti,omitempty" yaml:"mti,omitempty"`
-	Bitmap       *Element             `xml:"bitmap,omitempty" json:"bitmap,omitempty" yaml:"bitmap,omitempty"`
-	Elements     *DataElements        `xml:"elements,omitempty" json:"elements,omitempty" yaml:"elements,omitempty"`
-	Spec         *utils.Specification `xml:"-" json:"-"`
-	SecondBitmap bool                 `xml:"-" json:"-"`
-	ThirdBitmap  bool                 `xml:"-" json:"-"`
+	mti      *Element
+	bitmap   *Element
+	elements *dataElements
+	spec     *utils.Specification
+	indexes  []int
 }
 
+// isoMessage is structure for marshaling and un-marshaling
+type messageJSON struct {
+	Mti      *Element      `xml:"mti,omitempty" json:"mti,omitempty" yaml:"mti,omitempty"`
+	Bitmap   *Element      `xml:"bitmap,omitempty" json:"bitmap,omitempty" yaml:"bitmap,omitempty"`
+	Elements *dataElements `xml:"elements,omitempty" json:"elements,omitempty" yaml:"elements,omitempty"`
+}
+
+// Validate check validation of field
 func (m *isoMessage) Validate() error {
-	if m.Mti != nil {
-		if err := m.Mti.Validate(); err != nil {
+	if m.mti != nil {
+		if err := m.mti.Validate(); err != nil {
 			return err
 		}
 	}
-	if m.Bitmap != nil {
-		if err := m.Bitmap.Validate(); err != nil {
+	if m.bitmap != nil {
+		if err := m.bitmap.Validate(); err != nil {
 			return err
 		}
 	}
-	if m.Elements != nil {
-		if err := m.Elements.Validate(); err != nil {
+	if m.elements != nil {
+		if err := m.elements.Validate(); err != nil {
 			return err
 		}
+	}
+
+	m.generateIndexes()
+	if !reflect.DeepEqual(m.elements.Keys(), m.indexes) {
+		return errors.New(utils.ErrMisMatchElementsBitmap)
 	}
 	return nil
 }
 
+// Bytes encode field to bytes
 func (m *isoMessage) Bytes() ([]byte, error) {
 	var buf bytes.Buffer
 
-	if m.Mti != nil {
-		value, err := m.Mti.Bytes()
+	if m.mti != nil {
+		value, err := m.mti.Bytes()
 		if err != nil {
 			return nil, err
 		}
 		buf.Write(value)
 	}
-	if m.Bitmap != nil {
-		value, err := m.Bitmap.Bytes()
+	if m.bitmap != nil {
+		value, err := m.bitmap.Bytes()
 		if err != nil {
 			return nil, err
 		}
 		buf.Write(value)
 	}
-	if m.Elements != nil {
-		value, err := m.Elements.Bytes()
+	if m.elements != nil {
+		value, err := m.elements.Bytes()
 		if err != nil {
 			return nil, err
 		}
@@ -104,6 +120,7 @@ func (m *isoMessage) Bytes() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Load decode field from bytes
 func (m *isoMessage) Load(raw []byte) (int, error) {
 	// TODO
 	// load mti, bitmap
@@ -115,17 +132,95 @@ func (m *isoMessage) Load(raw []byte) (int, error) {
 	return 0, nil
 }
 
+// GetElements return data elements of iso message
 func (m *isoMessage) GetElements() map[int]*Element {
-	if m.Elements == nil {
+	if m.elements == nil {
 		return nil
 	}
-	return m.Elements.Elements
+	return m.elements.elements
 }
 
+// GetMti return mti of iso message
 func (m *isoMessage) GetMti() *Element {
-	return m.Mti
+	return m.mti
 }
 
+// GetBitmap return bitmap of iso message
 func (m *isoMessage) GetBitmap() *Element {
-	return m.Bitmap
+	return m.bitmap
+}
+
+// Customize unmarshal of json
+func (m *isoMessage) UnmarshalJSON(b []byte) error {
+	dummy := messageJSON{
+		Mti:      m.mti,
+		Bitmap:   m.bitmap,
+		Elements: m.elements,
+	}
+	if err := json.Unmarshal(b, &dummy); err != nil {
+		return err
+	}
+
+	m.mti = dummy.Mti
+	m.bitmap = dummy.Bitmap
+	m.elements = dummy.Elements
+	m.generateIndexes()
+	return nil
+}
+
+// Customize marshal of json
+func (m *isoMessage) MarshalJSON() ([]byte, error) {
+	dummy := messageJSON{
+		Mti:      m.mti,
+		Bitmap:   m.bitmap,
+		Elements: m.elements,
+	}
+	return json.Marshal(dummy)
+}
+
+// Customize unmarshal of xml
+func (m *isoMessage) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
+	dummy := messageJSON{
+		Mti:      m.mti,
+		Bitmap:   m.bitmap,
+		Elements: m.elements,
+	}
+	if err := decoder.DecodeElement(&dummy, &start); err != nil {
+		return err
+	}
+
+	m.mti = dummy.Mti
+	m.bitmap = dummy.Bitmap
+	m.elements = dummy.Elements
+	m.generateIndexes()
+	return nil
+}
+
+// Customize marshal of xml
+func (m *isoMessage) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
+	dummy := messageJSON{
+		Mti:      m.mti,
+		Bitmap:   m.bitmap,
+		Elements: m.elements,
+	}
+	return encoder.EncodeElement(dummy, start)
+}
+
+// private functions ...
+func (m *isoMessage) generateIndexes() {
+	m.indexes = utils.BitmapToIndexArray(m.bitmap.String(), 0)
+	if utils.IsSecondBitmap(m.bitmap.String()) {
+		if m.elements.elements[1] != nil {
+			indexes := utils.BitmapToIndexArray(m.elements.elements[1].String(), 64)
+			m.indexes = append(m.indexes, indexes...)
+		}
+		if utils.IsThirdBitmap(m.bitmap.String()) {
+			if m.elements.elements[2] != nil &&
+				m.elements.elements[2].Type == utils.ElementTypeBinary &&
+				m.elements.elements[2].Length == 64 {
+				indexes := utils.BitmapToIndexArray(m.elements.elements[2].String(), 128)
+				m.indexes = append(m.indexes, indexes...)
+			}
+		}
+	}
 }

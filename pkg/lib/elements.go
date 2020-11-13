@@ -25,24 +25,25 @@ type xmlDataElement struct {
 }
 
 // create data elements of message with specification
-func NewDataElements(spec *utils.Specification) (*DataElements, error) {
+func NewDataElements(spec *utils.Specification) (*dataElements, error) {
 	if spec == nil && spec.Elements == nil || spec.Encoding == nil {
 		return nil, errors.New(utils.ErrInvalidSpecification)
 	}
-	return &DataElements{
-		Elements: make(map[int]*Element),
-		Spec:     spec,
+	return &dataElements{
+		elements: make(map[int]*Element),
+		spec:     spec,
 	}, nil
 }
 
 // data elements of the iso8583 message
-type DataElements struct {
-	Elements map[int]*Element
-	Spec     *utils.Specification `xml:"-" json:"-"`
+type dataElements struct {
+	elements map[int]*Element
+	spec     *utils.Specification
 }
 
-func (e *DataElements) Validate() error {
-	for _, _element := range e.Elements {
+// Validate check validation of field
+func (e *dataElements) Validate() error {
+	for _, _element := range e.elements {
 		if err := _element.Validate(); err != nil {
 			return err
 		}
@@ -50,40 +51,62 @@ func (e *DataElements) Validate() error {
 	return nil
 }
 
-func (e *DataElements) Keys() []int {
-	var keys []int
-	if e.Elements != nil {
-		for k := range e.Elements {
-			keys = append(keys, k)
+// Bytes encode field to bytes
+func (e *dataElements) Bytes() ([]byte, error) {
+	var buf bytes.Buffer
+	for _, key := range e.Keys() {
+		element, exist := e.elements[key]
+		if exist {
+			value, err := element.Bytes()
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(value)
 		}
-		sort.Ints(keys)
 	}
+
+	return buf.Bytes(), nil
+}
+
+// Load decode field from bytes
+func (e *dataElements) Load(raw []byte) (int, error) {
+	return 0, nil
+}
+
+func (e *dataElements) Keys() []int {
+	var keys []int
+	for k := range e.elements {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
 	return keys
 }
 
-func (e *DataElements) UnmarshalJSON(b []byte) error {
-	if e.Spec == nil {
+// Customize unmarshal of json
+func (e *dataElements) UnmarshalJSON(b []byte) error {
+	if e.spec == nil {
 		return errors.New(utils.ErrNonExistSpecification)
 	}
-	if err := json.Unmarshal(b, &e.Elements); err != nil {
+	if err := json.Unmarshal(b, &e.elements); err != nil {
 		return err
 	}
-	for key, elm := range e.Elements {
-		spec, err := e.Spec.Elements.Get(key)
+	for key, elm := range e.elements {
+		spec, err := e.spec.Elements.Get(key)
 		if err != nil {
 			return err
 		}
-		_type, err := spec.ElementType()
+		_type, err := spec.Parse()
 		if err != nil {
 			return err
 		}
-		_type.SetEncoding(e.Spec.Encoding)
-		elm.SetType(_type)
+		_type.SetEncoding(e.spec.Encoding)
+		elm.setType(_type)
 	}
 	return nil
 }
 
-func (e *DataElements) MarshalJSON() ([]byte, error) {
+// Customize marshal of json
+func (e *dataElements) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString("{")
@@ -97,7 +120,7 @@ func (e *DataElements) MarshalJSON() ([]byte, error) {
 		}
 		buf.Write(number)
 		buf.WriteString(":")
-		val, err := json.Marshal(e.Elements[key])
+		val, err := json.Marshal(e.elements[key])
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +131,8 @@ func (e *DataElements) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (e *DataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
+// Customize unmarshal of xml
+func (e *dataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
 	tokens := []xml.Token{start}
 
 	for _, key := range e.Keys() {
@@ -118,7 +142,7 @@ func (e *DataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) 
 				{Name: xml.Name{Local: utils.DataElementAttrNumber}, Value: strconv.Itoa(key)},
 			},
 		}
-		tokens = append(tokens, t, xml.CharData(e.Elements[key].String()), xml.EndElement{Name: t.Name})
+		tokens = append(tokens, t, xml.CharData(e.elements[key].String()), xml.EndElement{Name: t.Name})
 	}
 
 	tokens = append(tokens, xml.EndElement{Name: start.Name})
@@ -132,8 +156,9 @@ func (e *DataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) 
 	return encoder.Flush()
 }
 
-func (e *DataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
-	if e.Spec == nil {
+// Customize marshal of xml
+func (e *dataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
+	if e.spec == nil {
 		return errors.New(utils.ErrNonExistSpecification)
 	}
 
@@ -146,37 +171,21 @@ func (e *DataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement
 	for _, element := range dummy.Elements {
 		var dataElement Element
 
-		spec, err := e.Spec.Elements.Get(element.Number)
+		spec, err := e.spec.Elements.Get(element.Number)
 		if err != nil {
 			return err
 		}
-		_type, err := spec.ElementType()
+		_type, err := spec.Parse()
 		if err != nil {
 			return err
 		}
 
-		_type.SetEncoding(e.Spec.Encoding)
-		dataElement.SetType(_type)
+		_type.SetEncoding(e.spec.Encoding)
+		dataElement.setType(_type)
 		dataElement.Value = make([]byte, len(element.Text))
 		copy(dataElement.Value, element.Text)
-		e.Elements[element.Number] = &dataElement
+		e.elements[element.Number] = &dataElement
 	}
 
 	return nil
-}
-
-func (e *DataElements) Bytes() ([]byte, error) {
-	var buf bytes.Buffer
-	for _, key := range e.Keys() {
-		element, exist := e.Elements[key]
-		if exist {
-			value, err := element.Bytes()
-			if err != nil {
-				return nil, err
-			}
-			buf.Write(value)
-		}
-	}
-
-	return buf.Bytes(), nil
 }

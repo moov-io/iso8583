@@ -29,7 +29,8 @@ type Attribute struct {
 	Description string
 }
 
-func (s Attribute) ElementType() (*ElementType, error) {
+// Parse return ElementType from attribute string
+func (s Attribute) Parse() (*ElementType, error) {
 	attribute := s.Describe
 	for _, indicate := range digitIndicates {
 		if strings.Contains(attribute, indicate) {
@@ -107,6 +108,7 @@ func (t *ElementType) Validate() error {
 	return nil
 }
 
+// SetEncoding will set encoders
 func (t *ElementType) SetEncoding(encoding *EncodingDefinition) {
 	t.LengthEncoding = encoding.LengthEnc
 	switch t.Type {

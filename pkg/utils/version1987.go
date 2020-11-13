@@ -7,13 +7,13 @@ package utils
 var (
 	ISO8583DataElementsVer1987 = Specification{
 		Encoding: &EncodingDefinition{
-			MtiEnc:       "CHAR",
-			BitmapEnc:    "HEX",
-			LengthEnc:    "CHAR",
-			NumberEnc:    "CHAR",
-			CharacterEnc: "ASCII",
-			BinaryEnc:    "NONE",
-			TrackEnc:     "CHAR",
+			MtiEnc:       EncodingChar,
+			BitmapEnc:    EncodingHex,
+			LengthEnc:    EncodingChar,
+			NumberEnc:    EncodingChar,
+			CharacterEnc: EncodingAscii,
+			BinaryEnc:    EncodingChar,
+			TrackEnc:     EncodingChar,
 		},
 		Elements: &Attributes{
 			1:   {"b 64", "Second Bitmap"},
