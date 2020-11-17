@@ -18,6 +18,16 @@ else
 	./lint-project.sh
 endif
 
+docker: clean docker-hub
+
+docker-hub:
+	docker build --pull -t moov/iso8583:$(VERSION) -f Dockerfile .
+	docker tag moov/iso8583:$(VERSION) moov/iso8583:latest
+
+release-push:
+	docker push moov/iso8583:$(VERSION)
+	docker push moov/iso8583:latest
+
 .PHONY: clean
 clean:
 ifeq ($(OS),Windows_NT)
