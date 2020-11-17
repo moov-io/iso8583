@@ -6,7 +6,7 @@ VERSION := $(shell grep -Eo '(v[0-9]+[\.][0-9]+[\.][0-9]+(-[a-zA-Z0-9]*)?)' vers
 build:
 	go fmt ./...
 	@mkdir -p ./bin/
-	CGO_ENABLED=1 go build github.com/moov-io/iso8583
+	CGO_ENABLED=1 go build *.go
 
 .PHONY: check
 check:
