@@ -33,3 +33,7 @@ jobs:
     - name: Upload Code Coverage
       if: runner.os == 'Linux'
       run: bash <(curl -s https://codecov.io/bash)
+
+    - name: Docker Build
+      if: runner.os == 'Linux'
+      run: make docker
