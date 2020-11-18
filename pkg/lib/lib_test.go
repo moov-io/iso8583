@@ -51,6 +51,51 @@ func TestElementJsonXmlConvert(t *testing.T) {
 
 	assert.Equal(t, orgJsonBuf, jsonBuf)
 	assert.Equal(t, orgXmlBuf, xmlBuf)
+
+	rawMessage := &dataElements{}
+	err = json.Unmarshal(jsonStr, rawMessage)
+	assert.NotNil(t, err)
+
+	err = xml.Unmarshal(xmlStr, rawMessage)
+	assert.NotNil(t, err)
+
+	rawMessage.spec = &utils.ISO8583DataElementsVer1987
+	err = json.Unmarshal(jsonStr, rawMessage)
+	assert.Nil(t, err)
+
+	invalidJsonStr := []byte(`{
+		"3": 123456,
+		"11": 123456,
+		"238": "abcdef"
+	}`)
+	err = json.Unmarshal(invalidJsonStr, rawMessage)
+	assert.NotNil(t, err)
+
+	invalidXmlStr := []byte(`<DataElements>
+		<Element Number="3">123456</Element>
+		<Element Number="11">123456</Element>
+		<Element Number="238">abcdef</Element>
+	</DataElements>`)
+	err = xml.Unmarshal(invalidXmlStr, rawMessage)
+	assert.NotNil(t, err)
+
+	rawMessage.spec = &utils.Specification{
+		Elements: &utils.Attributes{
+			3: {Describe: "n6", Description: "Processing code"},
+		},
+	}
+	invalidJsonStr = []byte(`{
+		"3": 123456,
+	}`)
+	err = json.Unmarshal(invalidJsonStr, rawMessage)
+	assert.NotNil(t, err)
+
+	invalidXmlStr = []byte(`<DataElements>
+		<Element Number="3">123456</Element>
+	</DataElements>`)
+	err = xml.Unmarshal(invalidXmlStr, rawMessage)
+	assert.NotNil(t, err)
+
 }
 
 func TestIso8583Message(t *testing.T) {
@@ -149,19 +194,25 @@ func TestElementStruct(t *testing.T) {
 	_, err = element.Bytes()
 	assert.NotNil(t, err)
 
+	// cat number, fixed
 	element.DataLength = 6
 	element.Fixed = true
 	buf, err := element.Bytes()
 	assert.Nil(t, err)
 	assert.Equal(t, buf, []byte("123456"))
 
+	element.Encoding = "unknown"
+	element.Fixed = true
+	_, err = element.Bytes()
+	assert.NotNil(t, err)
+
 	element.Encoding = utils.EncodingRBcd
 	buf, err = element.Bytes()
 	assert.Nil(t, err)
 	assert.Equal(t, buf, []byte{0x12, 0x34, 0x56})
 
-	buf, err = element.Bytes()
 	element.Encoding = utils.EncodingBcd
+	buf, err = element.Bytes()
 	assert.Nil(t, err)
 	assert.Equal(t, buf, []byte{0x12, 0x34, 0x56})
 
@@ -228,6 +279,10 @@ func TestElementStruct(t *testing.T) {
 	_, err = element.Load(buf)
 	assert.NotNil(t, err)
 
+	element.LengthEncoding = "unknown"
+	_, err = element.Load(buf)
+	assert.NotNil(t, err)
+
 	element.LengthEncoding = utils.EncodingRBcd
 	_, err = element.Load(buf)
 	assert.Nil(t, err)
@@ -253,6 +308,7 @@ func TestElementStruct(t *testing.T) {
 	assert.NotNil(t, err)
 
 	element.Type = utils.ElementTypeNumeric
+	element.Fixed = false
 	element.LengthEncoding = utils.EncodingAscii
 	buf = []byte("123456")
 	_, err = element.Load(buf)
@@ -268,7 +324,7 @@ func TestElementStruct(t *testing.T) {
 
 	element.LengthEncoding = utils.EncodingHex
 	_, err = element.Load(buf)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 
 	element.Fixed = true
 	_, err = element.Load(buf)
@@ -302,6 +358,21 @@ func TestElementStruct(t *testing.T) {
 
 	element.Encoding = utils.EncodingHex
 	_, err = element.Load(buf)
+	assert.Nil(t, err)
+
+	element.Value = []byte("123456")
+	element.Length = 6
+	element.Type = utils.ElementTypeNumeric
+	_, err = xml.Marshal(element)
+	assert.Nil(t, err)
+
+	element.Type = utils.ElementTypeAlphabetic
+	_, err = xml.Marshal(element)
+	assert.Nil(t, err)
+
+	element = &Element{}
+	element.Type = utils.ElementTypeAlphabetic
+	err = xml.Unmarshal([]byte(`<Element>123456</Element>`), element)
 	assert.Nil(t, err)
 }
 
@@ -340,6 +411,53 @@ func TestIso8583MessageBytes(t *testing.T) {
 	_, err = message.Load(byteData)
 	assert.NotNil(t, err)
 
+	_, err = message.Bytes()
+	assert.Nil(t, err)
+
 	mapRet = message.GetElements()
 	assert.Equal(t, len(mapRet), 0)
+
+	xmlStr := []byte(`<DataElements>
+		<Element Number="3">123456</Element>
+		<Element Number="11">123456</Element>
+		<Element Number="38">abcdef</Element>
+	</DataElements>`)
+	err = xml.Unmarshal(xmlStr, message)
+	assert.Nil(t, err)
+}
+
+func TestElementsStruct(t *testing.T) {
+	_, err := NewDataElements(nil)
+	assert.NotNil(t, err)
+
+	message, err := NewDataElements(&utils.ISO8583DataElementsVer1987)
+	assert.Nil(t, err)
+
+	message.elements[1] = &Element{
+		Type:           utils.ElementTypeNumeric,
+		Length:         4,
+		Encoding:       "",
+		Fixed:          true,
+		LengthEncoding: "",
+		Value:          []byte("abcd"),
+	}
+	err = message.Validate()
+	assert.NotNil(t, err)
+
+	_, err = message.Bytes()
+	assert.NotNil(t, err)
+
+	message.elements[1] = &Element{
+		Type:           utils.ElementTypeAlphabetic,
+		Length:         4,
+		Encoding:       utils.EncodingAscii,
+		Fixed:          true,
+		LengthEncoding: "",
+		Value:          []byte("abcd"),
+	}
+	_, err = message.Bytes()
+	assert.Nil(t, err)
+
+	_, err = message.Load(nil)
+	assert.Nil(t, err)
 }

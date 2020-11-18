@@ -132,9 +132,9 @@ func (e *Element) MarshalJSON() ([]byte, error) {
 }
 
 // Customize unmarshal of xml
-func (e *Element) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
+func (e *Element) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	var s string
-	if err := decoder.DecodeElement(&s, &start); err != nil {
+	if err := d.DecodeElement(&s, &start); err != nil {
 		return err
 	}
 	return nil

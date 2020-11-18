@@ -246,6 +246,9 @@ func (m *isoMessage) MarshalXML(encoder *xml.Encoder, start xml.StartElement) er
 
 // private functions ...
 func (m *isoMessage) generateIndexes() {
+	if m.bitmap == nil {
+		return
+	}
 	m.indexes = utils.BitmapToIndexArray(m.bitmap.String(), 0)
 	if utils.IsSecondBitmap(m.bitmap.String()) {
 		if m.elements.elements[1] != nil {

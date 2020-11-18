@@ -158,7 +158,7 @@ func (e *dataElements) MarshalXML(encoder *xml.Encoder, start xml.StartElement) 
 
 // Customize marshal of xml
 func (e *dataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
-	if e.spec == nil {
+	if e.spec == nil || e.spec.Encoding == nil {
 		return errors.New(utils.ErrNonExistSpecification)
 	}
 
