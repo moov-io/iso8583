@@ -24,7 +24,7 @@ type Iso8583Message interface {
 
 // create data elements of message with specification
 func NewMessage(spec *utils.Specification) (Iso8583Message, error) {
-	if spec == nil && spec.Elements == nil || spec.Encoding == nil {
+	if spec == nil || spec.Elements == nil || spec.Encoding == nil {
 		return nil, errors.New("has invalid specification")
 	}
 	elements, err := NewDataElements(spec)
@@ -122,14 +122,52 @@ func (m *isoMessage) Bytes() ([]byte, error) {
 
 // Load decode field from bytes
 func (m *isoMessage) Load(raw []byte) (int, error) {
-	// TODO
-	// load mti, bitmap
+	if m.mti == nil && m.bitmap == nil {
+		return 0, errors.New(utils.ErrNonInitializedMessage)
+	}
 
-	// TODO
-	// create elements from bitmap
-	// load element
+	start := 0
+	read, err := m.mti.Load(raw)
+	if err != nil {
+		return 0, err
+	}
+	start += read
 
-	return 0, nil
+	read, err = m.bitmap.Load(raw[start:])
+	if err != nil {
+		return 0, err
+	}
+	start += read
+
+	m.generateIndexes()
+	for _, index := range m.indexes {
+		if index > 2 { // second, third bitmap
+			break
+		}
+		read, err = m.createElement(index, start, raw)
+		if err != nil {
+			return 0, err
+		}
+		start += read
+		m.generateIndexes()
+	}
+
+	for _, index := range m.indexes {
+		if index < 3 { // second, third bitmap
+			continue
+		}
+		read, err = m.createElement(index, start, raw)
+		if err != nil {
+			return 0, err
+		}
+		start += read
+	}
+
+	if start != len(raw) {
+		return read, errors.New(utils.ErrBadRaw)
+	}
+
+	return start, nil
 }
 
 // GetElements return data elements of iso message
@@ -223,4 +261,30 @@ func (m *isoMessage) generateIndexes() {
 			}
 		}
 	}
+}
+
+func (m *isoMessage) createElement(index, start int, raw []byte) (int, error) {
+	spec, err := m.spec.Elements.Get(index)
+	if err != nil {
+		return 0, err
+	}
+	_type, err := spec.Parse()
+	if err != nil {
+		return 0, err
+	}
+	_type.SetEncoding(m.spec.Encoding)
+	elm := &Element{}
+	elm.setType(_type)
+
+	if start >= len(raw) {
+		return 0, errors.New(utils.ErrBadRaw)
+	}
+
+	read, err := elm.Load(raw[start:])
+	if err != nil {
+		return 0, err
+	}
+	m.elements.elements[index] = elm
+
+	return read, nil
 }

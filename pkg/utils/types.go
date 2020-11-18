@@ -38,23 +38,25 @@ func (s Attribute) Parse() (*ElementType, error) {
 			if strings.Contains(attribute, formatIndicate) {
 				splits := strings.Split(attribute, formatIndicate)
 				attribute = splits[0]
-				format = strings.TrimSpace(splits[len(splits)-1])
+				if len(splits) > 1 {
+					format = strings.TrimSpace(splits[len(splits)-1])
+				}
 			}
-
-			isFixed := !strings.Contains(indicate, variableIndicate)
 			splits := strings.Split(attribute, indicate)
-			_size, err := strconv.Atoi(strings.TrimSpace(splits[len(splits)-1]))
-			if err != nil ||
-				(!isFixed && _size > int(math.Pow(10, float64(len(indicate))))) {
-				return nil, errors.New(ErrInvalidElementLength)
+			if len(splits) > 1 {
+				isFixed := !strings.Contains(indicate, variableIndicate)
+				_size, err := strconv.Atoi(strings.TrimSpace(splits[len(splits)-1]))
+				if err != nil ||
+					(!isFixed && _size > int(math.Pow(10, float64(len(indicate))))) {
+					return nil, errors.New(ErrInvalidElementLength)
+				}
+				return &ElementType{
+					Type:   strings.TrimSpace(splits[0]),
+					Length: _size,
+					Fixed:  isFixed,
+					Format: format,
+				}, nil
 			}
-
-			return &ElementType{
-				Type:   strings.TrimSpace(splits[0]),
-				Length: _size,
-				Fixed:  isFixed,
-				Format: format,
-			}, nil
 		}
 	}
 

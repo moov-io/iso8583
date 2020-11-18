@@ -26,7 +26,7 @@ type xmlDataElement struct {
 
 // create data elements of message with specification
 func NewDataElements(spec *utils.Specification) (*dataElements, error) {
-	if spec == nil && spec.Elements == nil || spec.Encoding == nil {
+	if spec == nil || spec.Elements == nil || spec.Encoding == nil {
 		return nil, errors.New(utils.ErrInvalidSpecification)
 	}
 	return &dataElements{

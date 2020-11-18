@@ -11,6 +11,8 @@ const (
 	ErrValueTooLong string = "length of value is longer than definition; type=%s, def_len=%d, len=%d"
 	// ErrBadRaw is given when the raw data is malformed
 	ErrBadRaw string = "bad raw data"
+	// ErrBadElementData is given when the raw data is invalid data
+	ErrBadElementData string = "bad element data"
 	// ErrParseLengthFailed is given when the length of the raw data is invalid
 	ErrBadBinary string = "bad binary data"
 	// ErrParseLengthFailed is given when the length of the binary data is invalid
@@ -27,4 +29,6 @@ const (
 	ErrInvalidElementType string = "invalid element type"
 	// ErrMisMatchElementsBitmap is given when mismatch between bitmap and data elements
 	ErrMisMatchElementsBitmap string = "don't match bitmap and data elements"
+	// ErrNonInitializedMessage is given when message instance is not initialized
+	ErrNonInitializedMessage string = "non initialized message"
 )
