@@ -397,6 +397,9 @@ func TestIso8583MessageBytes(t *testing.T) {
 	mapRet := message.GetElements()
 	assert.Equal(t, len(mapRet), 4)
 
+	_, err = message.Bytes()
+	assert.Nil(t, err)
+
 	byteData = []byte(`0800a020000004000000000000000000000000000`)
 	_, err = message.Load(byteData)
 	assert.NotNil(t, err)
@@ -410,9 +413,6 @@ func TestIso8583MessageBytes(t *testing.T) {
 	message = &isoMessage{elements: nil}
 	_, err = message.Load(byteData)
 	assert.NotNil(t, err)
-
-	_, err = message.Bytes()
-	assert.Nil(t, err)
 
 	mapRet = message.GetElements()
 	assert.Equal(t, len(mapRet), 0)
