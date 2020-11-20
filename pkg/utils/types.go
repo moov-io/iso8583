@@ -46,8 +46,7 @@ func (s Attribute) Parse() (*ElementType, error) {
 			if len(splits) > 1 {
 				isFixed := !strings.Contains(indicate, variableIndicate)
 				_size, err := strconv.Atoi(strings.TrimSpace(splits[len(splits)-1]))
-				if err != nil ||
-					(!isFixed && _size > int(math.Pow(10, float64(len(indicate))))) {
+				if err != nil || (!isFixed && _size > int(math.Pow(10, float64(len(indicate))))) {
 					return nil, errors.New(ErrInvalidElementLength)
 				}
 				return &ElementType{
