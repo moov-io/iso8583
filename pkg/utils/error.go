@@ -13,7 +13,7 @@ const (
 	ErrBadRaw string = "bad raw data"
 	// ErrBadElementData is given when the raw data is invalid data
 	ErrBadElementData string = "bad element data"
-	// ErrParseLengthFailed is given when the length of the raw data is invalid
+	// ErrBadBinary is given when the length of the raw data is invalid
 	ErrBadBinary string = "bad binary data"
 	// ErrParseLengthFailed is given when the length of the binary data is invalid
 	ErrParseLengthFailed string = "parse length head failed"
