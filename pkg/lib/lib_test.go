@@ -134,6 +134,9 @@ func TestElementStruct(t *testing.T) {
 	err := element.Validate()
 	assert.NotNil(t, err)
 
+	_, err = element.Load(nil)
+	assert.NotNil(t, err)
+
 	element.Type = utils.ElementTypeNumeric
 	err = element.Validate()
 	assert.Nil(t, err)
@@ -207,6 +210,11 @@ func TestElementStruct(t *testing.T) {
 	assert.NotNil(t, err)
 
 	element.Encoding = utils.EncodingRBcd
+	element.Type = "unknown"
+	_, err = element.Bytes()
+	assert.NotNil(t, err)
+
+	element.Type = utils.ElementTypeNumeric
 	buf, err = element.Bytes()
 	assert.Nil(t, err)
 	assert.Equal(t, buf, []byte{0x12, 0x34, 0x56})
@@ -279,14 +287,28 @@ func TestElementStruct(t *testing.T) {
 	_, err = element.Load(buf)
 	assert.NotNil(t, err)
 
+	buf = []byte("06abcdef")
+	_, err = element.Load(buf)
+	assert.Nil(t, err)
+
 	element.LengthEncoding = "unknown"
 	_, err = element.Load(buf)
 	assert.NotNil(t, err)
 
 	element.LengthEncoding = utils.EncodingRBcd
+	element.Type = "unknown"
+	_, err = element.Load(buf)
+	assert.NotNil(t, err)
+
+	element.Type = utils.ElementTypeAlphabetic
 	_, err = element.Load(buf)
 	assert.Nil(t, err)
 
+	element.LengthEncoding = utils.EncodingBcd
+	_, err = element.Load(buf)
+	assert.Nil(t, err)
+
+	buf = []byte("abcdef")
 	element.LengthEncoding = utils.EncodingBcd
 	_, err = element.Load(buf)
 	assert.NotNil(t, err)
@@ -309,6 +331,10 @@ func TestElementStruct(t *testing.T) {
 
 	element.Type = utils.ElementTypeNumeric
 	element.Fixed = false
+
+	_, err = element.Load(nil)
+	assert.NotNil(t, err)
+
 	element.LengthEncoding = utils.EncodingAscii
 	buf = []byte("123456")
 	_, err = element.Load(buf)
@@ -400,11 +426,42 @@ func TestIso8583MessageBytes(t *testing.T) {
 	_, err = message.Bytes()
 	assert.Nil(t, err)
 
-	byteData = []byte(`0800a020000004000000000000000000000000000`)
+	ret = message.GetBitmap()
+	copy(ret.Value, "1010000000100000000000000000000000000000000000000000000000000000")
+	err = message.Validate()
+	assert.NotNil(t, err)
+
+	_element := mapRet[3]
+	copy(_element.Value, "abcd")
+	mapRet[3] = _element
+	err = message.Validate()
+	assert.NotNil(t, err)
+
+	ret = message.GetBitmap()
+	copy(ret.Value, "abcd0001")
+	err = message.Validate()
+	assert.NotNil(t, err)
+
+	ret = message.GetMti()
+	copy(ret.Value, "ABCD")
+	err = message.Validate()
+	assert.NotNil(t, err)
+
+	//byteData = []byte(`0800a020000004000000000000000000000000000`)
+	byteData = []byte(`ABC`)
 	_, err = message.Load(byteData)
 	assert.NotNil(t, err)
 
-	err = message.Validate()
+	byteData = []byte(`0800PPP0000004000000000000000000000000000`)
+	_, err = message.Load(byteData)
+	assert.NotNil(t, err)
+
+	byteData = []byte(`08000000000000000000000000000000000000000EOF`)
+	_, err = message.Load(byteData)
+	assert.NotNil(t, err)
+
+	byteData = []byte(`08000000000000000000`)
+	_, err = message.Load(byteData)
 	assert.Nil(t, err)
 
 	_, err = NewMessage(nil)
@@ -423,6 +480,26 @@ func TestIso8583MessageBytes(t *testing.T) {
 		<Element Number="38">abcdef</Element>
 	</DataElements>`)
 	err = xml.Unmarshal(xmlStr, message)
+	assert.Nil(t, err)
+
+	_spec := &utils.Specification{
+		Encoding: &utils.EncodingDefinition{
+			MtiEnc:    utils.EncodingChar,
+			BitmapEnc: utils.EncodingHex,
+			BinaryEnc: utils.EncodingChar,
+		},
+		Elements: &utils.Attributes{
+			1: {Describe: "b 64", Description: "Second Bitmap"},
+			2: {Describe: "b 64", Description: "Second Bitmap"},
+		},
+	}
+	message, err = NewMessage(_spec)
+	assert.Nil(t, err)
+	byteData = []byte(
+		`0800c000000000000000` +
+			`0000000000000000000000000000000000000000000000000000000000000000` +
+			`0000000000000000000000000000000000000000000000000000000000000000`)
+	_, err = message.Load(byteData)
 	assert.Nil(t, err)
 }
 

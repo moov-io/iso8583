@@ -24,9 +24,6 @@ type Iso8583Message interface {
 
 // create data elements of message with specification
 func NewMessage(spec *utils.Specification) (Iso8583Message, error) {
-	if spec == nil || spec.Elements == nil || spec.Encoding == nil {
-		return nil, errors.New("has invalid specification")
-	}
 	elements, err := NewDataElements(spec)
 	if err != nil {
 		return nil, err
@@ -61,7 +58,7 @@ type isoMessage struct {
 
 // isoMessage is structure for marshaling and un-marshaling
 type messageJSON struct {
-	Mti      *Element      `xml:"mti,omitempty" json:"mti,omitempty" yaml:"mti,omitempty"`
+	MTI      *Element      `xml:"mti,omitempty" json:"mti,omitempty" yaml:"mti,omitempty"`
 	Bitmap   *Element      `xml:"bitmap,omitempty" json:"bitmap,omitempty" yaml:"bitmap,omitempty"`
 	Elements *dataElements `xml:"elements,omitempty" json:"elements,omitempty" yaml:"elements,omitempty"`
 }
@@ -191,7 +188,7 @@ func (m *isoMessage) GetBitmap() *Element {
 // Customize unmarshal of json
 func (m *isoMessage) UnmarshalJSON(b []byte) error {
 	dummy := messageJSON{
-		Mti:      m.mti,
+		MTI:      m.mti,
 		Bitmap:   m.bitmap,
 		Elements: m.elements,
 	}
@@ -199,7 +196,7 @@ func (m *isoMessage) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	m.mti = dummy.Mti
+	m.mti = dummy.MTI
 	m.bitmap = dummy.Bitmap
 	m.elements = dummy.Elements
 	m.generateIndexes()
@@ -209,7 +206,7 @@ func (m *isoMessage) UnmarshalJSON(b []byte) error {
 // Customize marshal of json
 func (m *isoMessage) MarshalJSON() ([]byte, error) {
 	dummy := messageJSON{
-		Mti:      m.mti,
+		MTI:      m.mti,
 		Bitmap:   m.bitmap,
 		Elements: m.elements,
 	}
@@ -219,7 +216,7 @@ func (m *isoMessage) MarshalJSON() ([]byte, error) {
 // Customize unmarshal of xml
 func (m *isoMessage) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
 	dummy := messageJSON{
-		Mti:      m.mti,
+		MTI:      m.mti,
 		Bitmap:   m.bitmap,
 		Elements: m.elements,
 	}
@@ -227,7 +224,7 @@ func (m *isoMessage) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) 
 		return err
 	}
 
-	m.mti = dummy.Mti
+	m.mti = dummy.MTI
 	m.bitmap = dummy.Bitmap
 	m.elements = dummy.Elements
 	m.generateIndexes()
@@ -237,7 +234,7 @@ func (m *isoMessage) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) 
 // Customize marshal of xml
 func (m *isoMessage) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
 	dummy := messageJSON{
-		Mti:      m.mti,
+		MTI:      m.mti,
 		Bitmap:   m.bitmap,
 		Elements: m.elements,
 	}

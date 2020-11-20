@@ -1,7 +1,7 @@
-github.com/Intermernet/ebcdic v0.0.0-20180129095110-0456a2287e54 h1:CkJTQmgDmklVTEWOLDeOaPqB2ZXQLPazctVNkTvjJrk=
-github.com/Intermernet/ebcdic v0.0.0-20180129095110-0456a2287e54/go.mod h1:sp5etjpmRZZrr3rPjru9LcbXSmpYD0TUimBwGfdC9Xo=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/indece-official/go-ebcdic v0.0.0-20190525020121-de04eeaabf72 h1:1XPqIJke4MOhW5hwkAUIXSJDalw/iqlrvYHxRKUQllA=
+github.com/indece-official/go-ebcdic v0.0.0-20190525020121-de04eeaabf72/go.mod h1:q84AzSPqm5pIajSOzm1SbowrbaWkCCEDGmXSVS7TKnY=
 github.com/mediocregopher/radix.v2 v0.0.0-20181115013041-b67df6e626f9/go.mod h1:fLRUbhbSd5Px2yKUaGYYPltlyxi1guJz1vCmo1RQL50=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

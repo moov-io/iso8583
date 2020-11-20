@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Intermernet/ebcdic"
+	"github.com/indece-official/go-ebcdic"
 	"github.com/moov-io/iso8583/pkg/utils"
 )
 
@@ -163,7 +163,7 @@ func (e *Element) characterEncoding() ([]byte, error) {
 	} else if e.Encoding == utils.EncodingAscii {
 		value, err = utils.UTF8ToWindows1252(e.Value)
 	} else if e.Encoding == utils.EncodingEbcdic {
-		value = ebcdic.Encode(e.Value)
+		value, err = ebcdic.Encode(string(e.Value), ebcdic.EBCDIC037)
 	} else {
 		return nil, errors.New(utils.ErrInvalidEncoder)
 	}
@@ -295,13 +295,17 @@ func (e *Element) characterDecoding(raw []byte) (int, error) {
 	}
 	if e.Encoding == utils.EncodingAscii {
 		value, err = utils.UTF8ToWindows1252(raw[read : read+contentLen])
-		if err != nil {
-			return 0, err
-		}
 	} else if e.Encoding == utils.EncodingEbcdic {
-		value = ebcdic.Decode(raw[read : read+contentLen])
+		str, err := ebcdic.Decode(raw[read:read+contentLen], ebcdic.EBCDIC037)
+		if err != nil {
+			value = []byte(str)
+		}
 	} else {
 		return 0, errors.New(utils.ErrInvalidEncoder)
+	}
+
+	if err != nil {
+		return 0, err
 	}
 
 	e.Value = make([]byte, len(value))
