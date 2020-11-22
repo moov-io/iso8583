@@ -114,11 +114,7 @@ func (e *dataElements) MarshalJSON() ([]byte, error) {
 		if i != 0 {
 			buf.WriteString(",")
 		}
-		number, err := json.Marshal(strconv.Itoa(key))
-		if err != nil {
-			return nil, err
-		}
-		buf.Write(number)
+		buf.Write([]byte(`"` + strconv.Itoa(key) + `"`))
 		buf.WriteString(":")
 		val, err := json.Marshal(e.elements[key])
 		if err != nil {

@@ -80,10 +80,21 @@ func TestElementJsonXmlConvert(t *testing.T) {
 	assert.NotNil(t, err)
 
 	rawMessage.spec = &utils.Specification{
+		Encoding: &utils.EncodingDefinition{
+			MtiEnc:    utils.EncodingChar,
+			BitmapEnc: utils.EncodingHex,
+			BinaryEnc: utils.EncodingChar,
+		},
 		Elements: &utils.Attributes{
 			3: {Describe: "n6", Description: "Processing code"},
 		},
 	}
+	invalidJsonStr = []byte(`{
+		"3": 123456
+	}`)
+	err = json.Unmarshal(invalidJsonStr, rawMessage)
+	assert.NotNil(t, err)
+
 	invalidJsonStr = []byte(`{
 		"3": 123456,
 	}`)
@@ -123,6 +134,21 @@ func TestIso8583Message(t *testing.T) {
 
 	_, err = xml.MarshalIndent(message, "", "\t")
 	assert.Nil(t, err)
+
+	jsonStr = []byte(`
+	{
+		"mti": "0800",
+		"bitmap": "10100000001000000000000000000000000001",
+		"elements": {
+			"1": "00000000000000000000000000000000000",
+			"11": 123456,
+			"3": 123456,
+			"asdf": "abcdef"
+		}
+	}
+	`)
+	err = json.Unmarshal(jsonStr, message)
+	assert.NotNil(t, err)
 }
 
 func TestElementStruct(t *testing.T) {
@@ -482,6 +508,9 @@ func TestIso8583MessageBytes(t *testing.T) {
 	err = xml.Unmarshal(xmlStr, message)
 	assert.Nil(t, err)
 
+	mapRet = message.GetElements()
+	assert.Equal(t, len(mapRet), 0)
+
 	_spec := &utils.Specification{
 		Encoding: &utils.EncodingDefinition{
 			MtiEnc:    utils.EncodingChar,
@@ -522,6 +551,9 @@ func TestElementsStruct(t *testing.T) {
 	assert.NotNil(t, err)
 
 	_, err = message.Bytes()
+	assert.NotNil(t, err)
+
+	_, err = json.Marshal(message)
 	assert.NotNil(t, err)
 
 	message.elements[1] = &Element{
