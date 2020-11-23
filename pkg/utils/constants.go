@@ -39,14 +39,14 @@ const (
 var (
 	RegexAlphabetic          = regexp.MustCompile(`^[a-zA-Z]+$`).MatchString
 	RegexNumeric             = regexp.MustCompile(`^[0-9]+$`).MatchString
-	RegexSpecial             = regexp.MustCompile(`^[$&+,:;=?@#|'<>.^*()%!-]+$`).MatchString
+	RegexSpecial             = regexp.MustCompile(`^[$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
 	RegexIndicate            = regexp.MustCompile(`^[C|D]{1}$`).MatchString
 	RegexAlphaNumeric        = regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString
 	RegexIndicateNumeric     = regexp.MustCompile(`^[C|D][0-9]+$`).MatchString
-	RegexAlphaSpecial        = regexp.MustCompile(`^[a-zA-Z$&+,:;=?@#|'<>.^*()%!-]+$`).MatchString
+	RegexAlphaSpecial        = regexp.MustCompile(`^[a-zA-Z$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
 	RegexBinary              = regexp.MustCompile(`^[0|1]+$`).MatchString
-	RegexNumericSpecial      = regexp.MustCompile(`^[0-9$&+,:;=?@#|'<>.^*()%!-]+$`).MatchString
-	RegexAlphaNumericSpecial = regexp.MustCompile(`^[0-9a-zA-Z$&+,:;=?@#|'<>.^*()%!-]+$`).MatchString
+	RegexNumericSpecial      = regexp.MustCompile(`^[0-9$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
+	RegexAlphaNumericSpecial = regexp.MustCompile(`^[0-9a-zA-Z$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
 )
 
 // data representation attributes

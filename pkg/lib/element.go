@@ -253,7 +253,7 @@ func (e *Element) characterDecoding(raw []byte) (int, error) {
 		}
 
 		switch e.LengthEncoding {
-		case utils.EncodingAscii:
+		case utils.EncodingAscii, utils.EncodingChar:
 			contentLen, err = strconv.Atoi(string(raw[:lenSize]))
 			if err != nil {
 				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
@@ -333,7 +333,7 @@ func (e *Element) numberDecoding(raw []byte) (int, error) {
 		}
 
 		switch e.LengthEncoding {
-		case utils.EncodingAscii:
+		case utils.EncodingAscii, utils.EncodingChar:
 			contentLen, err = strconv.Atoi(string(raw[:lenSize]))
 			if err != nil {
 				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
@@ -439,7 +439,10 @@ func (e *Element) binaryDecoding(raw []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
+
 		binaryNumber := strconv.FormatUint(hexNumber, 2)
+		formatStr := "%0" + paddingLength(len(binaryNumber)) + "s"
+		binaryNumber = fmt.Sprintf(formatStr, binaryNumber)
 		e.Value = make([]byte, len(binaryNumber))
 		copy(e.Value, binaryNumber)
 		e.extendBinaryData()
@@ -457,7 +460,7 @@ func (e *Element) binaryDecoding(raw []byte) (int, error) {
 }
 
 func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
-	lenStr := strconv.Itoa(e.DataLength)
+	lenStr := strconv.Itoa(e.Length)
 	formatStr := "%0" + strconv.Itoa(len(lenStr)) + "d"
 	contentLen := []byte(fmt.Sprintf(formatStr, len(value)))
 
@@ -465,7 +468,7 @@ func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
 	var err error
 
 	switch e.LengthEncoding {
-	case utils.EncodingAscii:
+	case utils.EncodingAscii, utils.EncodingChar:
 		encode = contentLen
 	case utils.EncodingRBcd:
 		encode, err = utils.RBcd(contentLen)
@@ -502,4 +505,12 @@ func (e *Element) setType(_type *utils.ElementType) {
 	e.Fixed = _type.Fixed
 	e.LengthEncoding = _type.LengthEncoding
 	e.extendBinaryData()
+}
+
+func paddingLength(binaryLength int) string {
+	hexSize := binaryLength / 4
+	if binaryLength%4 > 0 {
+		hexSize++
+	}
+	return strconv.Itoa(hexSize * 4)
 }

@@ -9,9 +9,10 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"github.com/moov-io/iso8583/pkg/utils"
 	"sort"
 	"strconv"
+
+	"github.com/moov-io/iso8583/pkg/utils"
 )
 
 // dummy struct for xml un-marshaling

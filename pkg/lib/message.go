@@ -11,6 +11,7 @@ import (
 	"errors"
 	"github.com/moov-io/iso8583/pkg/utils"
 	"reflect"
+	"strings"
 )
 
 type Iso8583Message interface {
@@ -113,8 +114,7 @@ func (m *isoMessage) Bytes() ([]byte, error) {
 		}
 		buf.Write(value)
 	}
-
-	return buf.Bytes(), nil
+	return []byte(strings.ToUpper(buf.String())), nil
 }
 
 // Load decode field from bytes
