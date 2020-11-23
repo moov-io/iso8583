@@ -123,7 +123,7 @@ func TestIso8583Message(t *testing.T) {
 	}
 	`)
 
-	message, err := NewMessage(&utils.ISO8583DataElementsVer1987)
+	message, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
 	assert.Nil(t, err)
 
 	err = json.Unmarshal(jsonStr, message)
@@ -431,7 +431,7 @@ func TestElementStruct(t *testing.T) {
 func TestIso8583MessageBytes(t *testing.T) {
 	byteData := []byte(`0800a0200000040000000000000000000000000000000000000000000000000000000000000000000000123456123456abcdef`)
 
-	message, err := NewMessage(&utils.ISO8583DataElementsVer1987)
+	message, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
 	assert.Nil(t, err)
 
 	_, err = message.Load(byteData)
@@ -490,7 +490,7 @@ func TestIso8583MessageBytes(t *testing.T) {
 	_, err = message.Load(byteData)
 	assert.Nil(t, err)
 
-	_, err = NewMessage(nil)
+	_, err = NewISO8583Message(nil)
 	assert.NotNil(t, err)
 
 	message = &isoMessage{elements: nil}
@@ -522,7 +522,7 @@ func TestIso8583MessageBytes(t *testing.T) {
 			2: {Describe: "b 64", Description: "Second Bitmap"},
 		},
 	}
-	message, err = NewMessage(_spec)
+	message, err = NewISO8583Message(_spec)
 	assert.Nil(t, err)
 	byteData = []byte(
 		`0800c000000000000000` +

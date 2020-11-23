@@ -23,7 +23,7 @@ type Iso8583Message interface {
 }
 
 // create data elements of message with specification
-func NewMessage(spec *utils.Specification) (Iso8583Message, error) {
+func NewISO8583Message(spec *utils.Specification) (Iso8583Message, error) {
 	elements, err := NewDataElements(spec)
 	if err != nil {
 		return nil, err
