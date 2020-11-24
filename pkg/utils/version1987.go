@@ -12,7 +12,7 @@ var (
 			LengthEnc:    EncodingChar,
 			NumberEnc:    EncodingChar,
 			CharacterEnc: EncodingAscii,
-			BinaryEnc:    EncodingChar,
+			BinaryEnc:    EncodingHex,
 			TrackEnc:     EncodingChar,
 		},
 		Elements: &Attributes{

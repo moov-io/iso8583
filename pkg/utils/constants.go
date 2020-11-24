@@ -37,11 +37,11 @@ const (
 )
 
 var (
-	RegexAlphabetic          = regexp.MustCompile(`^[a-zA-Z]+$`).MatchString
+	RegexAlphabetic          = regexp.MustCompile(`^[a-z A-Z]+$`).MatchString
 	RegexNumeric             = regexp.MustCompile(`^[0-9]+$`).MatchString
 	RegexSpecial             = regexp.MustCompile(`^[$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
 	RegexIndicate            = regexp.MustCompile(`^[C|D]{1}$`).MatchString
-	RegexAlphaNumeric        = regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString
+	RegexAlphaNumeric        = regexp.MustCompile(`^[a-z A-Z0-9]*$`).MatchString
 	RegexIndicateNumeric     = regexp.MustCompile(`^[C|D][0-9]+$`).MatchString
 	RegexAlphaSpecial        = regexp.MustCompile(`^[a-zA-Z$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
 	RegexBinary              = regexp.MustCompile(`^[0|1]+$`).MatchString

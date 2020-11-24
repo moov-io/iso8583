@@ -31,6 +31,9 @@ type Element struct {
 // Validate check validation of field
 func (e *Element) Validate() error {
 	match := false
+	if len(e.Value) == 0 {
+		return nil
+	}
 	switch e.Type {
 	case utils.ElementTypeAlphabetic:
 		match = utils.RegexAlphabetic(string(e.Value))
@@ -88,8 +91,7 @@ func (e *Element) Bytes() ([]byte, error) {
 
 // Load decode field from bytes
 func (e *Element) Load(raw []byte) (int, error) {
-	cat := utils.AvailableTypeCategory[e.Type]
-	switch cat {
+	switch utils.AvailableTypeCategory[e.Type] {
 	case utils.EncodingCatCharacter:
 		return e.characterDecoding(raw)
 	case utils.EncodingCatBinary:
@@ -236,63 +238,21 @@ func (e *Element) binaryEncoding() ([]byte, error) {
 }
 
 func (e *Element) characterDecoding(raw []byte) (int, error) {
-	var value []byte
-	var err error
-	var contentLen int
-	var read int
+	read, err := e.lengthDecoding(raw)
+	if err != nil {
+		return 0, err
+	}
 
+	contentLen := e.Length
 	if !e.Fixed {
-		lenSize := len(strconv.Itoa(e.Length))
-		bcdSize := lenSize / 2
-		if lenSize%2 != 0 {
-			bcdSize++
-		}
-
-		if len(raw) < lenSize {
-			return 0, errors.New(utils.ErrBadElementData)
-		}
-
-		switch e.LengthEncoding {
-		case utils.EncodingAscii, utils.EncodingChar:
-			contentLen, err = strconv.Atoi(string(raw[:lenSize]))
-			if err != nil {
-				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
-			}
-			read = lenSize
-		case utils.EncodingRBcd:
-			lenVal, err := utils.RBcdAscii(raw[:bcdSize], lenSize)
-			if err != nil {
-				return 0, err
-			}
-			contentLen, err = strconv.Atoi(string(lenVal))
-			if err != nil {
-				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
-			}
-			read = bcdSize
-		case utils.EncodingBcd:
-			lenVal, err := utils.BcdAscii(raw[:bcdSize], lenSize)
-			if err != nil {
-				return 0, err
-			}
-			contentLen, err = strconv.Atoi(string(lenVal))
-			if err != nil {
-				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
-			}
-			read = bcdSize
-		default:
-			return 0, errors.New(utils.ErrInvalidLengthEncoder)
-		}
+		contentLen = e.DataLength
 	}
 
-	if contentLen == 0 {
-		contentLen = e.Length
-	} else {
-		e.DataLength = contentLen
-	}
-
+	var value []byte
 	if len(raw) < read+contentLen {
 		return 0, errors.New(utils.ErrBadElementData)
 	}
+
 	if e.Encoding == utils.EncodingAscii {
 		value, err = utils.UTF8ToWindows1252(raw[read : read+contentLen])
 	} else if e.Encoding == utils.EncodingEbcdic {
@@ -316,58 +276,19 @@ func (e *Element) characterDecoding(raw []byte) (int, error) {
 }
 
 func (e *Element) numberDecoding(raw []byte) (int, error) {
-	var value []byte
-	var err error
-	var contentLen int
-	var read int
-
-	if !e.Fixed {
-		lenSize := len(strconv.Itoa(e.Length))
-		bcdSize := lenSize / 2
-		if lenSize%2 != 0 {
-			bcdSize++
-		}
-
-		if len(raw) < lenSize {
-			return 0, errors.New(utils.ErrBadElementData)
-		}
-
-		switch e.LengthEncoding {
-		case utils.EncodingAscii, utils.EncodingChar:
-			contentLen, err = strconv.Atoi(string(raw[:lenSize]))
-			if err != nil {
-				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
-			}
-			read = lenSize
-		case utils.EncodingRBcd:
-			lenVal, err := utils.RBcdAscii(raw[:bcdSize], lenSize)
-			if err != nil {
-				return 0, err
-			}
-			contentLen, err = strconv.Atoi(string(lenVal))
-			if err != nil {
-				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
-			}
-			read = bcdSize
-		case utils.EncodingBcd:
-			lenVal, err := utils.BcdAscii(raw[:bcdSize], lenSize)
-			if err != nil {
-				return 0, err
-			}
-			contentLen, err = strconv.Atoi(string(lenVal))
-			if err != nil {
-				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
-			}
-			read = bcdSize
-		default:
-			return 0, errors.New(utils.ErrInvalidLengthEncoder)
-		}
+	read, err := e.lengthDecoding(raw)
+	if err != nil {
+		return 0, err
 	}
 
-	if contentLen == 0 {
-		contentLen = e.Length
-	} else {
-		e.DataLength = contentLen
+	contentLen := e.Length
+	if !e.Fixed {
+		contentLen = e.DataLength
+	}
+
+	var value []byte
+	if len(raw) < read+contentLen {
+		return 0, errors.New(utils.ErrBadElementData)
 	}
 
 	if e.Encoding == utils.EncodingChar {
@@ -434,14 +355,13 @@ func (e *Element) binaryDecoding(raw []byte) (int, error) {
 		if len(raw) < read+contentLen/4 {
 			return 0, errors.New(utils.ErrBadElementData)
 		}
-
 		hexNumber, err := strconv.ParseUint(string(raw[read:read+contentLen/4]), 16, contentLen)
 		if err != nil {
 			return 0, err
 		}
 
 		binaryNumber := strconv.FormatUint(hexNumber, 2)
-		formatStr := "%0" + paddingLength(len(binaryNumber)) + "s"
+		formatStr := "%0" + strconv.Itoa(e.Length) + "s"
 		binaryNumber = fmt.Sprintf(formatStr, binaryNumber)
 		e.Value = make([]byte, len(binaryNumber))
 		copy(e.Value, binaryNumber)
@@ -487,6 +407,58 @@ func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
 	return encode, nil
 }
 
+func (e *Element) lengthDecoding(raw []byte) (int, error) {
+	var contentLen int
+	var read int
+	var err error
+
+	if !e.Fixed {
+		lenSize := len(strconv.Itoa(e.Length))
+		bcdSize := lenSize / 2
+		if lenSize%2 != 0 {
+			bcdSize++
+		}
+
+		if len(raw) < lenSize {
+			return 0, errors.New(utils.ErrBadElementData)
+		}
+
+		switch e.LengthEncoding {
+		case utils.EncodingAscii, utils.EncodingChar:
+			contentLen, err = strconv.Atoi(string(raw[:lenSize]))
+			if err != nil {
+				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
+			}
+			read = lenSize
+		case utils.EncodingRBcd:
+			lenVal, err := utils.RBcdAscii(raw[:bcdSize], lenSize)
+			if err != nil {
+				return 0, err
+			}
+			contentLen, err = strconv.Atoi(string(lenVal))
+			if err != nil {
+				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
+			}
+			read = bcdSize
+		case utils.EncodingBcd:
+			lenVal, err := utils.BcdAscii(raw[:bcdSize], lenSize)
+			if err != nil {
+				return 0, err
+			}
+			contentLen, err = strconv.Atoi(string(lenVal))
+			if err != nil {
+				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
+			}
+			read = bcdSize
+		default:
+			return 0, errors.New(utils.ErrInvalidLengthEncoder)
+		}
+		e.DataLength = contentLen
+	}
+
+	return read, nil
+}
+
 func (e *Element) extendBinaryData() {
 	cat := utils.AvailableTypeCategory[e.Type]
 	if cat == utils.EncodingCatBinary && (len(e.Value) < e.Length) {
@@ -505,12 +477,4 @@ func (e *Element) setType(_type *utils.ElementType) {
 	e.Fixed = _type.Fixed
 	e.LengthEncoding = _type.LengthEncoding
 	e.extendBinaryData()
-}
-
-func paddingLength(binaryLength int) string {
-	hexSize := binaryLength / 4
-	if binaryLength%4 > 0 {
-		hexSize++
-	}
-	return strconv.Itoa(hexSize * 4)
 }

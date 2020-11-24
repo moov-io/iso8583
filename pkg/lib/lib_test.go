@@ -7,9 +7,11 @@ package lib
 import (
 	"encoding/json"
 	"encoding/xml"
-	"github.com/moov-io/iso8583/pkg/utils"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
+	"github.com/moov-io/iso8583/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -254,7 +256,7 @@ func TestElementStruct(t *testing.T) {
 	element.Encoding = utils.EncodingChar
 	element.LengthEncoding = utils.EncodingChar
 	_, err = element.Bytes()
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	element.LengthEncoding = utils.EncodingAscii
 	buf, err = element.Bytes()
@@ -429,7 +431,7 @@ func TestElementStruct(t *testing.T) {
 }
 
 func TestIso8583MessageBytes(t *testing.T) {
-	byteData := []byte(`0800a0200000040000000000000000000000000000000000000000000000000000000000000000000000123456123456abcdef`)
+	byteData := []byte(`0800a0200000040000000000000000000000123456123456abcdef`)
 
 	message, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
 	assert.Nil(t, err)
@@ -569,4 +571,35 @@ func TestElementsStruct(t *testing.T) {
 
 	_, err = message.Load(nil)
 	assert.Nil(t, err)
+}
+
+func TestISO8583MessageWithValidData(t *testing.T) {
+	samples := []string{
+		"financial_transaction_message.dat",
+		"financial_transaction_message_response.dat",
+		"iso_reversal_message.dat",
+		"iso_reversal_message_response.dat",
+		"iso_reversal_repeat_message.dat",
+		"iso_reversal_repeat_message_response.dat",
+		"network_management_message.dat",
+		"network_management_message_response.dat",
+	}
+
+	for _, sample := range samples {
+		message, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
+		assert.Nil(t, err)
+
+		byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", sample))
+		assert.Nil(t, err)
+
+		_, err = message.Load(byteData)
+		assert.Nil(t, err)
+
+		err = message.Validate()
+		assert.Nil(t, err)
+
+		buf, err := message.Bytes()
+		assert.Nil(t, err)
+		assert.Equal(t, buf, byteData)
+	}
 }
