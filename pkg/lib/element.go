@@ -388,8 +388,12 @@ func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
 	var err error
 
 	switch e.LengthEncoding {
-	case utils.EncodingAscii, utils.EncodingChar:
+	case utils.EncodingChar:
 		encode = contentLen
+	case utils.EncodingHex:
+		lenStr = strconv.Itoa(len(fmt.Sprintf("%x", e.Length)))
+		formatStr = "%0" + strconv.Itoa(len(lenStr)) + "x"
+		encode = []byte(fmt.Sprintf(formatStr, len(value)))
 	case utils.EncodingRBcd:
 		encode, err = utils.RBcd(contentLen)
 		if err != nil {
@@ -424,12 +428,20 @@ func (e *Element) lengthDecoding(raw []byte) (int, error) {
 		}
 
 		switch e.LengthEncoding {
-		case utils.EncodingAscii, utils.EncodingChar:
+		case utils.EncodingChar:
 			contentLen, err = strconv.Atoi(string(raw[:lenSize]))
 			if err != nil {
 				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
 			}
 			read = lenSize
+		case utils.EncodingHex:
+			lenStr := strconv.Itoa(len(fmt.Sprintf("%x", e.Length)))
+			read = len(lenStr)
+			n, err := strconv.ParseUint(string(raw[:read]), 16, 64)
+			if err != nil {
+				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:read]))
+			}
+			contentLen = int(n)
 		case utils.EncodingRBcd:
 			lenVal, err := utils.RBcdAscii(raw[:bcdSize], lenSize)
 			if err != nil {

@@ -23,7 +23,8 @@ type Iso8583Message interface {
 	GetBitmap() *Element
 }
 
-// create data elements of message with specification
+// public functions of lib
+// NewISO8583Message create data elements of message with specification
 func NewISO8583Message(spec *utils.Specification) (Iso8583Message, error) {
 	elements, err := NewDataElements(spec)
 	if err != nil {
@@ -45,6 +46,27 @@ func NewISO8583Message(spec *utils.Specification) (Iso8583Message, error) {
 		elements: elements,
 		spec:     spec,
 	}, nil
+}
+
+// NewISO8583MessageWithJson create data elements of message with specification with json specification file
+func NewISO8583MessageWithJson(buf []byte, encoding *utils.EncodingDefinition) (Iso8583Message, error) {
+	var newAttributes utils.Attributes
+	var newEncoding utils.EncodingDefinition
+
+	err := json.Unmarshal(buf, &newAttributes)
+	if err != nil {
+		return nil, err
+	}
+	if encoding != nil {
+		newEncoding = *encoding
+	} else {
+		newEncoding = *utils.DefaultMessageEncoding
+	}
+
+	return NewISO8583Message(&utils.Specification{
+		Elements: &newAttributes,
+		Encoding: &newEncoding,
+	})
 }
 
 // message instance

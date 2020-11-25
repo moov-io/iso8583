@@ -5,16 +5,17 @@
 package utils
 
 var (
+	DefaultMessageEncoding = &EncodingDefinition{
+		MtiEnc:       EncodingChar,
+		BitmapEnc:    EncodingHex,
+		LengthEnc:    EncodingChar,
+		NumberEnc:    EncodingChar,
+		CharacterEnc: EncodingAscii,
+		BinaryEnc:    EncodingHex,
+		TrackEnc:     EncodingChar,
+	}
 	ISO8583DataElementsVer1987 = Specification{
-		Encoding: &EncodingDefinition{
-			MtiEnc:       EncodingChar,
-			BitmapEnc:    EncodingHex,
-			LengthEnc:    EncodingChar,
-			NumberEnc:    EncodingChar,
-			CharacterEnc: EncodingAscii,
-			BinaryEnc:    EncodingHex,
-			TrackEnc:     EncodingChar,
-		},
+		Encoding: DefaultMessageEncoding,
 		Elements: &Attributes{
 			1:   {"b 64", "Second Bitmap"},
 			2:   {"n..19", "Primary account number (PAN)"},

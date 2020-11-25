@@ -255,13 +255,13 @@ func TestElementStruct(t *testing.T) {
 	element.Fixed = false
 	element.Encoding = utils.EncodingChar
 	element.LengthEncoding = utils.EncodingChar
-	_, err = element.Bytes()
-	assert.Nil(t, err)
-
-	element.LengthEncoding = utils.EncodingAscii
 	buf, err = element.Bytes()
 	assert.Nil(t, err)
 	assert.Equal(t, buf, []byte("6123456"))
+
+	element.LengthEncoding = utils.EncodingAscii
+	_, err = element.Bytes()
+	assert.NotNil(t, err)
 
 	element.LengthEncoding = utils.EncodingRBcd
 	buf, err = element.Bytes()
@@ -312,6 +312,10 @@ func TestElementStruct(t *testing.T) {
 	element.Type = utils.ElementTypeAlphabetic
 	element.LengthEncoding = utils.EncodingAscii
 	buf = []byte("abcdef")
+	_, err = element.Load(buf)
+	assert.NotNil(t, err)
+
+	element.LengthEncoding = utils.EncodingChar
 	_, err = element.Load(buf)
 	assert.NotNil(t, err)
 
@@ -366,6 +370,10 @@ func TestElementStruct(t *testing.T) {
 	element.LengthEncoding = utils.EncodingAscii
 	buf = []byte("123456")
 	_, err = element.Load(buf)
+	assert.NotNil(t, err)
+
+	element.LengthEncoding = utils.EncodingChar
+	_, err = element.Load(buf)
 	assert.Nil(t, err)
 
 	element.LengthEncoding = utils.EncodingRBcd
@@ -378,7 +386,7 @@ func TestElementStruct(t *testing.T) {
 
 	element.LengthEncoding = utils.EncodingHex
 	_, err = element.Load(buf)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	element.Fixed = true
 	_, err = element.Load(buf)
@@ -454,11 +462,6 @@ func TestIso8583MessageBytes(t *testing.T) {
 	_, err = message.Bytes()
 	assert.Nil(t, err)
 
-	ret = message.GetBitmap()
-	copy(ret.Value, "1010000000100000000000000000000000000000000000000000000000000000")
-	err = message.Validate()
-	assert.NotNil(t, err)
-
 	_element := mapRet[3]
 	copy(_element.Value, "abcd")
 	mapRet[3] = _element
@@ -493,6 +496,31 @@ func TestIso8583MessageBytes(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = NewISO8583Message(nil)
+	assert.NotNil(t, err)
+
+	ret = message.GetBitmap()
+	copy(ret.Value, "F010000000100000000000000000000000000000000000000000000000000000")
+	err = message.Validate()
+	assert.NotNil(t, err)
+
+	_, err = message.Bytes()
+	assert.NotNil(t, err)
+
+	ret = message.GetMti()
+	copy(ret.Value, "FFFF")
+	ret.Encoding = utils.EncodingRBcd
+	_, err = message.Bytes()
+	assert.NotNil(t, err)
+
+	mapRet = message.GetElements()
+	modified := mapRet[11]
+	copy(modified.Value, "FFFF")
+	modified.Encoding = utils.EncodingRBcd
+	message = &isoMessage{elements: &dataElements{
+		elements: mapRet,
+		spec:     &utils.ISO8583DataElementsVer1987,
+	}}
+	_, err = message.Bytes()
 	assert.NotNil(t, err)
 
 	message = &isoMessage{elements: nil}
@@ -532,6 +560,37 @@ func TestIso8583MessageBytes(t *testing.T) {
 			`0000000000000000000000000000000000000000000000000000000000000000`)
 	_, err = message.Load(byteData)
 	assert.Nil(t, err)
+
+	byteData = []byte(`0800a020000004000000`)
+	_, err = message.Load(byteData)
+	assert.NotNil(t, err)
+
+	byteData = []byte(`0800a0200000040000000000000000000000123456123456abcdef`)
+	_, err = message.Load(byteData)
+	assert.NotNil(t, err)
+
+	byteData = []byte(
+		`0800E000000000000000` +
+			`0000000000000000000000000000000000000000000000000000000000000000` +
+			`0000000000000000000000000000000000000000000000000000000000000000` +
+			`0000000000000000000000000000000000000000000000000000000000000000`)
+	_, err = message.Load(byteData)
+	assert.NotNil(t, err)
+
+	_spec = &utils.Specification{
+		Encoding: &utils.EncodingDefinition{
+			MtiEnc:    utils.EncodingChar,
+			BitmapEnc: utils.EncodingHex,
+			BinaryEnc: utils.EncodingChar,
+		},
+		Elements: &utils.Attributes{
+			1: {Describe: "b 64", Description: "Second Bitmap"},
+			2: {Describe: "n64", Description: "Number"},
+		},
+	}
+	message, err = NewISO8583Message(_spec)
+	_, err = message.Load(byteData)
+	assert.NotNil(t, err)
 }
 
 func TestElementsStruct(t *testing.T) {
@@ -602,4 +661,20 @@ func TestISO8583MessageWithValidData(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, buf, byteData)
 	}
+}
+
+func TestISO8583MessageWithJson(t *testing.T) {
+	jsonData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "attributes_data_elements.dat"))
+	assert.Nil(t, err)
+
+	_, err = NewISO8583MessageWithJson(jsonData, nil)
+	assert.Nil(t, err)
+
+	jsonData = []byte(`{
+	"1": {
+		"Describe": "b 64",
+		"Description": "Second Bitmap"
+	},}`)
+	_, err = NewISO8583MessageWithJson(jsonData, nil)
+	assert.NotNil(t, err)
 }
