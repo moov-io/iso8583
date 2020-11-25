@@ -589,6 +589,8 @@ func TestIso8583MessageBytes(t *testing.T) {
 		},
 	}
 	message, err = NewISO8583Message(_spec)
+	assert.Nil(t, err)
+
 	_, err = message.Load(byteData)
 	assert.NotNil(t, err)
 }
