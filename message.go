@@ -15,9 +15,10 @@ type Message struct {
 	Bitmap Bitmap
 }
 
-func NewMessage() *Message {
+func NewMessage(spec *spec.MessageSpec) *Message {
 	return &Message{
 		Fields: map[int]fields.Field{},
+		spec:   spec,
 	}
 }
 
@@ -107,8 +108,4 @@ func (m *Message) Pack() ([]byte, error) {
 
 func (m *Message) Unpack(src []byte) error {
 	return nil
-}
-
-func (m *Message) Spec(s *spec.MessageSpec) {
-	m.spec = s
 }

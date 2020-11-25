@@ -7,7 +7,7 @@ import (
 )
 
 func TestMessage(t *testing.T) {
-	message := NewMessage()
+	message := NewMessage(nil)
 
 	message.Field(0, "0100")
 	message.Field(2, "424242424242")
