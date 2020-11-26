@@ -9,6 +9,10 @@ var BCD Encoder = &bcdEncoder{}
 type bcdEncoder struct{}
 
 func (e *bcdEncoder) Encode(src []byte) ([]byte, error) {
+	if len(src)%2 != 0 {
+		src = append([]byte("0"), src...)
+	}
+
 	enc := bcd.NewEncoder(bcd.Standard)
 	dst := make([]byte, bcd.EncodedLen(len(src)))
 	n, err := enc.Encode(dst, src)

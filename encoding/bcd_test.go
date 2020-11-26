@@ -19,5 +19,11 @@ func TestBCD(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, []byte{0x01, 0x10}, res)
+
+		// right justified by default
+		res, err = BCD.Encode([]byte("123"))
+
+		require.NoError(t, err)
+		require.Equal(t, []byte{0x01, 0x23}, res)
 	})
 }
