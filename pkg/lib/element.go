@@ -437,7 +437,7 @@ func (e *Element) lengthDecoding(raw []byte) (int, error) {
 		case utils.EncodingHex:
 			lenStr := strconv.Itoa(len(fmt.Sprintf("%x", e.Length)))
 			read = len(lenStr)
-			n, err := strconv.ParseUint(string(raw[:read]), 16, 64)
+			n, err := strconv.ParseInt(string(raw[:read]), 16, 32)
 			if err != nil {
 				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:read]))
 			}
