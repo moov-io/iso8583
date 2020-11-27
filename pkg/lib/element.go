@@ -259,10 +259,9 @@ func (e *Element) characterDecoding(raw []byte) (int, error) {
 	if e.Encoding == utils.EncodingAscii {
 		value, err = utils.UTF8ToWindows1252(raw[read : read+contentLen])
 	} else if e.Encoding == utils.EncodingEbcdic {
-		str, err := ebcdic.Decode(raw[read:read+contentLen], ebcdic.EBCDIC037)
-		if err != nil {
-			value = []byte(str)
-		}
+		var str string
+		str, err = ebcdic.Decode(raw[read:read+contentLen], ebcdic.EBCDIC037)
+		value = []byte(str)
 	} else {
 		return 0, errors.New(utils.ErrInvalidEncoder)
 	}
@@ -290,10 +289,6 @@ func (e *Element) numberDecoding(raw []byte) (int, error) {
 	}
 
 	var value []byte
-	if len(raw) < read+contentLen {
-		return 0, errors.New(utils.ErrBadElementData)
-	}
-
 	if e.Encoding == utils.EncodingChar {
 		if len(raw) < read+contentLen {
 			return 0, errors.New(utils.ErrBadElementData)
@@ -383,12 +378,10 @@ func (e *Element) binaryDecoding(raw []byte) (int, error) {
 }
 
 func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
+	var encode []byte
 	lenStr := strconv.Itoa(e.Length)
 	formatStr := "%0" + strconv.Itoa(len(lenStr)) + "d"
 	contentLen := []byte(fmt.Sprintf(formatStr, len(value)))
-
-	var encode []byte
-	var err error
 
 	switch e.LengthEncoding {
 	case utils.EncodingChar:
@@ -398,15 +391,11 @@ func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
 		formatStr = "%0" + strconv.Itoa(len(lenStr)) + "x"
 		encode = []byte(fmt.Sprintf(formatStr, len(value)))
 	case utils.EncodingRBcd:
-		encode, err = utils.RBcd(contentLen)
-		if err != nil {
-			return nil, err
-		}
+		// contentLen is number only
+		encode, _ = utils.RBcd(contentLen)
 	case utils.EncodingBcd:
-		encode, err = utils.Bcd(contentLen)
-		if err != nil {
-			return nil, err
-		}
+		// contentLen is number only
+		encode, _ = utils.Bcd(contentLen)
 	default:
 		return nil, errors.New(utils.ErrInvalidLengthEncoder)
 	}
@@ -450,20 +439,16 @@ func (e *Element) lengthDecoding(raw []byte) (int, error) {
 			if err != nil {
 				return 0, err
 			}
-			contentLen, err = strconv.Atoi(string(lenVal))
-			if err != nil {
-				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
-			}
+			// lenVal is decimal numbers only
+			contentLen, _ = strconv.Atoi(string(lenVal))
 			read = bcdSize
 		case utils.EncodingBcd:
 			lenVal, err := utils.BcdAscii(raw[:bcdSize], lenSize)
 			if err != nil {
 				return 0, err
 			}
-			contentLen, err = strconv.Atoi(string(lenVal))
-			if err != nil {
-				return 0, errors.New(utils.ErrParseLengthFailed + ": " + string(raw[:lenSize]))
-			}
+			// lenVal is decimal numbers only
+			contentLen, _ = strconv.Atoi(string(lenVal))
 			read = bcdSize
 		default:
 			return 0, errors.New(utils.ErrInvalidLengthEncoder)

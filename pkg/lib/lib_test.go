@@ -450,6 +450,93 @@ func TestElementStruct(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestElementStructForErrorCases(t *testing.T) {
+	element := &Element{}
+	element.Value = []byte("1234567")
+	element.Length = 7
+	element.Fixed = true
+	element.Type = utils.ElementTypeNumeric
+	element.Encoding = utils.EncodingBcd
+	buf, err := element.Bytes()
+	assert.Nil(t, err)
+	assert.Equal(t, buf, []byte{0x12, 0x34, 0x56, 0x70})
+
+	element.Length = 7
+	element.Value = nil
+
+	element.Fixed = false
+	element.Type = utils.ElementTypeNumeric
+	element.LengthEncoding = utils.EncodingHex
+	element.Encoding = utils.EncodingBcd
+	element.Type = utils.ElementTypeAlphabetic
+	_, err = element.Load([]byte{0x7, 0x12, 0x34, 0x56, 0x70})
+	assert.NotNil(t, err)
+
+	element.LengthEncoding = utils.EncodingRBcd
+	_, err = element.Load([]byte{0xA, 0x12, 0x34, 0x56, 0x70})
+	assert.NotNil(t, err)
+
+	element.LengthEncoding = utils.EncodingBcd
+	_, err = element.Load([]byte{0xA, 0x12, 0x34, 0x56, 0x70})
+	assert.NotNil(t, err)
+
+	element.Fixed = true
+	element.Encoding = utils.EncodingEbcdic
+	_, err = element.Load([]byte{0xE3, 0x88, 0x89, 0xA2, 0x40, 0xA2})
+	assert.NotNil(t, err)
+
+	element.Fixed = false
+	element.LengthEncoding = utils.EncodingHex
+	element.DataLength = 6
+	element.Value = []byte("123456")
+	_, err = element.Bytes()
+	assert.Nil(t, err)
+
+	element.LengthEncoding = utils.EncodingHex
+	element.DataLength = 0
+	element.Value = nil
+	_, err = element.Bytes()
+	assert.Nil(t, err)
+
+	element.Length = 9
+	element.Fixed = true
+	element.Type = utils.ElementTypeBinary
+	element.Encoding = utils.EncodingHex
+	_, err = element.Load([]byte("A"))
+	assert.NotNil(t, err)
+
+	element.Length = 9
+	element.Encoding = utils.EncodingChar
+	element.Type = utils.ElementTypeNumeric
+	_, err = element.Load([]byte("A"))
+	assert.NotNil(t, err)
+
+	element.Encoding = utils.EncodingRBcd
+	_, err = element.Load([]byte("A"))
+	assert.NotNil(t, err)
+
+	element.Encoding = utils.EncodingBcd
+	_, err = element.Load([]byte("A"))
+	assert.NotNil(t, err)
+
+	element.Length = 13
+	element.Encoding = utils.EncodingRBcd
+	_, err = element.Load([]byte("unacceptable"))
+	assert.NotNil(t, err)
+
+	element.Encoding = utils.EncodingBcd
+	_, err = element.Load([]byte("unacceptable"))
+	assert.NotNil(t, err)
+
+	element.Length = 9
+	element.Fixed = true
+	element.Type = utils.ElementTypeBinary
+	element.Encoding = utils.EncodingHex
+	element.Value = []byte("0101")
+	_, err = element.Bytes()
+	assert.NotNil(t, err)
+}
+
 func TestIso8583MessageBytes(t *testing.T) {
 	byteData := []byte(`0800a0200000040000000000000000000000123456123456abcdef`)
 
