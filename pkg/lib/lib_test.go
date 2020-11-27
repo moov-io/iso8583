@@ -247,10 +247,22 @@ func TestElementStruct(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, buf, []byte{0x12, 0x34, 0x56})
 
+	element.Value = []byte("123")
+	buf, err = element.Bytes()
+	assert.Nil(t, err)
+	assert.Equal(t, buf, []byte{0x0, 0x1, 0x23})
+	element.Value = []byte("123456")
+
 	element.Encoding = utils.EncodingBcd
 	buf, err = element.Bytes()
 	assert.Nil(t, err)
 	assert.Equal(t, buf, []byte{0x12, 0x34, 0x56})
+
+	element.Value = []byte("123")
+	buf, err = element.Bytes()
+	assert.Nil(t, err)
+	assert.Equal(t, buf, []byte{0x12, 0x30, 0x0})
+	element.Value = []byte("123456")
 
 	element.Fixed = false
 	element.Encoding = utils.EncodingChar

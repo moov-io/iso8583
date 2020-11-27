@@ -73,7 +73,7 @@ func (e *Element) Bytes() ([]byte, error) {
 	if !e.Fixed {
 		dataLen = e.DataLength
 	}
-	if dataLen > len(e.Value) {
+	if len(e.Value) > dataLen {
 		return nil, fmt.Errorf(utils.ErrValueTooLong, "byte", dataLen, len(e.Value))
 	}
 
@@ -157,15 +157,15 @@ func (e *Element) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error
 
 // private functions ...
 func (e *Element) characterEncoding() ([]byte, error) {
-	var value []byte
+	var encodingValue []byte
 	var err error
 
 	if e.Encoding == utils.EncodingChar {
-		value = e.Value
+		encodingValue = e.Value
 	} else if e.Encoding == utils.EncodingAscii {
-		value, err = utils.UTF8ToWindows1252(e.Value)
+		encodingValue, err = utils.UTF8ToWindows1252(e.Value)
 	} else if e.Encoding == utils.EncodingEbcdic {
-		value, err = ebcdic.Encode(string(e.Value), ebcdic.EBCDIC037)
+		encodingValue, err = ebcdic.Encode(string(e.Value), ebcdic.EBCDIC037)
 	} else {
 		return nil, errors.New(utils.ErrInvalidEncoder)
 	}
@@ -173,16 +173,17 @@ func (e *Element) characterEncoding() ([]byte, error) {
 		return nil, err
 	}
 
+	paddingValue := e.characterWithPadding(encodingValue)
 	if e.Fixed {
-		return value, nil
+		return paddingValue, nil
 	}
 
-	lenEncode, err := e.lengthEncoding(value)
+	lenEncode, err := e.lengthEncoding(encodingValue)
 	if err != nil {
 		return nil, err
 	}
 
-	return append(lenEncode, value...), nil
+	return append(lenEncode, paddingValue...), nil
 }
 
 func (e *Element) numberEncoding() ([]byte, error) {
@@ -202,8 +203,9 @@ func (e *Element) numberEncoding() ([]byte, error) {
 		return nil, err
 	}
 
+	paddingValue := e.numberWithPadding(value, true)
 	if e.Fixed {
-		return value, nil
+		return paddingValue, nil
 	}
 
 	lenEncode, err := e.lengthEncoding(value)
@@ -211,7 +213,7 @@ func (e *Element) numberEncoding() ([]byte, error) {
 		return nil, err
 	}
 
-	return append(lenEncode, value...), nil
+	return append(lenEncode, paddingValue...), nil
 }
 
 func (e *Element) binaryEncoding() ([]byte, error) {
@@ -222,6 +224,7 @@ func (e *Element) binaryEncoding() ([]byte, error) {
 	}
 
 	if e.Encoding == utils.EncodingChar {
+		e.extendBinaryData()
 		value = e.Value
 	} else if e.Encoding == utils.EncodingHex {
 		bitNum, err := strconv.ParseUint(string(e.Value), 2, e.Length)
@@ -489,4 +492,48 @@ func (e *Element) setType(_type *utils.ElementType) {
 	e.Fixed = _type.Fixed
 	e.LengthEncoding = _type.LengthEncoding
 	e.extendBinaryData()
+}
+
+func (e *Element) numberWithPadding(buf []byte, isNumeric bool) []byte {
+	var length = e.Length
+	if !e.Fixed {
+		return buf
+	}
+	if e.Encoding == utils.EncodingChar {
+		return []byte(fmt.Sprintf("%0"+strconv.Itoa(length)+"s", buf))
+	}
+
+	bcdSize := length / 2
+	if length%2 != 0 {
+		bcdSize++
+	}
+	value := make([]byte, bcdSize)
+	if e.Encoding == utils.EncodingBcd {
+		for index := range value {
+			if index < len(buf) {
+				value[index] = buf[index]
+			} else {
+				value[index] = 0
+			}
+		}
+	} else {
+		pos := bcdSize - len(buf)
+		for index := range value {
+			if index >= pos {
+				value[index] = buf[index-pos]
+			} else {
+				value[index] = 0
+			}
+		}
+	}
+	return value
+}
+
+func (e *Element) characterWithPadding(buf []byte) []byte {
+	var length = e.Length
+	if !e.Fixed {
+		return buf
+	}
+	fmtStr := "%-" + strconv.Itoa(length) + "s"
+	return []byte(fmt.Sprintf(fmtStr, buf))
 }
