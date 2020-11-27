@@ -6,18 +6,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// prefixer.NONE
-
-// func TestPrefixer(t *testing.T) {
-// 	require.Equal(t, []byte(nil), NONE.Encode(12))
-// 	require.Equal(t, -1, NONE.Decode([]byte("16")))
-
-// 	require.Equal(t, []byte("12"), ASCII.Encode(12))
-// 	require.Equal(t, 16, ASCII.Decode([]byte("16")))
-// }
-
-func TestAsciiPrefixer_EncodeLengthDigitsCheck(t *testing.T) {
-	pref := asciiPrefixer{
+func TestAsciiVarPrefixer_EncodeLengthDigitsValidation(t *testing.T) {
+	pref := asciiVarPrefixer{
 		MaxLen: 999,
 		Digits: 2,
 	}
@@ -27,19 +17,19 @@ func TestAsciiPrefixer_EncodeLengthDigitsCheck(t *testing.T) {
 	require.Contains(t, err.Error(), "Number of digits exceeds: 2")
 }
 
-func TestAsciiPrefixer_EncodeLengthMaxLength(t *testing.T) {
-	pref := asciiPrefixer{
+func TestAsciiVarPrefixer_EncodeLengthMaxLengthValidation(t *testing.T) {
+	pref := asciiVarPrefixer{
 		MaxLen: 20,
 		Digits: 2,
 	}
 
 	_, err := pref.EncodeLength(22)
 
-	require.Contains(t, err.Error(), "Provided length: 22 is larger than maximum: 20")
+	require.Contains(t, err.Error(), "Field length: 22 is larger than maximum: 20")
 }
 
-func TestAsciiPrefixer_DecodeLengthMaxLength(t *testing.T) {
-	pref := asciiPrefixer{
+func TestAsciiVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
+	pref := asciiVarPrefixer{
 		MaxLen: 20,
 		Digits: 3,
 	}
@@ -49,7 +39,7 @@ func TestAsciiPrefixer_DecodeLengthMaxLength(t *testing.T) {
 	require.Contains(t, err.Error(), "Not enought data length: 2 to read: 3 byte digits")
 }
 
-func TestAsciiPrefixer_VarLength(t *testing.T) {
+func TestAsciiVarPrefixer_LHelpers(t *testing.T) {
 	tests := []struct {
 		pref Prefixer
 		in   int
@@ -78,4 +68,34 @@ func TestAsciiPrefixer_VarLength(t *testing.T) {
 			require.Equal(t, tt.in, got)
 		})
 	}
+}
+
+func TestAsciiFixedPrefixer(t *testing.T) {
+	pref := asciiFixedPrefixer{
+		Len: 8,
+	}
+
+	// Fixed prefixer returns empty byte slice as
+	// size is not encoded into field
+	data, err := pref.EncodeLength(8)
+
+	require.NoError(t, err)
+	require.Equal(t, 0, len(data))
+
+	// Fixed prefixer returns configured len
+	// rather than read it from data
+	dataLen, err := pref.DecodeLength([]byte("data"))
+
+	require.NoError(t, err)
+	require.Equal(t, 8, dataLen)
+}
+
+func TestAsciiFixedPrefixer_EncodeLengthValidation(t *testing.T) {
+	pref := asciiFixedPrefixer{
+		Len: 8,
+	}
+
+	_, err := pref.EncodeLength(12)
+
+	require.Contains(t, err.Error(), "Field length: 12 should be fixed: 8")
 }
