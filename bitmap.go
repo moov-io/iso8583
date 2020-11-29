@@ -1,30 +1,40 @@
 package iso8583
 
-import "fmt"
+// Partially copied from https://github.com/boljen/go-bitmap (MIT license)
 
-// source https://play.golang.org/p/oOe1Gd4C2G
-type Bitmap [8]byte
+import (
+	"fmt"
 
-func (bits *Bitmap) IsSet(i int) bool {
-	i -= 1
-	return bits[i/8]&(1<<uint(7-i%8)) != 0
+	"github.com/boljen/go-bitmap"
+)
+
+type Bitmap struct {
+	bitmap bitmap.Bitmap
 }
 
-func (bits *Bitmap) Set(i int) {
-	i -= 1
-	bits[i/8] |= 1 << uint(7-i%8)
+func NewBitmap(len int) *Bitmap {
+	return &Bitmap{
+		bitmap: bitmap.New(len),
+	}
 }
 
-func (bits *Bitmap) Clear(i int) {
-	i -= 1
-	bits[i/8] &^= 1 << uint(7-i%8)
+func (b *Bitmap) IsSet(i int) bool {
+	return b.bitmap.Get(i)
 }
 
-func (bits *Bitmap) String() string {
+func (b *Bitmap) Set(i int) {
+	b.bitmap.Set(i, true)
+}
+
+func (b *Bitmap) Bytes() []byte {
+	return []byte(b.bitmap)
+}
+
+func (b *Bitmap) String() string {
 	var out string
 
-	for _, b := range bits {
-		out += fmt.Sprintf("%08b ", b)
+	for _, byte_ := range b.bitmap {
+		out += fmt.Sprintf("%08b ", byte_)
 	}
 
 	return out
