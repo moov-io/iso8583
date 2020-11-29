@@ -12,6 +12,12 @@ func TestBCD(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, []byte("1234"), res)
+
+		// 0x32 = 50
+		res, err = BCD.Decode([]byte{50})
+
+		require.NoError(t, err)
+		require.Equal(t, []byte("32"), res)
 	})
 
 	t.Run("Encode", func(t *testing.T) {

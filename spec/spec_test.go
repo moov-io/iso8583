@@ -83,7 +83,7 @@ func (fd *fieldDefinition) Unpack(data []byte) ([]byte, error) {
 }
 
 func TestFieldPacker(t *testing.T) {
-	t.Run("ASCII LL field", func(t *testing.T) {
+	t.Run("ASCII VAR field", func(t *testing.T) {
 		field := &fieldDefinition{"Primary Account Number", encoding.ASCII, prefixer.ASCII.LL(19)}
 
 		// pack
@@ -100,7 +100,7 @@ func TestFieldPacker(t *testing.T) {
 
 	})
 
-	t.Run("ASCII fixed field", func(t *testing.T) {
+	t.Run("ASCII Fixed field", func(t *testing.T) {
 		field := &fieldDefinition{"Processing code", encoding.ASCII, prefixer.ASCII.Fixed(6)}
 
 		// pack
@@ -116,24 +116,4 @@ func TestFieldPacker(t *testing.T) {
 		require.Equal(t, want, got)
 
 	})
-
-	// t.Run("Unpack ASCII", func(t *testing.T) {
-	// 	packer := NewField(4, "MTI", encoding.ASCII, nil, nil, nil)
-
-	// 	field, err := packer.Unpack([]byte("0100"))
-
-	// 	require.NoError(t, err)
-	// 	require.NotNil(t, field)
-	// 	require.Equal(t, "0100", field.String())
-	// })
-
-	// t.Run("Unpack Binary", func(t *testing.T) {
-	// 	packer := NewField(4, "MTI", encoding.BCD, nil, nil, nil)
-
-	// 	field, err := packer.Unpack([]byte{0x01, 0x00})
-
-	// 	require.NoError(t, err)
-	// 	require.NotNil(t, field)
-	// 	require.Equal(t, "0100", field.String())
-	// })
 }

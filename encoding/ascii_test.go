@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,6 +18,7 @@ func TestASCII(t *testing.T) {
 
 		_, err = enc.Decode([]byte("hello, 世界!"))
 		require.Error(t, err)
+
 	})
 
 	t.Run("Encode", func(t *testing.T) {
@@ -27,5 +29,8 @@ func TestASCII(t *testing.T) {
 
 		res, err = enc.Encode([]byte("hello, 世界!"))
 		require.Error(t, err)
+
+		res, err = enc.Encode([]byte("29110001"))
+		fmt.Println(res)
 	})
 }
