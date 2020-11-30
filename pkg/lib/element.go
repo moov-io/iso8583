@@ -30,35 +30,24 @@ type Element struct {
 
 // Validate check validation of field
 func (e *Element) Validate() error {
-	match := false
-	if len(e.Value) == 0 {
-		return nil
+	// Checking available encoding
+	err := e.validateWithEncoding()
+	if err != nil {
+		return err
 	}
-	switch e.Type {
-	case utils.ElementTypeAlphabetic:
-		match = utils.RegexAlphabetic(string(e.Value))
-	case utils.ElementTypeNumeric, utils.ElementTypeMti:
-		match = utils.RegexNumeric(string(e.Value))
-	case utils.ElementTypeSpecial:
-		match = utils.RegexSpecial(string(e.Value))
-	case utils.ElementTypeIndicate:
-		match = utils.RegexIndicate(string(e.Value))
-	case utils.ElementTypeBinary, utils.ElementTypeBitmap:
-		match = utils.RegexBinary(string(e.Value))
-	case utils.ElementTypeAlphaNumeric:
-		match = utils.RegexAlphaNumeric(string(e.Value))
-	case utils.ElementTypeAlphaSpecial:
-		match = utils.RegexAlphaSpecial(string(e.Value))
-	case utils.ElementTypeNumericSpecial:
-		match = utils.RegexNumericSpecial(string(e.Value))
-	case utils.ElementTypeAlphaNumericSpecial:
-		match = utils.RegexAlphaNumericSpecial(string(e.Value))
-	case utils.ElementTypeIndicateNumeric:
-		match = utils.RegexIndicateNumeric(string(e.Value))
+
+	// Regex
+	err = e.validateWithRegex()
+	if err != nil {
+		return err
 	}
-	if !match {
-		return errors.New(utils.ErrBadElementData)
+
+	// Date Format
+	err = e.validateWithFormat()
+	if err != nil {
+		return err
 	}
+
 	return nil
 }
 
@@ -521,4 +510,70 @@ func (e *Element) characterWithPadding(buf []byte) []byte {
 	}
 	fmtStr := "%-" + strconv.Itoa(length) + "s"
 	return []byte(fmt.Sprintf(fmtStr, buf))
+}
+
+func (e *Element) validateWithRegex() error {
+	// Regex
+	match := false
+	if len(e.Value) == 0 {
+		return nil
+	}
+	switch e.Type {
+	case utils.ElementTypeAlphabetic:
+		match = utils.RegexAlphabetic(string(e.Value))
+	case utils.ElementTypeNumeric, utils.ElementTypeMti:
+		match = utils.RegexNumeric(string(e.Value))
+	case utils.ElementTypeSpecial:
+		match = utils.RegexSpecial(string(e.Value))
+	case utils.ElementTypeIndicate:
+		match = utils.RegexIndicate(string(e.Value))
+	case utils.ElementTypeBinary, utils.ElementTypeBitmap:
+		match = utils.RegexBinary(string(e.Value))
+	case utils.ElementTypeAlphaNumeric:
+		match = utils.RegexAlphaNumeric(string(e.Value))
+	case utils.ElementTypeAlphaSpecial:
+		match = utils.RegexAlphaSpecial(string(e.Value))
+	case utils.ElementTypeNumericSpecial:
+		match = utils.RegexNumericSpecial(string(e.Value))
+	case utils.ElementTypeAlphaNumericSpecial:
+		match = utils.RegexAlphaNumericSpecial(string(e.Value))
+	case utils.ElementTypeIndicateNumeric:
+		match = utils.RegexIndicateNumeric(string(e.Value))
+	}
+	if !match {
+		return errors.New(utils.ErrBadElementData)
+	}
+	return nil
+}
+
+func (e *Element) validateWithEncoding() error {
+	// Checking available encoding
+	available := utils.CheckAvailableEncoding(e.Type, e.Encoding)
+	if !available {
+		return errors.New(utils.ErrNonAvailableEncoding)
+	}
+
+	// Checking available encoding of length
+	if !e.Fixed {
+		available := utils.CheckAvailableEncoding(utils.ElementTypeNumberEncoding, e.LengthEncoding)
+		if !available {
+			return errors.New(utils.ErrNonAvailableEncoding)
+		}
+	}
+	return nil
+}
+
+func (e *Element) validateWithFormat() error {
+	if len(e.Format) == 0 {
+		return nil
+	}
+	format := strings.ToUpper(e.Format)
+	f, exist := utils.AvailableDateFormat[format]
+	if exist {
+		match := f(string(e.Value))
+		if !match {
+			return errors.New(utils.ErrBadElementData)
+		}
+	}
+	return nil
 }

@@ -3,6 +3,8 @@ package utils
 const (
 	// ErrInvalidEncoder is given when an invalid encoder is not supported
 	ErrInvalidEncoder string = "invalid encoder"
+	// ErrNonAvailableEncoding is given when encoding is non available
+	ErrNonAvailableEncoding string = "non available encoding"
 	// ErrInvalidLengthEncoder is given when the length of an encoder is invalid
 	ErrInvalidLengthEncoder string = "invalid length encoder"
 	// ErrInvalidLengthHead is given when the length of the head is invalid

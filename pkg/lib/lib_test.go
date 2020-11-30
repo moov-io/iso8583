@@ -157,8 +157,11 @@ func TestElementStruct(t *testing.T) {
 	element := &Element{}
 	element.Value = []byte("123456")
 	element.Length = 6
+	element.Encoding = utils.EncodingChar
+	element.LengthEncoding = utils.EncodingChar
 
 	element.Type = utils.ElementTypeAlphabetic
+	element.Encoding = utils.EncodingAscii
 	err := element.Validate()
 	assert.NotNil(t, err)
 
@@ -166,6 +169,7 @@ func TestElementStruct(t *testing.T) {
 	assert.NotNil(t, err)
 
 	element.Type = utils.ElementTypeNumeric
+	element.Encoding = utils.EncodingChar
 	err = element.Validate()
 	assert.Nil(t, err)
 
@@ -174,6 +178,7 @@ func TestElementStruct(t *testing.T) {
 	assert.Nil(t, err)
 
 	element.Type = utils.ElementTypeSpecial
+	element.Encoding = utils.EncodingAscii
 	err = element.Validate()
 	assert.NotNil(t, err)
 
@@ -182,6 +187,7 @@ func TestElementStruct(t *testing.T) {
 	assert.NotNil(t, err)
 
 	element.Type = utils.ElementTypeBinary
+	element.Encoding = utils.EncodingChar
 	err = element.Validate()
 	assert.NotNil(t, err)
 
@@ -190,6 +196,7 @@ func TestElementStruct(t *testing.T) {
 	assert.NotNil(t, err)
 
 	element.Type = utils.ElementTypeAlphaNumeric
+	element.Encoding = utils.EncodingAscii
 	err = element.Validate()
 	assert.Nil(t, err)
 
@@ -223,7 +230,7 @@ func TestElementStruct(t *testing.T) {
 	element.Encoding = utils.EncodingChar
 	element.DataLength = 10
 	_, err = element.Bytes()
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	// cat number, fixed
 	element.DataLength = 6
@@ -762,6 +769,15 @@ func TestISO8583MessageWithValidData(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, buf, byteData)
 	}
+
+	errorMessage, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
+	assert.Nil(t, err)
+	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "iso_reversal_message_error_date.dat"))
+	assert.Nil(t, err)
+	_, err = errorMessage.Load(byteData)
+	assert.Nil(t, err)
+	err = errorMessage.Validate()
+	assert.NotNil(t, err)
 }
 
 func TestISO8583MessageWithJson(t *testing.T) {

@@ -14,11 +14,13 @@ import (
 
 var (
 	digitIndicates = []string{
-		"...",
-		"..",
-		".",
-		"-",
-		" ",
+		".....", // for variable data element (max 99999)
+		"....",  // for variable data element (max 9999)
+		"...",   // for variable data element (max 999)
+		"..",    // for variable data element (max 99)
+		".",     // for variable data element (max 9)
+		"-",     // for fixed data element
+		" ",     // for fixed data element
 	}
 	formatIndicate   = ";"
 	variableIndicate = "."

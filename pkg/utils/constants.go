@@ -20,6 +20,7 @@ const (
 	ElementTypeNumericSpecial      = "ns"  // numeric and special characters
 	ElementTypeAlphaNumericSpecial = "ans" // alpha, numeric, and special characters
 	ElementTypeIndicateNumeric     = "x+n" // Numeric (amount) values, where the first byte is either “C” or “D”
+	ElementTypeNumberEncoding      = "number"
 
 	DataElementXmlName    = "Element"
 	DataElementAttrNumber = "Number"
@@ -47,6 +48,11 @@ var (
 	RegexBinary              = regexp.MustCompile(`^[0|1]+$`).MatchString
 	RegexNumericSpecial      = regexp.MustCompile(`^[0-9$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
 	RegexAlphaNumericSpecial = regexp.MustCompile(`^[0-9a-zA-Z$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
+
+	RegexTimeHHMMSS = regexp.MustCompile(`(2[0-3]|[01][0-9])[0-5][0-9][0-5][0-9]`).MatchString
+	RegexDateYYMM   = regexp.MustCompile(`((\d{2})(0[1-9]|10|12))`).MatchString
+	RegexDateMMDD   = regexp.MustCompile(`((0[1-9]|10|12)(0[1-9]|[12][0-9]|3[01]))`).MatchString
+	RegexDateYYMMDD = regexp.MustCompile(`((\d{2})(0[1-9]|10|11|12)(0[1-9]|[12][0-9]|3[01]))`).MatchString
 )
 
 // data representation attributes
@@ -79,6 +85,7 @@ var AvailableEncodings = map[string][]string{
 	ElementTypeNumericSpecial:      {EncodingAscii, EncodingEbcdic},
 	ElementTypeAlphaNumericSpecial: {EncodingAscii, EncodingEbcdic},
 	ElementTypeIndicateNumeric:     {EncodingAscii, EncodingEbcdic},
+	ElementTypeNumberEncoding:      {EncodingChar, EncodingHex, EncodingRBcd, EncodingBcd},
 }
 
 var AvailableTypeCategory = map[string]string{
@@ -95,6 +102,13 @@ var AvailableTypeCategory = map[string]string{
 	ElementTypeNumericSpecial:      EncodingCatCharacter,
 	ElementTypeAlphaNumericSpecial: EncodingCatCharacter,
 	ElementTypeIndicateNumeric:     EncodingCatCharacter,
+}
+
+var AvailableDateFormat = map[string]func(s string) bool{
+	"HHMMSS": RegexTimeHHMMSS,
+	"YYMM":   RegexDateYYMM,
+	"MMDD":   RegexDateMMDD,
+	"YYMMDD": RegexDateYYMMDD,
 }
 
 func CheckAvailableEncoding(eType string, encoding string) bool {
