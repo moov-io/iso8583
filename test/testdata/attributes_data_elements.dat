@@ -1,0 +1,514 @@
+{
+	"1": {
+		"Describe": "b 64",
+		"Description": "Second Bitmap"
+	},
+	"2": {
+		"Describe": "n..19",
+		"Description": "Primary account number (PAN)"
+	},
+	"3": {
+		"Describe": "n 6",
+		"Description": "Processing code"
+	},
+	"4": {
+		"Describe": "n 12",
+		"Description": "Amount, transaction"
+	},
+	"5": {
+		"Describe": "n 12",
+		"Description": "Amount, settlement"
+	},
+	"6": {
+		"Describe": "n 12",
+		"Description": "Amount, cardholder billing"
+	},
+	"7": {
+		"Describe": "n 10; MMDDhhmmss",
+		"Description": "Transmission date \u0026 time"
+	},
+	"8": {
+		"Describe": "n 8",
+		"Description": "Amount, cardholder billing fee"
+	},
+	"9": {
+		"Describe": "n 8",
+		"Description": "Conversion rate, settlement"
+	},
+	"10": {
+		"Describe": "n 8",
+		"Description": "Conversion rate, cardholder billing"
+	},
+	"11": {
+		"Describe": "n 6",
+		"Description": "System trace audit number (STAN)"
+	},
+	"12": {
+		"Describe": "n 6; hhmmss",
+		"Description": "Local transaction time (hhmmss)"
+	},
+	"13": {
+		"Describe": "n 4; MMDD",
+		"Description": "Local transaction date (MMDD)"
+	},
+	"14": {
+		"Describe": "n 4; YYMM",
+		"Description": "Expiration date"
+	},
+	"15": {
+		"Describe": "n 4; MMDD",
+		"Description": "Settlement date"
+	},
+	"16": {
+		"Describe": "n 4; MMDD",
+		"Description": "Currency conversion date"
+	},
+	"17": {
+		"Describe": "n 4; MMDD",
+		"Description": "Capture date"
+	},
+	"18": {
+		"Describe": "n 4",
+		"Description": "Merchant type, or merchant category code"
+	},
+	"19": {
+		"Describe": "n 3",
+		"Description": "Acquiring institution (country code)"
+	},
+	"20": {
+		"Describe": "n 3",
+		"Description": "PAN extended (country code)"
+	},
+	"21": {
+		"Describe": "n 3",
+		"Description": "Forwarding institution (country code)"
+	},
+	"22": {
+		"Describe": "n 3",
+		"Description": "Point of Sale (POS) entry mode"
+	},
+	"23": {
+		"Describe": "n 3",
+		"Description": "Application PAN sequence number"
+	},
+	"24": {
+		"Describe": "n 3",
+		"Description": "Function code (ISO 8583:1993), or network international identifier (NII)"
+	},
+	"25": {
+		"Describe": "n 2",
+		"Description": "Point of Sale (POS) condition code"
+	},
+	"26": {
+		"Describe": "n 2",
+		"Description": "Point of Sale (POS) capture code"
+	},
+	"27": {
+		"Describe": "n 1",
+		"Description": "Authorizing identification response length"
+	},
+	"28": {
+		"Describe": "x+n 8",
+		"Description": "Amount, transaction fee"
+	},
+	"29": {
+		"Describe": "x+n 8",
+		"Description": "Amount, settlement fee"
+	},
+	"30": {
+		"Describe": "x+n 8",
+		"Description": "Amount, transaction processing fee"
+	},
+	"31": {
+		"Describe": "x+n 8",
+		"Description": "Amount, settlement processing fee"
+	},
+	"32": {
+		"Describe": "n..11",
+		"Description": "Acquiring institution identification code"
+	},
+	"33": {
+		"Describe": "n..11",
+		"Description": "Forwarding institution identification code"
+	},
+	"34": {
+		"Describe": "ns..28",
+		"Description": "Primary account number, extended"
+	},
+	"35": {
+		"Describe": "z..37",
+		"Description": "Track 2 data"
+	},
+	"36": {
+		"Describe": "n...104",
+		"Description": "Track 3 data"
+	},
+	"37": {
+		"Describe": "an 12",
+		"Description": "Retrieval reference number"
+	},
+	"38": {
+		"Describe": "an 6",
+		"Description": "Authorization identification response"
+	},
+	"39": {
+		"Describe": "an 2",
+		"Description": "Response code"
+	},
+	"40": {
+		"Describe": "an 3",
+		"Description": "Service restriction code"
+	},
+	"41": {
+		"Describe": "ans 8",
+		"Description": "Card acceptor terminal identification"
+	},
+	"42": {
+		"Describe": "ans 15",
+		"Description": "Card acceptor identification code"
+	},
+	"43": {
+		"Describe": "ans 40",
+		"Description": "Card acceptor name/location (1–23 street address, –36 city, –38 state, 39–40 country)"
+	},
+	"44": {
+		"Describe": "an..25",
+		"Description": "Additional response data"
+	},
+	"45": {
+		"Describe": "an..76",
+		"Description": "Track 1 data"
+	},
+	"46": {
+		"Describe": "an...999",
+		"Description": "Additional data (ISO)"
+	},
+	"47": {
+		"Describe": "an...999",
+		"Description": "Additional data (national)"
+	},
+	"48": {
+		"Describe": "an...999",
+		"Description": "Additional data (private)"
+	},
+	"49": {
+		"Describe": "n 3",
+		"Description": "Currency code, transaction"
+	},
+	"50": {
+		"Describe": "n 3",
+		"Description": "Currency code, settlement"
+	},
+	"51": {
+		"Describe": "n 3",
+		"Description": "Currency code, cardholder billing"
+	},
+	"52": {
+		"Describe": "b 64",
+		"Description": "Personal identification number data"
+	},
+	"53": {
+		"Describe": "n 16",
+		"Description": "Security related control information"
+	},
+	"54": {
+		"Describe": "an...120",
+		"Description": "Additional amounts"
+	},
+	"55": {
+		"Describe": "ans...999",
+		"Description": "ICC data – EMV having multiple tags"
+	},
+	"56": {
+		"Describe": "ans...999",
+		"Description": "Reserved (ISO)"
+	},
+	"57": {
+		"Describe": "ans...999",
+		"Description": "Reserved (national)"
+	},
+	"58": {
+		"Describe": "ans...999",
+		"Description": "Reserved (national)"
+	},
+	"59": {
+		"Describe": "ans...999",
+		"Description": "Reserved (national)"
+	},
+	"60": {
+		"Describe": "ans...999",
+		"Description": "Reserved (national)"
+	},
+	"61": {
+		"Describe": "ans...999",
+		"Description": "Reserved (private) (e.g. CVV2/service code   transactions)"
+	},
+	"62": {
+		"Describe": "ans...999",
+		"Description": "Reserved (private) (e.g. transactions: invoice number, key exchange transactions: TPK key, etc.)"
+	},
+	"63": {
+		"Describe": "ans...999",
+		"Description": "Reserved (private)"
+	},
+	"64": {
+		"Describe": "b 64",
+		"Description": "Message authentication code (MAC)"
+	},
+	"65": {
+		"Describe": "b 1",
+		"Description": "Extended bitmap indicator"
+	},
+	"66": {
+		"Describe": "n 1",
+		"Description": "Settlement code"
+	},
+	"67": {
+		"Describe": "n 2",
+		"Description": "Extended payment code"
+	},
+	"68": {
+		"Describe": "n 3",
+		"Description": "Receiving institution country code"
+	},
+	"69": {
+		"Describe": "n 3",
+		"Description": "Settlement institution country code"
+	},
+	"70": {
+		"Describe": "n 3",
+		"Description": "Network management information code"
+	},
+	"71": {
+		"Describe": "n 4",
+		"Description": "Message number"
+	},
+	"72": {
+		"Describe": "n 4",
+		"Description": "Last message's number"
+	},
+	"73": {
+		"Describe": "n 6; YYMMDD",
+		"Description": "Action date (YYMMDD)"
+	},
+	"74": {
+		"Describe": "n 10",
+		"Description": "Number of credits"
+	},
+	"75": {
+		"Describe": "n 10",
+		"Description": "Credits, reversal number"
+	},
+	"76": {
+		"Describe": "n 10",
+		"Description": "Number of debits"
+	},
+	"77": {
+		"Describe": "n 10",
+		"Description": "Debits, reversal number"
+	},
+	"78": {
+		"Describe": "n 10",
+		"Description": "Transfer number"
+	},
+	"79": {
+		"Describe": "n 10",
+		"Description": "Transfer, reversal number"
+	},
+	"80": {
+		"Describe": "n 10",
+		"Description": "Number of inquiries"
+	},
+	"81": {
+		"Describe": "n 10",
+		"Description": "Number of authorizations"
+	},
+	"82": {
+		"Describe": "n 12",
+		"Description": "Credits, processing fee amount"
+	},
+	"83": {
+		"Describe": "n 12",
+		"Description": "Credits, transaction fee amount"
+	},
+	"84": {
+		"Describe": "n 12",
+		"Description": "Debits, processing fee amount"
+	},
+	"85": {
+		"Describe": "n 12",
+		"Description": "Debits, transaction fee amount"
+	},
+	"86": {
+		"Describe": "n 16",
+		"Description": "Total amount of credits"
+	},
+	"87": {
+		"Describe": "n 16",
+		"Description": "Credits, reversal amount"
+	},
+	"88": {
+		"Describe": "n 16",
+		"Description": "Total amount of debits"
+	},
+	"89": {
+		"Describe": "n 16",
+		"Description": "Debits, reversal amount"
+	},
+	"90": {
+		"Describe": "n 42",
+		"Description": "Original data elements"
+	},
+	"91": {
+		"Describe": "an 1",
+		"Description": "File update code"
+	},
+	"92": {
+		"Describe": "an 2",
+		"Description": "File security code"
+	},
+	"93": {
+		"Describe": "an 5",
+		"Description": "Response indicator"
+	},
+	"94": {
+		"Describe": "an 7",
+		"Description": "Service indicator"
+	},
+	"95": {
+		"Describe": "an 42",
+		"Description": "Replacement amounts"
+	},
+	"96": {
+		"Describe": "b 64",
+		"Description": "Message security code"
+	},
+	"97": {
+		"Describe": "x+n 16",
+		"Description": "Net settlement amount"
+	},
+	"98": {
+		"Describe": "ans 25",
+		"Description": "Payee"
+	},
+	"99": {
+		"Describe": "n..11",
+		"Description": "Settlement institution identification code"
+	},
+	"100": {
+		"Describe": "n..11",
+		"Description": "Receiving institution identification code"
+	},
+	"101": {
+		"Describe": "ans..17",
+		"Description": "File name"
+	},
+	"102": {
+		"Describe": "ans..28",
+		"Description": "Account identification 1"
+	},
+	"103": {
+		"Describe": "ans..28",
+		"Description": "Account identification 2"
+	},
+	"104": {
+		"Describe": "ans...100",
+		"Description": "Transaction description"
+	},
+	"105": {
+		"Describe": "ans...999",
+		"Description": "Reserved for ISO use"
+	},
+	"106": {
+		"Describe": "ans...999",
+		"Description": "Reserved for ISO use"
+	},
+	"107": {
+		"Describe": "ans...999",
+		"Description": "Reserved for ISO use"
+	},
+	"108": {
+		"Describe": "ans...999",
+		"Description": "Reserved for ISO use"
+	},
+	"109": {
+		"Describe": "ans...999",
+		"Description": "Reserved for ISO use"
+	},
+	"110": {
+		"Describe": "ans...999",
+		"Description": "Reserved for ISO use"
+	},
+	"111": {
+		"Describe": "ans...999",
+		"Description": "Reserved for ISO use"
+	},
+	"112": {
+		"Describe": "ans...999",
+		"Description": "Reserved for national use"
+	},
+	"113": {
+		"Describe": "ans...999",
+		"Description": "Reserved for national use"
+	},
+	"114": {
+		"Describe": "ans...999",
+		"Description": "Reserved for national use"
+	},
+	"115": {
+		"Describe": "ans...999",
+		"Description": "Reserved for national use"
+	},
+	"116": {
+		"Describe": "ans...999",
+		"Description": "Reserved for national use"
+	},
+	"117": {
+		"Describe": "ans...999",
+		"Description": "Reserved for national use"
+	},
+	"118": {
+		"Describe": "ans...999",
+		"Description": "Reserved for national use"
+	},
+	"119": {
+		"Describe": "ans...999",
+		"Description": "Reserved for national use"
+	},
+	"120": {
+		"Describe": "ans...999",
+		"Description": "Reserved for private use"
+	},
+	"121": {
+		"Describe": "ans...999",
+		"Description": "Reserved for private use"
+	},
+	"122": {
+		"Describe": "ans...999",
+		"Description": "Reserved for private use"
+	},
+	"123": {
+		"Describe": "ans...999",
+		"Description": "Reserved for private use"
+	},
+	"124": {
+		"Describe": "ans...999",
+		"Description": "Reserved for private use"
+	},
+	"125": {
+		"Describe": "ans...999",
+		"Description": "Reserved for private use"
+	},
+	"126": {
+		"Describe": "ans...999",
+		"Description": "Reserved for private use"
+	},
+	"127": {
+		"Describe": "ans...999",
+		"Description": "Reserved for private use"
+	},
+	"128": {
+		"Describe": "b 64",
+		"Description": "Message authentication code"
+	}
+}
