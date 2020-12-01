@@ -52,3 +52,27 @@ func TestCorpusSymlinks(t *testing.T) {
 		}
 	}
 }
+
+func TestFuzzWithValidData(t *testing.T) {
+	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "financial_transaction_message.dat"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ret := Fuzz(byteData); ret != 1 {
+		t.Errorf("Expected value is 1 (got %v)", ret)
+	}
+
+	byteData, err = ioutil.ReadFile(filepath.Join(basePath, "..", "testdata", "iso_reversal_message_error_date.dat"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ret := Fuzz(byteData); ret != 0 {
+		t.Errorf("Expected value is 0 (got %v)", ret)
+	}
+
+	if ret := Fuzz(byteData); ret != 0 {
+		t.Errorf("Expected value is 0 (got %v)", ret)
+	}
+}

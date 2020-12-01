@@ -20,8 +20,14 @@ package fuzzreader
 import (
 	"io/ioutil"
 	"path/filepath"
+	"runtime"
 
 	"github.com/moov-io/iso8583/pkg/lib"
+)
+
+var (
+	_, b, _, _ = runtime.Caller(0)
+	basePath   = filepath.Dir(b)
 )
 
 // Return codes (from go-fuzz docs)
@@ -32,7 +38,7 @@ import (
 // added to corpus even if gives new coverage; and 0 otherwise; other values are
 // reserved for future use.
 func Fuzz(data []byte) int {
-	jsonData, err := ioutil.ReadFile(filepath.Join("test", "testdata", "attributes_data_elements.dat"))
+	jsonData, err := ioutil.ReadFile(filepath.Join(basePath, "..", "testdata", "attributes_data_elements.dat"))
 	if err != nil {
 		return -1
 	}
