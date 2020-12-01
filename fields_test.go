@@ -1,4 +1,4 @@
-package fields
+package iso8583
 
 import (
 	"testing"

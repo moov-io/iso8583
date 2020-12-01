@@ -3,13 +3,12 @@ package iso8583
 import (
 	"fmt"
 
-	"github.com/moov-io/iso8583/fields"
 	"github.com/moov-io/iso8583/spec"
 	"github.com/moov-io/iso8583/utils"
 )
 
 type Message struct {
-	Fields map[int]fields.Field
+	Fields map[int]Field
 	spec   *spec.MessageSpec
 
 	// let's keep it 8 bytes for now
@@ -18,21 +17,21 @@ type Message struct {
 
 func NewMessage(spec *spec.MessageSpec) *Message {
 	return &Message{
-		Fields: map[int]fields.Field{},
+		Fields: map[int]Field{},
 		spec:   spec,
 	}
 }
 
-func (m *Message) Set(id int, field fields.Field) {
+func (m *Message) Set(id int, field Field) {
 	m.Fields[id] = field
 }
 
 func (m *Message) Field(id int, val string) {
-	m.Fields[id] = fields.NewField(id, []byte(val))
+	m.Fields[id] = NewField(id, []byte(val))
 }
 
 func (m *Message) BinaryField(id int, val []byte) {
-	m.Fields[id] = fields.NewField(id, val)
+	m.Fields[id] = NewField(id, val)
 }
 
 func (m *Message) GetString(id int) string {
