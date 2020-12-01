@@ -42,7 +42,7 @@ $ kubectl cp 'apps/achfuzz-6bbdc574f5-pl2zm:/go/src/github.com/moov-io/iso8583/t
 
 ### fuzzit integration
 
-[fuzzit](https://fuzzit.dev/) is a free SaaS for automated fuzzing. They offer free fuzzing for OSS projects so we've setup achfuzz for their service. After creating a target in the web UI we copied our corpus up (`tar cf achfuzz.tar *.ach` in `test/fuzz-reader/corpus/` then `gzip achfuzz.tar`).
+[fuzzit](https://fuzzit.dev/) is a free SaaS for automated fuzzing. They offer free fuzzing for OSS projects so we've setup achfuzz for their service. After creating a target in the web UI we copied our corpus up (`tar cf achfuzz.tar *.dat` in `test/fuzz-reader/corpus/` then `gzip achfuzz.tar`).
 
 We need to then copy down their bash script (`fuzzit completion > fuzzit.sh && chmod +x ./fuzzit.sh`) and create our job:
 
