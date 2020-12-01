@@ -20,35 +20,35 @@ To load all test files we read run: `ln -s ../../../test/testdata/*.dat .` from 
 
 ### Downloading crashers from Kubernetes cluster
 
-If the [`moov/achfuzz`](https://hub.docker.com/r/moov/achfuzz) Docker image is running in a Kubernetes cluster you can download the crashers from a mounted volume by executing the following commands.
+If the [`moov/iso8583fuzz`](https://hub.docker.com/r/moov/iso8583fuzz) Docker image is running in a Kubernetes cluster you can download the crashers from a mounted volume by executing the following commands.
 
 ```
 # Get current pod name
-$ kubectl get pods -n apps | grep achfuzz
-achfuzz-6bbdc574f5-pl2zm        1/1       Running     0          1h
+$ kubectl get pods -n apps | grep iso8583fuzz
+iso8583fuzz-6bbdc574f5-pl2zm        1/1       Running     0          1h
 ```
 
-Then using the [volume's mount path](https://github.com/moov-io/infra/blob/master/lib/apps/10-achfuzz.yml#L43) select any crasher files.
+Then using the [volume's mount path](https://github.com/moov-io/infra/blob/master/lib/apps/10-iso8583fuzz.yml#L43) select any crasher files.
 
 ```
-$ kubectl exec -n apps achfuzz-6bbdc574f5-pl2zm -- ls -la /go/src/github.com/moov-io/iso8583/test/fuzz-reader/crashers/
+$ kubectl exec -n apps iso8583fuzz-6bbdc574f5-pl2zm -- ls -la /go/src/github.com/moov-io/iso8583/test/fuzz-reader/crashers/
 total 28
 drwxr-xr-x    3 root     root          4096 Jan 30 00:26 .
 drwxr-xr-x    1 root     root          4096 Jan 14 17:30 ..
 
 # Download files, replace <file> with a crasher file
-$ kubectl cp 'apps/achfuzz-6bbdc574f5-pl2zm:/go/src/github.com/moov-io/iso8583/test/fuzz-reader/crashers/<file>' ./
+$ kubectl cp 'apps/iso8583fuzz-6bbdc574f5-pl2zm:/go/src/github.com/moov-io/iso8583/test/fuzz-reader/crashers/<file>' ./
 ```
 
 ### fuzzit integration
 
-[fuzzit](https://fuzzit.dev/) is a free SaaS for automated fuzzing. They offer free fuzzing for OSS projects so we've setup achfuzz for their service. After creating a target in the web UI we copied our corpus up (`tar cf achfuzz.tar *.dat` in `test/fuzz-reader/corpus/` then `gzip achfuzz.tar`).
+[fuzzit](https://fuzzit.dev/) is a free SaaS for automated fuzzing. They offer free fuzzing for OSS projects so we've setup iso8583fuzz for their service. After creating a target in the web UI we copied our corpus up (`tar cf iso8583fuzz.tar *.dat` in `test/fuzz-reader/corpus/` then `gzip iso8583fuzz.tar`).
 
 We need to then copy down their bash script (`fuzzit completion > fuzzit.sh && chmod +x ./fuzzit.sh`) and create our job:
 
 ```
 # In test/fuzz-reader/
-$ fuzzit create job --type=fuzzing achfuzz fuzzit.sh
+$ fuzzit create job --type=fuzzing iso8583fuzz fuzzit.sh
 2019/08/19 10:38:59 Creating job...
 2019/08/19 10:38:59 Uploading fuzzer...
 2019/08/19 10:39:01 Starting job
