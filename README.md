@@ -45,7 +45,7 @@ When specification is defined it's time to build the message:
 
 ```go
 message := iso8583.NewMessage(spec87)
-message.Field(0, "0100")
+message.MTI("0100")
 message.Field(2, "4242424242424242")
 message.Field(3, "123456")
 message.Field(4, "000000000100")
@@ -66,8 +66,9 @@ When you have a binary (packed) message and you know the specification it follow
 message := iso8583.NewMessage(spec87)
 message.Unpack(binaryData)
 
-message.GetString(0) // MTI: 0100
+message.GetMTI() // MTI: 0100
 message.GetString(2) // Card number: 4242424242424242
+message.GetString(3) // Processing code: 123456
 // ...
 
 ```

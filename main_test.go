@@ -29,7 +29,7 @@ func TestISO8583(t *testing.T) {
 	}
 
 	message := NewMessage(specTest)
-	message.Field(0, "0100")
+	message.MTI("0100")
 	message.Field(2, "4242424242424242")
 	message.Field(3, "123456")
 	message.Field(4, "000000000100")
@@ -44,7 +44,7 @@ func TestISO8583(t *testing.T) {
 	message = NewMessage(specTest)
 	message.Unpack([]byte(want))
 
-	require.Equal(t, "0100", message.GetString(0))
+	require.Equal(t, "0100", message.GetMTI())
 	require.Equal(t, "4242424242424242", message.GetString(2))
 	require.Equal(t, "123456", message.GetString(3))
 	require.Equal(t, "000000000100", message.GetString(4))

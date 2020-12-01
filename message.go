@@ -26,12 +26,21 @@ func (m *Message) Set(id int, field Field) {
 	m.Fields[id] = field
 }
 
+func (m *Message) MTI(val string) {
+	m.Fields[0] = NewField(0, []byte(val))
+}
+
 func (m *Message) Field(id int, val string) {
 	m.Fields[id] = NewField(id, []byte(val))
 }
 
 func (m *Message) BinaryField(id int, val []byte) {
 	m.Fields[id] = NewField(id, val)
+}
+
+func (m *Message) GetMTI() string {
+	// check index
+	return m.Fields[0].String()
 }
 
 func (m *Message) GetString(id int) string {
@@ -110,8 +119,6 @@ func (m *Message) Unpack(src []byte) error {
 
 	off = read
 
-	// unpack Bitmap
-	fmt.Println("offset: ", off)
 	data, read, err = m.spec.Fields[1].Unpack(src[off:])
 	if err != nil {
 		return err
@@ -120,25 +127,12 @@ func (m *Message) Unpack(src []byte) error {
 	m.bitmap = utils.NewBitmapFromData(data)
 	off += read
 
-	// we should take data from the bitmap
-	// but for simplicity
-
-	fmt.Println("offset: ", off)
-	fmt.Println("unpacked bitmap:", data)
-
-	// read MTI
-	// unpack Bitmap
-	// based on bitmap length unpack all fields
-
 	for i := 2; i <= m.bitmap.Len(); i++ {
-		fmt.Printf("Checking field: %d and it is: %v\n", i, m.bitmap.IsSet(i))
 		if m.bitmap.IsSet(i) {
-			fmt.Printf("Data at offset %d: %v\n", off, src[off:])
 			data, read, err = m.spec.Fields[i].Unpack(src[off:])
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Read data for field: %d =>%v\n", i, data)
 			m.BinaryField(i, data)
 			off += read
 		}
