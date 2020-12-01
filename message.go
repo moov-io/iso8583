@@ -48,23 +48,23 @@ func (m *Message) GetBytes(id int) []byte {
 func (m *Message) Pack() ([]byte, error) {
 	packed := []byte{}
 
+	// use fixed length of the bitmap for now
 	m.bitmap = utils.NewBitmap(128)
 
-	// we need to test if max id will still be 0 or 1
+	// fill in the bitmap
+	// and find max field id (to determine bitmap length later)
 	maxId := 0
 	for id, _ := range m.Fields {
 		if id > maxId {
 			maxId = id
 		}
+
 		// regular fields start from index 2
 		if id < 2 {
 			continue
 		}
 		m.bitmap.Set(id)
 	}
-
-	// depending on the max Id generate bitmap:
-	// 64, 128 or 192 bits
 
 	// pack MTI
 	packedMTI, err := m.spec.Fields[0].Pack(m.Fields[0].Bytes())
@@ -73,20 +73,21 @@ func (m *Message) Pack() ([]byte, error) {
 	}
 	packed = append(packed, packedMTI...)
 
+	// pack Bitmap
 	packedBitmap, err := m.spec.Fields[1].Pack(m.bitmap.Bytes())
-
 	if err != nil {
 		return nil, err
 	}
 	packed = append(packed, packedBitmap...)
 
+	// pack each field
 	for i := 2; i <= maxId; i++ {
-		// check if i exist
 		if field, ok := m.Fields[i]; ok {
 			def, ok := m.spec.Fields[i]
 			if !ok {
 				return nil, fmt.Errorf("Failed to pack field: %d. No definition found", i)
 			}
+
 			packedField, err := def.Pack(field.Bytes())
 			if err != nil {
 				return nil, err
@@ -95,23 +96,54 @@ func (m *Message) Pack() ([]byte, error) {
 		}
 	}
 
-	// m.packer.Pack(m, spec)
-	// go through each spec field
-	// add packed MTI
-	// add packed bitmap (find bitmap definition - field N1)
-	// pack each field starting from 2
-	// return result
-
-	// for id, fieldPacker := range m.spec.Fields {
-	// }
-	// packer := &packer.MessagePacker{}
-
-	// strange argument passing :)
-	// packer.Pack(m, m.Spec)
-
 	return packed, nil
 }
 
 func (m *Message) Unpack(src []byte) error {
+	var off int
+
+	// unpack MTI
+	data, read, err := m.spec.Fields[0].Unpack(src)
+	if err != nil {
+		return err
+	}
+	m.BinaryField(0, data)
+
+	off = read
+
+	// unpack Bitmap
+	fmt.Println("offset: ", off)
+	data, read, err = m.spec.Fields[1].Unpack(src[off:])
+	if err != nil {
+		return err
+	}
+	m.BinaryField(1, data)
+	m.bitmap = utils.NewBitmapFromData(data)
+	off += read
+
+	// we should take data from the bitmap
+	// but for simplicity
+
+	fmt.Println("offset: ", off)
+	fmt.Println("unpacked bitmap:", data)
+
+	// read MTI
+	// unpack Bitmap
+	// based on bitmap length unpack all fields
+
+	for i := 2; i <= m.bitmap.Len(); i++ {
+		fmt.Printf("Checking field: %d and it is: %v\n", i, m.bitmap.IsSet(i))
+		if m.bitmap.IsSet(i) {
+			fmt.Printf("Data at offset %d: %v\n", off, src[off:])
+			data, read, err = m.spec.Fields[i].Unpack(src[off:])
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Read data for field: %d =>%v\n", i, data)
+			m.BinaryField(i, data)
+			off += read
+		}
+	}
+
 	return nil
 }

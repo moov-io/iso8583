@@ -47,6 +47,11 @@ func (b *Bitmap) Bytes() []byte {
 	return b.bitmap
 }
 
+// Return number of bits in the bitmap
+func (b *Bitmap) Len() int {
+	return len(b.bitmap) * 8
+}
+
 func (b *Bitmap) String() string {
 	var out string
 

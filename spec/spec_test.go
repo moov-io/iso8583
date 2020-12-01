@@ -20,15 +20,20 @@ func TestFieldPacker(t *testing.T) {
 
 		// unpack
 		// when only primari bitmap presents
-		// we read only first 8 bytes
-		got, err = field.Unpack([]byte("68000000000000000000000000000000123456"))
+		// we should read only first 8 bytes
+		got, length, err := field.Unpack([]byte("68000000000000000000000000000000123456"))
 		want = []byte{104, 0, 0, 0, 0, 0, 0, 0}
+		require.Equal(t, 16, length)
+		require.Len(t, got, 8)
 		require.NoError(t, err)
 		require.Equal(t, want, got)
 
 		// when secondary primari bitmap presents
-		got, err = field.Unpack([]byte("E8000000000000000000000000000000aa"))
+		// we should read 16 bytes
+		got, length, err = field.Unpack([]byte("E8000000000000000000000000000000aa"))
 		want = []byte{232, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		require.Equal(t, 32, length)
+		require.Len(t, got, 16)
 		require.NoError(t, err)
 		require.Equal(t, want, got)
 	})
@@ -43,7 +48,7 @@ func TestFieldPacker(t *testing.T) {
 		require.Equal(t, want, got)
 
 		// unpack
-		got, err = field.Unpack([]byte{49, 54, 52, 50, 52, 50, 52, 50, 52, 50, 52, 50, 52, 50, 52, 50, 52, 50})
+		got, _, err = field.Unpack([]byte{49, 54, 52, 50, 52, 50, 52, 50, 52, 50, 52, 50, 52, 50, 52, 50, 52, 50})
 		want = []byte("4242424242424242")
 		require.NoError(t, err)
 		require.Equal(t, want, got)
@@ -59,7 +64,7 @@ func TestFieldPacker(t *testing.T) {
 		require.Equal(t, want, got)
 
 		// unpack
-		got, err = field.Unpack([]byte("123456"))
+		got, _, err = field.Unpack([]byte("123456"))
 		want = []byte("123456")
 		require.NoError(t, err)
 		require.Equal(t, want, got)
