@@ -14,25 +14,28 @@ go get github.com/moov-io/iso8583
 
 ### Define your spec
 
-First, you need is to define a message fields that are described in your ISO8583 specification. Here is how you may do this:
+First, you need to define format of the the message fields that are described in your ISO8583 specification.
+Here is how you can do this:
 
 ```go
 spec87 := &spec.MessageSpec{
-  Fields: map[int]spec.Packer{
-    0: spec.NewField("Message Type Indicator", encoding.ASCII, prefixer.ASCII.Fixed(4)),
+    Fields: map[int]spec.Packer{
+        0: spec.NewField("Message Type Indicator", encoding.ASCII, prefixer.ASCII.Fixed(4)),
 
-    // Bitmap, 16 bytes, fixed
-    1: spec.Bitmap("Bitmap", encoding.Hex, prefixer.Hex.Fixed(16)),
+        // Bitmap, 16 bytes, fixed
+        1: spec.Bitmap("Bitmap", encoding.Hex, prefixer.Hex.Fixed(16)),
 
-    // LLVAR19
-    2: spec.NewField("Primary Account Number", encoding.ASCII, prefixer.ASCII.LL(19)),
+        // LLVAR19
+        2: spec.NewField("Primary Account Number", encoding.ASCII, prefixer.ASCII.LL(19)),
 
-    // 6 bytes, fixed
-    3: spec.NewField("Processing Code", encoding.ASCII, prefixer.ASCII.Fixed(6)),
+        // 6 bytes, fixed
+        3: spec.NewField("Processing Code", encoding.ASCII, prefixer.ASCII.Fixed(6)),
 
-    // 12 bytes, fixed
-    4: spec.NewField("Transaction Amount", encoding.ASCII, prefixer.ASCII.Fixed(12)),
-  },
+        // 12 bytes, fixed
+        4: spec.NewField("Transaction Amount", encoding.ASCII, prefixer.ASCII.Fixed(12)),
+	
+	// ...
+    },
 }
 ```
 
@@ -57,7 +60,7 @@ Having a binary representation of your message that's packed according to the pr
 
 ### Parse the message
 
-When you have binary (packed) message and you know the specification it follows, you can unpack it and access data easily:
+When you have a binary (packed) message and you know the specification it follows, you can unpack it and access the data easily:
 
 ```go
 message := iso8583.NewMessage(spec87)
