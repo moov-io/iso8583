@@ -1,6 +1,6 @@
 # moov-io/iso8583
 
-[![GoDoc](https://godoc.org/github.com/moov-io/ach?status.svg)](https://godoc.org/github.com/moov-io/iso8583)
+[![GoDoc](https://godoc.org/github.com/moov-io/iso8583?status.svg)](https://godoc.org/github.com/moov-io/iso8583)
 [![Build Status](https://github.com/moov-io/iso8583/workflows/Go/badge.svg)](https://github.com/moov-io/iso8583/actions)
 [![Coverage Status](https://codecov.io/gh/moov-io/iso8583/branch/master/graph/badge.svg)](https://codecov.io/gh/moov-io/iso8583)
 [![Go Report Card](https://goreportcard.com/badge/github.com/moov-io/iso8583)](https://goreportcard.com/report/github.com/moov-io/iso8583)
@@ -12,7 +12,7 @@ Package `github.com/moov-io/iso8583` implements a file reader and writer written
 
 Moov ISO8583 is under active development.
 
-Please star the project if you are interested in its progress. If you have layers above ACH to simplify tasks or found bugs we would appreciate an issue or pull request. Thanks!
+Please star the project if you are interested in its progress. If you have layers above ISO 8583 to simplify tasks or found bugs we would appreciate an issue or pull request. Thanks!
 
 
 ## Usage
@@ -93,7 +93,7 @@ This project uses [Go Modules](https://github.com/golang/go/wiki/Modules) and us
 
 ### Releasing
 
-To make a release of ach simply open a pull request with `CHANGELOG.md` and `version.go` updated with the next version number and details. You'll also need to push the tag (i.e. `git push origin v1.0.0`) to origin in order for CI to make the release.
+To make a release of iso8583 simply open a pull request with `CHANGELOG.md` and `version.go` updated with the next version number and details. You'll also need to push the tag (i.e. `git push origin v1.0.0`) to origin in order for CI to make the release.
 
 
 ## License
