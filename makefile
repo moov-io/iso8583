@@ -18,6 +18,13 @@ else
 	./lint-project.sh
 endif
 
+dist: clean build
+# ifeq ($(OS),Windows_NT)
+# 	CGO_ENABLED=1 GOOS=windows go build -o bin/iso8583.exe github.com/moov-io/iso8583/cmd/server
+# else
+# 	CGO_ENABLED=0 GOOS=$(PLATFORM) go build -o bin/iso8583-$(PLATFORM)-amd64 github.com/moov-io/iso8583/cmd/server
+# endif
+
 docker: clean docker-hub docker-fuzz
 
 docker-hub:
