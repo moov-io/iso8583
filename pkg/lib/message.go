@@ -9,9 +9,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"github.com/moov-io/iso8583/pkg/utils"
 	"reflect"
-	"strings"
+
+	"github.com/moov-io/iso8583/pkg/utils"
 )
 
 type Iso8583Message interface {
@@ -136,7 +136,7 @@ func (m *isoMessage) Bytes() ([]byte, error) {
 		}
 		buf.Write(value)
 	}
-	return []byte(strings.ToUpper(buf.String())), nil
+	return buf.Bytes(), nil
 }
 
 // Load decode field from bytes

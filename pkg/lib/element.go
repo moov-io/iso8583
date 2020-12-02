@@ -150,9 +150,10 @@ func (e *Element) characterEncoding() ([]byte, error) {
 	var err error
 
 	if e.Encoding == utils.EncodingChar {
-		encodingValue = e.Value
+		encodingValue = []byte(strings.ToUpper(string(e.Value)))
 	} else if e.Encoding == utils.EncodingAscii {
 		encodingValue, err = utils.UTF8ToWindows1252(e.Value)
+		encodingValue = []byte(strings.ToUpper(string(encodingValue)))
 	} else if e.Encoding == utils.EncodingEbcdic {
 		encodingValue, err = ebcdic.Encode(string(e.Value), ebcdic.EBCDIC037)
 	} else {
@@ -221,7 +222,7 @@ func (e *Element) binaryEncoding() ([]byte, error) {
 			return nil, err
 		}
 		hexStr := fmt.Sprintf("%0"+strconv.Itoa(e.Length/4)+"s", strconv.FormatUint(bitNum, 16))
-		value = []byte(hexStr)
+		value = []byte(strings.ToUpper(hexStr))
 	} else {
 		return nil, errors.New(utils.ErrInvalidEncoder)
 	}
@@ -378,7 +379,7 @@ func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
 	case utils.EncodingHex:
 		lenStr = strconv.Itoa(len(fmt.Sprintf("%x", e.Length)))
 		formatStr = "%0" + strconv.Itoa(len(lenStr)) + "x"
-		encode = []byte(fmt.Sprintf(formatStr, len(value)))
+		encode = []byte(strings.ToUpper(fmt.Sprintf(formatStr, len(value))))
 	case utils.EncodingRBcd:
 		// contentLen is number only
 		encode, _ = utils.RBcd(contentLen)
@@ -539,6 +540,8 @@ func (e *Element) validateWithRegex() error {
 		match = utils.RegexAlphaNumericSpecial(string(e.Value))
 	case utils.ElementTypeIndicateNumeric:
 		match = utils.RegexIndicateNumeric(string(e.Value))
+	case utils.ElementTypeMagnetic:
+		match = utils.RegexMagnetic(string(e.Value))
 	}
 	if !match {
 		return errors.New(utils.ErrBadElementData)
