@@ -25,11 +25,11 @@ const (
 	DataElementXmlName    = "Element"
 	DataElementAttrNumber = "Number"
 
-	EncodingChar   = "CHAR"
+	EncodingChar   = "CHAR" // for Number
 	EncodingHex    = "HEX"
 	EncodingEbcdic = "EBCDIC"
-	EncodingAscii  = "ASCII"
-	EncodingBcd    = "BCD" // packed bcd
+	EncodingAscii  = "ASCII" // for characters
+	EncodingBcd    = "BCD"   // packed bcd
 	EncodingRBcd   = "RBCD"
 
 	EncodingCatNumber    = "number"

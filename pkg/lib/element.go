@@ -287,6 +287,7 @@ func (e *Element) numberDecoding(raw []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
+		read += contentLen
 	} else if e.Encoding == utils.EncodingRBcd {
 		bcdSize := contentLen / 2
 		if (contentLen)%2 != 0 {
@@ -295,10 +296,11 @@ func (e *Element) numberDecoding(raw []byte) (int, error) {
 		if len(raw) < read+bcdSize {
 			return 0, errors.New(utils.ErrBadElementData)
 		}
-		value, err = utils.RBcdAscii(raw[read:read+bcdSize], bcdSize)
+		value, err = utils.RBcdAscii(raw[read:read+bcdSize], contentLen)
 		if err != nil {
 			return 0, err
 		}
+		read += bcdSize
 	} else if e.Encoding == utils.EncodingBcd {
 		bcdSize := contentLen / 2
 		if (contentLen)%2 != 0 {
@@ -307,17 +309,17 @@ func (e *Element) numberDecoding(raw []byte) (int, error) {
 		if len(raw) < read+bcdSize {
 			return 0, errors.New(utils.ErrBadElementData)
 		}
-		value, err = utils.BcdAscii(raw[read:read+bcdSize], bcdSize)
+		value, err = utils.BcdAscii(raw[read:read+bcdSize], contentLen)
 		if err != nil {
 			return 0, err
 		}
+		read += bcdSize
 	} else {
 		return 0, errors.New(utils.ErrInvalidEncoder)
 	}
 
 	e.Value = make([]byte, len(value))
 	copy(e.Value, value)
-	read += len(e.Value)
 
 	return read, nil
 }

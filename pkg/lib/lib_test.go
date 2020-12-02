@@ -899,3 +899,136 @@ func TestISO8583MessageWithRBcdLengthEncoding(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, buf, byteData)
 }
+
+func TestISO8583MessageForIndicateNumeric(t *testing.T) {
+	jsonData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "attributes_data_elements.dat"))
+	assert.Nil(t, err)
+
+	encoding := &utils.EncodingDefinition{
+		MtiEnc:       utils.EncodingChar,
+		BitmapEnc:    utils.EncodingHex,
+		LengthEnc:    utils.EncodingRBcd,
+		NumberEnc:    utils.EncodingChar,
+		CharacterEnc: utils.EncodingAscii,
+		BinaryEnc:    utils.EncodingHex,
+		TrackEnc:     utils.EncodingEbcdic,
+	}
+	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	assert.Nil(t, err)
+
+	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_indicate_numeric.dat"))
+	assert.Nil(t, err)
+
+	_, err = message.Load(byteData)
+	assert.Nil(t, err)
+
+	err = message.Validate()
+	assert.Nil(t, err)
+
+	buf, err := message.Bytes()
+	assert.Nil(t, err)
+	assert.Equal(t, buf, byteData)
+
+	byteData, err = ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_error_indicate_numeric.dat"))
+	assert.Nil(t, err)
+
+	_, err = message.Load(byteData)
+	assert.Nil(t, err)
+
+	err = message.Validate()
+	assert.NotNil(t, err)
+
+	buf, err = message.Bytes()
+	assert.Nil(t, err)
+	assert.Equal(t, buf, byteData)
+}
+
+func TestISO8583MessageWithBcdNumberEncoding(t *testing.T) {
+	jsonData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "attributes_data_elements.dat"))
+	assert.Nil(t, err)
+
+	encoding := &utils.EncodingDefinition{
+		MtiEnc:       utils.EncodingChar,
+		BitmapEnc:    utils.EncodingHex,
+		LengthEnc:    utils.EncodingRBcd,
+		NumberEnc:    utils.EncodingBcd,
+		CharacterEnc: utils.EncodingAscii,
+		BinaryEnc:    utils.EncodingHex,
+		TrackEnc:     utils.EncodingEbcdic,
+	}
+	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	assert.Nil(t, err)
+
+	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_number_bcd_encoding.dat"))
+	assert.Nil(t, err)
+
+	_, err = message.Load(byteData)
+	assert.Nil(t, err)
+
+	err = message.Validate()
+	assert.Nil(t, err)
+
+	buf, err := message.Bytes()
+	assert.Nil(t, err)
+	assert.Equal(t, buf, byteData)
+}
+
+func TestISO8583MessageWithRBcdNumberEncoding(t *testing.T) {
+	jsonData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "attributes_data_elements.dat"))
+	assert.Nil(t, err)
+
+	encoding := &utils.EncodingDefinition{
+		MtiEnc:       utils.EncodingChar,
+		BitmapEnc:    utils.EncodingHex,
+		LengthEnc:    utils.EncodingRBcd,
+		NumberEnc:    utils.EncodingRBcd,
+		CharacterEnc: utils.EncodingAscii,
+		BinaryEnc:    utils.EncodingHex,
+		TrackEnc:     utils.EncodingEbcdic,
+	}
+	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	assert.Nil(t, err)
+
+	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_number_bcd_encoding.dat"))
+	assert.Nil(t, err)
+
+	_, err = message.Load(byteData)
+	assert.Nil(t, err)
+
+	err = message.Validate()
+	assert.Nil(t, err)
+
+	buf, err := message.Bytes()
+	assert.Nil(t, err)
+	assert.Equal(t, buf, byteData)
+}
+
+func TestISO8583MessageWithCharacterEbcdicEncoding(t *testing.T) {
+	jsonData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "attributes_data_elements.dat"))
+	assert.Nil(t, err)
+
+	encoding := &utils.EncodingDefinition{
+		MtiEnc:       utils.EncodingChar,
+		BitmapEnc:    utils.EncodingHex,
+		LengthEnc:    utils.EncodingChar,
+		NumberEnc:    utils.EncodingChar,
+		CharacterEnc: utils.EncodingEbcdic,
+		BinaryEnc:    utils.EncodingHex,
+		TrackEnc:     utils.EncodingEbcdic,
+	}
+	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	assert.Nil(t, err)
+
+	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_character_ebcdic_encoding.dat"))
+	assert.Nil(t, err)
+
+	_, err = message.Load(byteData)
+	assert.Nil(t, err)
+
+	err = message.Validate()
+	assert.Nil(t, err)
+
+	buf, err := message.Bytes()
+	assert.Nil(t, err)
+	assert.Equal(t, buf, byteData)
+}
