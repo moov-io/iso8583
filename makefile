@@ -18,14 +18,14 @@ else
 	./lint-project.sh
 endif
 
-docker: clean docker-hub
+docker: clean docker-hub docker-fuzz
 
 docker-hub:
 	docker build --pull -t moov/iso8583:$(VERSION) -f Dockerfile .
 	docker tag moov/iso8583:$(VERSION) moov/iso8583:latest
 
 docker-fuzz:
-	docker build --pull -t moov/iso8583:$(VERSION) . -f Dockerfile-fuzz
+	docker build --pull -t moov/iso8583fuzz:$(VERSION) . -f Dockerfile-fuzz
 	docker tag moov/iso8583fuzz:$(VERSION) moov/iso8583fuzz:latest
 
 release-push:
