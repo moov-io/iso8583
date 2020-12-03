@@ -48,8 +48,8 @@ func NewISO8583Message(spec *utils.Specification) (Iso8583Message, error) {
 	}, nil
 }
 
-// NewISO8583MessageWithJson create data elements of message with specification with json specification file
-func NewISO8583MessageWithJson(buf []byte, encoding *utils.EncodingDefinition) (Iso8583Message, error) {
+// NewISO8583MessageWithAttributes create data elements of message with specification with json and encoding definition
+func NewISO8583MessageWithAttributes(buf []byte, encoding *utils.EncodingDefinition) (Iso8583Message, error) {
 	var newAttributes utils.Attributes
 	var newEncoding utils.EncodingDefinition
 
@@ -67,6 +67,21 @@ func NewISO8583MessageWithJson(buf []byte, encoding *utils.EncodingDefinition) (
 		Elements: &newAttributes,
 		Encoding: &newEncoding,
 	})
+}
+
+// NewISO8583MessageWithJson create data elements of message with specification with json specification file
+func NewISO8583MessageWithJson(buf []byte) (Iso8583Message, error) {
+	var spec utils.Specification
+
+	err := json.Unmarshal(buf, &spec)
+	if err != nil {
+		return nil, err
+	}
+	if spec.Encoding == nil {
+		spec.Encoding = utils.DefaultMessageEncoding
+	}
+
+	return NewISO8583Message(&spec)
 }
 
 // message instance

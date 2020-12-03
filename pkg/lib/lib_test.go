@@ -794,11 +794,11 @@ func TestISO8583MessageWithValidSamples(t *testing.T) {
 	}
 }
 
-func TestISO8583MessageWithJson(t *testing.T) {
+func TestNewISO8583MessageWithAttributes(t *testing.T) {
 	jsonData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "attributes_data_elements.dat"))
 	assert.Nil(t, err)
 
-	_, err = NewISO8583MessageWithJson(jsonData, nil)
+	_, err = NewISO8583MessageWithAttributes(jsonData, nil)
 	assert.Nil(t, err)
 
 	jsonData = []byte(`{
@@ -806,7 +806,7 @@ func TestISO8583MessageWithJson(t *testing.T) {
 		"Describe": "b 64",
 		"Description": "Second Bitmap"
 	},}`)
-	_, err = NewISO8583MessageWithJson(jsonData, nil)
+	_, err = NewISO8583MessageWithAttributes(jsonData, nil)
 	assert.NotNil(t, err)
 }
 
@@ -823,7 +823,7 @@ func TestISO8583MessageWithHexLengthEncoding(t *testing.T) {
 		BinaryEnc:    utils.EncodingHex,
 		TrackEnc:     utils.EncodingEbcdic,
 	}
-	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	message, err := NewISO8583MessageWithAttributes(jsonData, encoding)
 	assert.Nil(t, err)
 
 	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_hex_length.dat"))
@@ -853,7 +853,7 @@ func TestISO8583MessageWithBcdLengthEncoding(t *testing.T) {
 		BinaryEnc:    utils.EncodingHex,
 		TrackEnc:     utils.EncodingEbcdic,
 	}
-	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	message, err := NewISO8583MessageWithAttributes(jsonData, encoding)
 	assert.Nil(t, err)
 
 	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_hex_bcd.dat"))
@@ -883,7 +883,7 @@ func TestISO8583MessageWithRBcdLengthEncoding(t *testing.T) {
 		BinaryEnc:    utils.EncodingHex,
 		TrackEnc:     utils.EncodingEbcdic,
 	}
-	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	message, err := NewISO8583MessageWithAttributes(jsonData, encoding)
 	assert.Nil(t, err)
 
 	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_hex_rbcd.dat"))
@@ -913,7 +913,7 @@ func TestISO8583MessageForIndicateNumeric(t *testing.T) {
 		BinaryEnc:    utils.EncodingHex,
 		TrackEnc:     utils.EncodingEbcdic,
 	}
-	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	message, err := NewISO8583MessageWithAttributes(jsonData, encoding)
 	assert.Nil(t, err)
 
 	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_indicate_numeric.dat"))
@@ -956,7 +956,7 @@ func TestISO8583MessageWithBcdNumberEncoding(t *testing.T) {
 		BinaryEnc:    utils.EncodingHex,
 		TrackEnc:     utils.EncodingEbcdic,
 	}
-	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	message, err := NewISO8583MessageWithAttributes(jsonData, encoding)
 	assert.Nil(t, err)
 
 	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_number_bcd_encoding.dat"))
@@ -986,7 +986,7 @@ func TestISO8583MessageWithRBcdNumberEncoding(t *testing.T) {
 		BinaryEnc:    utils.EncodingHex,
 		TrackEnc:     utils.EncodingEbcdic,
 	}
-	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	message, err := NewISO8583MessageWithAttributes(jsonData, encoding)
 	assert.Nil(t, err)
 
 	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_number_bcd_encoding.dat"))
@@ -1016,7 +1016,7 @@ func TestISO8583MessageWithCharacterEbcdicEncoding(t *testing.T) {
 		BinaryEnc:    utils.EncodingHex,
 		TrackEnc:     utils.EncodingEbcdic,
 	}
-	message, err := NewISO8583MessageWithJson(jsonData, encoding)
+	message, err := NewISO8583MessageWithAttributes(jsonData, encoding)
 	assert.Nil(t, err)
 
 	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "message_with_character_ebcdic_encoding.dat"))
@@ -1031,4 +1031,26 @@ func TestISO8583MessageWithCharacterEbcdicEncoding(t *testing.T) {
 	buf, err := message.Bytes()
 	assert.Nil(t, err)
 	assert.Equal(t, buf, byteData)
+}
+
+func TestISO8583MessageWithJson(t *testing.T) {
+	jsonData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "specification_ver_1987.json"))
+	assert.Nil(t, err)
+
+	_, err = NewISO8583MessageWithJson(jsonData)
+	assert.Nil(t, err)
+
+	jsonData, err = ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "specification_without_encoding_ver_1987.json"))
+	assert.Nil(t, err)
+
+	_, err = NewISO8583MessageWithJson(jsonData)
+	assert.Nil(t, err)
+
+	jsonData = []byte(`{
+	"1": {
+		"Describe": "b 64",
+		"Description": "Second Bitmap"
+	},}`)
+	_, err = NewISO8583MessageWithAttributes(jsonData, nil)
+	assert.NotNil(t, err)
 }
