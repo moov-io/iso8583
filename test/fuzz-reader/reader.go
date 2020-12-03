@@ -38,11 +38,11 @@ var (
 // added to corpus even if gives new coverage; and 0 otherwise; other values are
 // reserved for future use.
 func Fuzz(data []byte) int {
-	jsonData, err := ioutil.ReadFile(filepath.Join(basePath, "..", "testdata", "attributes_data_elements.dat"))
+	jsonData, err := ioutil.ReadFile(filepath.Join(basePath, "..", "testdata", "specification_ver_1987.json"))
 	if err != nil {
 		return -1
 	}
-	message, err := lib.NewISO8583MessageWithJson(jsonData, nil)
+	message, err := lib.NewISO8583MessageWithJson(jsonData)
 	if err != nil {
 		return -1
 	}
