@@ -5,4 +5,4 @@
 package iso8583
 
 // Version number
-const Version = "v0.1.0-dev"
+const Version = "v0.2.3"

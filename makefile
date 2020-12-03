@@ -18,15 +18,27 @@ else
 	./lint-project.sh
 endif
 
-docker: clean docker-hub
+dist: clean build
+# ifeq ($(OS),Windows_NT)
+# 	CGO_ENABLED=1 GOOS=windows go build -o bin/iso8583.exe github.com/moov-io/iso8583/cmd/server
+# else
+# 	CGO_ENABLED=0 GOOS=$(PLATFORM) go build -o bin/iso8583-$(PLATFORM)-amd64 github.com/moov-io/iso8583/cmd/server
+# endif
+
+docker: clean docker-hub docker-fuzz
 
 docker-hub:
 	docker build --pull -t moov/iso8583:$(VERSION) -f Dockerfile .
 	docker tag moov/iso8583:$(VERSION) moov/iso8583:latest
 
+docker-fuzz:
+	docker build --pull -t moov/iso8583fuzz:$(VERSION) . -f Dockerfile-fuzz
+	docker tag moov/iso8583fuzz:$(VERSION) moov/iso8583fuzz:latest
+
 release-push:
 	docker push moov/iso8583:$(VERSION)
 	docker push moov/iso8583:latest
+	docker push moov/iso8583fuzz:$(VERSION)
 
 .PHONY: clean
 clean:
