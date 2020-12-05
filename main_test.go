@@ -19,10 +19,14 @@ func TestISO8583(t *testing.T) {
 			1: spec.Bitmap(16, "Bitmap", encoding.Hex, prefixer.Hex.Fixed),
 
 			// LLVAR19
-			2: spec.NewField(19, "Primary Account Number", encoding.ASCII, prefixer.ASCII.LL),
+			2: &spec.Field{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefixer.ASCII.LL,
+			},
 
 			// 6 bytes, fixed
-			// 3: spec.NewField("Processing Code", encoding.ASCII, prefixer.ASCII.Fixed(6)),
 			3: &spec.Field{
 				Length:      6,
 				Description: "Processing Code",
@@ -32,7 +36,6 @@ func TestISO8583(t *testing.T) {
 			},
 
 			// 12 bytes, fixed
-			// 4: spec.NewField("Transaction Amount", encoding.ASCII, prefixer.ASCII.Fixed(12)),
 			4: &spec.Field{
 				Length:      12,
 				Description: "Transaction Amount",
