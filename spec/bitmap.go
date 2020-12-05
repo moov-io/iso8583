@@ -9,6 +9,7 @@ import (
 )
 
 type bitmapField struct {
+	Length      int
 	Description string
 	Enc         encoding.Encoder
 	Pref        prefixer.Prefixer
@@ -22,7 +23,7 @@ func (fd *bitmapField) Pack(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("Failed to pack '%s': %v", fd.Description, err)
 	}
 
-	packedLength, err := fd.Pref.EncodeLength(len(packed))
+	packedLength, err := fd.Pref.EncodeLength(fd.Length, len(packed))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to pack '%s': %v", fd.Description, err)
 	}
@@ -38,7 +39,7 @@ func (fd *bitmapField) Pack(data []byte) ([]byte, error) {
 // if there is only primary bitmap (bit 1 is not set) we return only 8 bytes
 // if secondary bitmap presents (bit 1 is set) we return 16 bytes
 func (fd *bitmapField) Unpack(data []byte) ([]byte, int, error) {
-	dataLen, err := fd.Pref.DecodeLength(data)
+	dataLen, err := fd.Pref.DecodeLength(fd.Length, data)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to unpack '%s': %v", fd.Description, err)
 	}
@@ -59,8 +60,9 @@ func (fd *bitmapField) Unpack(data []byte) ([]byte, int, error) {
 	return raw[:8], dataLen / 2, nil
 }
 
-func Bitmap(desc string, enc encoding.Encoder, pref prefixer.Prefixer) Packer {
+func Bitmap(length int, desc string, enc encoding.Encoder, pref prefixer.Prefixer) Packer {
 	return &bitmapField{
+		Length:      length,
 		Description: desc,
 		Enc:         enc,
 		Pref:        pref,

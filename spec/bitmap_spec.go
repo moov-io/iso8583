@@ -9,7 +9,7 @@ import (
 )
 
 func TestBitmapField(t *testing.T) {
-	field := &bitmapField{"Bitmap", encoding.Hex, prefixer.Hex.Fixed(16)}
+	field := &bitmapField{16, "Bitmap", encoding.Hex, prefixer.Hex.Fixed}
 
 	// pack
 	got, err := field.Pack([]byte{0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB})

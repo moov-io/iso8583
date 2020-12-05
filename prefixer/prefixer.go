@@ -2,10 +2,10 @@ package prefixer
 
 type Prefixer interface {
 	// Returns field length encoded into []byte
-	EncodeLength(length int) ([]byte, error)
+	EncodeLength(maxLen, length int) ([]byte, error)
 
 	// Retuns field length read from data
-	DecodeLength(data []byte) (int, error)
+	DecodeLength(maxLen int, data []byte) (int, error)
 
 	// Returns the number of bytes that takes to encode the length
 	Length() int
@@ -15,11 +15,11 @@ type Prefixer interface {
 }
 
 type Prefixers struct {
-	Fixed PrefixerBuilder
-	L     PrefixerBuilder
-	LL    PrefixerBuilder
-	LLL   PrefixerBuilder
-	LLLL  PrefixerBuilder
+	Fixed Prefixer
+	L     Prefixer
+	LL    Prefixer
+	LLL   Prefixer
+	LLLL  Prefixer
 }
 
 type PrefixerBuilder func(int) Prefixer

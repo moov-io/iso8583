@@ -13,13 +13,13 @@ import (
 func TestISO8583(t *testing.T) {
 	specTest := &spec.MessageSpec{
 		Fields: map[int]spec.Packer{
-			0: spec.NewField("Message Type Indicator", encoding.ASCII, prefixer.ASCII.Fixed(4)),
+			0: spec.NewField(4, "Message Type Indicator", encoding.ASCII, prefixer.ASCII.Fixed),
 
 			// Bitmap, 16 bytes, fixed
-			1: spec.Bitmap("Bitmap", encoding.Hex, prefixer.Hex.Fixed(16)),
+			1: spec.Bitmap(16, "Bitmap", encoding.Hex, prefixer.Hex.Fixed),
 
 			// LLVAR19
-			2: spec.NewField("Primary Account Number", encoding.ASCII, prefixer.ASCII.LL(19)),
+			2: spec.NewField(19, "Primary Account Number", encoding.ASCII, prefixer.ASCII.LL),
 
 			// 6 bytes, fixed
 			// 3: spec.NewField("Processing Code", encoding.ASCII, prefixer.ASCII.Fixed(6)),
@@ -27,7 +27,7 @@ func TestISO8583(t *testing.T) {
 				Length:      6,
 				Description: "Processing Code",
 				Enc:         encoding.ASCII,
-				Pref:        prefixer.ASCII.Fixed(6),
+				Pref:        prefixer.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			},
 
@@ -37,7 +37,7 @@ func TestISO8583(t *testing.T) {
 				Length:      12,
 				Description: "Transaction Amount",
 				Enc:         encoding.ASCII,
-				Pref:        prefixer.ASCII.Fixed(12),
+				Pref:        prefixer.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			},
 

@@ -16,6 +16,15 @@ type Field struct {
 	Pad         padding.Padder
 }
 
+func NewField(length int, desc string, enc encoding.Encoder, pref prefixer.Prefixer) Packer {
+	return &Field{
+		Length:      length,
+		Description: desc,
+		Enc:         enc,
+		Pref:        pref,
+	}
+}
+
 func (fd *Field) Pack(data []byte) ([]byte, error) {
 	if fd.Pad != nil {
 		data = fd.Pad.Pad(data, fd.Length)
@@ -27,7 +36,7 @@ func (fd *Field) Pack(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("Failed to pack '%s': %v", fd.Description, err)
 	}
 
-	packedLength, err := fd.Pref.EncodeLength(len(packed))
+	packedLength, err := fd.Pref.EncodeLength(fd.Length, len(packed))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to pack '%s': %v", fd.Description, err)
 	}
@@ -36,7 +45,7 @@ func (fd *Field) Pack(data []byte) ([]byte, error) {
 }
 
 func (fd *Field) Unpack(data []byte) ([]byte, int, error) {
-	dataLen, err := fd.Pref.DecodeLength(data)
+	dataLen, err := fd.Pref.DecodeLength(fd.Length, data)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to unpack '%s': %v", fd.Description, err)
 	}
@@ -54,12 +63,4 @@ func (fd *Field) Unpack(data []byte) ([]byte, int, error) {
 	}
 
 	return raw, dataLen + fd.Pref.Length(), nil
-}
-
-func NewField(desc string, enc encoding.Encoder, pref prefixer.Prefixer) Packer {
-	return &Field{
-		Description: desc,
-		Enc:         enc,
-		Pref:        pref,
-	}
 }
