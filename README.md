@@ -70,8 +70,24 @@ message.GetMTI() // MTI: 0100
 message.GetString(2) // Card number: 4242424242424242
 message.GetString(3) // Processing code: 123456
 // ...
-
 ```
+
+### Dump your message into json:
+
+```go
+message := iso8583.NewMessage(spec87)
+message.MTI("0100")
+message.Field(2, "4242424242424242")
+message.Field(3, "123456")
+message.Field(4, "000000000100")
+
+var b bytes.Buffer
+
+json.NewEncoder(&b).Encode(&message)
+
+fmt.Println(b.String())
+```
+
 
 # License
 
