@@ -26,6 +26,10 @@ func (m *Message) Set(id int, field Field) {
 	m.Fields[id] = field
 }
 
+func (m *Message) Bitmap() *utils.Bitmap {
+	return m.bitmap
+}
+
 func (m *Message) MTI(val string) {
 	m.Fields[0] = NewField(0, []byte(val))
 }
@@ -129,7 +133,12 @@ func (m *Message) Unpack(src []byte) error {
 
 	for i := 2; i <= m.bitmap.Len(); i++ {
 		if m.bitmap.IsSet(i) {
-			data, read, err = m.spec.Fields[i].Unpack(src[off:])
+			fieldSpec, ok := m.spec.Fields[i]
+			if !ok {
+				return fmt.Errorf("Failed to unpack field %d. No Specification found for the field", i)
+			}
+
+			data, read, err = fieldSpec.Unpack(src[off:])
 			if err != nil {
 				return err
 			}
