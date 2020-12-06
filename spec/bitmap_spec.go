@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/prefixer"
+	"github.com/moov-io/iso8583/prefix"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBitmapField(t *testing.T) {
-	field := &bitmapField{16, "Bitmap", encoding.Hex, prefixer.Hex.Fixed}
+	field := &bitmapField{16, "Bitmap", encoding.Hex, prefix.Hex.Fixed}
 
 	// pack
 	got, err := field.Pack([]byte{0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB})

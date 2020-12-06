@@ -1,4 +1,4 @@
-package prefixer
+package prefix
 
 type Prefixer interface {
 	// Returns field length encoded into []byte

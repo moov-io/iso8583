@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/prefixer"
+	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/utils"
 )
 
@@ -12,7 +12,7 @@ type bitmapField struct {
 	Length      int
 	Description string
 	Enc         encoding.Encoder
-	Pref        prefixer.Prefixer
+	Pref        prefix.Prefixer
 }
 
 func (fd *bitmapField) Pack(data []byte) ([]byte, error) {
@@ -60,7 +60,7 @@ func (fd *bitmapField) Unpack(data []byte) ([]byte, int, error) {
 	return raw[:8], dataLen / 2, nil
 }
 
-func Bitmap(length int, desc string, enc encoding.Encoder, pref prefixer.Prefixer) Packer {
+func Bitmap(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) Packer {
 	return &bitmapField{
 		Length:      length,
 		Description: desc,

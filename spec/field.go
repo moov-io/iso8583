@@ -5,18 +5,18 @@ import (
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
-	"github.com/moov-io/iso8583/prefixer"
+	"github.com/moov-io/iso8583/prefix"
 )
 
 type Field struct {
 	Length      int
 	Description string
 	Enc         encoding.Encoder
-	Pref        prefixer.Prefixer
+	Pref        prefix.Prefixer
 	Pad         padding.Padder
 }
 
-func NewField(length int, desc string, enc encoding.Encoder, pref prefixer.Prefixer) Packer {
+func NewField(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) Packer {
 	return &Field{
 		Length:      length,
 		Description: desc,

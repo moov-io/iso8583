@@ -5,7 +5,7 @@ import (
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
-	"github.com/moov-io/iso8583/prefixer"
+	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/spec"
 	"github.com/stretchr/testify/require"
 )
@@ -13,17 +13,17 @@ import (
 func TestISO8583(t *testing.T) {
 	specTest := &spec.MessageSpec{
 		Fields: map[int]spec.Packer{
-			0: spec.NewField(4, "Message Type Indicator", encoding.ASCII, prefixer.ASCII.Fixed),
+			0: spec.NewField(4, "Message Type Indicator", encoding.ASCII, prefix.ASCII.Fixed),
 
 			// Bitmap, 16 bytes, fixed
-			1: spec.Bitmap(16, "Bitmap", encoding.Hex, prefixer.Hex.Fixed),
+			1: spec.Bitmap(16, "Bitmap", encoding.Hex, prefix.Hex.Fixed),
 
 			// LLVAR19
 			2: &spec.Field{
 				Length:      19,
 				Description: "Primary Account Number",
 				Enc:         encoding.ASCII,
-				Pref:        prefixer.ASCII.LL,
+				Pref:        prefix.ASCII.LL,
 			},
 
 			// 6 bytes, fixed
@@ -31,7 +31,7 @@ func TestISO8583(t *testing.T) {
 				Length:      6,
 				Description: "Processing Code",
 				Enc:         encoding.ASCII,
-				Pref:        prefixer.ASCII.Fixed,
+				Pref:        prefix.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			},
 
@@ -40,7 +40,7 @@ func TestISO8583(t *testing.T) {
 				Length:      12,
 				Description: "Transaction Amount",
 				Enc:         encoding.ASCII,
-				Pref:        prefixer.ASCII.Fixed,
+				Pref:        prefix.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			},
 
