@@ -137,10 +137,7 @@ func isValidXML(buf []byte) bool {
 			break
 		}
 	}
-	if err == io.EOF {
-		return true
-	}
-	return false
+	return err == io.EOF
 }
 
 func isValidJSON(buf []byte) bool {
