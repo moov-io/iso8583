@@ -438,6 +438,9 @@ func (e *Element) lengthDecoding(raw []byte) (int, error) {
 		default:
 			return 0, errors.New(utils.ErrInvalidLengthEncoder)
 		}
+		if contentLen < 0 || contentLen > e.Length {
+			return 0, errors.New(utils.ErrInvalidElementLength)
+		}
 		e.DataLength = contentLen
 	}
 
