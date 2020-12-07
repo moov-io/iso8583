@@ -156,3 +156,21 @@ func TestElementType(t *testing.T) {
 	element.SetEncoding(encoding)
 	assert.Equal(t, element.Encoding, encoding.CharacterEnc)
 }
+
+func TestMessageFormat(t *testing.T) {
+	buf := []byte("12341234")
+	format := MessageFormat(buf)
+	assert.Equal(t, format, MessageFormatIso8583)
+
+	buf = []byte("<foo></foo><<<<<<<<<")
+	format = MessageFormat(buf)
+	assert.Equal(t, format, MessageFormatIso8583)
+
+	buf = []byte("<foo></foo>")
+	format = MessageFormat(buf)
+	assert.Equal(t, format, MessageFormatXml)
+
+	buf = []byte("{}")
+	format = MessageFormat(buf)
+	assert.Equal(t, format, MessageFormatJson)
+}

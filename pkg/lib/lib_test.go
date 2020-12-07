@@ -125,7 +125,7 @@ func TestIso8583Message(t *testing.T) {
 	}
 	`)
 
-	message, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
+	message, err := NewISO8583MessageWithSpecification(&utils.ISO8583DataElementsVer1987)
 	assert.Nil(t, err)
 
 	err = json.Unmarshal(jsonStr, message)
@@ -547,7 +547,7 @@ func TestElementStructForErrorCases(t *testing.T) {
 func TestIso8583MessageBytes(t *testing.T) {
 	byteData := []byte(`0800a0200000040000000000000000000000123456123456abcdef`)
 
-	message, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
+	message, err := NewISO8583MessageWithSpecification(&utils.ISO8583DataElementsVer1987)
 	assert.Nil(t, err)
 
 	_, err = message.Load(byteData)
@@ -601,7 +601,7 @@ func TestIso8583MessageBytes(t *testing.T) {
 	_, err = message.Load(byteData)
 	assert.Nil(t, err)
 
-	_, err = NewISO8583Message(nil)
+	_, err = NewISO8583MessageWithSpecification(nil)
 	assert.NotNil(t, err)
 
 	ret = message.GetBitmap()
@@ -658,7 +658,7 @@ func TestIso8583MessageBytes(t *testing.T) {
 			2: {Describe: "b 64", Description: "Second Bitmap"},
 		},
 	}
-	message, err = NewISO8583Message(_spec)
+	message, err = NewISO8583MessageWithSpecification(_spec)
 	assert.Nil(t, err)
 	byteData = []byte(
 		`0800c000000000000000` +
@@ -694,7 +694,7 @@ func TestIso8583MessageBytes(t *testing.T) {
 			2: {Describe: "n64", Description: "Number"},
 		},
 	}
-	message, err = NewISO8583Message(_spec)
+	message, err = NewISO8583MessageWithSpecification(_spec)
 	assert.Nil(t, err)
 
 	_, err = message.Load(byteData)
@@ -723,7 +723,7 @@ func TestElementsStruct(t *testing.T) {
 	assert.NotNil(t, err)
 
 	_, err = json.Marshal(message)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 
 	message.elements[1] = &Element{
 		Type:           utils.ElementTypeAlphabetic,
@@ -754,7 +754,7 @@ func TestISO8583MessageWithValidSamples(t *testing.T) {
 	}
 
 	for _, sample := range samples {
-		message, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
+		message, err := NewISO8583MessageWithSpecification(&utils.ISO8583DataElementsVer1987)
 		assert.Nil(t, err)
 
 		byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", sample))
@@ -776,7 +776,7 @@ func TestISO8583MessageWithValidSamples(t *testing.T) {
 		"network_management_message_with_error_track.dat",
 	}
 	for _, sample := range samples {
-		message, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
+		message, err := NewISO8583MessageWithSpecification(&utils.ISO8583DataElementsVer1987)
 		assert.Nil(t, err)
 
 		byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", sample))
@@ -1037,13 +1037,13 @@ func TestISO8583MessageWithJson(t *testing.T) {
 	jsonData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "specification_ver_1987.json"))
 	assert.Nil(t, err)
 
-	_, err = NewISO8583MessageWithJson(jsonData)
+	_, err = NewISO8583Message(jsonData)
 	assert.Nil(t, err)
 
 	jsonData, err = ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "specification_without_encoding_ver_1987.json"))
 	assert.Nil(t, err)
 
-	_, err = NewISO8583MessageWithJson(jsonData)
+	_, err = NewISO8583Message(jsonData)
 	assert.Nil(t, err)
 
 	jsonData = []byte(`{

@@ -112,13 +112,6 @@ func (e *Element) UnmarshalJSON(b []byte) error {
 
 // Customize marshal of json
 func (e *Element) MarshalJSON() ([]byte, error) {
-	if e.Type == utils.ElementTypeNumeric {
-		ret, err := strconv.Atoi(string(e.Value))
-		if err != nil {
-			return nil, err
-		}
-		return json.Marshal(ret)
-	}
 	return json.Marshal(fmt.Sprintf("%s", e.Value))
 }
 
