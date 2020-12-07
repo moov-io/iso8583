@@ -28,7 +28,6 @@ func NewField(length int, desc string, enc encoding.Encoder, pref prefix.Prefixe
 func (fd *Field) Pack(data []byte) ([]byte, error) {
 	if fd.Pad != nil {
 		data = fd.Pad.Pad(data, fd.Length)
-		fmt.Printf("padded data: %s, %d", string(data), fd.Length)
 	}
 
 	packed, err := fd.Enc.Encode(data)
@@ -59,7 +58,6 @@ func (fd *Field) Unpack(data []byte) ([]byte, int, error) {
 
 	if fd.Pad != nil {
 		raw = fd.Pad.Unpad(raw)
-		fmt.Printf("unpadded data: %s, %d", string(raw), fd.Length)
 	}
 
 	return raw, dataLen + fd.Pref.Length(), nil

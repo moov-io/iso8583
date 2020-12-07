@@ -48,13 +48,19 @@ func (m *Message) GetMTI() string {
 }
 
 func (m *Message) GetString(id int) string {
-	// check index
-	return m.Fields[id].String()
+	if field, ok := m.Fields[id]; ok {
+		return field.String()
+	}
+
+	return ""
 }
 
 func (m *Message) GetBytes(id int) []byte {
-	// check index
-	return m.Fields[id].Bytes()
+	if field, ok := m.Fields[id]; ok {
+		return field.Bytes()
+	}
+
+	return nil
 }
 
 func (m *Message) Pack() ([]byte, error) {
