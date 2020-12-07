@@ -42,7 +42,13 @@ func Fuzz(data []byte) int {
 	if err != nil {
 		return -1
 	}
-	message, err := lib.NewISO8583Message(jsonData)
+
+	spec, err := lib.NewSpecificationWithJson(jsonData)
+	if err != nil {
+		return -1
+	}
+
+	message, err := lib.NewISO8583Message(spec)
 	if err != nil {
 		return -1
 	}
