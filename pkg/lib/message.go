@@ -64,7 +64,7 @@ func NewSpecificationWithJson(specification []byte) (*utils.Specification, error
 	return &spec, nil
 }
 
-// NewSpecificationWithAttributes will return specification from attributes
+// NewSpecificationWithAttributes will return specification from attributes and encoding
 func NewSpecificationWithAttributes(buf []byte, encoding *utils.EncodingDefinition) (*utils.Specification, error) {
 	var newAttributes utils.Attributes
 	var newEncoding utils.EncodingDefinition
