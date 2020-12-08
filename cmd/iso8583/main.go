@@ -85,7 +85,7 @@ var Validate = &cobra.Command{
 			return err
 		}
 
-		return nil
+		return message.Validate()
 	},
 }
 

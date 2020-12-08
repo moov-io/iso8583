@@ -77,13 +77,13 @@ func outputBufferToWriter(w http.ResponseWriter, buf []byte, format string) {
 
 // validator - validate the file based on publication 1220
 func validator(w http.ResponseWriter, r *http.Request) {
-	mf, err := parseInputFromRequest(r)
+	message, err := parseInputFromRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = mf.Validate()
+	err = message.Validate()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotImplemented)
 		return

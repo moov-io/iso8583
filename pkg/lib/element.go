@@ -93,19 +93,14 @@ func (e *Element) Load(raw []byte) (int, error) {
 
 // Customize unmarshal of json
 func (e *Element) UnmarshalJSON(b []byte) error {
-	_, err := strconv.ParseFloat(string(b), 64)
-	if err == nil {
-		e.Value = make([]byte, len(b))
-		copy(e.Value, b)
-	} else {
-		var value string
-		err := json.Unmarshal(b, &value)
-		if err != nil {
-			return err
-		}
-		e.Value = make([]byte, len(value))
-		copy(e.Value, value)
+	var value string
+	err := json.Unmarshal(b, &value)
+	if err != nil {
+		return err
 	}
+	e.Value = make([]byte, len(value))
+	copy(e.Value, value)
+	e.DataLength = len(e.Value)
 	e.extendBinaryData()
 	return nil
 }
@@ -117,10 +112,13 @@ func (e *Element) MarshalJSON() ([]byte, error) {
 
 // Customize unmarshal of xml
 func (e *Element) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	var s string
-	if err := d.DecodeElement(&s, &start); err != nil {
+	var value string
+	if err := d.DecodeElement(&value, &start); err != nil {
 		return err
 	}
+	e.Value = make([]byte, len(value))
+	copy(e.Value, value)
+	e.extendBinaryData()
 	return nil
 }
 

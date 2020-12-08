@@ -1,0 +1,24 @@
+<isoMessage>
+	<MTI>0400</MTI>
+	<Bitmap>1111001000111010010000000000000100001000010000011000001000000010</Bitmap>
+	<DataElements>
+		<Element Number="1">0000000000000000000000000100000000000000000000000000000000000000</Element>
+		<Element Number="2">1111111110000000000</Element>
+		<Element Number="3">180000</Element>
+		<Element Number="4">000000030000</Element>
+		<Element Number="7">0109080646</Element>
+		<Element Number="11">100331</Element>
+		<Element Number="12">001120</Element>
+		<Element Number="13">0909</Element>
+		<Element Number="15">0809</Element>
+		<Element Number="18">9601</Element>
+		<Element Number="32"></Element>
+		<Element Number="37">600020000000</Element>
+		<Element Number="42">00003430003948 </Element>
+		<Element Number="48">08110012000004096565733200000003000001</Element>
+		<Element Number="49">360</Element>
+		<Element Number="55">003317000394809080646510000000</Element>
+		<Element Number="63">132</Element>
+		<Element Number="90">020000331609080645190000000020000000000000</Element>
+	</DataElements>
+</isoMessage>

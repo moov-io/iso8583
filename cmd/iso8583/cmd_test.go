@@ -14,17 +14,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var testMessageFilePath = ""
-var testInvalidFilePath = ""
-var testErrorFilePath = ""
-var testSpecFilePath = ""
+var testSpecFilePath = filepath.Join("..", "..", "test", "testdata", "specification_ver_1987.json")
+var testMessageFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.dat")
+var testInvalidFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message_error_date.dat")
+var testErrorFilePath = filepath.Join("..", "..", "test", "testdata", "error_message.dat")
+var testJsonFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.json")
+var testXmlFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.xml")
 
 func TestMain(m *testing.M) {
-	testMessageFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.dat")
-	testSpecFilePath = filepath.Join("..", "..", "test", "testdata", "specification_ver_1987.json")
-	testInvalidFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message_error_date.dat")
-	testErrorFilePath = filepath.Join("..", "..", "test", "testdata", "error_message.dat")
-
 	initRootCmd()
 	os.Exit(m.Run())
 }
@@ -189,13 +186,13 @@ func TestConvertWithInvalidData(t *testing.T) {
 
 func TestValidatorWithInvalidData(t *testing.T) {
 	_, err := executeCommand(rootCmd, "validator", "--input", testInvalidFilePath)
-	if err != nil {
-		t.Errorf(err.Error())
+	if err == nil {
+		t.Errorf("error data")
 	}
 
 	_, err = executeCommand(rootCmd, "validator", "--input", testInvalidFilePath, "--spec", testSpecFilePath)
-	if err != nil {
-		t.Errorf(err.Error())
+	if err == nil {
+		t.Errorf("error data")
 	}
 }
 
@@ -232,6 +229,78 @@ func TestValidatorWithErrorData(t *testing.T) {
 	_, err = executeCommand(rootCmd, "validator", "--input", testErrorFilePath, "--spec", testSpecFilePath)
 	if err == nil {
 		t.Errorf("error data")
+	}
+}
+
+func TestPrintWithJsonData(t *testing.T) {
+	_, err := executeCommand(rootCmd, "print", "--input", testJsonFilePath, "--format", utils.MessageFormatIso8583)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	_, err = executeCommand(rootCmd, "print", "--input", testJsonFilePath, "--spec", testSpecFilePath, "--format", utils.MessageFormatIso8583)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+}
+
+func TestConvertWithJsonData(t *testing.T) {
+	_, err := executeCommand(rootCmd, "convert", "output", "--input", testJsonFilePath, "--format", utils.MessageFormatIso8583)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	_, err = executeCommand(rootCmd, "convert", "output", "--input", testJsonFilePath, "--spec", testSpecFilePath, "--format", utils.MessageFormatIso8583)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+}
+
+func TestValidatorWithJsonData(t *testing.T) {
+	_, err := executeCommand(rootCmd, "validator", "--input", testJsonFilePath)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	_, err = executeCommand(rootCmd, "validator", "--input", testJsonFilePath, "--spec", testSpecFilePath)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+}
+
+func TestPrintWithXmlData(t *testing.T) {
+	_, err := executeCommand(rootCmd, "print", "--input", testXmlFilePath, "--format", utils.MessageFormatIso8583)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	_, err = executeCommand(rootCmd, "print", "--input", testXmlFilePath, "--spec", testSpecFilePath, "--format", utils.MessageFormatIso8583)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+}
+
+func TestConvertWithXmlData(t *testing.T) {
+	_, err := executeCommand(rootCmd, "convert", "output", "--input", testXmlFilePath, "--format", utils.MessageFormatIso8583)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	_, err = executeCommand(rootCmd, "convert", "output", "--input", testXmlFilePath, "--spec", testSpecFilePath, "--format", utils.MessageFormatIso8583)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+}
+
+func TestValidatorWithXmlData(t *testing.T) {
+	_, err := executeCommand(rootCmd, "validator", "--input", testXmlFilePath)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	_, err = executeCommand(rootCmd, "validator", "--input", testXmlFilePath, "--spec", testSpecFilePath)
+	if err != nil {
+		t.Errorf(err.Error())
 	}
 }
 

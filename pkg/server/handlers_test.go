@@ -25,6 +25,8 @@ import (
 var testFileName = "iso_reversal_message.dat"
 var testInvalidFileName = "iso_reversal_message_error_date.dat"
 var testErrorFileName = "error_message.dat"
+var testJsonFileName = "iso_reversal_message.json"
+var testXmlFileName = "iso_reversal_message.xml"
 
 type HandlersTest struct {
 	suite.Suite
@@ -285,4 +287,72 @@ func (suite *HandlersTest) TestPrintWithUnknownFormat() {
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 	suite.testServer.ServeHTTP(recorder, request)
 	assert.Equal(suite.T(), http.StatusInternalServerError, recorder.Code)
+}
+
+func (suite *HandlersTest) TestConvertWithJsonFile() {
+	writer, body := suite.getWriter(testJsonFileName)
+	err := writer.WriteField("format", utils.MessageFormatJson)
+	assert.Equal(suite.T(), nil, err)
+	err = writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/convert", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusOK, recorder.Code)
+}
+
+func (suite *HandlersTest) TestPrintWithJsonFile() {
+	writer, body := suite.getWriter(testJsonFileName)
+	err := writer.WriteField("format", utils.MessageFormatJson)
+	assert.Equal(suite.T(), nil, err)
+	err = writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/print", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusOK, recorder.Code)
+}
+
+func (suite *HandlersTest) TestValidatorWithJsonFile() {
+	writer, body := suite.getWriter(testJsonFileName)
+	err := writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/validator", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusOK, recorder.Code)
+}
+
+func (suite *HandlersTest) TestConvertWithXmlFile() {
+	writer, body := suite.getWriter(testXmlFileName)
+	err := writer.WriteField("format", utils.MessageFormatJson)
+	assert.Equal(suite.T(), nil, err)
+	err = writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/convert", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusOK, recorder.Code)
+}
+
+func (suite *HandlersTest) TestPrintWithXmlFile() {
+	writer, body := suite.getWriter(testXmlFileName)
+	err := writer.WriteField("format", utils.MessageFormatJson)
+	assert.Equal(suite.T(), nil, err)
+	err = writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/print", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusOK, recorder.Code)
+}
+
+func (suite *HandlersTest) TestValidatorWithXmlFile() {
+	writer, body := suite.getWriter(testXmlFileName)
+	err := writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/validator", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusOK, recorder.Code)
 }
