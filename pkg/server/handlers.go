@@ -11,7 +11,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/moov-io/iso8583/pkg/lib"
@@ -104,17 +103,11 @@ func print(w http.ResponseWriter, r *http.Request) {
 	format := r.FormValue("format")
 	output, err := messageToBuf(format, message)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if strings.EqualFold(format, utils.MessageFormatIso8583) ||
-		strings.EqualFold(format, utils.MessageFormatJson) ||
-		strings.EqualFold(format, utils.MessageFormatXml) {
-		outputBufferToWriter(w, output, format)
-	} else {
-		http.Error(w, "invalid print format", http.StatusBadRequest)
-	}
+	outputBufferToWriter(w, output, format)
 }
 
 // convert - convert file with ascii or json format
@@ -129,7 +122,7 @@ func convert(w http.ResponseWriter, r *http.Request) {
 	filename := "converted_file"
 	output, err := messageToBuf(format, message)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

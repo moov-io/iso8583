@@ -262,3 +262,27 @@ func (suite *HandlersTest) TestValidatorWithErrorData() {
 	suite.testServer.ServeHTTP(recorder, request)
 	assert.Equal(suite.T(), http.StatusBadRequest, recorder.Code)
 }
+
+func (suite *HandlersTest) TestConvertWithUnknownFormat() {
+	writer, body := suite.getWriter(testInvalidFileName)
+	err := writer.WriteField("format", "unknown")
+	assert.Equal(suite.T(), nil, err)
+	err = writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/convert", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusInternalServerError, recorder.Code)
+}
+
+func (suite *HandlersTest) TestPrintWithUnknownFormat() {
+	writer, body := suite.getWriter(testInvalidFileName)
+	err := writer.WriteField("format", "unknown")
+	assert.Equal(suite.T(), nil, err)
+	err = writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/print", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusInternalServerError, recorder.Code)
+}

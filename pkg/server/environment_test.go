@@ -25,6 +25,10 @@ func Test_Environment_Startup(t *testing.T) {
 	a.Nil(err)
 
 	shutdown := env.RunServers(false)
-	_ = shutdown
-	//t.Cleanup(shutdown)
+
+	env1, err := server.NewEnvironment(&server.Environment{})
+	a.Nil(err)
+	env1.Shutdown()
+
+	t.Cleanup(shutdown)
 }
