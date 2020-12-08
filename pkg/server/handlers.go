@@ -65,10 +65,13 @@ func outputBufferToWriter(w http.ResponseWriter, buf []byte, format string) {
 	w.WriteHeader(http.StatusOK)
 	switch format {
 	case utils.MessageFormatJson:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(buf)
 	case utils.MessageFormatXml:
+		w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 		xml.NewEncoder(w).Encode(buf)
 	case utils.MessageFormatIso8583:
+		w.Header().Set("Content-Type", "application/octet-stream; charset=utf-8")
 		w.Write(buf)
 	}
 }
