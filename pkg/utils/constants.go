@@ -25,11 +25,11 @@ const (
 	DataElementXmlName    = "Element"
 	DataElementAttrNumber = "Number"
 
-	EncodingChar   = "CHAR"
+	EncodingChar   = "CHAR" // for Number
 	EncodingHex    = "HEX"
 	EncodingEbcdic = "EBCDIC"
-	EncodingAscii  = "ASCII"
-	EncodingBcd    = "BCD" // packed bcd
+	EncodingAscii  = "ASCII" // for characters
+	EncodingBcd    = "BCD"   // packed bcd
 	EncodingRBcd   = "RBCD"
 
 	EncodingCatNumber    = "number"
@@ -48,6 +48,7 @@ var (
 	RegexBinary              = regexp.MustCompile(`^[0|1]+$`).MatchString
 	RegexNumericSpecial      = regexp.MustCompile(`^[0-9$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
 	RegexAlphaNumericSpecial = regexp.MustCompile(`^[0-9a-zA-Z$&+,:;=?@#|'<>.^*()%! -]+$`).MatchString
+	RegexMagnetic            = regexp.MustCompile(`^[0-9a-fA-F]+$`).MatchString
 
 	RegexTimeHHMMSS     = regexp.MustCompile(`(2[0-3]|[01][0-9])[0-5][0-9][0-5][0-9]`).MatchString
 	RegexDateYYMM       = regexp.MustCompile(`((\d{2})(0[1-9]|10|12))`).MatchString
@@ -78,7 +79,7 @@ var AvailableEncodings = map[string][]string{
 	ElementTypeAlphabetic:          {EncodingAscii, EncodingEbcdic},
 	ElementTypeNumeric:             {EncodingBcd, EncodingRBcd, EncodingChar},
 	ElementTypeSpecial:             {EncodingAscii, EncodingEbcdic},
-	ElementTypeMagnetic:            {EncodingAscii, EncodingEbcdic},
+	ElementTypeMagnetic:            {EncodingEbcdic},
 	ElementTypeIndicate:            {EncodingAscii, EncodingEbcdic},
 	ElementTypeBinary:              {EncodingChar, EncodingHex},
 	ElementTypeAlphaNumeric:        {EncodingAscii, EncodingEbcdic},

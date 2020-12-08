@@ -12,7 +12,7 @@ var (
 		NumberEnc:    EncodingChar,
 		CharacterEnc: EncodingAscii,
 		BinaryEnc:    EncodingHex,
-		TrackEnc:     EncodingChar,
+		TrackEnc:     EncodingEbcdic,
 	}
 	ISO8583DataElementsVer1987 = Specification{
 		Encoding: DefaultMessageEncoding,

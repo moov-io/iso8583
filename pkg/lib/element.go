@@ -112,13 +112,6 @@ func (e *Element) UnmarshalJSON(b []byte) error {
 
 // Customize marshal of json
 func (e *Element) MarshalJSON() ([]byte, error) {
-	if e.Type == utils.ElementTypeNumeric {
-		ret, err := strconv.Atoi(string(e.Value))
-		if err != nil {
-			return nil, err
-		}
-		return json.Marshal(ret)
-	}
 	return json.Marshal(fmt.Sprintf("%s", e.Value))
 }
 
@@ -150,9 +143,10 @@ func (e *Element) characterEncoding() ([]byte, error) {
 	var err error
 
 	if e.Encoding == utils.EncodingChar {
-		encodingValue = e.Value
+		encodingValue = []byte(strings.ToUpper(string(e.Value)))
 	} else if e.Encoding == utils.EncodingAscii {
 		encodingValue, err = utils.UTF8ToWindows1252(e.Value)
+		encodingValue = []byte(strings.ToUpper(string(encodingValue)))
 	} else if e.Encoding == utils.EncodingEbcdic {
 		encodingValue, err = ebcdic.Encode(string(e.Value), ebcdic.EBCDIC037)
 	} else {
@@ -221,7 +215,7 @@ func (e *Element) binaryEncoding() ([]byte, error) {
 			return nil, err
 		}
 		hexStr := fmt.Sprintf("%0"+strconv.Itoa(e.Length/4)+"s", strconv.FormatUint(bitNum, 16))
-		value = []byte(hexStr)
+		value = []byte(strings.ToUpper(hexStr))
 	} else {
 		return nil, errors.New(utils.ErrInvalidEncoder)
 	}
@@ -286,6 +280,7 @@ func (e *Element) numberDecoding(raw []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
+		read += contentLen
 	} else if e.Encoding == utils.EncodingRBcd {
 		bcdSize := contentLen / 2
 		if (contentLen)%2 != 0 {
@@ -294,10 +289,11 @@ func (e *Element) numberDecoding(raw []byte) (int, error) {
 		if len(raw) < read+bcdSize {
 			return 0, errors.New(utils.ErrBadElementData)
 		}
-		value, err = utils.RBcdAscii(raw[read:read+bcdSize], bcdSize)
+		value, err = utils.RBcdAscii(raw[read:read+bcdSize], contentLen)
 		if err != nil {
 			return 0, err
 		}
+		read += bcdSize
 	} else if e.Encoding == utils.EncodingBcd {
 		bcdSize := contentLen / 2
 		if (contentLen)%2 != 0 {
@@ -306,17 +302,17 @@ func (e *Element) numberDecoding(raw []byte) (int, error) {
 		if len(raw) < read+bcdSize {
 			return 0, errors.New(utils.ErrBadElementData)
 		}
-		value, err = utils.BcdAscii(raw[read:read+bcdSize], bcdSize)
+		value, err = utils.BcdAscii(raw[read:read+bcdSize], contentLen)
 		if err != nil {
 			return 0, err
 		}
+		read += bcdSize
 	} else {
 		return 0, errors.New(utils.ErrInvalidEncoder)
 	}
 
 	e.Value = make([]byte, len(value))
 	copy(e.Value, value)
-	read += len(e.Value)
 
 	return read, nil
 }
@@ -378,7 +374,7 @@ func (e *Element) lengthEncoding(value []byte) ([]byte, error) {
 	case utils.EncodingHex:
 		lenStr = strconv.Itoa(len(fmt.Sprintf("%x", e.Length)))
 		formatStr = "%0" + strconv.Itoa(len(lenStr)) + "x"
-		encode = []byte(fmt.Sprintf(formatStr, len(value)))
+		encode = []byte(strings.ToUpper(fmt.Sprintf(formatStr, len(value))))
 	case utils.EncodingRBcd:
 		// contentLen is number only
 		encode, _ = utils.RBcd(contentLen)
@@ -441,6 +437,9 @@ func (e *Element) lengthDecoding(raw []byte) (int, error) {
 			read = bcdSize
 		default:
 			return 0, errors.New(utils.ErrInvalidLengthEncoder)
+		}
+		if contentLen < 0 || contentLen > e.Length {
+			return 0, errors.New(utils.ErrInvalidElementLength)
 		}
 		e.DataLength = contentLen
 	}
@@ -539,6 +538,8 @@ func (e *Element) validateWithRegex() error {
 		match = utils.RegexAlphaNumericSpecial(string(e.Value))
 	case utils.ElementTypeIndicateNumeric:
 		match = utils.RegexIndicateNumeric(string(e.Value))
+	case utils.ElementTypeMagnetic:
+		match = utils.RegexMagnetic(string(e.Value))
 	}
 	if !match {
 		return errors.New(utils.ErrBadElementData)

@@ -9,9 +9,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"github.com/moov-io/iso8583/pkg/utils"
 	"reflect"
-	"strings"
+
+	"github.com/moov-io/iso8583/pkg/utils"
 )
 
 type Iso8583Message interface {
@@ -24,6 +24,7 @@ type Iso8583Message interface {
 }
 
 // public functions of lib
+
 // NewISO8583Message create data elements of message with specification
 func NewISO8583Message(spec *utils.Specification) (Iso8583Message, error) {
 	elements, err := NewDataElements(spec)
@@ -48,8 +49,23 @@ func NewISO8583Message(spec *utils.Specification) (Iso8583Message, error) {
 	}, nil
 }
 
-// NewISO8583MessageWithJson create data elements of message with specification with json specification file
-func NewISO8583MessageWithJson(buf []byte, encoding *utils.EncodingDefinition) (Iso8583Message, error) {
+// NewSpecificationWithJson will return specification from json buffer
+func NewSpecificationWithJson(specification []byte) (*utils.Specification, error) {
+	var spec utils.Specification
+
+	err := json.Unmarshal(specification, &spec)
+	if err != nil {
+		return nil, err
+	}
+	if spec.Encoding == nil {
+		spec.Encoding = utils.DefaultMessageEncoding
+	}
+
+	return &spec, nil
+}
+
+// NewSpecificationWithAttributes will return specification from attributes and encoding
+func NewSpecificationWithAttributes(buf []byte, encoding *utils.EncodingDefinition) (*utils.Specification, error) {
 	var newAttributes utils.Attributes
 	var newEncoding utils.EncodingDefinition
 
@@ -63,10 +79,10 @@ func NewISO8583MessageWithJson(buf []byte, encoding *utils.EncodingDefinition) (
 		newEncoding = *utils.DefaultMessageEncoding
 	}
 
-	return NewISO8583Message(&utils.Specification{
+	return &utils.Specification{
 		Elements: &newAttributes,
 		Encoding: &newEncoding,
-	})
+	}, nil
 }
 
 // message instance
@@ -136,7 +152,7 @@ func (m *isoMessage) Bytes() ([]byte, error) {
 		}
 		buf.Write(value)
 	}
-	return []byte(strings.ToUpper(buf.String())), nil
+	return buf.Bytes(), nil
 }
 
 // Load decode field from bytes

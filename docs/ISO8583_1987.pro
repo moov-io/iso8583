@@ -7,11 +7,11 @@ NAME= Base ISO8583 (1987) example
 
 MTI_Enc= CHAR
 BMP_Enc= HEX
-LEN_Enc= CHAR
+LEN_Enc= HEX
 NUM_Enc= CHAR
 CHR_Enc= ASCII
-BIN_Enc= NONE
-TRK_Enc= CHAR
+BIN_Enc= HEX
+TRK_Enc= PACKED
 
 // data elements definition
 // field number, type, size, size len, subfield, description
@@ -26,7 +26,8 @@ FIELD=  13;    N;      4; 0; N; Date, local Tranaction
 FIELD=  14;    N;      4; 0; N; Expiration date
 FIELD=  15;    N;      4; 0; N; Settlement date
 FIELD=  18;    N;      4; 0; N; Merchant type, or merchant category code
-FIELD=  32;    N;     11; 2; N; Acquiring institution identification code
+FIELD=  32;    N;     11; 1; N; Acquiring institution identification code
+FIELD=  35;    Z;     37; 2; N; Track 2 data
 FIELD=  37;   AN;     12; 0; N; Retrieval reference number
 FIELD=  39;   AN;      2; 0; N; Response code
 FIELD=  42;  ANS;     15; 0; N; Card acceptor identification code
