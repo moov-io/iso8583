@@ -61,7 +61,7 @@ func messageToBuf(format string, message lib.Iso8583Message) ([]byte, error) {
 	return output, err
 }
 
-func outputBufferToWriter(w http.ResponseWriter, buf interface{}, format string) {
+func outputBufferToWriter(w http.ResponseWriter, buf []byte, format string) {
 	w.WriteHeader(http.StatusOK)
 	switch format {
 	case utils.MessageFormatJson:
@@ -69,10 +69,7 @@ func outputBufferToWriter(w http.ResponseWriter, buf interface{}, format string)
 	case utils.MessageFormatXml:
 		xml.NewEncoder(w).Encode(buf)
 	case utils.MessageFormatIso8583:
-		buffer, ok := buf.([]byte)
-		if ok {
-			w.Write(buffer)
-		}
+		w.Write(buf)
 	}
 }
 
@@ -143,7 +140,11 @@ func convert(w http.ResponseWriter, r *http.Request) {
 
 // health - health check
 func health(w http.ResponseWriter, r *http.Request) {
-	outputBufferToWriter(w, map[string]bool{"health": true}, utils.MessageFormatJson)
+	data := map[string]bool{"health": true}
+	buf, err := json.Marshal(data)
+	if err == nil {
+		outputBufferToWriter(w, buf, utils.MessageFormatJson)
+	}
 }
 
 // configure handlers
