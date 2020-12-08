@@ -69,7 +69,10 @@ func outputBufferToWriter(w http.ResponseWriter, buf interface{}, format string)
 	case utils.MessageFormatXml:
 		xml.NewEncoder(w).Encode(buf)
 	case utils.MessageFormatIso8583:
-		w.Write(buf.([]byte))
+		buffer, ok := buf.([]byte)
+		if ok {
+			w.Write(buffer)
+		}
 	}
 }
 
