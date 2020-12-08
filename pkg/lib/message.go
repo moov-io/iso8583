@@ -88,9 +88,9 @@ func NewSpecificationWithAttributes(buf []byte, encoding *utils.EncodingDefiniti
 // message instance
 // isoMessage is structure for ISO 8583 message encode and decode
 type isoMessage struct {
-	mti      *Element      `xml:"MTI,omitempty" json:"mti,omitempty"`
-	bitmap   *Element      `xml:"Bitmap,omitempty" json:"bitmap,omitempty"`
-	elements *dataElements `xml:"DataElements,omitempty" json:"elements,omitempty"`
+	mti      *Element
+	bitmap   *Element
+	elements *dataElements
 	spec     *utils.Specification
 	indexes  []int
 }
