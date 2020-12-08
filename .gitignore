@@ -34,3 +34,4 @@ staticcheck*
 /lint-project.sh
 bin/
 tmp/
+/cmd/iso8583/output
