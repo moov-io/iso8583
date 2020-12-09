@@ -103,7 +103,7 @@ func print(w http.ResponseWriter, r *http.Request) {
 	format := r.FormValue("format")
 	output, err := messageToBuf(format, message)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotImplemented)
 		return
 	}
 
@@ -122,7 +122,7 @@ func convert(w http.ResponseWriter, r *http.Request) {
 	filename := "converted_file"
 	output, err := messageToBuf(format, message)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotImplemented)
 		return
 	}
 

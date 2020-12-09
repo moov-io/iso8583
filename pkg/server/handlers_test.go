@@ -274,7 +274,7 @@ func (suite *HandlersTest) TestConvertWithUnknownFormat() {
 	recorder, request := suite.makeRequest(http.MethodPost, "/convert", body.String())
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 	suite.testServer.ServeHTTP(recorder, request)
-	assert.Equal(suite.T(), http.StatusInternalServerError, recorder.Code)
+	assert.Equal(suite.T(), http.StatusNotImplemented, recorder.Code)
 }
 
 func (suite *HandlersTest) TestPrintWithUnknownFormat() {
@@ -286,7 +286,7 @@ func (suite *HandlersTest) TestPrintWithUnknownFormat() {
 	recorder, request := suite.makeRequest(http.MethodPost, "/print", body.String())
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 	suite.testServer.ServeHTTP(recorder, request)
-	assert.Equal(suite.T(), http.StatusInternalServerError, recorder.Code)
+	assert.Equal(suite.T(), http.StatusNotImplemented, recorder.Code)
 }
 
 func (suite *HandlersTest) TestConvertWithJsonFile() {

@@ -1,0 +1,317 @@
+openapi: 3.0.2
+info:
+  title: "IRS API"
+  version: 0.0.1
+  description: "Package github.com/moov-io/iso8583 implements a file reader and writer written in Go decorated with a HTTP API for creating, parsing, and validating financial transaction card originated interchange messaging. User can seed iso8583's specification file as json file, iso8583 message with several formsts (mesage binary, json, xml)\n
+| Input      | Output     |\n
+|------------|------------|\n
+| JSON       | JSON       |\n
+| XML        | XML        |\n
+| MESSAGE    | MESSAGE    |\n
+"
+servers:
+  - url: https://local.moov.io:8208/
+    description: Local Testing
+  - url: https://api.moov.io/
+    description: Production
+    
+tags:
+  - name: 'iso8583 message'
+    description: |
+      An ISO 8583 message is made of the 3 parts, message type indicator (MTI), one or more bitmaps that indicate which data elements are present, data elements that is the actual information fields of the message. Package suuported 3 types such as json, xml and iso8583 for the message
+      
+paths:
+  /health:
+    get:
+      tags: ['iso8583 message']
+      summary: health iso8583 service
+      description: Check the iso8583 service to check if running
+      operationId: health
+      responses:
+        '200':
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 'health: true'
+  /print:
+    post:
+      tags: ['iso8583 message']
+      summary: Print iso8583 message with specific format
+      description: Print iso8583 message with requested format.
+      operationId: print
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                format:
+                  type: string
+                  description: print iso8583 type
+                  default: json
+                  example: iso8583
+                  enum:
+                    - json
+                    - xml
+                    - iso8583
+                file:
+                  type: string
+                  description: iso8583 message to upload
+                  format: binary
+                  example: '{
+  "mti": "0400",
+  "bitmap": "1111001000111010010000000000000100001000010000011000001000000010",
+  "elements": {
+    "1": "0000000000000000000000000100000000000000000000000000000000000000",
+    "2": "1111111110000000000",
+    "3": "180000",
+    "4": "000000030000",
+    "7": "0109080646",
+    "11": "100331",
+    "12": "001120",
+    "13": "0909",
+    "15": "0809",
+    "18": "9601",
+    "32": "",
+    "37": "600020000000",
+    "42": "00003430003948 ",
+    "48": "08110012000004096565733200000003000001",
+    "49": "360",
+    "55": "003317000394809080646510000000",
+    "63": "132",
+    "90": "020000331609080645190000000020000000000000"
+  }
+}'
+            encoding:
+              file:
+                contentType: text/plain
+      responses:
+        '200':
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: '0400F23A400108418202000000400000000019111111111000000000018000000000003000001090806461003310011200909080996010060002000000000003430003948 03808110012000004096565733200000003000001360030003317000394809080646510000000003132020000331609080645190000000020000000000000'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ISOMessage'
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '501':
+          description: failed operation
+          content:
+            text/plain:
+              schema:
+                type: string
+  /validator:
+    post:
+      tags: ['iso8583 message']
+      summary: Validate iso8583 message
+      description: Validation iso8583 message.
+      operationId: validator
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                file:
+                  type: string
+                  description: iso8583 message to upload
+                  format: binary
+                  example: '<isoMessage>
+  <MTI>0400</MTI>
+  <Bitmap>1111001000111010010000000000000100001000010000011000001000000010</Bitmap>
+  <DataElements>
+    <Element Number="1">0000000000000000000000000100000000000000000000000000000000000000</Element>
+    <Element Number="2">1111111110000000000</Element>
+    <Element Number="3">180000</Element>
+    <Element Number="4">000000030000</Element>
+    <Element Number="7">0109080646</Element>
+    <Element Number="11">100331</Element>
+    <Element Number="12">001120</Element>
+    <Element Number="13">0909</Element>
+    <Element Number="15">0809</Element>
+    <Element Number="18">9601</Element>
+    <Element Number="32"></Element>
+    <Element Number="37">600020000000</Element>
+    <Element Number="42">00003430003948 </Element>
+    <Element Number="48">08110012000004096565733200000003000001</Element>
+    <Element Number="49">360</Element>
+    <Element Number="55">003317000394809080646510000000</Element>
+    <Element Number="63">132</Element>
+    <Element Number="90">020000331609080645190000000020000000000000</Element>
+  </DataElements>
+</isoMessage>'
+            encoding:
+              file:
+                contentType: text/plain
+      responses:
+        '200':
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: valid file
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '501':
+          description: failed operation
+          content:
+            text/plain:
+              schema:
+                type: string
+  /convert:
+    post:
+      tags: ['iso8583 message']
+      summary: Convert iso8583 message
+      description: Convert from original iso8583 message to new iso8583 message
+      operationId: convert
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                format:
+                  type: string
+                  description: converting message type
+                  default: json
+                  example: iso8583
+                  enum:
+                    - json
+                    - xml
+                    - iso8583
+                file:
+                  type: string
+                  description: iso8583 message to upload
+                  format: binary
+                  example: '<isoMessage>
+  <MTI>0400</MTI>
+  <Bitmap>1111001000111010010000000000000100001000010000011000001000000010</Bitmap>
+  <DataElements>
+    <Element Number="1">0000000000000000000000000100000000000000000000000000000000000000</Element>
+    <Element Number="2">1111111110000000000</Element>
+    <Element Number="3">180000</Element>
+    <Element Number="4">000000030000</Element>
+    <Element Number="7">0109080646</Element>
+    <Element Number="11">100331</Element>
+    <Element Number="12">001120</Element>
+    <Element Number="13">0909</Element>
+    <Element Number="15">0809</Element>
+    <Element Number="18">9601</Element>
+    <Element Number="32"></Element>
+    <Element Number="37">600020000000</Element>
+    <Element Number="42">00003430003948 </Element>
+    <Element Number="48">08110012000004096565733200000003000001</Element>
+    <Element Number="49">360</Element>
+    <Element Number="55">003317000394809080646510000000</Element>
+    <Element Number="63">132</Element>
+    <Element Number="90">020000331609080645190000000020000000000000</Element>
+  </DataElements>
+</isoMessage>'
+            encoding:
+              file:
+                contentType: text/plain
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                description: iso8583 message
+                format: binary
+                example: '0400F23A400108418202000000400000000019111111111000000000018000000000003000001090806461003310011200909080996010060002000000000003430003948 03808110012000004096565733200000003000001360030003317000394809080646510000000003132020000331609080645190000000020000000000000'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ISOMessage'
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: bad request
+        '501':
+          description: failed operation
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: failed message convert
+
+components:
+  responses:
+    Empty:
+      description: Empty response for unauthorized or any other returned http status code
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: ""
+            maxLength: 0
+            pattern: "//i"
+
+  securitySchemes:
+    GatewayAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT that comes from the gateway that validates against the gateways public RSA key
+
+  schemas:
+    UUID:
+      description: UUID v4
+      type: string
+      format: uuid
+      maxLength: 36
+      pattern: ^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$
+    ISOMessage:
+      properties:
+        mit:
+          $ref: '#/components/schemas/Element'
+        bitmap:
+          $ref: '#/components/schemas/Element'
+        data_elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Element'
+      required:
+        - mit
+        - bitmap
+    Element:
+      properties:
+        type:
+          type: string
+        length:
+          type: integer
+          format: int32
+        format:
+          type: string
+        encoding:
+          type: string
+        fixed:
+          type: boolean
+        length_encoding:
+          type: string
+        data_length:
+          type: integer
+          format: int32
+        value:
+          type: array
+          items:
+            type: string
+            format: byte
+      required:
+        - payer
+        - end_payer
