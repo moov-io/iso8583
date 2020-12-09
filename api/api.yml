@@ -1,6 +1,6 @@
 openapi: 3.0.2
 info:
-  title: "IRS API"
+  title: "ISO8583 API"
   version: 0.0.1
   description: "Package github.com/moov-io/iso8583 implements a file reader and writer written in Go decorated with a HTTP API for creating, parsing, and validating financial transaction card originated interchange messaging. User can seed iso8583's specification file as json file, iso8583 message with several formsts (mesage binary, json, xml)\n
 | Input      | Output     |\n
@@ -90,11 +90,16 @@ paths:
         '200':
           description: successful operation
           content:
-            text/plain:
+            application/octet-stream:
               schema:
                 type: string
+                description: iso8583 message
+                format: binary
                 example: '0400F23A400108418202000000400000000019111111111000000000018000000000003000001090806461003310011200909080996010060002000000000003430003948 03808110012000004096565733200000003000001360030003317000394809080646510000000003132020000331609080645190000000020000000000000'
             application/json:
+              schema:
+                $ref: '#/components/schemas/ISOMessage'
+            application/xml:
               schema:
                 $ref: '#/components/schemas/ISOMessage'
         '400':
@@ -235,6 +240,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ISOMessage'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ISOMessage'
         '400':
           description: bad request
           content:
@@ -312,6 +320,65 @@ components:
           items:
             type: string
             format: byte
+    Specification:
+      properties:
+        encoding:
+          $ref: '#/components/schemas/Encoding'
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attribute'
       required:
-        - payer
-        - end_payer
+        - encoding
+        - elements
+    Encoding:
+      properties:
+        mti_enc:
+          type: string
+          enum:
+            - CHAR
+            - BCD
+        bmp_enc:
+          type: string
+          enum:
+            - CHAR
+            - HEX
+        len_enc:
+          type: string
+          enum:
+            - CHAR
+            - HEX
+            - BCD
+            - RBCD
+        num_enc:
+          type: string
+          enum:
+            - HEX
+            - BCD
+            - RBCD
+        chr_enc:
+          type: string
+          enum:
+            - ASCII
+            - EBCDIC
+        bin_enc:
+          type: string
+          enum:
+            - CHAR
+            - HEX
+        trk_enc:
+          type: string   
+          enum:
+            - ASCII
+            - EBCDIC
+    Attribute:
+      description: a (key, attribute) map.
+      properties:
+        default:
+          $ref: '#/components/schemas/AttributeItem'
+    AttributeItem:
+      properties:
+        describe:
+          type: string
+        description:
+          type: string
