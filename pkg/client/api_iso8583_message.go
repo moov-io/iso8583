@@ -95,7 +95,6 @@ func (a *Iso8583MessageApiService) Convert(ctx _context.Context, localVarOptiona
 		localVarFile.Close()
 	}
 	localVarFormFileName = "spec"
-	var localVarFile *os.File
 	if localVarOptionals != nil && localVarOptionals.Spec.IsSet() {
 		localVarFileOk := false
 		localVarFile, localVarFileOk = localVarOptionals.Spec.Value().(*os.File)
@@ -327,7 +326,6 @@ func (a *Iso8583MessageApiService) Print(ctx _context.Context, localVarOptionals
 		localVarFile.Close()
 	}
 	localVarFormFileName = "spec"
-	var localVarFile *os.File
 	if localVarOptionals != nil && localVarOptionals.Spec.IsSet() {
 		localVarFileOk := false
 		localVarFile, localVarFileOk = localVarOptionals.Spec.Value().(*os.File)
@@ -470,7 +468,6 @@ func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptio
 		localVarFile.Close()
 	}
 	localVarFormFileName = "spec"
-	var localVarFile *os.File
 	if localVarOptionals != nil && localVarOptionals.Spec.IsSet() {
 		localVarFileOk := false
 		localVarFile, localVarFileOk = localVarOptionals.Spec.Value().(*os.File)
