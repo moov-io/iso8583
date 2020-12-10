@@ -27,6 +27,7 @@ var testInvalidFileName = "iso_reversal_message_error_date.dat"
 var testErrorFileName = "error_message.dat"
 var testJsonFileName = "iso_reversal_message.json"
 var testXmlFileName = "iso_reversal_message.xml"
+var testSpecFileName = "specification_ver_1987.json"
 
 type HandlersTest struct {
 	suite.Suite
@@ -47,11 +48,23 @@ func (suite *HandlersTest) getWriter(name string) (*multipart.Writer, *bytes.Buf
 	defer file.Close()
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", filepath.Base(path))
+	part, err := writer.CreateFormFile("input", filepath.Base(path))
 	assert.Equal(suite.T(), nil, err)
 	_, err = io.Copy(part, file)
 	assert.Equal(suite.T(), nil, err)
 	return writer, body
+}
+
+func (suite *HandlersTest) getWriterForSpec(name string, writer *multipart.Writer) {
+	path := filepath.Join("..", "..", "test", "testdata", name)
+	file, err := os.Open(path)
+	assert.Equal(suite.T(), nil, err)
+	defer file.Close()
+
+	part, err := writer.CreateFormFile("spec", filepath.Base(path))
+	assert.Equal(suite.T(), nil, err)
+	_, err = io.Copy(part, file)
+	assert.Equal(suite.T(), nil, err)
 }
 
 func (suite *HandlersTest) getErrWriter(name string) (*multipart.Writer, *bytes.Buffer) {
@@ -349,6 +362,43 @@ func (suite *HandlersTest) TestPrintWithXmlFile() {
 
 func (suite *HandlersTest) TestValidatorWithXmlFile() {
 	writer, body := suite.getWriter(testXmlFileName)
+	err := writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/validator", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusOK, recorder.Code)
+}
+
+func (suite *HandlersTest) TestConvertWithXmlAndSpec() {
+	writer, body := suite.getWriter(testXmlFileName)
+	err := writer.WriteField("format", utils.MessageFormatJson)
+	assert.Equal(suite.T(), nil, err)
+	suite.getWriterForSpec(testSpecFileName, writer)
+	err = writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/convert", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusOK, recorder.Code)
+}
+
+func (suite *HandlersTest) TestPrintWithAndSpec() {
+	writer, body := suite.getWriter(testXmlFileName)
+	err := writer.WriteField("format", utils.MessageFormatJson)
+	assert.Equal(suite.T(), nil, err)
+	suite.getWriterForSpec(testSpecFileName, writer)
+	err = writer.Close()
+	assert.Equal(suite.T(), nil, err)
+	recorder, request := suite.makeRequest(http.MethodPost, "/print", body.String())
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	suite.testServer.ServeHTTP(recorder, request)
+	assert.Equal(suite.T(), http.StatusOK, recorder.Code)
+}
+
+func (suite *HandlersTest) TestValidatorWithXmlAndSpec() {
+	writer, body := suite.getWriter(testXmlFileName)
+	suite.getWriterForSpec(testSpecFileName, writer)
 	err := writer.Close()
 	assert.Equal(suite.T(), nil, err)
 	recorder, request := suite.makeRequest(http.MethodPost, "/validator", body.String())

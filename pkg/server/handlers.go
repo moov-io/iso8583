@@ -17,19 +17,42 @@ import (
 	"github.com/moov-io/iso8583/pkg/utils"
 )
 
-func parseInputFromRequest(r *http.Request) (lib.Iso8583Message, error) {
-	src, _, err := r.FormFile("file")
+func parseSpecFromRequest(r *http.Request) (*utils.Specification, error) {
+	specFile, _, err := r.FormFile("spec")
 	if err != nil {
 		return nil, err
 	}
-	defer src.Close()
+	defer specFile.Close()
+
+	var spec bytes.Buffer
+	if _, err = io.Copy(&spec, specFile); err != nil {
+		return nil, err
+	}
+	return lib.NewSpecificationWithJson(spec.Bytes())
+}
+
+func parseInputFromRequest(r *http.Request) (lib.Iso8583Message, error) {
+	inputFile, _, err := r.FormFile("input")
+	if err != nil {
+		return nil, err
+	}
+	defer inputFile.Close()
 
 	var input bytes.Buffer
-	if _, err = io.Copy(&input, src); err != nil {
+	if _, err = io.Copy(&input, inputFile); err != nil {
 		return nil, err
 	}
 
-	message, _ := lib.NewISO8583Message(&utils.ISO8583DataElementsVer1987)
+	var spec *utils.Specification
+	spec, err = parseSpecFromRequest(r)
+	if err != nil {
+		spec = &utils.ISO8583DataElementsVer1987
+	}
+	message, err := lib.NewISO8583Message(spec)
+	if err != nil {
+		return nil, err
+	}
+
 	data := input.Bytes()
 	messageFormat := utils.MessageFormat(data)
 	switch messageFormat {
