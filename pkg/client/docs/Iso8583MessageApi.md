@@ -35,7 +35,8 @@ Optional parameters are passed through a pointer to a ConvertOpts struct
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **format** | **optional.String**| converting message type | [default to json]
- **file** | **optional.Interface of *os.File****optional.*os.File**| iso8583 message to upload | 
+ **input** | **optional.Interface of *os.File****optional.*os.File**| iso8583 message file | 
+ **spec** | **optional.Interface of *os.File****optional.*os.File**| iso8583 message specification | 
 
 ### Return type
 
@@ -109,7 +110,8 @@ Optional parameters are passed through a pointer to a PrintOpts struct
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **format** | **optional.String**| print iso8583 type | [default to json]
- **file** | **optional.Interface of *os.File****optional.*os.File**| iso8583 message to upload | 
+ **input** | **optional.Interface of *os.File****optional.*os.File**| iso8583 message file | 
+ **spec** | **optional.Interface of *os.File****optional.*os.File**| iso8583 message specification | 
 
 ### Return type
 
@@ -152,7 +154,8 @@ Optional parameters are passed through a pointer to a ValidatorOpts struct
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **file** | **optional.Interface of *os.File****optional.*os.File**| iso8583 message to upload | 
+ **input** | **optional.Interface of *os.File****optional.*os.File**| iso8583 message file | 
+ **spec** | **optional.Interface of *os.File****optional.*os.File**| iso8583 message specification | 
 
 ### Return type
 

@@ -29,7 +29,8 @@ type Iso8583MessageApiService service
 // ConvertOpts Optional parameters for the method 'Convert'
 type ConvertOpts struct {
 	Format optional.String
-	File   optional.Interface
+	Input  optional.Interface
+	Spec   optional.Interface
 }
 
 /*
@@ -38,7 +39,8 @@ Convert from original iso8583 message to new iso8583 message
  * @param ctx _context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  * @param optional nil or *ConvertOpts - Optional Parameters:
  * @param "Format" (optional.String) -  converting message type
- * @param "File" (optional.Interface of *os.File) -  iso8583 message to upload
+ * @param "Input" (optional.Interface of *os.File) -  iso8583 message file
+ * @param "Spec" (optional.Interface of *os.File) -  iso8583 message specification
 @return *os.File
 */
 func (a *Iso8583MessageApiService) Convert(ctx _context.Context, localVarOptionals *ConvertOpts) (*os.File, *_nethttp.Response, error) {
@@ -77,13 +79,28 @@ func (a *Iso8583MessageApiService) Convert(ctx _context.Context, localVarOptiona
 	if localVarOptionals != nil && localVarOptionals.Format.IsSet() {
 		localVarFormParams.Add("format", parameterToString(localVarOptionals.Format.Value(), ""))
 	}
-	localVarFormFileName = "file"
+	localVarFormFileName = "input"
 	var localVarFile *os.File
-	if localVarOptionals != nil && localVarOptionals.File.IsSet() {
+	if localVarOptionals != nil && localVarOptionals.Input.IsSet() {
 		localVarFileOk := false
-		localVarFile, localVarFileOk = localVarOptionals.File.Value().(*os.File)
+		localVarFile, localVarFileOk = localVarOptionals.Input.Value().(*os.File)
 		if !localVarFileOk {
-			return localVarReturnValue, nil, reportError("file should be *os.File")
+			return localVarReturnValue, nil, reportError("input should be *os.File")
+		}
+	}
+	if localVarFile != nil {
+		fbs, _ := _ioutil.ReadAll(localVarFile)
+		localVarFileBytes = fbs
+		localVarFileName = localVarFile.Name()
+		localVarFile.Close()
+	}
+	localVarFormFileName = "spec"
+	var localVarFile *os.File
+	if localVarOptionals != nil && localVarOptionals.Spec.IsSet() {
+		localVarFileOk := false
+		localVarFile, localVarFileOk = localVarOptionals.Spec.Value().(*os.File)
+		if !localVarFileOk {
+			return localVarReturnValue, nil, reportError("spec should be *os.File")
 		}
 	}
 	if localVarFile != nil {
@@ -244,7 +261,8 @@ func (a *Iso8583MessageApiService) Health(ctx _context.Context) (string, *_netht
 // PrintOpts Optional parameters for the method 'Print'
 type PrintOpts struct {
 	Format optional.String
-	File   optional.Interface
+	Input  optional.Interface
+	Spec   optional.Interface
 }
 
 /*
@@ -253,7 +271,8 @@ Print iso8583 message with requested format.
  * @param ctx _context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  * @param optional nil or *PrintOpts - Optional Parameters:
  * @param "Format" (optional.String) -  print iso8583 type
- * @param "File" (optional.Interface of *os.File) -  iso8583 message to upload
+ * @param "Input" (optional.Interface of *os.File) -  iso8583 message file
+ * @param "Spec" (optional.Interface of *os.File) -  iso8583 message specification
 @return *os.File
 */
 func (a *Iso8583MessageApiService) Print(ctx _context.Context, localVarOptionals *PrintOpts) (*os.File, *_nethttp.Response, error) {
@@ -292,13 +311,28 @@ func (a *Iso8583MessageApiService) Print(ctx _context.Context, localVarOptionals
 	if localVarOptionals != nil && localVarOptionals.Format.IsSet() {
 		localVarFormParams.Add("format", parameterToString(localVarOptionals.Format.Value(), ""))
 	}
-	localVarFormFileName = "file"
+	localVarFormFileName = "input"
 	var localVarFile *os.File
-	if localVarOptionals != nil && localVarOptionals.File.IsSet() {
+	if localVarOptionals != nil && localVarOptionals.Input.IsSet() {
 		localVarFileOk := false
-		localVarFile, localVarFileOk = localVarOptionals.File.Value().(*os.File)
+		localVarFile, localVarFileOk = localVarOptionals.Input.Value().(*os.File)
 		if !localVarFileOk {
-			return localVarReturnValue, nil, reportError("file should be *os.File")
+			return localVarReturnValue, nil, reportError("input should be *os.File")
+		}
+	}
+	if localVarFile != nil {
+		fbs, _ := _ioutil.ReadAll(localVarFile)
+		localVarFileBytes = fbs
+		localVarFileName = localVarFile.Name()
+		localVarFile.Close()
+	}
+	localVarFormFileName = "spec"
+	var localVarFile *os.File
+	if localVarOptionals != nil && localVarOptionals.Spec.IsSet() {
+		localVarFileOk := false
+		localVarFile, localVarFileOk = localVarOptionals.Spec.Value().(*os.File)
+		if !localVarFileOk {
+			return localVarReturnValue, nil, reportError("spec should be *os.File")
 		}
 	}
 	if localVarFile != nil {
@@ -374,7 +408,8 @@ func (a *Iso8583MessageApiService) Print(ctx _context.Context, localVarOptionals
 
 // ValidatorOpts Optional parameters for the method 'Validator'
 type ValidatorOpts struct {
-	File optional.Interface
+	Input optional.Interface
+	Spec  optional.Interface
 }
 
 /*
@@ -382,7 +417,8 @@ Validator Validate iso8583 message
 Validation iso8583 message.
  * @param ctx _context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  * @param optional nil or *ValidatorOpts - Optional Parameters:
- * @param "File" (optional.Interface of *os.File) -  iso8583 message to upload
+ * @param "Input" (optional.Interface of *os.File) -  iso8583 message file
+ * @param "Spec" (optional.Interface of *os.File) -  iso8583 message specification
 @return string
 */
 func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptionals *ValidatorOpts) (string, *_nethttp.Response, error) {
@@ -418,13 +454,28 @@ func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptio
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
-	localVarFormFileName = "file"
+	localVarFormFileName = "input"
 	var localVarFile *os.File
-	if localVarOptionals != nil && localVarOptionals.File.IsSet() {
+	if localVarOptionals != nil && localVarOptionals.Input.IsSet() {
 		localVarFileOk := false
-		localVarFile, localVarFileOk = localVarOptionals.File.Value().(*os.File)
+		localVarFile, localVarFileOk = localVarOptionals.Input.Value().(*os.File)
 		if !localVarFileOk {
-			return localVarReturnValue, nil, reportError("file should be *os.File")
+			return localVarReturnValue, nil, reportError("input should be *os.File")
+		}
+	}
+	if localVarFile != nil {
+		fbs, _ := _ioutil.ReadAll(localVarFile)
+		localVarFileBytes = fbs
+		localVarFileName = localVarFile.Name()
+		localVarFile.Close()
+	}
+	localVarFormFileName = "spec"
+	var localVarFile *os.File
+	if localVarOptionals != nil && localVarOptionals.Spec.IsSet() {
+		localVarFileOk := false
+		localVarFile, localVarFileOk = localVarOptionals.Spec.Value().(*os.File)
+		if !localVarFileOk {
+			return localVarReturnValue, nil, reportError("spec should be *os.File")
 		}
 	}
 	if localVarFile != nil {
