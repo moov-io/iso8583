@@ -22,17 +22,3 @@ _testmain.go
 *.exe
 *.test
 *.prof
-
-.idea
-.vscode/
-
-coverage.html
-cover.out
-coverage.txt
-misspell*
-staticcheck*
-/lint-project.sh
-bin/
-tmp/
-/cmd/iso8583/output
-api/*.jar
