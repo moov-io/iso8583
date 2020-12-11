@@ -50,8 +50,10 @@ Class | Method | HTTP request | Description
  - [AttributeItem](docs/AttributeItem.md)
  - [Element](docs/Element.md)
  - [Encoding](docs/Encoding.md)
+ - [Error](docs/Error.md)
  - [IsoMessage](docs/IsoMessage.md)
  - [Specification](docs/Specification.md)
+ - [Success](docs/Success.md)
 
 
 ## Documentation For Authorization

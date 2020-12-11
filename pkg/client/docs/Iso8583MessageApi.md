@@ -49,7 +49,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: multipart/form-data
-- **Accept**: application/octet-stream, application/json, application/xml, text/plain
+- **Accept**: application/octet-stream, application/json, application/xml
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
@@ -58,7 +58,7 @@ No authorization required
 
 ## Health
 
-> string Health(ctx, )
+> Success Health(ctx, )
 
 health iso8583 service
 
@@ -70,7 +70,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-**string**
+[**Success**](Success.md)
 
 ### Authorization
 
@@ -79,7 +79,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: text/plain
+- **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
@@ -124,7 +124,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: multipart/form-data
-- **Accept**: application/octet-stream, application/json, application/xml, text/plain
+- **Accept**: application/octet-stream, application/json, application/xml
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
@@ -133,7 +133,7 @@ No authorization required
 
 ## Validator
 
-> string Validator(ctx, optional)
+> Success Validator(ctx, optional)
 
 Validate iso8583 message
 
@@ -159,7 +159,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-**string**
+[**Success**](Success.md)
 
 ### Authorization
 
@@ -168,7 +168,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: multipart/form-data
-- **Accept**: text/plain
+- **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)

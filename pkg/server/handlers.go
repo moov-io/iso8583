@@ -129,7 +129,6 @@ func validator(w http.ResponseWriter, r *http.Request) {
 	}
 
 	outputSuccess(w, "valid file")
-	return
 }
 
 // validator - print file with ascii or json format
@@ -177,7 +176,6 @@ func convert(w http.ResponseWriter, r *http.Request) {
 // health - health check
 func health(w http.ResponseWriter, r *http.Request) {
 	outputSuccess(w, "alive")
-	return
 }
 
 // configure handlers

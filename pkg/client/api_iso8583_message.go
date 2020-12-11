@@ -69,7 +69,7 @@ func (a *Iso8583MessageApiService) Convert(ctx _context.Context, localVarOptiona
 	}
 
 	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"application/octet-stream", "application/json", "application/xml", "text/plain"}
+	localVarHTTPHeaderAccepts := []string{"application/octet-stream", "application/json", "application/xml"}
 
 	// set Accept header
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
@@ -140,7 +140,7 @@ func (a *Iso8583MessageApiService) Convert(ctx _context.Context, localVarOptiona
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 400 {
-			var v string
+			var v Error
 			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
 			if err != nil {
 				newErr.error = err.Error()
@@ -150,7 +150,7 @@ func (a *Iso8583MessageApiService) Convert(ctx _context.Context, localVarOptiona
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 501 {
-			var v string
+			var v Error
 			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
 			if err != nil {
 				newErr.error = err.Error()
@@ -177,16 +177,16 @@ func (a *Iso8583MessageApiService) Convert(ctx _context.Context, localVarOptiona
 Health health iso8583 service
 Check the iso8583 service to check if running
  * @param ctx _context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
-@return string
+@return Success
 */
-func (a *Iso8583MessageApiService) Health(ctx _context.Context) (string, *_nethttp.Response, error) {
+func (a *Iso8583MessageApiService) Health(ctx _context.Context) (Success, *_nethttp.Response, error) {
 	var (
 		localVarHTTPMethod   = _nethttp.MethodGet
 		localVarPostBody     interface{}
 		localVarFormFileName string
 		localVarFileName     string
 		localVarFileBytes    []byte
-		localVarReturnValue  string
+		localVarReturnValue  Success
 	)
 
 	// create path and map variables
@@ -205,7 +205,7 @@ func (a *Iso8583MessageApiService) Health(ctx _context.Context) (string, *_netht
 	}
 
 	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"text/plain"}
+	localVarHTTPHeaderAccepts := []string{"application/json"}
 
 	// set Accept header
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
@@ -234,7 +234,7 @@ func (a *Iso8583MessageApiService) Health(ctx _context.Context) (string, *_netht
 			error: localVarHTTPResponse.Status,
 		}
 		if localVarHTTPResponse.StatusCode == 200 {
-			var v string
+			var v Success
 			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
 			if err != nil {
 				newErr.error = err.Error()
@@ -300,7 +300,7 @@ func (a *Iso8583MessageApiService) Print(ctx _context.Context, localVarOptionals
 	}
 
 	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"application/octet-stream", "application/json", "application/xml", "text/plain"}
+	localVarHTTPHeaderAccepts := []string{"application/octet-stream", "application/json", "application/xml"}
 
 	// set Accept header
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
@@ -371,7 +371,7 @@ func (a *Iso8583MessageApiService) Print(ctx _context.Context, localVarOptionals
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 400 {
-			var v string
+			var v Error
 			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
 			if err != nil {
 				newErr.error = err.Error()
@@ -381,7 +381,7 @@ func (a *Iso8583MessageApiService) Print(ctx _context.Context, localVarOptionals
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 501 {
-			var v string
+			var v Error
 			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
 			if err != nil {
 				newErr.error = err.Error()
@@ -417,16 +417,16 @@ Validation iso8583 message.
  * @param optional nil or *ValidatorOpts - Optional Parameters:
  * @param "Input" (optional.Interface of *os.File) -  iso8583 message file
  * @param "Spec" (optional.Interface of *os.File) -  iso8583 message specification
-@return string
+@return Success
 */
-func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptionals *ValidatorOpts) (string, *_nethttp.Response, error) {
+func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptionals *ValidatorOpts) (Success, *_nethttp.Response, error) {
 	var (
 		localVarHTTPMethod   = _nethttp.MethodPost
 		localVarPostBody     interface{}
 		localVarFormFileName string
 		localVarFileName     string
 		localVarFileBytes    []byte
-		localVarReturnValue  string
+		localVarReturnValue  Success
 	)
 
 	// create path and map variables
@@ -445,7 +445,7 @@ func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptio
 	}
 
 	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"text/plain"}
+	localVarHTTPHeaderAccepts := []string{"application/json"}
 
 	// set Accept header
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
@@ -503,7 +503,7 @@ func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptio
 			error: localVarHTTPResponse.Status,
 		}
 		if localVarHTTPResponse.StatusCode == 200 {
-			var v string
+			var v Success
 			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
 			if err != nil {
 				newErr.error = err.Error()
@@ -513,7 +513,7 @@ func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptio
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 400 {
-			var v string
+			var v Error
 			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
 			if err != nil {
 				newErr.error = err.Error()
@@ -523,7 +523,7 @@ func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptio
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 501 {
-			var v string
+			var v Error
 			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
 			if err != nil {
 				newErr.error = err.Error()
