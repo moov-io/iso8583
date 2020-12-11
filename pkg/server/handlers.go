@@ -17,6 +17,22 @@ import (
 	"github.com/moov-io/iso8583/pkg/utils"
 )
 
+func outputError(w http.ResponseWriter, code int, err error) {
+	w.WriteHeader(code)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": err.Error(),
+	})
+}
+
+func outputSuccess(w http.ResponseWriter, output string) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": output,
+	})
+}
+
 func parseSpecFromRequest(r *http.Request) (*utils.Specification, error) {
 	specFile, _, err := r.FormFile("spec")
 	if err != nil {
@@ -102,31 +118,32 @@ func outputBufferToWriter(w http.ResponseWriter, buf []byte, format string) {
 func validator(w http.ResponseWriter, r *http.Request) {
 	message, err := parseInputFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		outputError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	err = message.Validate()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotImplemented)
+		outputError(w, http.StatusNotImplemented, err)
 		return
 	}
 
-	outputBufferToWriter(w, []byte("valid file"), utils.MessageFormatIso8583)
+	outputSuccess(w, "valid file")
+	return
 }
 
 // validator - print file with ascii or json format
 func print(w http.ResponseWriter, r *http.Request) {
 	message, err := parseInputFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		outputError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	format := r.FormValue("format")
 	output, err := messageToBuf(format, message)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotImplemented)
+		outputError(w, http.StatusNotImplemented, err)
 		return
 	}
 
@@ -137,7 +154,7 @@ func print(w http.ResponseWriter, r *http.Request) {
 func convert(w http.ResponseWriter, r *http.Request) {
 	message, err := parseInputFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		outputError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -145,7 +162,7 @@ func convert(w http.ResponseWriter, r *http.Request) {
 	filename := "converted_file"
 	output, err := messageToBuf(format, message)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotImplemented)
+		outputError(w, http.StatusNotImplemented, err)
 		return
 	}
 
@@ -159,11 +176,8 @@ func convert(w http.ResponseWriter, r *http.Request) {
 
 // health - health check
 func health(w http.ResponseWriter, r *http.Request) {
-	data := map[string]bool{"health": true}
-	buf, err := json.Marshal(data)
-	if err == nil {
-		outputBufferToWriter(w, buf, utils.MessageFormatJson)
-	}
+	outputSuccess(w, "alive")
+	return
 }
 
 // configure handlers

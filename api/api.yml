@@ -31,10 +31,9 @@ paths:
         '200':
           description: successful operation
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                example: 'health: true'
+                $ref: '#/components/schemas/Success'
   /print:
     post:
       tags: ['iso8583 message']
@@ -501,15 +500,15 @@ paths:
         '400':
           description: bad request
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/Error'
         '501':
           description: failed operation
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/Error'
   /validator:
     post:
       tags: ['iso8583 message']
@@ -952,22 +951,21 @@ paths:
         '200':
           description: successful operation
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                example: valid file
+                $ref: '#/components/schemas/Success'
         '400':
           description: bad request
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/Error'
         '501':
           description: failed operation
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/Error'
   /convert:
     post:
       tags: ['iso8583 message']
@@ -1434,17 +1432,15 @@ paths:
         '400':
           description: bad request
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                example: bad request
+                $ref: '#/components/schemas/Error'
         '501':
           description: failed operation
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                example: failed message convert
+                $ref: '#/components/schemas/Error'
 
 components:
   responses:
@@ -1569,4 +1565,12 @@ components:
         describe:
           type: string
         description:
+          type: string
+    Error:
+      properties:
+        error:
+          type: string
+    Success:
+      properties:
+        status:
           type: string
