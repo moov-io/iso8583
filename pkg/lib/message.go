@@ -92,13 +92,11 @@ func NewSpecificationWithAttributes(buf []byte, encoding *utils.EncodingDefiniti
 // message instance
 // isoMessage is structure for ISO 8583 message encode and decode
 type isoMessage struct {
-	mti              *Element
-	bitmap           *Element
-	elements         *dataElements
-	spec             *utils.Specification
-	indexes          []int
-	mandatoryIndexes []int
-	optionalIndexes  []int
+	mti      *Element
+	bitmap   *Element
+	elements *dataElements
+	spec     *utils.Specification
+	indexes  []int
 }
 
 // isoMessage is structure for marshaling and un-marshaling
