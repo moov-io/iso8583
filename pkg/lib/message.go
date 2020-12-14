@@ -9,7 +9,11 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"reflect"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/moov-io/iso8583/pkg/utils"
 )
@@ -88,11 +92,13 @@ func NewSpecificationWithAttributes(buf []byte, encoding *utils.EncodingDefiniti
 // message instance
 // isoMessage is structure for ISO 8583 message encode and decode
 type isoMessage struct {
-	mti      *Element
-	bitmap   *Element
-	elements *dataElements
-	spec     *utils.Specification
-	indexes  []int
+	mti              *Element
+	bitmap           *Element
+	elements         *dataElements
+	spec             *utils.Specification
+	indexes          []int
+	mandatoryIndexes []int
+	optionalIndexes  []int
 }
 
 // isoMessage is structure for marshaling and un-marshaling
@@ -123,6 +129,12 @@ func (m *isoMessage) Validate() error {
 	m.generateIndexes()
 	if !reflect.DeepEqual(m.elements.Keys(), m.indexes) {
 		return errors.New(utils.ErrMisMatchElementsBitmap)
+	}
+
+	if mType, exist := m.isValidMessageType(); exist {
+		if err := m.validateMessageField(mType); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -325,4 +337,61 @@ func (m *isoMessage) createElement(index, start int, raw []byte) (int, error) {
 	m.elements.elements[index] = elm
 
 	return read, nil
+}
+
+func (m *isoMessage) isValidMessageType() (*utils.MessageType, bool) {
+	if m.spec.MessageTypes != nil {
+		types := *m.spec.MessageTypes
+		mType, exist := types[m.mti.String()]
+		return &mType, exist
+	}
+	return nil, false
+}
+
+func (m *isoMessage) validateMessageField(messageType *utils.MessageType) error {
+	mandatory, _ := getBinaryFromHex(messageType.MandatoryHexMask)
+	optional, _ := getBinaryFromHex(messageType.OptionalHexMask)
+	mandatoryIndexes := utils.BitmapToIndexArray(mandatory, 0)
+	optionalIndexes := utils.BitmapToIndexArray(optional, 0)
+
+	sort.Ints(mandatoryIndexes)
+	sort.Ints(optionalIndexes)
+
+	for _, index := range m.indexes {
+		if !contains(mandatoryIndexes, index) && !contains(optionalIndexes, index) {
+			return errors.New("exist unexpected field")
+		}
+	}
+
+	for _, index := range mandatoryIndexes {
+		if !contains(m.indexes, index) {
+			return errors.New("don't exist mandatory field")
+		}
+	}
+
+	return nil
+}
+
+func contains(indexes []int, index int) bool {
+	for _, v := range indexes {
+		if v == index {
+			return true
+		}
+	}
+	return false
+}
+
+func getBinaryFromHex(hex string) (string, error) {
+	var buffer bytes.Buffer
+	chars := strings.Split(hex, "")
+	for _, _hex := range chars {
+		hexNumber, err := strconv.ParseUint(_hex, 16, 4)
+		if err != nil {
+			return "", err
+		}
+		binaryNumber := strconv.FormatUint(hexNumber, 2)
+		formatStr := "%0" + strconv.Itoa(4) + "s"
+		buffer.Write([]byte(fmt.Sprintf(formatStr, binaryNumber)))
+	}
+	return buffer.String(), nil
 }
