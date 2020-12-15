@@ -65,11 +65,18 @@ func (s Attribute) Parse() (*ElementType, error) {
 }
 
 type Specification struct {
-	Elements *Attributes         `json:"elements,omitempty"`
-	Encoding *EncodingDefinition `json:"encoding,omitempty"`
+	Elements     *Attributes         `json:"elements,omitempty"`
+	Encoding     *EncodingDefinition `json:"encoding,omitempty"`
+	MessageTypes *MessageTypes       `json:"message_types,omitempty"`
+}
+
+type MessageType struct {
+	MandatoryHexMask string `json:"mandatory_hex_mask,omitempty"`
+	OptionalHexMask  string `json:"optional_hex_mask,omitempty"`
 }
 
 type Attributes map[int]Attribute
+type MessageTypes map[string]MessageType
 
 func (s Attributes) Keys() (keys []int) {
 	for k := range s {

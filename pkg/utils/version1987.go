@@ -16,6 +16,28 @@ var (
 	}
 	ISO8583DataElementsVer1987 = Specification{
 		Encoding: DefaultMessageEncoding,
+		MessageTypes: &MessageTypes{
+			"0100": MessageType{
+				MandatoryHexMask: "72300000000000000000000000000000",
+				OptionalHexMask:  "000C0661A9C000000000000000000000",
+			},
+			"0110": MessageType{
+				MandatoryHexMask: "72300001020000000000000000000000",
+				OptionalHexMask:  "0000400084C000400000000000000000",
+			},
+			"0420": MessageType{
+				MandatoryHexMask: "72300081000000000000000000000000",
+				OptionalHexMask:  "0000000080C000400000000000000000",
+			},
+			"0440": MessageType{
+				MandatoryHexMask: "72300081020000000000000000000000",
+				OptionalHexMask:  "0000000080C000400000000000000000",
+			},
+			"0450": MessageType{
+				MandatoryHexMask: "72340000000000000000000000000000",
+				OptionalHexMask:  "00000000000000000000000000000000",
+			},
+		},
 		Elements: &Attributes{
 			1:   {"b 64", "Second Bitmap"},
 			2:   {"n..19", "Primary account number (PAN)"},

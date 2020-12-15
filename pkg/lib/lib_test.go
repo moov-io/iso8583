@@ -751,6 +751,7 @@ func TestISO8583MessageWithValidSamples(t *testing.T) {
 		"network_management_message.dat",
 		"network_management_message_response.dat",
 		"network_management_message_with_track.dat",
+		"iso_reversal_message_advice.dat",
 	}
 
 	for _, sample := range samples {
@@ -774,6 +775,8 @@ func TestISO8583MessageWithValidSamples(t *testing.T) {
 	samples = []string{
 		"iso_reversal_message_error_date.dat",
 		"network_management_message_with_error_track.dat",
+		"iso_reversal_message_advice_missing_field.dat",
+		"iso_reversal_message_advice_unexpected_field.dat",
 	}
 	for _, sample := range samples {
 		message, err := NewISO8583Message(&utils.ISO8583DataElementsVer1987)
