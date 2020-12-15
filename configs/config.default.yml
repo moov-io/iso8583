@@ -1,0 +1,21 @@
+ISO8583:
+  Servers:
+    Public:
+      Bind:
+        Address: ":8208"
+    Admin:
+      Bind:
+        Address: ":8209"
+  Database:
+    DatabaseName: "iso8583"
+    SQLLite:
+      Path: ":memory:"
+  Gateway:
+    # Examples of how to set up this config.
+    # keys:
+    #   http:
+    #    urls:
+    #    - http://tumbler:8204/.well-known/jwks.json
+    #   file:
+    #     paths: 
+    #     - ./configs/gateway-jwks-sig-pub.json

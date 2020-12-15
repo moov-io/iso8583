@@ -126,3 +126,9 @@ func CheckAvailableEncoding(eType string, encoding string) bool {
 	}
 	return false
 }
+
+const (
+	MessageFormatJson    = "json"
+	MessageFormatXml     = "xml"
+	MessageFormatIso8583 = "iso8583"
+)

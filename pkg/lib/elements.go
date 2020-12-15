@@ -181,6 +181,9 @@ func (e *dataElements) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement
 		dataElement.setType(_type)
 		dataElement.Value = make([]byte, len(element.Text))
 		copy(dataElement.Value, element.Text)
+		if !dataElement.Fixed && len(dataElement.Value) > 0 {
+			dataElement.DataLength = len(dataElement.Value)
+		}
 		e.elements[element.Number] = &dataElement
 	}
 

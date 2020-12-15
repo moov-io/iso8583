@@ -17,8 +17,8 @@ import (
 
 func TestElementJsonXmlConvert(t *testing.T) {
 	jsonStr := []byte(`{
-		"3": 123456,
-		"11": 123456,
+		"3": "123456",
+		"11": "123456",
 		"38": "abcdef"
 	}`)
 	xmlStr := []byte(`<DataElements>
@@ -118,8 +118,8 @@ func TestIso8583Message(t *testing.T) {
 		"bitmap": "10100000001000000000000000000000000001",
 		"elements": {
 			"1": "00000000000000000000000000000000000",
-			"11": 123456,
-			"3": 123456,
+			"11": "123456",
+			"3": "123456",
 			"38": "abcdef"
 		}
 	}

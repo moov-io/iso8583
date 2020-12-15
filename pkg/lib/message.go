@@ -101,9 +101,9 @@ type isoMessage struct {
 
 // isoMessage is structure for marshaling and un-marshaling
 type messageJSON struct {
-	MTI      *Element      `xml:"mti,omitempty" json:"mti,omitempty" yaml:"mti,omitempty"`
-	Bitmap   *Element      `xml:"bitmap,omitempty" json:"bitmap,omitempty" yaml:"bitmap,omitempty"`
-	Elements *dataElements `xml:"elements,omitempty" json:"elements,omitempty" yaml:"elements,omitempty"`
+	MTI      *Element      `xml:"MTI,omitempty" json:"mti,omitempty"`
+	Bitmap   *Element      `xml:"Bitmap,omitempty" json:"bitmap,omitempty"`
+	Elements *dataElements `xml:"DataElements,omitempty" json:"elements,omitempty"`
 }
 
 // Validate check validation of field
