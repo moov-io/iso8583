@@ -14,7 +14,8 @@ Docs: [API Endpoints](https://moov-io.github.io/iso8583/api/)
 
 ### Docker
 
-We publish a [public Docker image `moov/iso8583`](https://hub.docker.com/r/moov/iso8583/tags) on Docker Hub with iso8583 tagged release of Wire. No configuration is required to serve on `:8080`.
+We publish a [public Docker image `moov/iso8583`](https://hub.docker.com/r/moov/iso8583/tags) on Docker Hub with tagged release of the package. No configuration is required to serve on `:8080`.
+
 
 Start the Docker image:
 ```
