@@ -274,7 +274,7 @@ func initRootCmd() {
 	Print.Flags().String("format", "iso8583", "print format")
 
 	rootCmd.SilenceUsage = true
-	rootCmd.PersistentFlags().StringVar(&messageFile, "input", "", "iso8583 message file (the file type is iso8583 raw message, xml, json. default is $PWD/iso8583_message.dat)")
+	rootCmd.PersistentFlags().StringVar(&messageFile, "input", "", "iso8583 message (the message types are iso8583 raw message, xml, json. default is $PWD/iso8583_message.dat)")
 	rootCmd.PersistentFlags().StringVar(&specificationFile, "spec", "", "specification file (default is $PWD/iso8583_specification.json)")
 	rootCmd.AddCommand(WebCmd)
 	rootCmd.AddCommand(Convert)
