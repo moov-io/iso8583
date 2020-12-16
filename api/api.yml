@@ -56,7 +56,7 @@ paths:
                     - iso8583
                 input:
                   type: string
-                  description: iso8583 message file
+                  description: iso8583 message
                   format: binary
                   example:
                     mti: '0400'
@@ -82,7 +82,7 @@ paths:
                       '90': 020000331609080645190000000020000000000000
                 spec:
                   type: string
-                  description: iso8583 message specification
+                  description: message configuration file
                   format: binary
                   example:
                     elements:
@@ -522,7 +522,7 @@ paths:
               properties:
                 input:
                   type: string
-                  description: iso8583 message file
+                  description: iso8583 message
                   format: binary
                   example:
                     mti: '0400'
@@ -548,7 +548,7 @@ paths:
                       '90': 020000331609080645190000000020000000000000
                 spec:
                   type: string
-                  description: iso8583 message specification
+                  description: message configuration file
                   format: binary
                   example:
                     elements:
@@ -988,7 +988,7 @@ paths:
                     - iso8583
                 input:
                   type: string
-                  description: iso8583 message file
+                  description: iso8583 message
                   format: binary
                   example:
                     mti: '0400'
@@ -1014,7 +1014,7 @@ paths:
                       '90': 020000331609080645190000000020000000000000
                 spec:
                   type: string
-                  description: iso8583 message specification
+                  description: message configuration file
                   format: binary
                   example:
                     elements:

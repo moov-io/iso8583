@@ -39,8 +39,8 @@ Convert from original iso8583 message to new iso8583 message
  * @param ctx _context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  * @param optional nil or *ConvertOpts - Optional Parameters:
  * @param "Format" (optional.String) -  converting message type
- * @param "Input" (optional.Interface of *os.File) -  iso8583 message file
- * @param "Spec" (optional.Interface of *os.File) -  iso8583 message specification
+ * @param "Input" (optional.Interface of *os.File) -  iso8583 message
+ * @param "Spec" (optional.Interface of *os.File) -  message configuration file
 @return *os.File
 */
 func (a *Iso8583MessageApiService) Convert(ctx _context.Context, localVarOptionals *ConvertOpts) (*os.File, *_nethttp.Response, error) {
@@ -270,8 +270,8 @@ Print iso8583 message with requested format.
  * @param ctx _context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  * @param optional nil or *PrintOpts - Optional Parameters:
  * @param "Format" (optional.String) -  print iso8583 type
- * @param "Input" (optional.Interface of *os.File) -  iso8583 message file
- * @param "Spec" (optional.Interface of *os.File) -  iso8583 message specification
+ * @param "Input" (optional.Interface of *os.File) -  iso8583 message
+ * @param "Spec" (optional.Interface of *os.File) -  message configuration file
 @return *os.File
 */
 func (a *Iso8583MessageApiService) Print(ctx _context.Context, localVarOptionals *PrintOpts) (*os.File, *_nethttp.Response, error) {
@@ -415,8 +415,8 @@ Validator Validate iso8583 message
 Validation iso8583 message.
  * @param ctx _context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  * @param optional nil or *ValidatorOpts - Optional Parameters:
- * @param "Input" (optional.Interface of *os.File) -  iso8583 message file
- * @param "Spec" (optional.Interface of *os.File) -  iso8583 message specification
+ * @param "Input" (optional.Interface of *os.File) -  iso8583 message
+ * @param "Spec" (optional.Interface of *os.File) -  message configuration file
 @return Success
 */
 func (a *Iso8583MessageApiService) Validator(ctx _context.Context, localVarOptionals *ValidatorOpts) (Success, *_nethttp.Response, error) {
