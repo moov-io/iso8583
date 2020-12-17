@@ -1,5 +1,7 @@
 package iso8583
 
+import "strconv"
+
 type Field interface {
 	String() string
 	Bytes() []byte
@@ -23,4 +25,20 @@ func NewField(id int, val []byte) Field {
 		ID:  id,
 		val: val,
 	}
+}
+
+type StringField struct {
+	Value string
+}
+
+func (f *StringField) Set(b []byte) {
+	f.Value = string(b)
+}
+
+type NumericField struct {
+	Value int
+}
+
+func (f *NumericField) Set(b []byte) {
+	f.Value, _ = strconv.Atoi(string(b))
 }

@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/moov-io/iso8583/spec"
 	"github.com/moov-io/iso8583/utils"
@@ -13,6 +14,11 @@ type Message struct {
 
 	// let's keep it 8 bytes for now
 	bitmap *utils.Bitmap
+	Data   interface{}
+}
+
+type Setter interface {
+	Set(b []byte)
 }
 
 func NewMessage(spec *spec.MessageSpec) *Message {
@@ -148,10 +154,47 @@ func (m *Message) Unpack(src []byte) error {
 			if err != nil {
 				return err
 			}
+
+			m.setDataFieldValue(i, data)
 			m.BinaryField(i, data)
 			off += read
 		}
 	}
 
 	return nil
+}
+
+func (m *Message) setDataFieldValue(i int, data []byte) {
+	if m.Data == nil {
+		return
+	}
+
+	// get the struct
+	str := reflect.ValueOf(m.Data).Elem()
+
+	// get the struct field
+	field := str.FieldByName(fmt.Sprintf("F%d", i))
+	if field == (reflect.Value{}) {
+		return
+	}
+
+	// we should check if it's nil
+	// if it's not nil, let's create a field
+	// with a corresponding type
+
+	// get the type of the field
+	fieldType := field.Type().Elem()
+
+	// create new field
+	fieldVal := reflect.New(fieldType)
+	field.Addr().Elem().Set(fieldVal)
+
+	// setting value may happen after we add created field to the struct
+	// as we work with pointers
+
+	// get field as a Setter
+	setterField := fieldVal.Interface().(Setter)
+
+	// finally set value to the field
+	setterField.Set(data)
 }

@@ -20,19 +20,19 @@ Here is how you can do this:
 ```go
 spec87 := &spec.MessageSpec{
     Fields: map[int]spec.Packer{
-        0: spec.NewField("Message Type Indicator", encoding.ASCII, prefixer.ASCII.Fixed(4)),
+        0: spec.NewField(4, "Message Type Indicator", encoding.ASCII, prefixer.ASCII.Fixed),
 
         // Bitmap, 16 bytes, fixed
-        1: spec.Bitmap("Bitmap", encoding.Hex, prefixer.Hex.Fixed(16)),
+        1: spec.Bitmap(16, "Bitmap", encoding.Hex, prefixer.Hex.Fixed),
 
         // LLVAR19
-        2: spec.NewField("Primary Account Number", encoding.ASCII, prefixer.ASCII.LL(19)),
+        2: spec.NewField(19, "Primary Account Number", encoding.ASCII, prefixer.ASCII.LL),
 
         // 6 bytes, fixed
-        3: spec.NewField("Processing Code", encoding.ASCII, prefixer.ASCII.Fixed(6)),
+        3: spec.NewField(6, "Processing Code", encoding.ASCII, prefixer.ASCII.Fixed),
 
         // 12 bytes, fixed
-        4: spec.NewField("Transaction Amount", encoding.ASCII, prefixer.ASCII.Fixed(12)),
+        4: spec.NewField(12, "Transaction Amount", encoding.ASCII, prefixer.ASCII.Fixed),
 	
 	// ...
     },
@@ -69,6 +69,7 @@ message.Unpack(binaryData)
 message.GetMTI() // MTI: 0100
 message.GetString(2) // Card number: 4242424242424242
 message.GetString(3) // Processing code: 123456
+
 // ...
 ```
 
