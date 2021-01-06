@@ -26,7 +26,6 @@ type Setter interface {
 
 func NewMessage(spec *MessageSpec) *Message {
 	fields := spec.CreateMessageFields()
-	fmt.Println(fields)
 
 	return &Message{
 		Fields:    fields,
