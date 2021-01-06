@@ -105,14 +105,13 @@ func TestMessage(t *testing.T) {
 		}
 
 		message := NewMessage(spec)
+		message.MTI("0100")
 		err := message.SetData(&ISO87Data{
 			F2: field.NewStringValue("4242424242424242"),
 			F3: field.NewNumericValue(123456),
 			F4: field.NewStringValue("100"),
 		})
 		require.NoError(t, err)
-
-		message.MTI("0100")
 
 		rawMsg, err := message.Pack()
 
