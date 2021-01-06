@@ -51,13 +51,12 @@ func (m *Message) SetData(data interface{}) error {
 		return nil
 	}
 
-	// check that data is a struct
-	// for all struct fields with name FN
-	// set spec to the field
-	// use data field instead of empty field from spec
-
 	// get the struct
 	str := reflect.ValueOf(data).Elem()
+
+	if reflect.TypeOf(str).Kind() != reflect.Struct {
+		return fmt.Errorf("failed to set data as struct is expected, got: %s", reflect.TypeOf(str).Kind())
+	}
 
 	for i, fl := range m.Fields {
 		fieldName := fmt.Sprintf("F%d", i)
@@ -73,15 +72,13 @@ func (m *Message) SetData(data interface{}) error {
 			return fmt.Errorf("field %s type: %v does not match the type in the spec: %v", fieldName, dataField.Type(), reflect.TypeOf(fl))
 		}
 
-		// reflect.ValueOf(fl).Addr().Elem().Set(dataField)
+		// set data field spec for the message spec field
+		specField := m.Fields[i]
+		df := dataField.Interface().(field.Field)
+		df.SetSpec(specField.Spec())
 
-		// dataField.Addr().Elem().Set(reflect.ValueOf(fl))
-		// fieldType := reflect.TypeOf(specField).Elem()
-
-		// create new field and convert it to field.Field interface
-		newFl := dataField.Interface().(field.Field)
-		newFl.SetSpec(fl.Spec())
-		m.Fields[i] = newFl
+		// use data field as a message field
+		m.Fields[i] = df
 		m.fieldsMap[i] = struct{}{}
 	}
 
@@ -222,7 +219,6 @@ func (m *Message) Unpack(src []byte) error {
 			if err != nil {
 				return err
 			}
-			// m.BinaryField(i, data)
 			off += read
 		}
 	}
@@ -236,7 +232,6 @@ func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) error {
 	}
 
 	// get the struct
-	// check if it's a struct
 	str := reflect.ValueOf(m.data).Elem()
 
 	fieldName := fmt.Sprintf("F%d", i)
