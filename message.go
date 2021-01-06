@@ -136,11 +136,12 @@ func (m *Message) Unpack(src []byte) error {
 
 	off = read
 
+	// hm... how to tell that this field was set?
+	m.fieldsMap[1] = struct{}{}
 	data, read, err = m.Fields[1].Unpack(src[off:])
 	if err != nil {
 		return err
 	}
-	m.BinaryField(1, data)
 	m.bitmap = utils.NewBitmapFromData(data)
 	off += read
 
@@ -151,7 +152,8 @@ func (m *Message) Unpack(src []byte) error {
 				return fmt.Errorf("Failed to unpack field %d. No Specification found for the field", i)
 			}
 
-			data, read, err = fl.Unpack(src[off:])
+			m.fieldsMap[i] = struct{}{}
+			_, read, err = fl.Unpack(src[off:])
 			if err != nil {
 				return err
 			}
@@ -160,7 +162,7 @@ func (m *Message) Unpack(src []byte) error {
 			if err != nil {
 				return err
 			}
-			m.BinaryField(i, data)
+			// m.BinaryField(i, data)
 			off += read
 		}
 	}

@@ -72,5 +72,7 @@ func (f *StringField) Unpack(data []byte) ([]byte, int, error) {
 		raw = f.spec.Pad.Unpad(raw)
 	}
 
+	f.Value = string(raw)
+
 	return raw, dataLen + f.spec.Pref.Length(), nil
 }

@@ -73,5 +73,7 @@ func (f *NumericField) Unpack(data []byte) ([]byte, int, error) {
 		raw = f.spec.Pad.Unpad(raw)
 	}
 
+	f.Value, _ = strconv.Atoi(string(raw))
+
 	return raw, dataLen + f.spec.Pref.Length(), nil
 }
