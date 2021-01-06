@@ -18,6 +18,12 @@ func NewNumericField(spec *Spec) Field {
 	}
 }
 
+func NewNumericValue(val int) *NumericField {
+	return &NumericField{
+		Value: val,
+	}
+}
+
 func (f *NumericField) Spec() *Spec {
 	return f.spec
 }

@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/moov-io/iso8583/field"
@@ -43,5 +44,32 @@ func TestMessageData(t *testing.T) {
 		require.Equal(t, "4242424242424242", data.F2.Value)
 		require.Equal(t, 123456, data.F3.Value)
 		require.Equal(t, "100", data.F4.Value)
+	})
+
+	t.Run("Test packing with typed fields", func(t *testing.T) {
+		type ISO87Data struct {
+			F2 *field.StringField
+			F3 *field.NumericField
+			F4 *field.StringField
+		}
+
+		message := NewMessage(Spec87)
+		err := message.SetData(&ISO87Data{
+			F2: field.NewStringValue("4242424242424242"),
+			F3: field.NewNumericValue(123456),
+			F4: field.NewStringValue("100"),
+		})
+		require.NoError(t, err)
+
+		fmt.Println(message.Fields)
+
+		message.MTI("0100")
+
+		rawMsg, err := message.Pack()
+
+		require.NoError(t, err)
+
+		wantMsg := []byte("01007000000000000000164242424242424242123456000000000100")
+		require.Equal(t, wantMsg, rawMsg)
 	})
 }

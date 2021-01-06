@@ -30,6 +30,53 @@ func NewMessage(spec *MessageSpec) *Message {
 	}
 }
 
+func NewMessageWithData(spec *MessageSpec, data interface{}) *Message {
+	fields := spec.CreateMessageFields()
+
+	return &Message{
+		Fields:    fields,
+		spec:      spec,
+		fieldsMap: map[int]struct{}{},
+	}
+}
+
+func (m *Message) SetData(data interface{}) error {
+	// check that data is a struct
+	// for all struct fields with name FN
+	// set spec to the field
+	// use data field instead of empty field from spec
+
+	// get the struct
+	str := reflect.ValueOf(data).Elem()
+
+	for i, fl := range m.Fields {
+		fieldName := fmt.Sprintf("F%d", i)
+
+		// get the struct field
+		dataField := str.FieldByName(fieldName)
+		if dataField == (reflect.Value{}) {
+			continue
+		}
+
+		if dataField.Type() != reflect.TypeOf(fl) {
+			return fmt.Errorf("field %s type: %v does not match the type in the spec: %v", fieldName, dataField.Type(), reflect.TypeOf(fl))
+		}
+
+		// reflect.ValueOf(fl).Addr().Elem().Set(dataField)
+
+		// dataField.Addr().Elem().Set(reflect.ValueOf(fl))
+		// fieldType := reflect.TypeOf(specField).Elem()
+
+		// create new field and convert it to field.Field interface
+		newFl := dataField.Interface().(field.Field)
+		newFl.SetSpec(fl.Spec())
+		m.Fields[i] = newFl
+		m.fieldsMap[i] = struct{}{}
+	}
+
+	return nil
+}
+
 func (m *Message) Bitmap() *utils.Bitmap {
 	return m.bitmap
 }
@@ -79,7 +126,7 @@ func (m *Message) Pack() ([]byte, error) {
 	// fill in the bitmap
 	// and find max field id (to determine bitmap length later)
 	maxId := 0
-	for id, _ := range m.Fields {
+	for id, _ := range m.fieldsMap {
 		if id > maxId {
 			maxId = id
 		}
@@ -107,13 +154,13 @@ func (m *Message) Pack() ([]byte, error) {
 
 	// pack each field
 	for i := 2; i <= maxId; i++ {
-		if field, ok := m.Fields[i]; ok {
-			def, ok := m.Fields[i]
+		if _, ok := m.fieldsMap[i]; ok {
+			field, ok := m.Fields[i]
 			if !ok {
 				return nil, fmt.Errorf("Failed to pack field: %d. No definition found", i)
 			}
 
-			packedField, err := def.Pack(field.Bytes())
+			packedField, err := field.Pack(field.Bytes())
 			if err != nil {
 				return nil, err
 			}

@@ -17,6 +17,12 @@ func NewStringField(spec *Spec) Field {
 	}
 }
 
+func NewStringValue(val string) *StringField {
+	return &StringField{
+		Value: val,
+	}
+}
+
 func (f *StringField) Spec() *Spec {
 	return f.spec
 }
