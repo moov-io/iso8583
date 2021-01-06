@@ -127,6 +127,8 @@ func (m *Message) Pack() ([]byte, error) {
 func (m *Message) Unpack(src []byte) error {
 	var off int
 
+	m.fieldsMap = map[int]struct{}{}
+
 	// unpack MTI
 	data, read, err := m.Fields[0].Unpack(src)
 	if err != nil {
