@@ -20,10 +20,6 @@ type Message struct {
 	fieldsMap map[int]struct{}
 }
 
-type Setter interface {
-	Set(b []byte)
-}
-
 func NewMessage(spec *MessageSpec) *Message {
 	fields := spec.CreateMessageFields()
 
