@@ -1,44 +1,26 @@
 package iso8583
 
-import "strconv"
+// import "strconv"
 
-type Field interface {
-	String() string
-	Bytes() []byte
-}
+// func NewField(id int, val []byte) Field {
+// 	return &binaryField{
+// 		ID:  id,
+// 		val: val,
+// 	}
+// }
 
-type binaryField struct {
-	ID  int
-	val []byte
-}
+// type StringField struct {
+// 	Value string
+// }
 
-func (f *binaryField) String() string {
-	return string(f.val)
-}
+// func (f *StringField) Set(b []byte) {
+// 	f.Value = string(b)
+// }
 
-func (f *binaryField) Bytes() []byte {
-	return f.val
-}
+// type NumericField struct {
+// 	Value int
+// }
 
-func NewField(id int, val []byte) Field {
-	return &binaryField{
-		ID:  id,
-		val: val,
-	}
-}
-
-type StringField struct {
-	Value string
-}
-
-func (f *StringField) Set(b []byte) {
-	f.Value = string(b)
-}
-
-type NumericField struct {
-	Value int
-}
-
-func (f *NumericField) Set(b []byte) {
-	f.Value, _ = strconv.Atoi(string(b))
-}
+// func (f *NumericField) Set(b []byte) {
+// 	f.Value, _ = strconv.Atoi(string(b))
+// }

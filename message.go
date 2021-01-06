@@ -4,48 +4,57 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/moov-io/iso8583/spec"
+	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/utils"
 )
 
 type Message struct {
-	Fields map[int]Field
-	spec   *spec.MessageSpec
+	// should we make it private?
+	Fields map[int]field.Field
+	spec   *MessageSpec
 
 	// let's keep it 8 bytes for now
 	bitmap *utils.Bitmap
 	Data   interface{}
+
+	fieldsMap map[int]struct{}
 }
 
 type Setter interface {
 	Set(b []byte)
 }
 
-func NewMessage(spec *spec.MessageSpec) *Message {
+func NewMessage(spec *MessageSpec) *Message {
+	fields := spec.CreateMessageFields()
+	fmt.Println(fields)
+
 	return &Message{
-		Fields: map[int]Field{},
-		spec:   spec,
+		Fields:    fields,
+		spec:      spec,
+		fieldsMap: map[int]struct{}{},
 	}
 }
 
-func (m *Message) Set(id int, field Field) {
-	m.Fields[id] = field
-}
+// func (m *Message) Set(id int) {
+// 	m.fieldsMap[id] = struct{}{}
+// }
 
 func (m *Message) Bitmap() *utils.Bitmap {
 	return m.bitmap
 }
 
 func (m *Message) MTI(val string) {
-	m.Fields[0] = NewField(0, []byte(val))
+	// m.Fields[0] = NewField(1, []byte(val))
 }
 
 func (m *Message) Field(id int, val string) {
-	m.Fields[id] = NewField(id, []byte(val))
+	m.fieldsMap[id] = struct{}{}
+	m.Fields[id].SetBytes([]byte(val))
 }
 
 func (m *Message) BinaryField(id int, val []byte) {
-	m.Fields[id] = NewField(id, val)
+	m.fieldsMap[id] = struct{}{}
+	m.Fields[id].SetBytes(val)
 }
 
 func (m *Message) GetMTI() string {
@@ -54,16 +63,16 @@ func (m *Message) GetMTI() string {
 }
 
 func (m *Message) GetString(id int) string {
-	if field, ok := m.Fields[id]; ok {
-		return field.String()
+	if _, ok := m.fieldsMap[id]; ok {
+		return m.Fields[id].String()
 	}
 
 	return ""
 }
 
 func (m *Message) GetBytes(id int) []byte {
-	if field, ok := m.Fields[id]; ok {
-		return field.Bytes()
+	if _, ok := m.fieldsMap[id]; ok {
+		return m.Fields[id].Bytes()
 	}
 
 	return nil

@@ -2,402 +2,412 @@ package iso8583
 
 import (
 	"github.com/moov-io/iso8583/encoding"
+	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
-	"github.com/moov-io/iso8583/spec"
 )
 
-var Spec87 *spec.MessageSpec = &spec.MessageSpec{
-	Fields: map[int]spec.Packer{
-		0: spec.NewField(4, "Message Type Indicator", encoding.ASCII, prefix.ASCII.Fixed),
-		1: spec.Bitmap(16, "Bitmap", encoding.Hex, prefix.Hex.Fixed),
-		2: &spec.Field{
+var Spec87 *MessageSpec = &MessageSpec{
+	Fields: map[int]field.Field{
+		0: field.NewStringField(&field.Spec{
+			Length:      4,
+			Description: "Message Type Indicator",
+			Enc:         encoding.ASCII,
+			Pref:        prefix.ASCII.Fixed,
+		}),
+		1: field.NewBitmapField(&field.Spec{
+			Length:      16,
+			Description: "Bitmap",
+			Enc:         encoding.Hex,
+			Pref:        prefix.Hex.Fixed,
+		}),
+		2: field.NewStringField(&field.Spec{
 			Length:      19,
 			Description: "Primary Account Number",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
-		},
-		3: &spec.Field{
+		}),
+		3: field.NewStringField(&field.Spec{
 			Length:      6,
 			Description: "Processing Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
 			Pad:         padding.Left('0'),
-		},
-		4: &spec.Field{
+		}),
+		4: field.NewStringField(&field.Spec{
 			Length:      12,
 			Description: "Transaction Amount",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
 			Pad:         padding.Left('0'),
-		},
-		5: &spec.Field{
+		}),
+		5: field.NewStringField(&field.Spec{
 			Length:      12,
 			Description: "Settlement Amount",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
 			Pad:         padding.Left('0'),
-		},
-		6: &spec.Field{
+		}),
+		6: field.NewStringField(&field.Spec{
 			Length:      12,
 			Description: "Billing Amount",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
 			Pad:         padding.Left('0'),
-		},
-		7: &spec.Field{
+		}),
+		7: field.NewStringField(&field.Spec{
 			Length:      10,
 			Description: "Transmission Date & Time",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		8: &spec.Field{
+		}),
+		8: field.NewStringField(&field.Spec{
 			Length:      8,
 			Description: "Billing Fee Amount",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		9: &spec.Field{
+		}),
+		9: field.NewStringField(&field.Spec{
 			Length:      8,
 			Description: "Settlement Conversion Rate",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		10: &spec.Field{
+		}),
+		10: field.NewStringField(&field.Spec{
 			Length:      8,
 			Description: "Cardholder Billing Conversion Rate",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		11: &spec.Field{
+		}),
+		11: field.NewStringField(&field.Spec{
 			Length:      6,
 			Description: "Systems Trace Audit Number (STAN)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		12: &spec.Field{
+		}),
+		12: field.NewStringField(&field.Spec{
 			Length:      6,
 			Description: "Local Transaction Time",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		13: &spec.Field{
+		}),
+		13: field.NewStringField(&field.Spec{
 			Length:      4,
 			Description: "Local Transaction Date",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		14: &spec.Field{
+		}),
+		14: field.NewStringField(&field.Spec{
 			Length:      4,
 			Description: "Expiration Date",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		15: &spec.Field{
+		}),
+		15: field.NewStringField(&field.Spec{
 			Length:      4,
 			Description: "Settlement Date",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		16: &spec.Field{
+		}),
+		16: field.NewStringField(&field.Spec{
 			Length:      4,
 			Description: "Currency Conversion Date",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		17: &spec.Field{
+		}),
+		17: field.NewStringField(&field.Spec{
 			Length:      4,
 			Description: "Capture Date",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		18: &spec.Field{
+		}),
+		18: field.NewStringField(&field.Spec{
 			Length:      4,
 			Description: "Merchant Type",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		19: &spec.Field{
+		}),
+		19: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "Acquiring Institution Country Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		20: &spec.Field{
+		}),
+		20: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "PAN Extended Country Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		21: &spec.Field{
+		}),
+		21: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "Forwarding Institution Country Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		22: &spec.Field{
+		}),
+		22: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "Point of Sale (POS) Entry Mode",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		23: &spec.Field{
+		}),
+		23: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "Card Sequence Number (CSN)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		24: &spec.Field{
+		}),
+		24: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "Function Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		25: &spec.Field{
+		}),
+		25: field.NewStringField(&field.Spec{
 			Length:      2,
 			Description: "Point of Service Condition Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		26: &spec.Field{
+		}),
+		26: field.NewStringField(&field.Spec{
 			Length:      2,
 			Description: "Point of Service PIN Capture Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		27: &spec.Field{
+		}),
+		27: field.NewStringField(&field.Spec{
 			Length:      1,
 			Description: "Authorizing Identification Response Length",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		28: &spec.Field{
+		}),
+		28: field.NewStringField(&field.Spec{
 			Length:      9,
 			Description: "Transaction Fee Amount",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		29: &spec.Field{
+		}),
+		29: field.NewStringField(&field.Spec{
 			Length:      9,
 			Description: "Settlement Fee Amount",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		30: &spec.Field{
+		}),
+		30: field.NewStringField(&field.Spec{
 			Length:      9,
 			Description: "Transaction Processing Fee Amount",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		31: &spec.Field{
+		}),
+		31: field.NewStringField(&field.Spec{
 			Length:      9,
 			Description: "Settlement Processing Fee Amount",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		32: &spec.Field{
+		}),
+		32: field.NewStringField(&field.Spec{
 			Length:      11,
 			Description: "Acquiring Institution Identification Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
-		},
-		33: &spec.Field{
+		}),
+		33: field.NewStringField(&field.Spec{
 			Length:      11,
 			Description: "Forwarding Institution Identification Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
-		},
-		34: &spec.Field{
+		}),
+		34: field.NewStringField(&field.Spec{
 			Length:      28,
 			Description: "Extended Primary Account Number",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
-		},
-		35: &spec.Field{
+		}),
+		35: field.NewStringField(&field.Spec{
 			Length:      37,
 			Description: "Track 2 Data",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
-		},
-		36: &spec.Field{
+		}),
+		36: field.NewStringField(&field.Spec{
 			Length:      104,
 			Description: "Track 3 Data",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		37: &spec.Field{
+		}),
+		37: field.NewStringField(&field.Spec{
 			Length:      12,
 			Description: "Retrieval Reference Number",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		38: &spec.Field{
+		}),
+		38: field.NewStringField(&field.Spec{
 			Length:      6,
 			Description: "Authorization Identification Response",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		39: &spec.Field{
+		}),
+		39: field.NewStringField(&field.Spec{
 			Length:      2,
 			Description: "Response Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		40: &spec.Field{
+		}),
+		40: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "Service Restriction Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		41: &spec.Field{
+		}),
+		41: field.NewStringField(&field.Spec{
 			Length:      8,
 			Description: "Card Acceptor Terminal Identification",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		42: &spec.Field{
+		}),
+		42: field.NewStringField(&field.Spec{
 			Length:      15,
 			Description: "Card Acceptor Identification Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		43: &spec.Field{
+		}),
+		43: field.NewStringField(&field.Spec{
 			Length:      40,
 			Description: "Card Acceptor Name/Location",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		44: &spec.Field{
+		}),
+		44: field.NewStringField(&field.Spec{
 			Length:      99,
 			Description: "Additional Data",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
-		},
-		45: &spec.Field{
+		}),
+		45: field.NewStringField(&field.Spec{
 			Length:      76,
 			Description: "Track 1 Data",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
-		},
-		46: &spec.Field{
+		}),
+		46: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Additional data (ISO)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		47: &spec.Field{
+		}),
+		47: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Additional data (National)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		48: &spec.Field{
+		}),
+		48: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Additional data (Private)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		49: &spec.Field{
+		}),
+		49: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "Transaction Currency Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		50: &spec.Field{
+		}),
+		50: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "Settlement Currency Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		51: &spec.Field{
+		}),
+		51: field.NewStringField(&field.Spec{
 			Length:      3,
 			Description: "Cardholder Billing Currency Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		52: &spec.Field{
+		}),
+		52: field.NewStringField(&field.Spec{
 			Length:      8,
 			Description: "PIN Data",
 			Enc:         encoding.Hex,
 			Pref:        prefix.Hex.Fixed,
-		},
-		53: &spec.Field{
+		}),
+		53: field.NewStringField(&field.Spec{
 			Length:      16,
 			Description: "Security Related Control Information",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
-		54: &spec.Field{
+		}),
+		54: field.NewStringField(&field.Spec{
 			Length:      120,
 			Description: "Additional Amounts",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		55: &spec.Field{
+		}),
+		55: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "ICC Data – EMV Having Multiple Tags",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		56: &spec.Field{
+		}),
+		56: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Reserved (ISO)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		57: &spec.Field{
+		}),
+		57: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Reserved (National)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		58: &spec.Field{
+		}),
+		58: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Reserved (National)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		59: &spec.Field{
+		}),
+		59: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Reserved (National)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		60: &spec.Field{
+		}),
+		60: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Reserved (National)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		61: &spec.Field{
+		}),
+		61: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Reserved (Private)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		62: &spec.Field{
+		}),
+		62: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Reserved (Private)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		63: &spec.Field{
+		}),
+		63: field.NewStringField(&field.Spec{
 			Length:      999,
 			Description: "Reserved (Private)",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LLL,
-		},
-		64: &spec.Field{
+		}),
+		64: field.NewStringField(&field.Spec{
 			Length:      8,
 			Description: "Message Authentication Code (MAC)",
 			Enc:         encoding.Hex,
 			Pref:        prefix.Hex.Fixed,
-		},
-		90: &spec.Field{
+		}),
+		90: field.NewStringField(&field.Spec{
 			Length:      42,
 			Description: "Original Data Elements",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-		},
+		}),
 	},
 }
