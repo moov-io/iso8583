@@ -162,7 +162,7 @@ data.F3.Value // is an int 123456
 data.F4.Value // is a string "100"
 ```
 
-For real code samples please check [./message_test](./message_test).
+For real code samples please check [./message_test.go](./message_test.go).
 
 # License
 
