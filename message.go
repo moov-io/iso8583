@@ -15,7 +15,7 @@ type Message struct {
 
 	// let's keep it 8 bytes for now
 	bitmap *utils.Bitmap
-	Data   interface{}
+	data   interface{}
 
 	fieldsMap map[int]struct{}
 }
@@ -40,7 +40,17 @@ func NewMessageWithData(spec *MessageSpec, data interface{}) *Message {
 	}
 }
 
+func (m *Message) Data() interface{} {
+	return m.data
+}
+
 func (m *Message) SetData(data interface{}) error {
+	m.data = data
+
+	if m.data == nil {
+		return nil
+	}
+
 	// check that data is a struct
 	// for all struct fields with name FN
 	// set spec to the field
@@ -54,7 +64,8 @@ func (m *Message) SetData(data interface{}) error {
 
 		// get the struct field
 		dataField := str.FieldByName(fieldName)
-		if dataField == (reflect.Value{}) {
+
+		if dataField == (reflect.Value{}) || dataField.IsNil() {
 			continue
 		}
 
@@ -220,12 +231,13 @@ func (m *Message) Unpack(src []byte) error {
 }
 
 func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) error {
-	if m.Data == nil {
+	if m.data == nil {
 		return nil
 	}
 
 	// get the struct
-	str := reflect.ValueOf(m.Data).Elem()
+	// check if it's a struct
+	str := reflect.ValueOf(m.data).Elem()
 
 	fieldName := fmt.Sprintf("F%d", i)
 
