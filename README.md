@@ -86,7 +86,7 @@ rawMessage, err := message.Pack()
 
 In many cases, you may want to work with types: numbers, strings, time, etc. We have got that covered!
 
-First, you need to define the struct that corresponds to the spec field types. Here an example:
+First, you need to define the struct that corresponds to the spec field types. Here is an example:
 
 ```go
 // use the same types from message specification
