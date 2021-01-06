@@ -12,11 +12,9 @@ func TestMessage(t *testing.T) {
 
 	message.Field(0, "0100")
 	message.Field(2, "424242424242")
-	message.BinaryField(3, []byte{0x12, 0x34})
 
 	require.Equal(t, "0100", message.GetString(0))
 	require.Equal(t, "424242424242", message.GetString(2))
-	require.Equal(t, []byte{0x12, 0x34}, message.GetBytes(3))
 }
 
 func TestMessageData(t *testing.T) {

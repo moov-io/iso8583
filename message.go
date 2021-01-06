@@ -39,7 +39,8 @@ func (m *Message) Bitmap() *utils.Bitmap {
 }
 
 func (m *Message) MTI(val string) {
-	// m.Fields[0] = NewField(1, []byte(val))
+	m.fieldsMap[0] = struct{}{}
+	m.Fields[0].SetBytes([]byte(val))
 }
 
 func (m *Message) Field(id int, val string) {

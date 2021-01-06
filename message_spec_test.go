@@ -10,33 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMessageSpec(t *testing.T) {
-	// spec := &MessageSpec{
-	// 	Fields: map[int]field.Field{
-	// 		0: field.NewStringField(&field.Spec{
-	// 			Length:      4,
-	// 			Description: "Message Type Indicator",
-	// 			Enc:         encoding.ASCII,
-	// 			Pref:        prefix.ASCII.Fixed,
-	// 		}),
-	// 		1: field.NewBitmapField(&field.Spec{
-	// 			Length:      16,
-	// 			Description: "Bitmap",
-	// 			Enc:         encoding.Hex,
-	// 			Pref:        prefix.Hex.Fixed,
-	// 		}),
-	// 		2: field.NewStringField(&field.Spec{
-	// 			Length:      19,
-	// 			Description: "Primary Account Number",
-	// 			Enc:         encoding.ASCII,
-	// 			Pref:        prefix.ASCII.LL,
-	// 		}),
-	// 	},
-	// }
-
-	// fmt.Println(spec)
-}
-
 func TestMessageSpec_CreateMessageFields(t *testing.T) {
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
