@@ -100,14 +100,14 @@ func (m *Message) Pack() ([]byte, error) {
 	}
 
 	// pack MTI
-	packedMTI, err := m.spec.Fields[0].Pack(m.Fields[0].Bytes())
+	packedMTI, err := m.Fields[0].Pack(m.Fields[0].Bytes())
 	if err != nil {
 		return nil, err
 	}
 	packed = append(packed, packedMTI...)
 
 	// pack Bitmap
-	packedBitmap, err := m.spec.Fields[1].Pack(m.bitmap.Bytes())
+	packedBitmap, err := m.Fields[1].Pack(m.bitmap.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (m *Message) Pack() ([]byte, error) {
 	// pack each field
 	for i := 2; i <= maxId; i++ {
 		if field, ok := m.Fields[i]; ok {
-			def, ok := m.spec.Fields[i]
+			def, ok := m.Fields[i]
 			if !ok {
 				return nil, fmt.Errorf("Failed to pack field: %d. No definition found", i)
 			}
@@ -136,7 +136,7 @@ func (m *Message) Unpack(src []byte) error {
 	var off int
 
 	// unpack MTI
-	data, read, err := m.spec.Fields[0].Unpack(src)
+	data, read, err := m.Fields[0].Unpack(src)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (m *Message) Unpack(src []byte) error {
 
 	off = read
 
-	data, read, err = m.spec.Fields[1].Unpack(src[off:])
+	data, read, err = m.Fields[1].Unpack(src[off:])
 	if err != nil {
 		return err
 	}
@@ -154,17 +154,17 @@ func (m *Message) Unpack(src []byte) error {
 
 	for i := 2; i <= m.bitmap.Len(); i++ {
 		if m.bitmap.IsSet(i) {
-			fieldSpec, ok := m.spec.Fields[i]
+			fl, ok := m.Fields[i]
 			if !ok {
 				return fmt.Errorf("Failed to unpack field %d. No Specification found for the field", i)
 			}
 
-			data, read, err = fieldSpec.Unpack(src[off:])
+			data, read, err = fl.Unpack(src[off:])
 			if err != nil {
 				return err
 			}
 
-			m.setDataFieldValue(i, data)
+			m.linkDataFieldWithMessageField(i, fl)
 			m.BinaryField(i, data)
 			off += read
 		}
@@ -173,7 +173,7 @@ func (m *Message) Unpack(src []byte) error {
 	return nil
 }
 
-func (m *Message) setDataFieldValue(i int, data []byte) {
+func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) {
 	if m.Data == nil {
 		return
 	}
@@ -182,28 +182,12 @@ func (m *Message) setDataFieldValue(i int, data []byte) {
 	str := reflect.ValueOf(m.Data).Elem()
 
 	// get the struct field
-	field := str.FieldByName(fmt.Sprintf("F%d", i))
-	if field == (reflect.Value{}) {
+	dataField := str.FieldByName(fmt.Sprintf("F%d", i))
+	if dataField == (reflect.Value{}) {
 		return
 	}
 
-	// we should check if it's nil
-	// if it's not nil, let's create a field
-	// with a corresponding type
-
-	// get the type of the field
-	fieldType := field.Type().Elem()
-
-	// create new field
-	fieldVal := reflect.New(fieldType)
-	field.Addr().Elem().Set(fieldVal)
-
-	// setting value may happen after we add created field to the struct
-	// as we work with pointers
-
-	// get field as a Setter
-	setterField := fieldVal.Interface().(Setter)
-
-	// finally set value to the field
-	setterField.Set(data)
+	// we need to check that types as the same!!!!!!
+	// !!!!!!!!!!!!!!!! before setting values
+	dataField.Addr().Elem().Set(reflect.ValueOf(fl))
 }
