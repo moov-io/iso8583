@@ -22,10 +22,10 @@ func TestMessage(t *testing.T) {
 func TestMessageData(t *testing.T) {
 	rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
 
-	t.Run("Test string fields", func(t *testing.T) {
+	t.Run("Test unpacking with typed fields", func(t *testing.T) {
 		type ISO87Data struct {
 			F2 *field.StringField
-			F3 *field.StringField
+			F3 *field.NumericField
 			F4 *field.StringField
 		}
 
@@ -43,32 +43,7 @@ func TestMessageData(t *testing.T) {
 		data := message.Data.(*ISO87Data)
 
 		require.Equal(t, "4242424242424242", data.F2.Value)
-		require.Equal(t, "123456", data.F3.Value)
+		require.Equal(t, 123456, data.F3.Value)
 		require.Equal(t, "100", data.F4.Value)
 	})
-
-	// t.Run("Test numeric fields", func(t *testing.T) {
-	// 	type ISO87Data struct {
-	// 		F2 *field.StringField
-	// 		F3 *NumericField
-	// 		F4 *NumericField
-	// 	}
-
-	// 	message := NewMessage(Spec87)
-	// 	message.Data = &ISO87Data{}
-
-	// 	err := message.Unpack([]byte(rawMsg))
-
-	// 	require.NoError(t, err)
-
-	// 	require.Equal(t, "4242424242424242", message.GetString(2))
-	// 	require.Equal(t, "123456", message.GetString(3))
-	// 	require.Equal(t, "100", message.GetString(4))
-
-	// 	data := message.Data.(*ISO87Data)
-
-	// 	require.Equal(t, "4242424242424242", data.F2.Value)
-	// 	require.Equal(t, 123456, data.F3.Value)
-	// 	require.Equal(t, 100, data.F4.Value)
-	// })
 }

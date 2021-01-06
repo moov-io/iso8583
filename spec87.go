@@ -27,7 +27,7 @@ var Spec87 *MessageSpec = &MessageSpec{
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
 		}),
-		3: field.NewStringField(&field.Spec{
+		3: field.NewNumericField(&field.Spec{
 			Length:      6,
 			Description: "Processing Code",
 			Enc:         encoding.ASCII,

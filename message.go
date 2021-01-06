@@ -35,10 +35,6 @@ func NewMessage(spec *MessageSpec) *Message {
 	}
 }
 
-// func (m *Message) Set(id int) {
-// 	m.fieldsMap[id] = struct{}{}
-// }
-
 func (m *Message) Bitmap() *utils.Bitmap {
 	return m.bitmap
 }
@@ -164,7 +160,10 @@ func (m *Message) Unpack(src []byte) error {
 				return err
 			}
 
-			m.linkDataFieldWithMessageField(i, fl)
+			err = m.linkDataFieldWithMessageField(i, fl)
+			if err != nil {
+				return err
+			}
 			m.BinaryField(i, data)
 			off += read
 		}
@@ -173,21 +172,27 @@ func (m *Message) Unpack(src []byte) error {
 	return nil
 }
 
-func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) {
+func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) error {
 	if m.Data == nil {
-		return
+		return nil
 	}
 
 	// get the struct
 	str := reflect.ValueOf(m.Data).Elem()
 
+	fieldName := fmt.Sprintf("F%d", i)
+
 	// get the struct field
-	dataField := str.FieldByName(fmt.Sprintf("F%d", i))
+	dataField := str.FieldByName(fieldName)
 	if dataField == (reflect.Value{}) {
-		return
+		return nil
 	}
 
-	// we need to check that types as the same!!!!!!
-	// !!!!!!!!!!!!!!!! before setting values
+	if dataField.Type() != reflect.TypeOf(fl) {
+		return fmt.Errorf("field %s type: %v does not match the type in the spec: %v", fieldName, dataField.Type(), reflect.TypeOf(fl))
+	}
+
 	dataField.Addr().Elem().Set(reflect.ValueOf(fl))
+
+	return nil
 }
