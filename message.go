@@ -10,7 +10,7 @@ import (
 
 type Message struct {
 	// should we make it private?
-	Fields map[int]field.Field
+	fields map[int]field.Field
 	spec   *MessageSpec
 
 	// let's keep it 8 bytes for now
@@ -24,7 +24,7 @@ func NewMessage(spec *MessageSpec) *Message {
 	fields := spec.CreateMessageFields()
 
 	return &Message{
-		Fields:    fields,
+		fields:    fields,
 		spec:      spec,
 		fieldsMap: map[int]struct{}{},
 	}
@@ -34,7 +34,7 @@ func NewMessageWithData(spec *MessageSpec, data interface{}) *Message {
 	fields := spec.CreateMessageFields()
 
 	return &Message{
-		Fields:    fields,
+		fields:    fields,
 		spec:      spec,
 		fieldsMap: map[int]struct{}{},
 	}
@@ -58,7 +58,7 @@ func (m *Message) SetData(data interface{}) error {
 		return fmt.Errorf("failed to set data as struct is expected, got: %s", reflect.TypeOf(str).Kind())
 	}
 
-	for i, fl := range m.Fields {
+	for i, fl := range m.fields {
 		fieldName := fmt.Sprintf("F%d", i)
 
 		// get the struct field
@@ -73,12 +73,12 @@ func (m *Message) SetData(data interface{}) error {
 		}
 
 		// set data field spec for the message spec field
-		specField := m.Fields[i]
+		specField := m.fields[i]
 		df := dataField.Interface().(field.Field)
 		df.SetSpec(specField.Spec())
 
 		// use data field as a message field
-		m.Fields[i] = df
+		m.fields[i] = df
 		m.fieldsMap[i] = struct{}{}
 	}
 
@@ -91,27 +91,27 @@ func (m *Message) Bitmap() *utils.Bitmap {
 
 func (m *Message) MTI(val string) {
 	m.fieldsMap[0] = struct{}{}
-	m.Fields[0].SetBytes([]byte(val))
+	m.fields[0].SetBytes([]byte(val))
 }
 
 func (m *Message) Field(id int, val string) {
 	m.fieldsMap[id] = struct{}{}
-	m.Fields[id].SetBytes([]byte(val))
+	m.fields[id].SetBytes([]byte(val))
 }
 
 func (m *Message) BinaryField(id int, val []byte) {
 	m.fieldsMap[id] = struct{}{}
-	m.Fields[id].SetBytes(val)
+	m.fields[id].SetBytes(val)
 }
 
 func (m *Message) GetMTI() string {
 	// check index
-	return m.Fields[0].String()
+	return m.fields[0].String()
 }
 
 func (m *Message) GetString(id int) string {
 	if _, ok := m.fieldsMap[id]; ok {
-		return m.Fields[id].String()
+		return m.fields[id].String()
 	}
 
 	return ""
@@ -119,7 +119,7 @@ func (m *Message) GetString(id int) string {
 
 func (m *Message) GetBytes(id int) []byte {
 	if _, ok := m.fieldsMap[id]; ok {
-		return m.Fields[id].Bytes()
+		return m.fields[id].Bytes()
 	}
 
 	return nil
@@ -147,14 +147,14 @@ func (m *Message) Pack() ([]byte, error) {
 	}
 
 	// pack MTI
-	packedMTI, err := m.Fields[0].Pack(m.Fields[0].Bytes())
+	packedMTI, err := m.fields[0].Pack(m.fields[0].Bytes())
 	if err != nil {
 		return nil, err
 	}
 	packed = append(packed, packedMTI...)
 
 	// pack Bitmap
-	packedBitmap, err := m.Fields[1].Pack(m.bitmap.Bytes())
+	packedBitmap, err := m.fields[1].Pack(m.bitmap.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (m *Message) Pack() ([]byte, error) {
 	// pack each field
 	for i := 2; i <= maxId; i++ {
 		if _, ok := m.fieldsMap[i]; ok {
-			field, ok := m.Fields[i]
+			field, ok := m.fields[i]
 			if !ok {
 				return nil, fmt.Errorf("Failed to pack field: %d. No definition found", i)
 			}
@@ -185,7 +185,7 @@ func (m *Message) Unpack(src []byte) error {
 	m.fieldsMap = map[int]struct{}{}
 
 	// unpack MTI
-	data, read, err := m.Fields[0].Unpack(src)
+	data, read, err := m.fields[0].Unpack(src)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func (m *Message) Unpack(src []byte) error {
 
 	// hm... how to tell that this field was set?
 	m.fieldsMap[1] = struct{}{}
-	data, read, err = m.Fields[1].Unpack(src[off:])
+	data, read, err = m.fields[1].Unpack(src[off:])
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func (m *Message) Unpack(src []byte) error {
 
 	for i := 2; i <= m.bitmap.Len(); i++ {
 		if m.bitmap.IsSet(i) {
-			fl, ok := m.Fields[i]
+			fl, ok := m.fields[i]
 			if !ok {
 				return fmt.Errorf("Failed to unpack field %d. No Specification found for the field", i)
 			}
