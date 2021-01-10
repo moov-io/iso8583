@@ -4,46 +4,46 @@ import (
 	"fmt"
 )
 
-var _ Field = (*StringField)(nil)
+var _ Field = (*String)(nil)
 
-type StringField struct {
+type String struct {
 	Value string
 	spec  *Spec
 }
 
-func NewStringField(spec *Spec) Field {
-	return &StringField{
+func NewString(spec *Spec) Field {
+	return &String{
 		spec: spec,
 	}
 }
 
-func NewStringValue(val string) *StringField {
-	return &StringField{
+func NewStringValue(val string) *String {
+	return &String{
 		Value: val,
 	}
 }
 
-func (f *StringField) Spec() *Spec {
+func (f *String) Spec() *Spec {
 	return f.spec
 }
 
-func (f *StringField) SetSpec(spec *Spec) {
+func (f *String) SetSpec(spec *Spec) {
 	f.spec = spec
 }
 
-func (f *StringField) SetBytes(b []byte) {
+func (f *String) SetBytes(b []byte) {
 	f.Value = string(b)
 }
 
-func (f *StringField) Bytes() []byte {
+func (f *String) Bytes() []byte {
 	return []byte(f.Value)
 }
 
-func (f *StringField) String() string {
+func (f *String) String() string {
 	return f.Value
 }
 
-func (f *StringField) Pack(data []byte) ([]byte, error) {
+func (f *String) Pack(data []byte) ([]byte, error) {
 	if f.spec.Pad != nil {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
 	}
@@ -61,7 +61,7 @@ func (f *StringField) Pack(data []byte) ([]byte, error) {
 	return append(packedLength, packed...), nil
 }
 
-func (f *StringField) Unpack(data []byte) ([]byte, int, error) {
+func (f *String) Unpack(data []byte) ([]byte, int, error) {
 	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)

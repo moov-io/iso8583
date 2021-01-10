@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBitmapFieldSpec(t *testing.T) {
-	field := NewBitmapField(&Spec{
+func TestBitmapSpec(t *testing.T) {
+	field := NewBitmap(&Spec{
 		Length:      16,
 		Description: "Bitmap",
 		Enc:         encoding.Hex,

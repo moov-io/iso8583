@@ -13,13 +13,13 @@ import (
 func TestMessageSpec_CreateMessageFields(t *testing.T) {
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
-			0: field.NewStringField(&field.Spec{
+			0: field.NewString(&field.Spec{
 				Length:      4,
 				Description: "Message Type Indicator",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.Fixed,
 			}),
-			1: field.NewBitmapField(&field.Spec{
+			1: field.NewBitmap(&field.Spec{
 				Length:      16,
 				Description: "Bitmap",
 				Enc:         encoding.Hex,
@@ -31,8 +31,8 @@ func TestMessageSpec_CreateMessageFields(t *testing.T) {
 	fields := spec.CreateMessageFields()
 
 	// test that derived fields have the same type as in the message spec
-	require.True(t, reflect.TypeOf(fields[0]).Elem() == reflect.TypeOf(field.StringField{}))
-	require.True(t, reflect.TypeOf(fields[1]).Elem() == reflect.TypeOf(field.BitmapField{}))
+	require.True(t, reflect.TypeOf(fields[0]).Elem() == reflect.TypeOf(field.String{}))
+	require.True(t, reflect.TypeOf(fields[1]).Elem() == reflect.TypeOf(field.Bitmap{}))
 
 	// test that derived field have the same spec
 	require.Equal(t, fields[0].Spec(), spec.Fields[0].Spec())

@@ -13,32 +13,32 @@ import (
 func TestMessage(t *testing.T) {
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
-			0: field.NewStringField(&field.Spec{
+			0: field.NewString(&field.Spec{
 				Length:      4,
 				Description: "Message Type Indicator",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.Fixed,
 			}),
-			1: field.NewBitmapField(&field.Spec{
+			1: field.NewBitmap(&field.Spec{
 				Length:      16,
 				Description: "Bitmap",
 				Enc:         encoding.Hex,
 				Pref:        prefix.Hex.Fixed,
 			}),
-			2: field.NewStringField(&field.Spec{
+			2: field.NewString(&field.Spec{
 				Length:      19,
 				Description: "Primary Account Number",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			3: field.NewNumericField(&field.Spec{
+			3: field.NewNumeric(&field.Spec{
 				Length:      6,
 				Description: "Processing Code",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			}),
-			4: field.NewStringField(&field.Spec{
+			4: field.NewString(&field.Spec{
 				Length:      12,
 				Description: "Transaction Amount",
 				Enc:         encoding.ASCII,
@@ -73,9 +73,9 @@ func TestMessage(t *testing.T) {
 
 	t.Run("Test unpacking with typed fields", func(t *testing.T) {
 		type ISO87Data struct {
-			F2 *field.StringField
-			F3 *field.NumericField
-			F4 *field.StringField
+			F2 *field.String
+			F3 *field.Numeric
+			F4 *field.String
 		}
 
 		message := NewMessage(spec)
@@ -99,9 +99,9 @@ func TestMessage(t *testing.T) {
 
 	t.Run("Test packing with typed fields", func(t *testing.T) {
 		type ISO87Data struct {
-			F2 *field.StringField
-			F3 *field.NumericField
-			F4 *field.StringField
+			F2 *field.String
+			F3 *field.Numeric
+			F4 *field.String
 		}
 
 		message := NewMessage(spec)

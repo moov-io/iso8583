@@ -6,40 +6,40 @@ import (
 	"github.com/moov-io/iso8583/utils"
 )
 
-var _ Field = (*BitmapField)(nil)
+var _ Field = (*Bitmap)(nil)
 
-type BitmapField struct {
+type Bitmap struct {
 	Value string
 	spec  *Spec
 }
 
-func NewBitmapField(spec *Spec) Field {
-	return &BitmapField{
+func NewBitmap(spec *Spec) Field {
+	return &Bitmap{
 		spec: spec,
 	}
 }
 
-func (f *BitmapField) Spec() *Spec {
+func (f *Bitmap) Spec() *Spec {
 	return f.spec
 }
 
-func (f *BitmapField) SetSpec(spec *Spec) {
+func (f *Bitmap) SetSpec(spec *Spec) {
 	f.spec = spec
 }
 
-func (f *BitmapField) SetBytes(b []byte) {
+func (f *Bitmap) SetBytes(b []byte) {
 	f.Value = string(b)
 }
 
-func (f *BitmapField) Bytes() []byte {
+func (f *Bitmap) Bytes() []byte {
 	return []byte(f.Value)
 }
 
-func (f *BitmapField) String() string {
+func (f *Bitmap) String() string {
 	return f.Value
 }
 
-func (f *BitmapField) Pack(data []byte) ([]byte, error) {
+func (f *Bitmap) Pack(data []byte) ([]byte, error) {
 	bitmap := utils.NewBitmapFromData(data)
 
 	packed, err := f.spec.Enc.Encode(data)
@@ -62,7 +62,7 @@ func (f *BitmapField) Pack(data []byte) ([]byte, error) {
 // Unpack of the Bitmap field returns data of varied length
 // if there is only primary bitmap (bit 1 is not set) we return only 8 bytes
 // if secondary bitmap presents (bit 1 is set) we return 16 bytes
-func (f *BitmapField) Unpack(data []byte) ([]byte, int, error) {
+func (f *Bitmap) Unpack(data []byte) ([]byte, int, error) {
 	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
