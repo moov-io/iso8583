@@ -15,7 +15,7 @@ func (e hexEncoder) Encode(data []byte) ([]byte, error) {
 	return out, nil
 }
 
-func (e hexEncoder) Decode(data []byte) ([]byte, error) {
+func (e hexEncoder) Decode(data []byte, _ int) ([]byte, error) {
 	out := make([]byte, hex.DecodedLen(len(data)))
 	_, err := hex.Decode(out, data)
 	if err != nil {

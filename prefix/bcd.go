@@ -45,12 +45,12 @@ func (p *bcdVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
 		return 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", p.Length(), len(data))
 	}
 
-	bDigits, err := encoding.BCD.Decode(data[:p.Length()])
+	bDigits, err := encoding.BCD.Decode(data[:p.Length()], p.Digits)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode BCD encoded length: %w", err)
 	}
 
-	dataLen, err := strconv.Atoi(string(bDigits[len(bDigits)-p.Digits:]))
+	dataLen, err := strconv.Atoi(string(bDigits))
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
@@ -67,7 +67,7 @@ func (p *bcdVarPrefixer) Length() int {
 }
 
 func (p *bcdVarPrefixer) Inspect() string {
-	return fmt.Sprintf("ASCII %s length", strings.Repeat("L", p.Digits))
+	return fmt.Sprintf("BCD %s length", strings.Repeat("L", p.Digits))
 }
 
 type bcdFixedPrefixer struct {
@@ -90,5 +90,5 @@ func (p *bcdFixedPrefixer) Length() int {
 }
 
 func (p *bcdFixedPrefixer) Inspect() string {
-	return fmt.Sprintf("ASCII fixed length")
+	return fmt.Sprintf("BCD fixed length")
 }

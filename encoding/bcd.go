@@ -1,6 +1,8 @@
 package encoding
 
 import (
+	"fmt"
+
 	"github.com/yerden/go-util/bcd"
 )
 
@@ -23,13 +25,18 @@ func (e *bcdEncoder) Encode(src []byte) ([]byte, error) {
 	return dst[:n], nil
 }
 
-func (e *bcdEncoder) Decode(src []byte) ([]byte, error) {
+func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, error) {
 	dec := bcd.NewDecoder(bcd.Standard)
 	dst := make([]byte, bcd.DecodedLen(len(src)))
-	n, err := dec.Decode(dst, src)
+	_, err := dec.Decode(dst, src)
 	if err != nil {
 		return nil, err
 	}
 
-	return dst[:n], nil
+	fmt.Println("DST", string(dst))
+
+	// if length > n error
+	// return dst[:length], nil
+
+	return dst[len(dst)-length:], nil
 }

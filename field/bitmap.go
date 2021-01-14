@@ -70,7 +70,7 @@ func (f *Bitmap) Unpack(data []byte) ([]byte, int, error) {
 
 	start := f.spec.Pref.Length()
 	end := f.spec.Pref.Length() + dataLen
-	raw, err := f.spec.Enc.Decode(data[start:end])
+	raw, err := f.spec.Enc.Decode(data[start:end], 0)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
 	}

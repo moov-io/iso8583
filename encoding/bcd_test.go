@@ -8,16 +8,20 @@ import (
 
 func TestBCD(t *testing.T) {
 	t.Run("Decode", func(t *testing.T) {
-		res, err := BCD.Decode([]byte{0x12, 0x34})
+		res, err := BCD.Decode([]byte{0x12, 0x34}, 4)
 
 		require.NoError(t, err)
 		require.Equal(t, []byte("1234"), res)
 
-		// 0x32 = 50
-		res, err = BCD.Decode([]byte{50})
+		res, err = BCD.Decode([]byte{0x01, 0x23}, 3)
 
 		require.NoError(t, err)
-		require.Equal(t, []byte("32"), res)
+		require.Equal(t, []byte("123"), res)
+
+		res, err = BCD.Decode([]byte{0x12, 0x30}, 3)
+
+		require.NoError(t, err)
+		require.Equal(t, []byte("230"), res)
 	})
 
 	t.Run("Encode", func(t *testing.T) {

@@ -23,7 +23,7 @@ func (e *lBCDEncoder) Encode(src []byte) ([]byte, error) {
 	return dst[:n], nil
 }
 
-func (e *lBCDEncoder) Decode(src []byte) ([]byte, error) {
+func (e *lBCDEncoder) Decode(src []byte, length int) ([]byte, error) {
 	dec := bcd.NewDecoder(bcd.Standard)
 	dst := make([]byte, bcd.DecodedLen(len(src)))
 	_, err := dec.Decode(dst, src)
@@ -31,5 +31,5 @@ func (e *lBCDEncoder) Decode(src []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return dst, nil
+	return dst[:length], nil
 }

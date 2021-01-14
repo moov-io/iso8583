@@ -18,7 +18,7 @@ func (e asciiEncoder) Encode(data []byte) ([]byte, error) {
 	return out, nil
 }
 
-func (e asciiEncoder) Decode(data []byte) ([]byte, error) {
+func (e asciiEncoder) Decode(data []byte, _ int) ([]byte, error) {
 	out := []byte{}
 	for _, r := range data {
 		if r > 127 {

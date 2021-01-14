@@ -10,7 +10,7 @@ func (e binaryEncoder) Encode(data []byte) ([]byte, error) {
 	return out, nil
 }
 
-func (e binaryEncoder) Decode(data []byte) ([]byte, error) {
+func (e binaryEncoder) Decode(data []byte, _ int) ([]byte, error) {
 	out := append([]byte(nil), data...)
 
 	return out, nil
