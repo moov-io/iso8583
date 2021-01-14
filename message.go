@@ -146,6 +146,12 @@ func (m *Message) Pack() ([]byte, error) {
 		m.bitmap.Set(id)
 	}
 
+	// TODO add test for this
+	// if we need second bitmap
+	if maxId > 64 {
+		m.bitmap.Set(1)
+	}
+
 	// pack MTI
 	packedMTI, err := m.fields[0].Pack(m.fields[0].Bytes())
 	if err != nil {
