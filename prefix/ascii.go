@@ -23,13 +23,13 @@ func (p *asciiVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 		return nil, fmt.Errorf("Failed to encode length. Field length: %d is larger than maximum: %d", dataLen, maxLen)
 	}
 
-	// convert int into []byte
-	res := strconv.AppendInt([]byte{}, int64(dataLen), 10)
-	if len(res) > p.Digits {
+	if len(strconv.Itoa(dataLen)) > p.Digits {
 		return nil, fmt.Errorf("Failed to encode length: %d. Number of digits exceeds: %d", dataLen, p.Digits)
 	}
 
-	return res, nil
+	res := fmt.Sprintf("%0*d", p.Digits, dataLen)
+
+	return []byte(res), nil
 }
 
 func (p *asciiVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {

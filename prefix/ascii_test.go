@@ -44,7 +44,9 @@ func TestAsciiVarPrefixer_LHelpers(t *testing.T) {
 		out    []byte
 	}{
 		{ASCII.L, 5, 3, []byte("3")},
+		{ASCII.LL, 20, 2, []byte("02")},
 		{ASCII.LL, 20, 12, []byte("12")},
+		{ASCII.LLL, 340, 2, []byte("002")},
 		{ASCII.LLL, 340, 200, []byte("200")},
 		{ASCII.LLLL, 9999, 1234, []byte("1234")},
 	}
