@@ -63,17 +63,17 @@ func (f *String) Pack() ([]byte, error) {
 	return append(packedLength, packed...), nil
 }
 
-func (f *String) Unpack(data []byte) ([]byte, int, error) {
+func (f *String) Unpack(data []byte) (int, error) {
 	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
-		return nil, 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
+		return 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
 	}
 
 	start := f.spec.Pref.Length()
 	end := f.spec.Pref.Length() + dataLen
 	raw, err := f.spec.Enc.Decode(data[start:end], f.spec.Length)
 	if err != nil {
-		return nil, 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
+		return 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
 	}
 
 	if f.spec.Pad != nil {
@@ -82,5 +82,5 @@ func (f *String) Unpack(data []byte) ([]byte, int, error) {
 
 	f.Value = string(raw)
 
-	return raw, dataLen + f.spec.Pref.Length(), nil
+	return dataLen + f.spec.Pref.Length(), nil
 }

@@ -128,8 +128,7 @@ func (m *Message) Pack() ([]byte, error) {
 			maxId = id
 		}
 
-		// index 0 is for mti
-		// index 1 is for bitmap
+		// indexes 0 and 1 are for mti and bitmap
 		// regular field number startd from index 2
 		if id < 2 {
 			continue
@@ -164,21 +163,19 @@ func (m *Message) Unpack(src []byte) error {
 	m.Bitmap().Reset()
 
 	// unpack MTI
-	data, read, err := m.fields[0].Unpack(src)
+	read, err := m.fields[0].Unpack(src)
 	if err != nil {
 		return err
 	}
-	m.BinaryField(0, data)
 
 	off = read
 
-	// hm... how to tell that this field was set?
-	m.fieldsMap[1] = struct{}{}
-	data, read, err = m.fields[1].Unpack(src[off:])
+	// unpack Bitmap
+	read, err = m.fields[1].Unpack(src[off:])
 	if err != nil {
 		return err
 	}
-	// m.bitmap = utils.NewBitmapFromData(data)
+
 	off += read
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
@@ -189,7 +186,7 @@ func (m *Message) Unpack(src []byte) error {
 			}
 
 			m.fieldsMap[i] = struct{}{}
-			_, read, err = fl.Unpack(src[off:])
+			read, err = fl.Unpack(src[off:])
 			if err != nil {
 				return err
 			}

@@ -72,28 +72,28 @@ func (f *Bitmap) Pack() ([]byte, error) {
 // Unpack of the Bitmap field returns data of varied length
 // if there is only primary bitmap (bit 1 is not set) we return only 8 bytes
 // if secondary bitmap presents (bit 1 is set) we return 16 bytes
-func (f *Bitmap) Unpack(data []byte) ([]byte, int, error) {
+func (f *Bitmap) Unpack(data []byte) (int, error) {
 	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
-		return nil, 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
+		return 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
 	}
 
 	start := f.spec.Pref.Length()
 	end := f.spec.Pref.Length() + dataLen
 	raw, err := f.spec.Enc.Decode(data[start:end], 0)
 	if err != nil {
-		return nil, 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
+		return 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
 	}
 
 	bitmap := utils.NewBitmapFromData(raw)
 
 	if bitmap.IsSet(1) {
 		f.bitmap = utils.NewBitmapFromData(raw[:16])
-		return raw[:16], dataLen, nil
+		return dataLen, nil
 	}
 
 	f.bitmap = utils.NewBitmapFromData(raw[:8])
-	return raw[:8], dataLen / 2, nil
+	return dataLen / 2, nil
 }
 
 func (f *Bitmap) Reset() {
