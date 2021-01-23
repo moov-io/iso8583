@@ -153,14 +153,15 @@ func (m *Message) Pack() ([]byte, error) {
 	}
 
 	// pack MTI
-	packedMTI, err := m.fields[0].Pack(m.fields[0].Bytes())
+	packedMTI, err := m.fields[0].Pack()
 	if err != nil {
 		return nil, err
 	}
 	packed = append(packed, packedMTI...)
 
 	// pack Bitmap
-	packedBitmap, err := m.fields[1].Pack(m.bitmap.Bytes())
+	m.fields[1].SetBytes(m.bitmap.Bytes())
+	packedBitmap, err := m.fields[1].Pack()
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +175,7 @@ func (m *Message) Pack() ([]byte, error) {
 				return nil, fmt.Errorf("Failed to pack field: %d. No definition found", i)
 			}
 
-			packedField, err := field.Pack(field.Bytes())
+			packedField, err := field.Pack()
 			if err != nil {
 				return nil, err
 			}

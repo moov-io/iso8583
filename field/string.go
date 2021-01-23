@@ -43,7 +43,9 @@ func (f *String) String() string {
 	return f.Value
 }
 
-func (f *String) Pack(data []byte) ([]byte, error) {
+func (f *String) Pack() ([]byte, error) {
+	data := []byte(f.Value)
+
 	if f.spec.Pad != nil {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
 	}

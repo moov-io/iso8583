@@ -9,7 +9,7 @@ import (
 var _ Field = (*Bitmap)(nil)
 
 type Bitmap struct {
-	Value string
+	Value []byte
 	spec  *Spec
 }
 
@@ -28,18 +28,20 @@ func (f *Bitmap) SetSpec(spec *Spec) {
 }
 
 func (f *Bitmap) SetBytes(b []byte) {
-	f.Value = string(b)
+	f.Value = b
 }
 
 func (f *Bitmap) Bytes() []byte {
-	return []byte(f.Value)
-}
-
-func (f *Bitmap) String() string {
 	return f.Value
 }
 
-func (f *Bitmap) Pack(data []byte) ([]byte, error) {
+func (f *Bitmap) String() string {
+	return string(f.Value)
+}
+
+func (f *Bitmap) Pack() ([]byte, error) {
+	data := f.Value
+
 	bitmap := utils.NewBitmapFromData(data)
 
 	packed, err := f.spec.Enc.Encode(data)

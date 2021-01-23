@@ -44,7 +44,9 @@ func (f *Numeric) String() string {
 	return strconv.Itoa(f.Value)
 }
 
-func (f *Numeric) Pack(data []byte) ([]byte, error) {
+func (f *Numeric) Pack() ([]byte, error) {
+	data := []byte(strconv.Itoa(f.Value))
+
 	if f.spec.Pad != nil {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
 	}
