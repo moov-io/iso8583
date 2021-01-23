@@ -5,32 +5,17 @@ import (
 	"reflect"
 
 	"github.com/moov-io/iso8583/field"
-	"github.com/moov-io/iso8583/utils"
 )
 
 type Message struct {
-	// should we make it private?
-	fields map[int]field.Field
-	spec   *MessageSpec
-
-	// let's keep it 8 bytes for now
-	bitmap *utils.Bitmap
-	data   interface{}
-
+	fields    map[int]field.Field
+	spec      *MessageSpec
+	data      interface{}
 	fieldsMap map[int]struct{}
+	bitmap    *field.Bitmap
 }
 
 func NewMessage(spec *MessageSpec) *Message {
-	fields := spec.CreateMessageFields()
-
-	return &Message{
-		fields:    fields,
-		spec:      spec,
-		fieldsMap: map[int]struct{}{},
-	}
-}
-
-func NewMessageWithData(spec *MessageSpec, data interface{}) *Message {
 	fields := spec.CreateMessageFields()
 
 	return &Message{
@@ -85,7 +70,14 @@ func (m *Message) SetData(data interface{}) error {
 	return nil
 }
 
-func (m *Message) Bitmap() *utils.Bitmap {
+func (m *Message) Bitmap() *field.Bitmap {
+	if m.bitmap != nil {
+		return m.bitmap
+	}
+
+	m.bitmap = m.fields[1].(*field.Bitmap)
+	m.fieldsMap[1] = struct{}{}
+
 	return m.bitmap
 }
 
@@ -127,48 +119,27 @@ func (m *Message) GetBytes(id int) []byte {
 
 func (m *Message) Pack() ([]byte, error) {
 	packed := []byte{}
+	m.Bitmap().Reset()
 
-	// use fixed length of the bitmap for now
-	m.bitmap = utils.NewBitmap(128)
-
-	// fill in the bitmap
-	// and find max field id (to determine bitmap length later)
+	// build the bitmap
 	maxId := 0
 	for id, _ := range m.fieldsMap {
 		if id > maxId {
 			maxId = id
 		}
 
-		// regular fields start from index 2
+		// index 0 is for mti
+		// index 1 is for bitmap
+		// regular field number startd from index 2
 		if id < 2 {
 			continue
 		}
-		m.bitmap.Set(id)
+
+		m.Bitmap().Set(id)
 	}
 
-	// TODO add test for this
-	// if we need second bitmap
-	if maxId > 64 {
-		m.bitmap.Set(1)
-	}
-
-	// pack MTI
-	packedMTI, err := m.fields[0].Pack()
-	if err != nil {
-		return nil, err
-	}
-	packed = append(packed, packedMTI...)
-
-	// pack Bitmap
-	m.fields[1].SetBytes(m.bitmap.Bytes())
-	packedBitmap, err := m.fields[1].Pack()
-	if err != nil {
-		return nil, err
-	}
-	packed = append(packed, packedBitmap...)
-
-	// pack each field
-	for i := 2; i <= maxId; i++ {
+	// pack fields
+	for i := 0; i <= maxId; i++ {
 		if _, ok := m.fieldsMap[i]; ok {
 			field, ok := m.fields[i]
 			if !ok {
@@ -190,6 +161,7 @@ func (m *Message) Unpack(src []byte) error {
 	var off int
 
 	m.fieldsMap = map[int]struct{}{}
+	m.Bitmap().Reset()
 
 	// unpack MTI
 	data, read, err := m.fields[0].Unpack(src)
@@ -206,11 +178,11 @@ func (m *Message) Unpack(src []byte) error {
 	if err != nil {
 		return err
 	}
-	m.bitmap = utils.NewBitmapFromData(data)
+	// m.bitmap = utils.NewBitmapFromData(data)
 	off += read
 
-	for i := 2; i <= m.bitmap.Len(); i++ {
-		if m.bitmap.IsSet(i) {
+	for i := 2; i <= m.Bitmap().Len(); i++ {
+		if m.Bitmap().IsSet(i) {
 			fl, ok := m.fields[i]
 			if !ok {
 				return fmt.Errorf("Failed to unpack field %d. No Specification found for the field", i)

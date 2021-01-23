@@ -42,3 +42,16 @@ func TestBitmapSpec(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
+
+func TestBitmapLength(t *testing.T) {
+	// by default only one bitmap
+	// index 1 is not set
+	// when we have > 64 fields
+	// index 1 is set
+	// TODO add test for this
+	// if we need second bitmap
+	// if maxId > 64 {
+	// 	m.Bitmap().Set(1)
+	// }
+
+}
