@@ -12,7 +12,7 @@ type hexFixedPrefixer struct {
 func (p *hexFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	// for ascii hex the lenght is x2 (ascii hex digit takes one byte)
 	if dataLen != fixLen*2 {
-		return nil, fmt.Errorf("Failed to encode length. Field length: %d should be fixed: %d", dataLen, fixLen*2)
+		return nil, fmt.Errorf("field length: %d should be fixed: %d", dataLen, fixLen*2)
 	}
 
 	return []byte{}, nil
@@ -27,5 +27,5 @@ func (p *hexFixedPrefixer) Length() int {
 }
 
 func (p *hexFixedPrefixer) Inspect() string {
-	return "ASCII fixed length"
+	return "Hex fixed length"
 }

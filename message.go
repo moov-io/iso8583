@@ -54,7 +54,7 @@ func (m *Message) SetData(data interface{}) error {
 		}
 
 		if dataField.Type() != reflect.TypeOf(fl) {
-			return fmt.Errorf("field %s type: %v does not match the type in the spec: %v", fieldName, dataField.Type(), reflect.TypeOf(fl))
+			return fmt.Errorf("failed to set data: type of the field %d: %v does not match the type in the spec: %v", i, dataField.Type(), reflect.TypeOf(fl))
 		}
 
 		// set data field spec for the message spec field
@@ -142,12 +142,12 @@ func (m *Message) Pack() ([]byte, error) {
 		if _, ok := m.fieldsMap[i]; ok {
 			field, ok := m.fields[i]
 			if !ok {
-				return nil, fmt.Errorf("Failed to pack field: %d. No definition found", i)
+				return nil, fmt.Errorf("failed to pack field %d: no specification found", i)
 			}
 
 			packedField, err := field.Pack()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
 			}
 			packed = append(packed, packedField...)
 		}
@@ -180,20 +180,20 @@ func (m *Message) Unpack(src []byte) error {
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
 		if m.Bitmap().IsSet(i) {
-			fl, ok := m.fields[i]
+			field, ok := m.fields[i]
 			if !ok {
-				return fmt.Errorf("Failed to unpack field %d. No Specification found for the field", i)
+				return fmt.Errorf("failed to unpack field %d: no specification found", i)
 			}
 
 			m.fieldsMap[i] = struct{}{}
-			read, err = fl.Unpack(src[off:])
+			read, err = field.Unpack(src[off:])
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to unpack field %d (%s): %v", i, field.Spec().Description, err)
 			}
 
-			err = m.linkDataFieldWithMessageField(i, fl)
+			err = m.linkDataFieldWithMessageField(i, field)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to unpack field %d: %v", i, err)
 			}
 			off += read
 		}
@@ -219,7 +219,7 @@ func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) error {
 	}
 
 	if dataField.Type() != reflect.TypeOf(fl) {
-		return fmt.Errorf("field %s type: %v does not match the type in the spec: %v", fieldName, dataField.Type(), reflect.TypeOf(fl))
+		return fmt.Errorf("field type: %v does not match the type in the spec: %v", dataField.Type(), reflect.TypeOf(fl))
 	}
 
 	dataField.Addr().Elem().Set(reflect.ValueOf(fl))

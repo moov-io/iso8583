@@ -10,7 +10,7 @@ func (e asciiEncoder) Encode(data []byte) ([]byte, error) {
 	out := []byte{}
 	for _, r := range data {
 		if r > 127 {
-			return nil, fmt.Errorf("Failed to decode into ASCII. '%s' is not valid ASCII char", string(r))
+			return nil, fmt.Errorf("invalid ASCII char: '%s'", string(r))
 		}
 		out = append(out, r)
 	}
@@ -22,7 +22,7 @@ func (e asciiEncoder) Decode(data []byte, _ int) ([]byte, error) {
 	out := []byte{}
 	for _, r := range data {
 		if r > 127 {
-			return nil, fmt.Errorf("Failed to decode into ASCII. '%s' is not valid ASCII char", string(r))
+			return nil, fmt.Errorf("invalid ASCII char: '%s'", string(r))
 		}
 		out = append(out, r)
 	}

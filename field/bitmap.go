@@ -43,8 +43,6 @@ func (f *Bitmap) String() string {
 }
 
 func (f *Bitmap) Pack() ([]byte, error) {
-	fmt.Println("pack bitmap")
-
 	// let's test and read more about it
 	if f.maxId > 64 {
 		f.bitmap.Set(1)
@@ -54,12 +52,12 @@ func (f *Bitmap) Pack() ([]byte, error) {
 
 	packed, err := f.spec.Enc.Encode(data)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to pack '%s': %v", f.spec.Description, err)
+		return nil, fmt.Errorf("failed to encode content: %v", err)
 	}
 
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to pack '%s': %v", f.spec.Description, err)
+		return nil, fmt.Errorf("failed to encode length: %v", err)
 	}
 
 	if !f.bitmap.IsSet(1) {
@@ -75,14 +73,14 @@ func (f *Bitmap) Pack() ([]byte, error) {
 func (f *Bitmap) Unpack(data []byte) (int, error) {
 	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
-		return 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
+		return 0, fmt.Errorf("failed to decode length: %v", err)
 	}
 
 	start := f.spec.Pref.Length()
 	end := f.spec.Pref.Length() + dataLen
 	raw, err := f.spec.Enc.Decode(data[start:end], 0)
 	if err != nil {
-		return 0, fmt.Errorf("Failed to unpack '%s': %v", f.spec.Description, err)
+		return 0, fmt.Errorf("failed to decode content: %v", err)
 	}
 
 	bitmap := utils.NewBitmapFromData(raw)

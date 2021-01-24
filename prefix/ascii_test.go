@@ -13,7 +13,7 @@ func TestAsciiVarPrefixer_EncodeLengthDigitsValidation(t *testing.T) {
 
 	_, err := pref.EncodeLength(999, 123)
 
-	require.Contains(t, err.Error(), "Number of digits exceeds: 2")
+	require.Contains(t, err.Error(), "number of digits in length: 123 exceeds: 2")
 }
 
 func TestAsciiVarPrefixer_EncodeLengthMaxLengthValidation(t *testing.T) {
@@ -23,7 +23,7 @@ func TestAsciiVarPrefixer_EncodeLengthMaxLengthValidation(t *testing.T) {
 
 	_, err := pref.EncodeLength(20, 22)
 
-	require.Contains(t, err.Error(), "Field length: 22 is larger than maximum: 20")
+	require.Contains(t, err.Error(), "field length: 22 is larger than maximum: 20")
 }
 
 func TestAsciiVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
@@ -33,7 +33,7 @@ func TestAsciiVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
 
 	_, err := pref.DecodeLength(20, []byte("22"))
 
-	require.Contains(t, err.Error(), "Not enought data length: 2 to read: 3 byte digits")
+	require.Contains(t, err.Error(), "not enought data length: 2 to read: 3 byte digits")
 }
 
 func TestAsciiVarPrefixer_LHelpers(t *testing.T) {
@@ -93,5 +93,5 @@ func TestAsciiFixedPrefixer_EncodeLengthValidation(t *testing.T) {
 
 	_, err := pref.EncodeLength(8, 12)
 
-	require.Contains(t, err.Error(), "Field length: 12 should be fixed: 8")
+	require.Contains(t, err.Error(), "field length: 12 should be fixed: 8")
 }
