@@ -9,10 +9,9 @@ import (
 var _ Field = (*Bitmap)(nil)
 
 type Bitmap struct {
-	Value  []byte
-	spec   *Spec
-	bitmap *utils.Bitmap
-	maxId  int
+	spec     *Spec
+	bitmap   *utils.Bitmap
+	maxBitID int
 }
 
 func NewBitmap(spec *Spec) Field {
@@ -44,7 +43,7 @@ func (f *Bitmap) String() string {
 
 func (f *Bitmap) Pack() ([]byte, error) {
 	// let's test and read more about it
-	if f.maxId > 64 {
+	if f.maxBitID > 64 {
 		f.bitmap.Set(1)
 	}
 
@@ -99,8 +98,8 @@ func (f *Bitmap) Reset() {
 }
 
 func (f *Bitmap) Set(i int) {
-	if i > f.maxId {
-		f.maxId = i
+	if i > f.maxBitID {
+		f.maxBitID = i
 	}
 
 	f.bitmap.Set(i)
