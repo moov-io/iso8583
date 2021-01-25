@@ -17,7 +17,8 @@ func TestBitmapSpec(t *testing.T) {
 	})
 
 	// pack
-	got, err := field.Pack([]byte{0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB})
+	field.SetBytes([]byte{0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB, 0xCD, 0xEF, 0xAB})
+	got, err := field.Pack()
 	want := []byte("abcdefabcdefabcdefabcdefabcdefab")
 	require.NoError(t, err)
 	require.Equal(t, want, got)
@@ -25,19 +26,32 @@ func TestBitmapSpec(t *testing.T) {
 	// unpack
 	// when only primari bitmap presents
 	// we should read only first 8 bytes
-	got, length, err := field.Unpack([]byte("68000000000000000000000000000000123456"))
+	length, err := field.Unpack([]byte("68000000000000000000000000000000123456"))
 	want = []byte{104, 0, 0, 0, 0, 0, 0, 0}
 	require.Equal(t, 16, length)
-	require.Len(t, got, 8)
+	require.Len(t, field.Bytes(), 8)
 	require.NoError(t, err)
-	require.Equal(t, want, got)
+	require.Equal(t, want, field.Bytes())
 
 	// when secondary primari bitmap presents
 	// we should read 16 bytes
-	got, length, err = field.Unpack([]byte("E8000000000000000000000000000000aa"))
+	length, err = field.Unpack([]byte("E8000000000000000000000000000000aa"))
 	want = []byte{232, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	require.Equal(t, 32, length)
-	require.Len(t, got, 16)
+	require.Len(t, field.Bytes(), 16)
 	require.NoError(t, err)
-	require.Equal(t, want, got)
+	require.Equal(t, want, field.Bytes())
+}
+
+func TestBitmapLength(t *testing.T) {
+	// by default only one bitmap
+	// index 1 is not set
+	// when we have > 64 fields
+	// index 1 is set
+	// TODO add test for this
+	// if we need second bitmap
+	// if maxId > 64 {
+	// 	m.Bitmap().Set(1)
+	// }
+
 }

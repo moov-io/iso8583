@@ -1,8 +1,6 @@
 package encoding
 
 import (
-	"fmt"
-
 	"github.com/yerden/go-util/bcd"
 )
 
@@ -32,11 +30,6 @@ func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("DST", string(dst))
-
-	// if length > n error
-	// return dst[:length], nil
 
 	return dst[len(dst)-length:], nil
 }

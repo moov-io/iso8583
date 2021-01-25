@@ -5,8 +5,16 @@ import (
 )
 
 func TestField(t *testing.T) {
-	// f := NewString(1, []byte("hello"))
+	// mti := NewString(&Spec{
+	// 	Length:      4,
+	// 	Description: "Message Type Indicator",
+	// 	Enc:         encoding.ASCII,
+	// 	Pref:        prefix.ASCII.Fixed,
+	// })
 
-	// require.Equal(t, "hello", f.String())
-	// require.Equal(t, []byte("hello"), f.Bytes())
+	// mti.SetBytes([]byte("0100"))
+
+	// data := mti.Pack()
+
+	// fmt.Println(data)
 }

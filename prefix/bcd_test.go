@@ -9,13 +9,13 @@ import (
 func TestBCDVarPrefixer_EncodeLengthDigitsValidation(t *testing.T) {
 	_, err := BCD.LL.EncodeLength(999, 123)
 
-	require.Contains(t, err.Error(), "Number of digits exceeds: 2")
+	require.Contains(t, err.Error(), "number of digits in length: 123 exceeds: 2")
 }
 
 func TestBCDVarPrefixer_EncodeLengthMaxLengthValidation(t *testing.T) {
 	_, err := BCD.LL.EncodeLength(20, 22)
 
-	require.Contains(t, err.Error(), "Field length: 22 is larger than maximum: 20")
+	require.Contains(t, err.Error(), "field length: 22 is larger than maximum: 20")
 }
 
 func TestBCDVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
