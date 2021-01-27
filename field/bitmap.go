@@ -9,9 +9,8 @@ import (
 var _ Field = (*Bitmap)(nil)
 
 type Bitmap struct {
-	spec     *Spec
-	bitmap   *utils.Bitmap
-	maxBitID int
+	spec   *Spec
+	bitmap *utils.Bitmap
 }
 
 func NewBitmap(spec *Spec) Field {
@@ -42,8 +41,7 @@ func (f *Bitmap) String() string {
 }
 
 func (f *Bitmap) Pack() ([]byte, error) {
-	// let's test and read more about it
-	if f.maxBitID > 64 {
+	if f.isSecondary() {
 		f.bitmap.Set(1)
 	}
 
@@ -70,27 +68,43 @@ func (f *Bitmap) Pack() ([]byte, error) {
 // if there is only primary bitmap (bit 1 is not set) we return only 8 bytes
 // if secondary bitmap presents (bit 1 is set) we return 16 bytes
 func (f *Bitmap) Unpack(data []byte) (int, error) {
+	minLen, err := f.spec.Pref.DecodeLength(f.spec.Length/2, data)
+	if err != nil {
+		return 0, fmt.Errorf("failed to decode length: %v", err)
+	}
+
 	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %v", err)
 	}
 
+	if len(data) < minLen {
+		return 0, fmt.Errorf("expected min data length is %d, but it is %d", minLen, len(data))
+	}
+
+	// read minLen first. for cases when there is only primary bitmap
 	start := f.spec.Pref.Length()
-	end := f.spec.Pref.Length() + dataLen
+	end := f.spec.Pref.Length() + minLen
 	raw, err := f.spec.Enc.Decode(data[start:end], 0)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode content: %v", err)
 	}
 
 	bitmap := utils.NewBitmapFromData(raw)
-
-	if bitmap.IsSet(1) {
-		f.bitmap = utils.NewBitmapFromData(raw[:16])
-		return dataLen, nil
+	if !bitmap.IsSet(1) {
+		f.bitmap = bitmap
+		return minLen, nil
 	}
 
-	f.bitmap = utils.NewBitmapFromData(raw[:8])
-	return dataLen / 2, nil
+	// read full lenth. for cases when there is secondary bitmap
+	end = f.spec.Pref.Length() + dataLen
+	raw, err = f.spec.Enc.Decode(data[start:end], 0)
+	if err != nil {
+		return 0, fmt.Errorf("failed to decode content: %v", err)
+	}
+
+	f.bitmap = utils.NewBitmapFromData(raw)
+	return dataLen, nil
 }
 
 func (f *Bitmap) Reset() {
@@ -98,10 +112,6 @@ func (f *Bitmap) Reset() {
 }
 
 func (f *Bitmap) Set(i int) {
-	if i > f.maxBitID {
-		f.maxBitID = i
-	}
-
 	f.bitmap.Set(i)
 }
 
@@ -111,4 +121,14 @@ func (f *Bitmap) IsSet(i int) bool {
 
 func (f *Bitmap) Len() int {
 	return f.bitmap.Len()
+}
+
+func (f *Bitmap) isSecondary() bool {
+	for i := 65; i <= 128; i++ {
+		if f.IsSet(i) {
+			return true
+		}
+	}
+
+	return false
 }
