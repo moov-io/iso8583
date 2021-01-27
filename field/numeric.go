@@ -81,7 +81,10 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 		raw = f.spec.Pad.Unpad(raw)
 	}
 
-	f.Value, _ = strconv.Atoi(string(raw))
+	f.Value, err = strconv.Atoi(string(raw))
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert into number: %v", err)
+	}
 
 	return dataLen + f.spec.Pref.Length(), nil
 }
