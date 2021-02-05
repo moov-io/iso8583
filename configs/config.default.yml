@@ -10,12 +10,3 @@ ISO8583:
     DatabaseName: "iso8583"
     SQLLite:
       Path: ":memory:"
-  Gateway:
-    # Examples of how to set up this config.
-    # keys:
-    #   http:
-    #    urls:
-    #    - http://tumbler:8204/.well-known/jwks.json
-    #   file:
-    #     paths: 
-    #     - ./configs/gateway-jwks-sig-pub.json
