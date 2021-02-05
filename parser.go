@@ -87,8 +87,9 @@ func initStruct(tp reflect.Type, val reflect.Value) {
 	for i := 0; i < tp.NumField(); i++ {
 		field := reflect.Indirect(val).Field(i)
 		fieldType := tp.Field(i)
-		switch fieldType.Type.Kind() {
-		case reflect.Ptr: // only initialize Ptr fields
+
+		// only initialize Ptr fields
+		if fieldType.Type.Kind() == reflect.Ptr {
 			fieldValue := reflect.New(fieldType.Type.Elem())
 			field.Set(fieldValue)
 		}
