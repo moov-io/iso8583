@@ -43,11 +43,17 @@ func executeCommand(root *cobra.Command, args ...string) (output string, err err
 	return output, err
 }
 
+func deleteFile() {
+	// delete file
+	os.Remove("output")
+}
+
 func TestConvertWithoutInput(t *testing.T) {
 	_, err := executeCommand(rootCmd, "convert", "output", "--format", utils.MessageFormatJson)
 	if err == nil {
 		t.Errorf("invalid input file")
 	}
+	deleteFile()
 }
 
 func TestConvertWithInvalidParam(t *testing.T) {
@@ -67,6 +73,8 @@ func TestConvertJson(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestConvertXml(t *testing.T) {
@@ -79,6 +87,8 @@ func TestConvertXml(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestConvertIso8583(t *testing.T) {
@@ -91,6 +101,8 @@ func TestConvertIso8583(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestConvertUnknown(t *testing.T) {
@@ -98,6 +110,7 @@ func TestConvertUnknown(t *testing.T) {
 	if err == nil {
 		t.Errorf("don't support the format")
 	}
+	deleteFile()
 }
 
 func TestPrintIso8583(t *testing.T) {
@@ -184,6 +197,8 @@ func TestConvertWithInvalidData(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestValidatorWithInvalidData(t *testing.T) {
@@ -220,6 +235,8 @@ func TestConvertWithErrorData(t *testing.T) {
 	if err == nil {
 		t.Errorf("error data")
 	}
+
+	deleteFile()
 }
 
 func TestValidatorWithErrorData(t *testing.T) {
@@ -256,6 +273,8 @@ func TestConvertWithJsonData(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestValidatorWithJsonData(t *testing.T) {
@@ -292,6 +311,8 @@ func TestConvertWithXmlData(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestValidatorWithXmlData(t *testing.T) {
