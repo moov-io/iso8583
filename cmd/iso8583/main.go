@@ -14,7 +14,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/moov-io/identity/pkg/logging"
+	baseLog "github.com/moov-io/base/log"
 	"github.com/moov-io/iso8583/pkg/lib"
 	"github.com/moov-io/iso8583/pkg/server"
 	"github.com/moov-io/iso8583/pkg/utils"
@@ -36,12 +36,12 @@ var WebCmd = &cobra.Command{
 	Long:  "Launches web server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		env := &server.Environment{
-			Logger: logging.NewDefaultLogger().WithKeyValue("app", "iso8583"),
+			Logger: baseLog.NewDefaultLogger(),
 		}
 
 		env, err := server.NewEnvironment(env)
 		if err != nil {
-			env.Logger.Fatal().LogError("Error loading up environment.", err)
+			env.Logger.Fatal().LogErrorf("Error loading up environment.", err).Err()
 			os.Exit(1)
 		}
 		defer env.Shutdown()

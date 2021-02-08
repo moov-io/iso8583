@@ -5,7 +5,7 @@
 package server
 
 import (
-	"github.com/moov-io/identity/pkg/database"
+	"github.com/moov-io/base/database"
 )
 
 type GlobalConfig struct {

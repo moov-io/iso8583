@@ -8,5 +8,5 @@ ISO8583:
         Address: ":8209"
   Database:
     DatabaseName: "iso8583"
-    SQLLite:
+    SQLite:
       Path: ":memory:"

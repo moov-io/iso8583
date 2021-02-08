@@ -16,9 +16,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/moov-io/base/admin"
-	_ "github.com/moov-io/identity" // need to import the embedded files
-
-	log "github.com/moov-io/identity/pkg/logging"
+	log "github.com/moov-io/base/log"
 )
 
 // RunServers - Boots up all the servers and awaits till they are stopped.
@@ -54,7 +52,7 @@ func newTerminationListener() chan error {
 
 func awaitTermination(logger log.Logger, terminationListener chan error) {
 	if err := <-terminationListener; err != nil {
-		logger.Fatal().LogError("Terminated", err)
+		logger.Fatal().LogErrorf("Terminated", err).Err()
 	}
 }
 
@@ -78,13 +76,13 @@ func bootHTTPServer(name string, routes *mux.Router, errs chan<- error, logger l
 	go func() {
 		logger.Info().Log(fmt.Sprintf("%s listening on %s", name, config.Bind.Address))
 		if err := serve.ListenAndServe(); err != nil {
-			errs <- logger.Fatal().LogErrorF("problem starting http: %w", err)
+			errs <- logger.Fatal().LogErrorf("problem starting http: %w", err).Err()
 		}
 	}()
 
 	shutdownServer := func() {
 		if err := serve.Shutdown(context.TODO()); err != nil {
-			logger.Fatal().LogError(name, err)
+			logger.Fatal().LogErrorf(name, err).Err()
 		}
 	}
 
@@ -97,7 +95,7 @@ func bootAdminServer(errs chan<- error, logger log.Logger, config HTTPConfig) *a
 	go func() {
 		logger.Info().Log(fmt.Sprintf("listening on %s", adminServer.BindAddr()))
 		if err := adminServer.Listen(); err != nil {
-			errs <- logger.Fatal().LogErrorF("problem starting admin http: %w", err)
+			errs <- logger.Fatal().LogErrorf("problem starting admin http: %w", err).Err()
 		}
 	}()
 

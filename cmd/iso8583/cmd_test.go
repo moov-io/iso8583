@@ -14,12 +14,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var testSpecFilePath = filepath.Join("..", "..", "test", "testdata", "specification_ver_1987.json")
-var testMessageFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.dat")
-var testInvalidFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message_error_date.dat")
-var testErrorFilePath = filepath.Join("..", "..", "test", "testdata", "error_message.dat")
-var testJsonFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.json")
-var testXmlFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.xml")
+var (
+	testSpecFilePath    = filepath.Join("..", "..", "test", "testdata", "specification_ver_1987.json")
+	testMessageFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.dat")
+	testInvalidFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message_error_date.dat")
+	testErrorFilePath   = filepath.Join("..", "..", "test", "testdata", "error_message.dat")
+	testJsonFilePath    = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.json")
+	testXmlFilePath     = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.xml")
+)
 
 func TestMain(m *testing.M) {
 	initRootCmd()
