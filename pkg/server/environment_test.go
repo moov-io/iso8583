@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-kit/kit/log"
-	baseLog "github.com/moov-io/base/log"
+	logging "github.com/moov-io/base/log"
 	"github.com/moov-io/iso8583/pkg/server"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +18,7 @@ func Test_Environment_Startup(t *testing.T) {
 	a := assert.New(t)
 
 	env := &server.Environment{
-		Logger: baseLog.NewLogger(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))),
+		Logger: logging.NewLogger(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))),
 	}
 
 	env, err := server.NewEnvironment(env)

@@ -14,7 +14,7 @@ import (
 	"os"
 	"path/filepath"
 
-	baseLog "github.com/moov-io/base/log"
+	logging "github.com/moov-io/base/log"
 	"github.com/moov-io/iso8583/pkg/lib"
 	"github.com/moov-io/iso8583/pkg/server"
 	"github.com/moov-io/iso8583/pkg/utils"
@@ -36,7 +36,7 @@ var WebCmd = &cobra.Command{
 	Long:  "Launches web server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		env := &server.Environment{
-			Logger: baseLog.NewDefaultLogger(),
+			Logger: logging.NewDefaultLogger(),
 		}
 
 		env, err := server.NewEnvironment(env)
