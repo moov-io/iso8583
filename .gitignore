@@ -36,3 +36,4 @@ bin/
 tmp/
 /cmd/iso8583/output
 api/*.jar
+spec87_temp_test.go
