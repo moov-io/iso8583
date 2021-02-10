@@ -14,12 +14,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var testSpecFilePath = filepath.Join("..", "..", "test", "testdata", "specification_ver_1987.json")
-var testMessageFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.dat")
-var testInvalidFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message_error_date.dat")
-var testErrorFilePath = filepath.Join("..", "..", "test", "testdata", "error_message.dat")
-var testJsonFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.json")
-var testXmlFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.xml")
+var (
+	testSpecFilePath    = filepath.Join("..", "..", "test", "testdata", "specification_ver_1987.json")
+	testMessageFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.dat")
+	testInvalidFilePath = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message_error_date.dat")
+	testErrorFilePath   = filepath.Join("..", "..", "test", "testdata", "error_message.dat")
+	testJsonFilePath    = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.json")
+	testXmlFilePath     = filepath.Join("..", "..", "test", "testdata", "iso_reversal_message.xml")
+)
 
 func TestMain(m *testing.M) {
 	initRootCmd()
@@ -41,11 +43,17 @@ func executeCommand(root *cobra.Command, args ...string) (output string, err err
 	return output, err
 }
 
+func deleteFile() {
+	// delete file
+	os.Remove("output")
+}
+
 func TestConvertWithoutInput(t *testing.T) {
 	_, err := executeCommand(rootCmd, "convert", "output", "--format", utils.MessageFormatJson)
 	if err == nil {
 		t.Errorf("invalid input file")
 	}
+	deleteFile()
 }
 
 func TestConvertWithInvalidParam(t *testing.T) {
@@ -65,6 +73,8 @@ func TestConvertJson(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestConvertXml(t *testing.T) {
@@ -77,6 +87,8 @@ func TestConvertXml(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestConvertIso8583(t *testing.T) {
@@ -89,6 +101,8 @@ func TestConvertIso8583(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestConvertUnknown(t *testing.T) {
@@ -96,6 +110,7 @@ func TestConvertUnknown(t *testing.T) {
 	if err == nil {
 		t.Errorf("don't support the format")
 	}
+	deleteFile()
 }
 
 func TestPrintIso8583(t *testing.T) {
@@ -182,6 +197,8 @@ func TestConvertWithInvalidData(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestValidatorWithInvalidData(t *testing.T) {
@@ -218,6 +235,8 @@ func TestConvertWithErrorData(t *testing.T) {
 	if err == nil {
 		t.Errorf("error data")
 	}
+
+	deleteFile()
 }
 
 func TestValidatorWithErrorData(t *testing.T) {
@@ -254,6 +273,8 @@ func TestConvertWithJsonData(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestValidatorWithJsonData(t *testing.T) {
@@ -290,6 +311,8 @@ func TestConvertWithXmlData(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
+
+	deleteFile()
 }
 
 func TestValidatorWithXmlData(t *testing.T) {

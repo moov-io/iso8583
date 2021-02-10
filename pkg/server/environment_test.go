@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-kit/kit/log"
-	"github.com/moov-io/identity/pkg/logging"
+	logging "github.com/moov-io/base/log"
 	"github.com/moov-io/iso8583/pkg/server"
 	"github.com/stretchr/testify/assert"
 )
