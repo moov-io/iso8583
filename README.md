@@ -60,7 +60,7 @@ First, you need to define the format of the message fields that are described in
 | `Length`         | Maximum length in bytes, for both fixed and variable lengths. | `10`                       |
 | `Description`    | Describes what the data field holds.                    | `"Primary Account Number"` |
 | `Enc`            | Sets the encoding type (`ASCII`, `Hex`, `Binary`, `BCD`, `LBCD`).       | `encoding.ASCII`           |
-| `Pref`           | Sets the length type as fixed or variable (`Fixed`, `L`, `LL`, `LLL`, `LLLL`).               | `prefix.ASCII.Fixed`       |
+| `Pref`           | Sets the length type as fixed or variable (`Fixed`, `L`, `LL`, `LLL`, `LLLL`). The number of 'L's corresponds to the number of digits in a variable length.               | `prefix.ASCII.Fixed`       |
 | `Pad` (optional) | Sets padding direction and type.                              | `padding.Left('0')`        |
 
 The following example creates a full specification with five individual fields:
@@ -131,6 +131,8 @@ rawMessage, err := message.Pack()
 
 // now you can send rawMessage over the wire
 ```
+
+The binary message created will be `"01007000000000000000164242424242424242123456000000000100"`.
 
 #### Typed fields
 
