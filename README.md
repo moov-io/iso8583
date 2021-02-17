@@ -1,51 +1,99 @@
-# alovak/iso8583
+[![Moov Banner Logo](https://user-images.githubusercontent.com/20115216/104214617-885b3c80-53ec-11eb-8ce0-9fc745fb5bfc.png)](https://github.com/moov-io)
 
-Package `github.com/alovak/iso8583` implements ISO8583 standard in GO.
+<p align="center">
+  <a href="https://github.com/moov-io/iso8583/tree/master/docs">Project Documentation</a>
+  ·
+  <a href="https://slack.moov.io/">Community</a>
+  ·
+  <a href="https://moov.io/blog/">Blog</a>
+  <br>
+  <br>
+</p>
 
-...
+[![GoDoc](https://godoc.org/github.com/moov-io/iso8583?status.svg)](https://godoc.org/github.com/moov-io/iso8583)
+[![Build Status](https://github.com/moov-io/iso8583/workflows/Go/badge.svg)](https://github.com/moov-io/iso8583/actions)
+[![Coverage Status](https://codecov.io/gh/moov-io/iso8583/branch/master/graph/badge.svg)](https://codecov.io/gh/moov-io/iso8583)
+[![Go Report Card](https://goreportcard.com/badge/github.com/moov-io/iso8583)](https://goreportcard.com/report/github.com/moov-io/iso8583)
+[![Repo Size](https://img.shields.io/github/languages/code-size/moov-io/iso8583?label=project%20size)](https://github.com/moov-io/iso8583)
+[![Apache 2 License](https://img.shields.io/badge/license-Apache2-blue.svg)](https://raw.githubusercontent.com/moov-io/iso8583/master/LICENSE)
+[![Slack Channel](https://slack.moov.io/badge.svg?bg=e01563&fgColor=fffff)](https://slack.moov.io/)
+[![GitHub Stars](https://img.shields.io/github/stars/moov-io/iso8583)](https://github.com/moov-io/iso8583)
+[![Twitter](https://img.shields.io/twitter/follow/moov_io?style=social)](https://twitter.com/moov_io?lang=en)
 
-## Getting Started
+# moov-io/iso8583
 
-### Install
+Moov's mission is to give developers an easy way to create and integrate bank processing into their own software products. Our open source projects are each focused on solving a single responsibility in financial services and designed around performance, scalability, and ease of use.
 
+ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an international standard for card-originated financial transaction messages that defines both message format and communication flow. It's used by major card networks around the globe including Visa, Mastercard, and Verve. The standard supports card purchases, withdrawals, deposits, refunds, reversals, balance inquiries, inter-account transfers, administrative messages, secure key exchanges, and more.
+
+## Table of Contents
+
+- [Project Status](#project-status)
+- [Go Module](#go-library)
+	- [Define Specification](#define-your-specification)
+	- [Build Message](#build-and-pack-the-message)
+	- [Parse Message](#parse-the-message-and-access-the-data)
+- [Learn About ISO 8583](#learn-about-iso-8583)
+- [Getting Help](#getting-help)
+- [Contributing](#contributing)
+- [Related Projects](#related-projects)
+
+## Project Status
+
+Moov ISO8583 currently offers a Go package with plans for an API in the near future. Please star the project if you are interested in its progress. The project supports generating and parsing ISO8583 messages. Feedback on this early version of the project is appreciated and vital to its success. Please let us know if you encounter any bugs/unclear documentation or have feature suggestions by opening up an issue. Thanks!
+
+## Go Library
+
+This project uses [Go Modules](https://github.com/golang/go/wiki/Modules) and Go v1.14 or higher. See [Golang's install instructions](https://golang.org/doc/install) for help in setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
+
+### Installation
 ```
-go get github.com/alovak/iso8583
+go get github.com/moov-io/iso8583
 ```
 
-### Define your spec
+### Define your specification
 
-First, you need to define the format of the message fields that are described in your ISO8583 specification.
-Here is how you can do this:
+First, you need to define the format of the message fields that are described in your ISO8583 specification. Each data field has a type and its own spec. You can create a `NewBitmap`, `NewString`, or `NewNumeric` field. Each individual field spec consists of a few elements:
+
+| Element        | Notes                                                         | Example                  |
+|----------------|---------------------------------------------------------------|--------------------------|
+| `Length`         | Maximum length in bytes, for both fixed and variable lengths. | `10`                       |
+| `Description`    | Describes what the data field holds.                    | `"Primary Account Number"` |
+| `Enc`            | Sets the encoding type (`ASCII`, `Hex`, `Binary`, `BCD`, `LBCD`).       | `encoding.ASCII`           |
+| `Pref`           | Sets the length type as fixed or variable (`Fixed`, `L`, `LL`, `LLL`, `LLLL`).               | `prefix.ASCII.Fixed`       |
+| `Pad` (optional) | Sets padding direction and type.                              | `padding.Left('0')`        |
+
+The following example creates a full specification with five individual fields:
 
 ```go
 spec := &MessageSpec{
 	Fields: map[int]field.Field{
-		0: field.NewStringField(&field.Spec{
+		0: field.NewString(&field.Spec{
 			Length:      4,
 			Description: "Message Type Indicator",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
 		}),
-		1: field.NewBitmapField(&field.Spec{
+		1: field.NewBitmap(&field.Spec{
 			Length:      16,
 			Description: "Bitmap",
 			Enc:         encoding.Hex,
 			Pref:        prefix.Hex.Fixed,
 		}),
-		2: field.NewStringField(&field.Spec{
+		2: field.NewString(&field.Spec{
 			Length:      19,
 			Description: "Primary Account Number",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
 		}),
-		3: field.NewNumericField(&field.Spec{
+		3: field.NewNumeric(&field.Spec{
 			Length:      6,
 			Description: "Processing Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
 			Pad:         padding.Left('0'),
 		}),
-		4: field.NewStringField(&field.Spec{
+		4: field.NewString(&field.Spec{
 			Length:      12,
 			Description: "Transaction Amount",
 			Enc:         encoding.ASCII,
@@ -58,25 +106,27 @@ spec := &MessageSpec{
 
 ### Build and pack the message
 
-When the specification is defined it's time to build the message. There are two ways to do this: typed and untyped.
+After the specification is defined, you can build a message. Having a binary representation of your message that's packed according to the provided spec lets you send it directly to a payment system! There are two ways to generate a message: typed or untyped.
+
+Notice in the examples below, you do not need to set the bitmap value manually, as it is automatically generated for you during packing.
 
 #### Untyped fields
 
-If you don't worry about types and strings are ok for you, then you can easily set message fields like this:
-
+If you don't care about types, and strings are fine for you, then you can easily set message fields like this:
 
 ```go
 // create message with defined spec
-message := iso8583.NewMessage(spec87)
+message := NewMessage(spec)
 
+// sets message type indicator at field 0
 message.MTI("0100")
 
 // set all message fields you need as strings
 message.Field(2, "4242424242424242")
 message.Field(3, "123456")
-message.Field(4, "000000000100")
+message.Field(4, "100")
 
-// get binary representation of the message into rawMessage
+// generate binary representation of the message into rawMessage
 rawMessage, err := message.Pack()
 
 // now you can send rawMessage over the wire
@@ -84,9 +134,9 @@ rawMessage, err := message.Pack()
 
 #### Typed fields
 
-In many cases, you may want to work with types: numbers, strings, time, etc. We have got that covered!
+In many cases, you may want to work with specific types (numbers, strings, time, etc.) when setting message fields.
 
-First, you need to define the struct that corresponds to the spec field types. Here is an example:
+First, you need to define a struct that corresponds to the spec field types. Here is an example:
 
 ```go
 // use the same types from message specification
@@ -106,13 +156,9 @@ err := message.SetData(&ISO87Data{
 	F4: field.NewStringValue("100"),
 })
 
-
 // pack the message and send it to your provider
 rawMessage, err := message.Pack()
 ```
-
-
-Having a binary representation of your message that is packed according to the provided spec lets you send it directly to the payment system!
 
 ### Parse the message and access the data
 
@@ -120,23 +166,21 @@ When you have a binary (packed) message and you know the specification it follow
 
 #### Untyped fields
 
-With this approach you can access fields as strings no sweat:
+With this approach you can easily access fields as strings:
 
 ```go
-message := iso8583.NewMessage(spec)
-message.Unpack(binaryData)
+message := NewMessage(spec)
+message.Unpack(rawMessage)
 
 message.GetMTI() // MTI: 0100
 message.GetString(2) // Card number: 4242424242424242
 message.GetString(3) // Processing code: 123456
 message.GetString(4) // Transaction amount: 100
-
-// ...
 ```
 
 #### Typed fields
 
-To get typed field values just pass empty struct for the data you want to access:
+To get typed field values just pass an empty struct for the data you want to access:
 
 ```go
 // use the same types from message specification
@@ -150,10 +194,9 @@ message := NewMessage(spec)
 message.SetData(&ISO87Data{})
 
 // let's unpack binary message
-err := message.Unpack(binaryData)
+err := message.Unpack(rawMessage)
 
-// to get access to typed data we have to get Data from the message
-// and convert it into our ISO87Data type
+// to get access to typed data we have to get Data from the message and convert it into our ISO87Data type
 data := message.Data().(*ISO87Data)
 
 // now you have typed values
@@ -162,8 +205,47 @@ data.F3.Value // is an int 123456
 data.F4.Value // is a string "100"
 ```
 
-For real code samples please check [./message_test.go](./message_test.go).
+For complete code samples please check [./message_test.go](./message_test.go).
 
-# License
+## Learn About ISO 8583
 
-Apache License 2.0 See [LICENSE](LICENSE) for details.
+- [Intro to ISO 8583](./docs/intro.md)
+- [Message Type Indicator](./docs/mti.md)
+- [Bitmaps](./docs/bitmap.md)
+- [Data Fields](./docs/data-elements.md)
+- [ISO 8583 Terms and Definitions](https://www.iso.org/obp/ui/#iso:std:iso:8583:-1:ed-1:v1:en)
+
+## Getting Help
+
+ channel | info
+ ------- | -------
+[Project Documentation](https://github.com/moov-io/iso8583/tree/master/docs) | Our project documentation available online.
+Twitter [@moov_io](https://twitter.com/moov_io)	| You can follow Moov.IO's Twitter feed to get updates on our project(s). You can also tweet us questions or just share blogs or stories.
+[GitHub Issue](https://github.com/moov-io/iso8583/issues/new) | If you are able to reproduce a problem please open a GitHub Issue under the specific project that caused the error.
+[moov-io slack](https://slack.moov.io/) | Join our slack channel to have an interactive discussion about the development of the project.
+
+## Contributing
+
+Yes please! Please review our [Contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started! Check out our [issues for first time contributors](https://github.com/moov-io/ach/contribute) for something to help out with.
+
+This project uses [Go Modules](https://github.com/golang/go/wiki/Modules) and uses Go v1.14 or higher. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/ach/releases/latest) as well. We highly recommend you use a tagged release for production.
+
+## Related Projects
+As part of Moov's initiative to offer open source fintech infrastructure, we have a large collection of active projects you may find useful:
+
+- [Moov ACH](https://github.com/moov-io/ach) provides ACH file generation and parsing, supporting all Standard Entry Codes for the primary method of money movement throughout the United States.
+
+- [Moov Watchman](https://github.com/moov-io/watchman) offers search functions over numerous trade sanction lists from the United States and European Union.
+
+- [Moov Fed](https://github.com/moov-io/fed) implements utility services for searching the United States Federal Reserve System such as ABA routing numbers, financial institution name lookup, and FedACH and Fedwire routing information.
+
+- [Moov Wire](https://github.com/moov-io/wire) implements an interface to write files for the Fedwire Funds Service, a real-time gross settlement funds transfer system operated by the United States Federal Reserve Banks.
+
+- [Moov Image Cash Letter](https://github.com/moov-io/imagecashletter) implements Image Cash Letter (ICL) files used for Check21, X.9 or check truncation files for exchange and remote deposit in the U.S.
+
+- [Moov Metro 2](https://github.com/moov-io/metro2) provides a way to easily read, create, and validate Metro 2 format, which is used for consumer credit history reporting by the United States credit bureaus.
+
+
+## License
+
+Apache License 2.0 - See [LICENSE](LICENSE) for details.
