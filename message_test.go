@@ -22,7 +22,6 @@ func TestMessage(t *testing.T) {
 				Pref:        prefix.ASCII.Fixed,
 			}),
 			1: field.NewBitmap(&field.Spec{
-				Length:      16,
 				Description: "Bitmap",
 				Enc:         encoding.Hex,
 				Pref:        prefix.Hex.Fixed,
@@ -134,7 +133,6 @@ func TestPackUnpack(t *testing.T) {
 				Pref:        prefix.ASCII.Fixed,
 			}),
 			1: field.NewBitmap(&field.Spec{
-				Length:      16,
 				Description: "Bitmap",
 				Enc:         encoding.Binary,
 				Pref:        prefix.ASCII.Fixed,

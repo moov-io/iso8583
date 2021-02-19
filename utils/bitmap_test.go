@@ -29,5 +29,4 @@ func TestBitmap(t *testing.T) {
 	bitmap3.Set(11)
 	bitmap3.Set(15)
 	require.Equal(t, []byte{0xC6, 0x62}, bitmap3.Bytes())
-
 }

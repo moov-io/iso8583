@@ -6,6 +6,9 @@ import (
 	"github.com/moov-io/iso8583/utils"
 )
 
+const minBitmapLength = 8 // 64 bit, 8 bytes, or 16 hex digits
+const maxBitmaps = 3
+
 var _ Field = (*Bitmap)(nil)
 
 type Bitmap struct {
@@ -16,7 +19,7 @@ type Bitmap struct {
 func NewBitmap(spec *Spec) Field {
 	return &Bitmap{
 		spec:   spec,
-		bitmap: utils.NewBitmap(192),
+		bitmap: utils.NewBitmap(64 * maxBitmaps),
 	}
 }
 
@@ -41,36 +44,27 @@ func (f *Bitmap) String() string {
 }
 
 func (f *Bitmap) Pack() ([]byte, error) {
-	if f.isSecondary() {
-		f.bitmap.Set(1)
-	}
+	f.setBitmapFields()
 
+	count := f.bitmapsCount()
+
+	// here we have max possible bytes for the bitmap 8*maxBitmaps
 	data := f.Bytes()
+
+	data = data[0 : 8*count]
 
 	packed, err := f.spec.Enc.Encode(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode content: %v", err)
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %v", err)
-	}
-
-	if !f.bitmap.IsSet(1) {
-		packed = packed[:len(packed)/2]
-	}
-
-	return append(packedLength, packed...), nil
+	return packed, nil
 }
 
 // Unpack of the Bitmap field returns data of varied length
-// if there is only primary bitmap (bit 1 is not set) we return only 8 bytes
-// if secondary bitmap presents (bit 1 is set) we return 16 bytes
-
-const minBitmapLength = 8 // 64 bit, 8 bytes, or 16 hex digits
-const maxBitmaps = 3
-
+// if there is only primary bitmap (bit 1 is not set) we return only 8 bytes (or 16 for hex encoding)
+// if secondary bitmap presents (bit 1 is set) we return 16 bytes (or 32 for hex encoding)
+// and so on for maxBitmaps
 func (f *Bitmap) Unpack(data []byte) (int, error) {
 	minLen, err := f.spec.Pref.DecodeLength(minBitmapLength, data)
 	if err != nil {
@@ -109,7 +103,7 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 }
 
 func (f *Bitmap) Reset() {
-	f.bitmap = utils.NewBitmap(192)
+	f.bitmap = utils.NewBitmap(64 * maxBitmaps)
 }
 
 func (f *Bitmap) Set(i int) {
@@ -124,10 +118,37 @@ func (f *Bitmap) Len() int {
 	return f.bitmap.Len()
 }
 
-func (f *Bitmap) isSecondary() bool {
-	for i := 65; i <= 128; i++ {
-		if f.IsSet(i) {
-			return true
+func (f *Bitmap) bitmapsCount() int {
+	count := 1
+	for i := 0; i < maxBitmaps; i++ {
+		if f.IsSet(i*64 + 1) {
+			count += 1
+		}
+	}
+
+	return count
+}
+
+func (f *Bitmap) setBitmapFields() bool {
+	// 2nd bitmap bits 65 -128
+	// bitmap bit 1
+
+	// 3rd bitmap bits 129-192
+	// bitmap bit 65
+
+	// start from the 2nd bitmap as for the 1st bitmap we don't need to set any bits
+	for bitmapIndex := 2; bitmapIndex <= maxBitmaps; bitmapIndex++ {
+
+		// are there fields for this (bitmapIndex) bitmap?
+		bitmapStart := (bitmapIndex-1)*64 + 2 // we skip firt bit as it's for the next bitmap
+		bitmapEnd := (bitmapIndex) * 64       //
+
+		for i := bitmapStart; i <= bitmapEnd; i++ {
+			bitmapBit := (bitmapIndex-2)*64 + 1
+			if f.IsSet(i) {
+				f.Set(bitmapBit)
+				break
+			}
 		}
 	}
 
