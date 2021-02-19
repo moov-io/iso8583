@@ -75,7 +75,6 @@ spec := &MessageSpec{
 			Pref:        prefix.ASCII.Fixed,
 		}),
 		1: field.NewBitmap(&field.Spec{
-			Length:      16,
 			Description: "Bitmap",
 			Enc:         encoding.Hex,
 			Pref:        prefix.Hex.Fixed,
