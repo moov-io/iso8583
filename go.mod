@@ -10,11 +10,11 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/indece-official/go-ebcdic v0.0.0-20190525020121-de04eeaabf72
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
-	github.com/moov-io/base v0.15.2
+	github.com/moov-io/base v0.17.0
 	github.com/smartystreets/assertions v1.1.0 // indirect
-	github.com/spf13/cobra v1.1.1
-	github.com/stretchr/testify v1.6.1
+	github.com/spf13/cobra v1.1.3
+	github.com/stretchr/testify v1.7.0
 	github.com/yerden/go-util v1.1.3
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/text v0.3.4
+	golang.org/x/oauth2 v0.0.0-20210220000619-9bb904979d93
+	golang.org/x/text v0.3.5
 )
