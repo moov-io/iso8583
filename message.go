@@ -123,7 +123,8 @@ func (m *Message) Pack() ([]byte, error) {
 
 	// build the bitmap
 	maxId := 0
-	for id, _ := range m.fieldsMap {
+
+	for id := range m.fieldsMap {
 		if id > maxId {
 			maxId = id
 		}

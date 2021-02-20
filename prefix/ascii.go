@@ -77,5 +77,5 @@ func (p *asciiFixedPrefixer) Length() int {
 }
 
 func (p *asciiFixedPrefixer) Inspect() string {
-	return fmt.Sprintf("ASCII fixed length")
+	return "ASCII fixed length"
 }

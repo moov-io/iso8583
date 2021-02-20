@@ -90,5 +90,5 @@ func (p *bcdFixedPrefixer) Length() int {
 }
 
 func (p *bcdFixedPrefixer) Inspect() string {
-	return fmt.Sprintf("BCD fixed length")
+	return "BCD fixed length"
 }

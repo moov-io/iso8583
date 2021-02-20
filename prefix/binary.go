@@ -4,10 +4,6 @@ import (
 	"fmt"
 )
 
-type binaryVarPrefixer struct {
-	Bytes int
-}
-
 var Binary = Prefixers{
 	Fixed: &binaryFixedPrefixer{},
 }
@@ -32,5 +28,5 @@ func (p *binaryFixedPrefixer) Length() int {
 }
 
 func (p *binaryFixedPrefixer) Inspect() string {
-	return fmt.Sprintf("Binary fixed length")
+	return "Binary fixed length"
 }

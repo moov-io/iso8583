@@ -4,13 +4,13 @@ type Prefixer interface {
 	// Returns field length encoded into []byte
 	EncodeLength(maxLen, length int) ([]byte, error)
 
-	// Retuns field length read from data
+	// Returns field length read from data
 	DecodeLength(maxLen int, data []byte) (int, error)
 
 	// Returns the number of bytes that takes to encode the length
 	Length() int
 
-	// Returns human readable infomation about length prefixer
+	// Returns human readable information about length prefixer
 	Inspect() string
 }
 

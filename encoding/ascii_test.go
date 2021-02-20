@@ -25,7 +25,7 @@ func TestASCII(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, []byte("hello"), res)
 
-		res, err = enc.Encode([]byte("hello, 世界!"))
+		_, err = enc.Encode([]byte("hello, 世界!"))
 		require.Error(t, err)
 	})
 }
