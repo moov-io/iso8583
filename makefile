@@ -1,12 +1,13 @@
 PLATFORM=$(shell uname -s | tr '[:upper:]' '[:lower:]')
-VERSION := $(shell grep -Eo '(v[0-9]+[\.][0-9]+[\.][0-9]+(-[a-zA-Z0-9]*)?)' version.go)
 
-.PHONY: build release
+ifndef VERSION
+	VERSION := $(shell git describe --tags --abbrev=0)
+endif
 
-build:
-	go fmt ./...
-	@mkdir -p ./bin/
-	CGO_ENABLED=1 go build github.com/moov-io/iso8583
+COMMIT_HASH :=$(shell git rev-parse --short HEAD)
+DEV_VERSION := dev-${COMMIT_HASH}
+PWD := $(shell pwd)
+
 
 .PHONY: check
 check:
@@ -18,26 +19,13 @@ else
 	./lint-project.sh
 endif
 
-dist: clean build
-# ifeq ($(OS),Windows_NT)
-# 	CGO_ENABLED=1 GOOS=windows go build -o bin/iso8583.exe github.com/moov-io/iso8583/cmd/server
-# else
-# 	CGO_ENABLED=0 GOOS=$(PLATFORM) go build -o bin/iso8583-$(PLATFORM)-amd64 github.com/moov-io/iso8583/cmd/server
-# endif
-
-docker: clean docker-hub docker-fuzz
-
-docker-hub:
-	docker build --pull -t moov/iso8583:$(VERSION) -f Dockerfile .
-	docker tag moov/iso8583:$(VERSION) moov/iso8583:latest
+docker: clean docker-fuzz
 
 docker-fuzz:
 	docker build --pull -t moov/iso8583fuzz:$(VERSION) . -f Dockerfile-fuzz
 	docker tag moov/iso8583fuzz:$(VERSION) moov/iso8583fuzz:latest
 
 release-push:
-	docker push moov/iso8583:$(VERSION)
-	docker push moov/iso8583:latest
 	docker push moov/iso8583fuzz:$(VERSION)
 
 .PHONY: clean
