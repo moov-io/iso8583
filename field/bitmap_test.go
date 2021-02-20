@@ -53,6 +53,7 @@ func TestHexBitmap(t *testing.T) {
 			Pref:        prefix.Hex.Fixed,
 		})
 
+		// set bits: 1, 10, 65, 140
 		read, err := field.Unpack([]byte("804000000000000080000000000000000010000000000000"))
 
 		require.NoError(t, err)
@@ -60,12 +61,11 @@ func TestHexBitmap(t *testing.T) {
 
 		bitmap := field.(*Bitmap)
 
-		// set bits: 1, 10, 65, 140
 		require.True(t, bitmap.IsSet(10))
 		require.True(t, bitmap.IsSet(140))
 	})
 
-	t.Run("when not enough data to unpack", func(t *testing.T) {
+	t.Run("When not enough data to unpack", func(t *testing.T) {
 		field := NewBitmap(&Spec{
 			Description: "Bitmap",
 			Enc:         encoding.Hex,
@@ -78,7 +78,7 @@ func TestHexBitmap(t *testing.T) {
 		require.Contains(t, err.Error(), "not enough data to read 1 bitmap")
 	})
 
-	t.Run("when bit for secondary bitmap is set but not enough data to read", func(t *testing.T) {
+	t.Run("When bit for secondary bitmap is set but not enough data to read", func(t *testing.T) {
 		field := NewBitmap(&Spec{
 			Description: "Bitmap",
 			Enc:         encoding.Hex,
@@ -88,12 +88,11 @@ func TestHexBitmap(t *testing.T) {
 		// bits 2, 20, 65, 120 are set, but no data for third bitmap
 		_, err := field.Unpack([]byte("c0001000000000008000000000000100"))
 
-		// error
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "not enough data to read 3 bitmap")
 	})
 
-	t.Run("with primary bitmap only it returns signle bitmap length", func(t *testing.T) {
+	t.Run("With primary bitmap only it returns signle bitmap length", func(t *testing.T) {
 		field := NewBitmap(&Spec{
 			Description: "Bitmap",
 			Enc:         encoding.Hex,
@@ -110,7 +109,7 @@ func TestHexBitmap(t *testing.T) {
 		require.Len(t, data, 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
 	})
 
-	t.Run("with secondary bitmap it returns length of two bitmaps", func(t *testing.T) {
+	t.Run("With secondary bitmap it returns length of two bitmaps", func(t *testing.T) {
 		field := NewBitmap(&Spec{
 			Description: "Bitmap",
 			Enc:         encoding.Hex,
@@ -128,7 +127,7 @@ func TestHexBitmap(t *testing.T) {
 		require.Len(t, data, 32) // 32 bytes is 16 bytes (two bitmaps) encoded in hex
 	})
 
-	t.Run("with third bitmap it returns length of three bitmaps", func(t *testing.T) {
+	t.Run("With third bitmap it returns length of three bitmaps", func(t *testing.T) {
 		field := NewBitmap(&Spec{
 			Description: "Bitmap",
 			Enc:         encoding.Hex,
@@ -149,7 +148,7 @@ func TestHexBitmap(t *testing.T) {
 }
 
 func TestBinaryBitmap(t *testing.T) {
-	t.Run("with primary bitmap only it returns signle bitmap length", func(t *testing.T) {
+	t.Run("With primary bitmap only it returns signle bitmap length", func(t *testing.T) {
 		field := NewBitmap(&Spec{
 			Description: "Bitmap",
 			Enc:         encoding.Binary,
@@ -166,7 +165,7 @@ func TestBinaryBitmap(t *testing.T) {
 		require.Len(t, data, 8)
 	})
 
-	t.Run("with secondary bitmap it returns length of two bitmaps", func(t *testing.T) {
+	t.Run("With secondary bitmap it returns length of two bitmaps", func(t *testing.T) {
 		field := NewBitmap(&Spec{
 			Description: "Bitmap",
 			Enc:         encoding.Binary,
@@ -184,7 +183,7 @@ func TestBinaryBitmap(t *testing.T) {
 		require.Len(t, data, 16)
 	})
 
-	t.Run("with third bitmap it returns length of three bitmaps", func(t *testing.T) {
+	t.Run("With third bitmap it returns length of three bitmaps", func(t *testing.T) {
 		field := NewBitmap(&Spec{
 			Description: "Bitmap",
 			Enc:         encoding.Binary,
