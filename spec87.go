@@ -32,7 +32,6 @@ var Spec87 *MessageSpec = &MessageSpec{
 			Description: "Processing Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-			Pad:         padding.Left('0'),
 		}),
 		4: field.NewString(&field.Spec{
 			Length:      12,

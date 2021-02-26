@@ -1,7 +1,6 @@
 package iso8583
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -143,12 +142,11 @@ func TestPackUnpack(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			3: field.NewNumeric(&field.Spec{
+			3: field.NewString(&field.Spec{
 				Length:      6,
 				Description: "Processing Code",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.Fixed,
-				Pad:         padding.Left('0'),
 			}),
 			4: field.NewNumeric(&field.Spec{
 				Length:      12,
@@ -286,7 +284,7 @@ func TestPackUnpack(t *testing.T) {
 
 	type TestISOData struct {
 		F2   *field.String
-		F3   *field.Numeric
+		F3   *field.String
 		F4   *field.Numeric
 		F7   *field.Numeric
 		F11  *field.Numeric
@@ -313,7 +311,7 @@ func TestPackUnpack(t *testing.T) {
 		message := NewMessage(spec)
 		message.SetData(&TestISOData{
 			F2:   field.NewStringValue("4276555555555555"),
-			F3:   field.NewNumericValue(0),
+			F3:   field.NewStringValue("000000"),
 			F4:   field.NewNumericValue(77700),
 			F7:   field.NewNumericValue(701111844),
 			F11:  field.NewNumericValue(123),
@@ -338,7 +336,6 @@ func TestPackUnpack(t *testing.T) {
 		message.MTI("0100")
 
 		got, err := message.Pack()
-		fmt.Println(message.Bitmap().String())
 
 		want := []byte{48, 49, 48, 48, 242, 60, 36, 129, 40, 224, 152, 0, 0, 0, 0, 0, 0, 0, 1, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 55, 65, 110, 111, 116, 104, 101, 114, 32, 116, 101, 115, 116, 32, 116, 101, 120, 116}
 
@@ -357,13 +354,13 @@ func TestPackUnpack(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, "4276555555555555", message.GetString(2))
-		require.Equal(t, "0", message.GetString(3))
+		require.Equal(t, "000000", message.GetString(3))
 		require.Equal(t, "77700", message.GetString(4))
 
 		data := message.Data().(*TestISOData)
 
 		assert.Equal(t, "4276555555555555", data.F2.Value)
-		assert.Equal(t, 0, data.F3.Value)
+		assert.Equal(t, "000000", data.F3.Value)
 		assert.Equal(t, 77700, data.F4.Value)
 		assert.Equal(t, 701111844, data.F7.Value)
 		assert.Equal(t, 123, data.F11.Value)
