@@ -18,6 +18,8 @@
 package fuzzreader
 
 import (
+	"fmt"
+
 	"github.com/moov-io/iso8583"
 )
 
@@ -38,7 +40,7 @@ func Fuzz(data []byte) int {
 
 	_, err = message.Pack()
 	if err != nil {
-		return 0
+		panic(fmt.Errorf("failed to pack unpacked message: %v", err))
 	}
 
 	return 1
