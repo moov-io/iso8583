@@ -134,7 +134,7 @@ func (m *Message) Pack() ([]byte, error) {
 		}
 
 		// indexes 0 and 1 are for mti and bitmap
-		// regular field number startd from index 2
+		// regular field number started from index 2
 		if id < 2 {
 			continue
 		}
@@ -260,13 +260,13 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 
 	// build the bitmap
 	maxId := 0
-	for id, _ := range m.fieldsMap {
+	for id := range m.fieldsMap {
 		if id > maxId {
 			maxId = id
 		}
 
 		// indexes 0 and 1 are for mti and bitmap
-		// regular field number startd from index 2
+		// regular field number started from index 2
 		if id < 2 {
 			continue
 		}
