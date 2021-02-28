@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/moov-io/iso8583/field"
@@ -21,6 +22,18 @@ func (s *MessageSpec) CreateMessageFields() map[int]field.Field {
 	}
 
 	return fields
+}
+
+// Get field's index by identifier
+func (s *MessageSpec) GetFieldIndex(identifier string) (int, error) {
+
+	for key, f := range s.Fields {
+		if f.Spec().GetIdentifier() == identifier {
+			return key, nil
+		}
+	}
+
+	return 0, errors.New("don't find any specification by identifier")
 }
 
 func createMessageField(specField field.Field) field.Field {

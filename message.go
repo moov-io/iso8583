@@ -1,8 +1,12 @@
 package iso8583
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/moov-io/iso8583/field"
 )
@@ -203,6 +207,100 @@ func (m *Message) Unpack(src []byte) error {
 	return nil
 }
 
+// Customize unmarshal of json
+func (m *Message) UnmarshalJSON(b []byte) error {
+
+	if m.spec == nil {
+		return errors.New("please set specification of message")
+	}
+
+	var dummy map[string]string
+
+	err := json.Unmarshal(b, &dummy)
+	if err != nil {
+		return errors.New("failed to parse json string of message")
+	}
+
+	for key, value := range dummy {
+
+		index, err := m.spec.GetFieldIndex(key)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		specField := m.spec.Fields[index]
+		f, err := m.createNewFieldWithValue(specField, value)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		m.fields[index] = f
+		m.fieldsMap[index] = struct{}{}
+	}
+
+	return nil
+}
+
+// Customize marshal of json
+func (m *Message) MarshalJSON() ([]byte, error) {
+
+	if m.spec == nil {
+		return nil, errors.New("please set specification of message")
+	}
+
+	// after pack (encoding)
+	m.Pack()
+
+	var buf bytes.Buffer
+
+	// json start
+	buf.WriteString("{")
+
+	// build the bitmap
+	maxId := 0
+	for id, _ := range m.fieldsMap {
+		if id > maxId {
+			maxId = id
+		}
+
+		// indexes 0 and 1 are for mti and bitmap
+		// regular field number startd from index 2
+		if id < 2 {
+			continue
+		}
+
+		m.Bitmap().Set(id)
+	}
+
+	// pack fields
+	for i := 0; i <= maxId; i++ {
+		if _, ok := m.fieldsMap[i]; ok {
+			field, ok := m.fields[i]
+			if !ok {
+				return nil, fmt.Errorf("failed to pack field %d: no specification found", i)
+			}
+
+			if i != 0 {
+				buf.WriteString(",")
+			}
+			buf.Write([]byte(`"` + field.Spec().GetIdentifier() + `"`))
+			buf.WriteString(":")
+			val, err := json.Marshal(field.String())
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(val)
+		}
+	}
+
+	// json end
+	buf.WriteString("}")
+
+	return buf.Bytes(), nil
+}
+
 func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) error {
 	if m.data == nil {
 		return nil
@@ -226,4 +324,33 @@ func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) error {
 	dataField.Addr().Elem().Set(reflect.ValueOf(fl))
 
 	return nil
+}
+
+func (m *Message) getType(field interface{}) string {
+	return reflect.TypeOf(field).String()
+}
+
+func (m *Message) createNewFieldWithValue(f field.Field, value string) (newField field.Field, err error) {
+	wantFieldName := m.getType(f)
+	switch wantFieldName {
+	case "*field.String":
+		newField = field.NewStringValue(value)
+		newField.SetSpec(f.Spec())
+	case "*field.Bitmap":
+		newField = field.NewBitmap(f.Spec())
+		newField.SetBytes([]byte(value))
+	case "*field.Numeric":
+		var intValue int
+		intValue, err = strconv.Atoi(value)
+		if err != nil {
+			return
+		}
+		newField = field.NewNumericValue(intValue)
+		newField.SetSpec(f.Spec())
+	default:
+		err = errors.New("has unsupported field type")
+		return
+	}
+
+	return
 }
