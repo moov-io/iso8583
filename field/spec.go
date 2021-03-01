@@ -1,8 +1,6 @@
 package field
 
 import (
-	"github.com/stoewer/go-strcase"
-
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
@@ -20,9 +18,9 @@ type Spec struct {
 func (s *Spec) GetIdentifier() string {
 	var identifier string
 	if len(s.Identifier) == 0 {
-		identifier = strcase.SnakeCase(s.Description)
+		identifier = s.Description
 	} else {
-		identifier = strcase.SnakeCase(s.Identifier)
+		identifier = s.Identifier
 	}
 	return identifier
 }

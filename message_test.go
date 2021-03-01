@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -345,7 +346,7 @@ func TestPackUnpack(t *testing.T) {
 		require.Equal(t, want, got)
 	})
 
-	t.Run("Json marshal of data", func(t *testing.T) {
+	t.Run("JSON marshal of data", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.SetData(&TestISOData{
 			F2:   field.NewStringValue("4276555555555555"),
@@ -380,14 +381,10 @@ func TestPackUnpack(t *testing.T) {
 
 		want :=
 			`{
-	"message_type_indicator": "0100",
 	"bitmap": "11110010 00111100 00100100 10000001 00101000 11100000 10011000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000001 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 ",
-	"primary_account_number": "4276555555555555",
-	"processing_code": "000000",
-	"field_4": "77700",
-	"field_7": "701111844",
 	"field_11": "123",
 	"field_12": "131844",
+	"field_120": "Another test text",
 	"field_13": "701",
 	"field_14": "1902",
 	"field_19": "643",
@@ -396,19 +393,23 @@ func TestPackUnpack(t *testing.T) {
 	"field_32": "123456",
 	"field_35": "4276555555555555=12345678901234567890",
 	"field_37": "987654321001",
+	"field_4": "77700",
 	"field_41": "00000321",
 	"field_42": "120000000000034",
 	"field_43": "Test text",
 	"field_49": "643",
 	"field_52": "\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008",
 	"field_53": "1234000000000000",
-	"field_120": "Another test text"
+	"field_7": "701111844",
+	"message_type_indicator": "0100",
+	"primary_account_number": "4276555555555555",
+	"processing_code": "000000"
 }`
 
 		require.Equal(t, want, string(jsonBuf))
 	})
 
-	t.Run("Json marshal of data after Packing", func(t *testing.T) {
+	t.Run("XML marshal of data", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.SetData(&TestISOData{
 			F2:   field.NewStringValue("4276555555555555"),
@@ -440,37 +441,37 @@ func TestPackUnpack(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, got)
 
-		jsonBuf, err := json.MarshalIndent(message, "", "\t")
+		xmlBuf, err := xml.MarshalIndent(message, "", "\t")
 		require.NoError(t, err)
-		require.NotNil(t, jsonBuf)
+		require.NotNil(t, xmlBuf)
 
 		want :=
-			`{
-	"message_type_indicator": "0100",
-	"bitmap": "11110010 00111100 00100100 10000001 00101000 11100000 10011000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000001 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 ",
-	"primary_account_number": "4276555555555555",
-	"processing_code": "000000",
-	"field_4": "77700",
-	"field_7": "701111844",
-	"field_11": "123",
-	"field_12": "131844",
-	"field_13": "701",
-	"field_14": "1902",
-	"field_19": "643",
-	"field_22": "901",
-	"field_25": "2",
-	"field_32": "123456",
-	"field_35": "4276555555555555=12345678901234567890",
-	"field_37": "987654321001",
-	"field_41": "00000321",
-	"field_42": "120000000000034",
-	"field_43": "Test text",
-	"field_49": "643",
-	"field_52": "\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008",
-	"field_53": "1234000000000000",
-	"field_120": "Another test text"
-}`
-		require.Equal(t, want, string(jsonBuf))
+			`<ISO8583>
+	<MessageTypeIndicator>0100</MessageTypeIndicator>
+	<Bitmap>11110010 00111100 00100100 10000001 00101000 11100000 10011000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000001 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 </Bitmap>
+	<PrimaryAccountNumber>4276555555555555</PrimaryAccountNumber>
+	<ProcessingCode>000000</ProcessingCode>
+	<Field4>77700</Field4>
+	<Field7>701111844</Field7>
+	<Field11>123</Field11>
+	<Field12>131844</Field12>
+	<Field13>701</Field13>
+	<Field14>1902</Field14>
+	<Field19>643</Field19>
+	<Field22>901</Field22>
+	<Field25>2</Field25>
+	<Field32>123456</Field32>
+	<Field35>4276555555555555=12345678901234567890</Field35>
+	<Field37>987654321001</Field37>
+	<Field41>00000321</Field41>
+	<Field42>120000000000034</Field42>
+	<Field43>Test text</Field43>
+	<Field49>643</Field49>
+	<Field52>\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008</Field52>
+	<Field53>1234000000000000</Field53>
+	<Field120>Another test text</Field120>
+</ISO8583>`
+		require.Equal(t, want, string(xmlBuf))
 	})
 
 	t.Run("Unpack data", func(t *testing.T) {
@@ -511,18 +512,14 @@ func TestPackUnpack(t *testing.T) {
 		assert.Equal(t, "Another test text", data.F120.Value)
 	})
 
-	t.Run("Json unmarshal of data", func(t *testing.T) {
+	t.Run("JSON unmarshal of data", func(t *testing.T) {
 
 		want :=
 			`{
-	"message_type_indicator": "0100",
 	"bitmap": "11110010 00111100 00100100 10000001 00101000 11100000 10011000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000001 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 ",
-	"primary_account_number": "4276555555555555",
-	"processing_code": "000000",
-	"field_4": "77700",
-	"field_7": "701111844",
 	"field_11": "123",
 	"field_12": "131844",
+	"field_120": "Another test text",
 	"field_13": "701",
 	"field_14": "1902",
 	"field_19": "643",
@@ -531,13 +528,17 @@ func TestPackUnpack(t *testing.T) {
 	"field_32": "123456",
 	"field_35": "4276555555555555=12345678901234567890",
 	"field_37": "987654321001",
+	"field_4": "77700",
 	"field_41": "00000321",
 	"field_42": "120000000000034",
 	"field_43": "Test text",
 	"field_49": "643",
 	"field_52": "\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008",
 	"field_53": "1234000000000000",
-	"field_120": "Another test text"
+	"field_7": "701111844",
+	"message_type_indicator": "0100",
+	"primary_account_number": "4276555555555555",
+	"processing_code": "000000"
 }`
 
 		message := NewMessage(spec)
@@ -579,5 +580,75 @@ func TestPackUnpack(t *testing.T) {
 		require.NotNil(t, jsonBuf)
 
 		require.Equal(t, want, string(jsonBuf))
+	})
+
+	t.Run("XML unmarshal of data", func(t *testing.T) {
+
+		want :=
+			`<ISO8583>
+	<MessageTypeIndicator>0100</MessageTypeIndicator>
+	<Bitmap>11110010 00111100 00100100 10000001 00101000 11100000 10011000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000001 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 </Bitmap>
+	<PrimaryAccountNumber>4276555555555555</PrimaryAccountNumber>
+	<ProcessingCode>000000</ProcessingCode>
+	<Field4>77700</Field4>
+	<Field7>701111844</Field7>
+	<Field11>123</Field11>
+	<Field12>131844</Field12>
+	<Field13>701</Field13>
+	<Field14>1902</Field14>
+	<Field19>643</Field19>
+	<Field22>901</Field22>
+	<Field25>2</Field25>
+	<Field32>123456</Field32>
+	<Field35>4276555555555555=12345678901234567890</Field35>
+	<Field37>987654321001</Field37>
+	<Field41>00000321</Field41>
+	<Field42>120000000000034</Field42>
+	<Field43>Test text</Field43>
+	<Field49>643</Field49>
+	<Field52>\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008</Field52>
+	<Field53>1234000000000000</Field53>
+	<Field120>Another test text</Field120>
+</ISO8583>`
+
+		message := NewMessage(spec)
+		err := xml.Unmarshal([]byte(want), message)
+		require.NoError(t, err)
+
+		expectMessage := NewMessage(spec)
+		expectMessage.SetData(&TestISOData{
+			F2:   field.NewStringValue("4276555555555555"),
+			F3:   field.NewStringValue("000000"),
+			F4:   field.NewNumericValue(77700),
+			F7:   field.NewNumericValue(701111844),
+			F11:  field.NewNumericValue(123),
+			F12:  field.NewNumericValue(131844),
+			F13:  field.NewNumericValue(701),
+			F14:  field.NewNumericValue(1902),
+			F19:  field.NewNumericValue(643),
+			F22:  field.NewNumericValue(901),
+			F25:  field.NewNumericValue(2),
+			F32:  field.NewNumericValue(123456),
+			F35:  field.NewStringValue("4276555555555555=12345678901234567890"),
+			F37:  field.NewStringValue("987654321001"),
+			F41:  field.NewStringValue("00000321"),
+			F42:  field.NewStringValue("120000000000034"),
+			F43:  field.NewStringValue("Test text"),
+			F49:  field.NewNumericValue(643),
+			F52:  field.NewStringValue(string([]byte{1, 2, 3, 4, 5, 6, 7, 8})),
+			F53:  field.NewNumericValue(1234000000000000),
+			F120: field.NewStringValue("Another test text"),
+		})
+
+		indexs := []int{2, 3, 4, 7, 11, 12, 13, 14, 19, 22, 25, 32, 35, 37, 41, 42, 43, 49, 52, 53, 120}
+		for _, index := range indexs {
+			assert.Equal(t, message.GetString(index), expectMessage.GetString(index))
+		}
+
+		xmlBuf, err := xml.MarshalIndent(message, "", "\t")
+		require.NoError(t, err)
+		require.NotNil(t, xmlBuf)
+
+		require.Equal(t, want, string(xmlBuf))
 	})
 }

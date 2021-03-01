@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/moov-io/iso8583/field"
+	"github.com/stoewer/go-strcase"
 )
 
 type MessageSpec struct {
@@ -25,10 +26,16 @@ func (s *MessageSpec) CreateMessageFields() map[int]field.Field {
 }
 
 // Get field's index by identifier
-func (s *MessageSpec) GetFieldIndex(identifier string) (int, error) {
+func (s *MessageSpec) GetFieldIndex(identifier, stringCase string) (int, error) {
 
 	for key, f := range s.Fields {
-		if f.Spec().GetIdentifier() == identifier {
+
+		newIdentifier := strcase.SnakeCase(f.Spec().GetIdentifier())
+		if stringCase == "CamelCase" {
+			newIdentifier = strcase.UpperCamelCase(f.Spec().GetIdentifier())
+		}
+
+		if newIdentifier == identifier {
 			return key, nil
 		}
 	}

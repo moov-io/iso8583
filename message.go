@@ -1,15 +1,35 @@
 package iso8583
 
 import (
-	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/moov-io/iso8583/field"
+	"github.com/stoewer/go-strcase"
 )
+
+const (
+	fieldStringTypeLabel  = "*field.String"
+	fieldBitmapTypeLabel  = "*field.Bitmap"
+	fieldNumericTypeLabel = "*field.Numeric"
+	messageLabel          = "ISO8583"
+)
+
+type dummyMap map[string]string
+
+func (m dummyMap) sort() (index []string) {
+	for k := range m {
+		index = append(index, k)
+	}
+	sort.Strings(index)
+	return
+}
 
 type Message struct {
 	fields    map[int]field.Field
@@ -122,16 +142,15 @@ func (m *Message) GetBytes(id int) []byte {
 }
 
 func (m *Message) Pack() ([]byte, error) {
-	packed := []byte{}
+
+	packed := make([]byte, 0)
 	m.Bitmap().Reset()
 
 	// build the bitmap
-	maxId := 0
-
+	var fieldIndexes []int
 	for id := range m.fieldsMap {
-		if id > maxId {
-			maxId = id
-		}
+
+		fieldIndexes = append(fieldIndexes, id)
 
 		// indexes 0 and 1 are for mti and bitmap
 		// regular field number started from index 2
@@ -143,19 +162,18 @@ func (m *Message) Pack() ([]byte, error) {
 	}
 
 	// pack fields
-	for i := 0; i <= maxId; i++ {
-		if _, ok := m.fieldsMap[i]; ok {
-			field, ok := m.fields[i]
-			if !ok {
-				return nil, fmt.Errorf("failed to pack field %d: no specification found", i)
-			}
-
-			packedField, err := field.Pack()
-			if err != nil {
-				return nil, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
-			}
-			packed = append(packed, packedField...)
+	sort.Ints(fieldIndexes)
+	for _, index := range fieldIndexes {
+		field, ok := m.fields[index]
+		if !ok {
+			return nil, fmt.Errorf("failed to pack field %d: no specification found", index)
 		}
+
+		packedField, err := field.Pack()
+		if err != nil {
+			return nil, fmt.Errorf("failed to pack field %d (%s): %v", index, field.Spec().Description, err)
+		}
+		packed = append(packed, packedField...)
 	}
 
 	return packed, nil
@@ -214,33 +232,14 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 		return errors.New("please set specification of message")
 	}
 
-	var dummy map[string]string
+	dummy := dummyMap{}
 
 	err := json.Unmarshal(b, &dummy)
 	if err != nil {
 		return errors.New("failed to parse json string of message")
 	}
 
-	for key, value := range dummy {
-
-		index, err := m.spec.GetFieldIndex(key)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		specField := m.spec.Fields[index]
-		f, err := m.createNewFieldWithValue(specField, value)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		m.fields[index] = f
-		m.fieldsMap[index] = struct{}{}
-	}
-
-	return nil
+	return m.setDataWithMap(dummy, "SnakeCase")
 }
 
 // Customize marshal of json
@@ -250,55 +249,112 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 		return nil, errors.New("please set specification of message")
 	}
 
-	// after pack (encoding)
+	// after encoding
 	m.Pack()
 
-	var buf bytes.Buffer
-
-	// json start
-	buf.WriteString("{")
-
-	// build the bitmap
-	maxId := 0
+	var fieldIndexes []int
 	for id := range m.fieldsMap {
-		if id > maxId {
-			maxId = id
-		}
-
-		// indexes 0 and 1 are for mti and bitmap
-		// regular field number started from index 2
-		if id < 2 {
-			continue
-		}
-
-		m.Bitmap().Set(id)
+		fieldIndexes = append(fieldIndexes, id)
 	}
 
-	// pack fields
-	for i := 0; i <= maxId; i++ {
-		if _, ok := m.fieldsMap[i]; ok {
-			field, ok := m.fields[i]
-			if !ok {
-				return nil, fmt.Errorf("failed to pack field %d: no specification found", i)
+	dummy := dummyMap{}
+
+	sort.Ints(fieldIndexes)
+	for _, index := range fieldIndexes {
+		field, ok := m.fields[index]
+		if !ok {
+			return nil, fmt.Errorf("failed to pack field %d: no specification found", index)
+		}
+
+		fieldName := strcase.SnakeCase(field.Spec().GetIdentifier())
+		if len(fieldName) > 0 {
+			dummy[fieldName] = field.String()
+		}
+
+	}
+
+	dummy.sort()
+	return json.Marshal(dummy)
+}
+
+// Customize marshal of xml
+func (m *Message) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
+
+	if m.spec == nil {
+		return errors.New("please set specification of message")
+	}
+
+	dummy := dummyMap{}
+	values := make([]string, 0)
+
+	for token, err := decoder.Token(); err == nil; token, err = decoder.Token() {
+		switch t := token.(type) {
+		case xml.CharData:
+			values = append(values, string([]byte(t)))
+		case xml.EndElement:
+			if t.Name.Local == "langs" || t.Name.Local == messageLabel {
+				continue
 			}
 
-			if i != 0 {
-				buf.WriteString(",")
-			}
-			buf.Write([]byte(`"` + field.Spec().GetIdentifier() + `"`))
-			buf.WriteString(":")
-			val, err := json.Marshal(field.String())
+			var value string
+			err = json.Unmarshal([]byte("\""+values[len(values)-1]+"\""), &value)
 			if err != nil {
-				return nil, err
+				continue
 			}
-			buf.Write(val)
+
+			dummy[t.Name.Local] = value
 		}
 	}
 
-	// json end
-	buf.WriteString("}")
+	return m.setDataWithMap(dummy, "CamelCase")
+}
 
-	return buf.Bytes(), nil
+// Customize unmarshal of xml
+func (m *Message) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
+
+	if m.spec == nil {
+		return errors.New("please set specification of message")
+	}
+
+	// after encoding
+	m.Pack()
+
+	var fieldIndexes []int
+	for id := range m.fieldsMap {
+		fieldIndexes = append(fieldIndexes, id)
+	}
+
+	start.Name = xml.Name{Local: messageLabel}
+	tokens := []xml.Token{start}
+
+	sort.Ints(fieldIndexes)
+	for _, index := range fieldIndexes {
+		field, ok := m.fields[index]
+		if !ok {
+			return fmt.Errorf("failed to marshal field %d: no specification found", index)
+		}
+
+		t := xml.StartElement{
+			Name: xml.Name{Local: strcase.UpperCamelCase(field.Spec().GetIdentifier())},
+		}
+
+		val, err := json.Marshal(field.String())
+		if err != nil {
+			return err
+		}
+
+		tokens = append(tokens, t, xml.CharData(strings.Trim(string(val), "\"")), xml.EndElement{Name: t.Name})
+	}
+
+	tokens = append(tokens, xml.EndElement{Name: start.Name})
+	for _, t := range tokens {
+		err := encoder.EncodeToken(t)
+		if err != nil {
+			return err
+		}
+	}
+
+	return encoder.Flush()
 }
 
 func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) error {
@@ -333,13 +389,13 @@ func (m *Message) getType(field interface{}) string {
 func (m *Message) createNewFieldWithValue(f field.Field, value string) (newField field.Field, err error) {
 	wantFieldName := m.getType(f)
 	switch wantFieldName {
-	case "*field.String":
+	case fieldStringTypeLabel:
 		newField = field.NewStringValue(value)
 		newField.SetSpec(f.Spec())
-	case "*field.Bitmap":
+	case fieldBitmapTypeLabel:
 		newField = field.NewBitmap(f.Spec())
 		newField.SetBytes([]byte(value))
-	case "*field.Numeric":
+	case fieldNumericTypeLabel:
 		var intValue int
 		intValue, err = strconv.Atoi(value)
 		if err != nil {
@@ -353,4 +409,25 @@ func (m *Message) createNewFieldWithValue(f field.Field, value string) (newField
 	}
 
 	return
+}
+
+func (m *Message) setDataWithMap(dummy map[string]string, stringCase string) error {
+	for key, value := range dummy {
+
+		index, err := m.spec.GetFieldIndex(key, stringCase)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		specField := m.spec.Fields[index]
+		f, err := m.createNewFieldWithValue(specField, value)
+		if err != nil {
+			return err
+		}
+
+		m.fields[index] = f
+		m.fieldsMap[index] = struct{}{}
+	}
+	return nil
 }
