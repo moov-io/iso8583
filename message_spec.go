@@ -136,7 +136,7 @@ func (s *MessageSpec) createMessageSpecFieldWithMarshaller(index int, marshaller
 	}
 
 	if s.Fields == nil {
-		s.Fields = make(map[int]field.Field, 0)
+		s.Fields = make(map[int]field.Field)
 	}
 	s.Fields[index] = marshaller.createSpecificationField()
 

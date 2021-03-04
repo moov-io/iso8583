@@ -15,7 +15,7 @@ import (
 func newMessageSpecMarshaller() *messageSpecMarshaller {
 	return &messageSpecMarshaller{
 		XMLName:    xml.Name{Local: "Specification"},
-		Fields:     make(map[string]specMarshaller, 0),
+		Fields:     make(map[string]specMarshaller),
 		FieldArray: make([]specMarshaller, 0),
 	}
 }

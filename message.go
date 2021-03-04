@@ -23,14 +23,6 @@ const (
 
 type dummyMap map[string]string
 
-func (m dummyMap) sort() (index []string) {
-	for k := range m {
-		index = append(index, k)
-	}
-	sort.Strings(index)
-	return
-}
-
 type Message struct {
 	fields    map[int]field.Field
 	spec      *MessageSpec
@@ -273,7 +265,6 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 
 	}
 
-	dummy.sort()
 	return json.Marshal(dummy)
 }
 
