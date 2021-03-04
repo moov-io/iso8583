@@ -71,7 +71,7 @@ func (p *bcdVarPrefixer) Inspect() string {
 }
 
 func (p *bcdVarPrefixer) InspectName() string {
-	return fmt.Sprintf("%s", strings.Repeat("L", p.Digits))
+	return strings.Repeat("L", p.Digits)
 }
 
 type bcdFixedPrefixer struct {

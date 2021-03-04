@@ -58,7 +58,7 @@ func (p *asciiVarPrefixer) Inspect() string {
 }
 
 func (p *asciiVarPrefixer) InspectName() string {
-	return fmt.Sprintf("%s", strings.Repeat("L", p.Digits))
+	return strings.Repeat("L", p.Digits)
 }
 
 type asciiFixedPrefixer struct {
