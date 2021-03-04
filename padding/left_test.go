@@ -9,6 +9,8 @@ import (
 func TestLeftPadder(t *testing.T) {
 	padder := NewLeftPadder('0')
 
+	require.Equal(t, "0", *padder.Inspect())
+
 	t.Run("Pad", func(t *testing.T) {
 		str := []byte("12345")
 		want := []byte("0000012345")

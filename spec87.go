@@ -57,7 +57,7 @@ var Spec87 *MessageSpec = &MessageSpec{
 		7: field.NewString(&field.Spec{
 			Length:      10,
 			Identifier:  "Transmission Date And Time",
-			Description: "Transmission Date & Time",
+			Description: "Transmission Date And Time",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
 		}),
@@ -421,7 +421,6 @@ var Spec87 *MessageSpec = &MessageSpec{
 		}),
 		90: field.NewString(&field.Spec{
 			Length:      42,
-			Identifier:  "Original Data Elements",
 			Description: "Original Data Elements",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,

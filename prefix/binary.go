@@ -30,3 +30,7 @@ func (p *binaryFixedPrefixer) Length() int {
 func (p *binaryFixedPrefixer) Inspect() string {
 	return "Binary fixed length"
 }
+
+func (p *binaryFixedPrefixer) InspectName() string {
+	return "Fixed"
+}

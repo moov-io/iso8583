@@ -29,3 +29,7 @@ func (p *hexFixedPrefixer) Length() int {
 func (p *hexFixedPrefixer) Inspect() string {
 	return "Hex fixed length"
 }
+
+func (p *hexFixedPrefixer) InspectName() string {
+	return "Fixed"
+}

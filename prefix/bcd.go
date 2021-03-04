@@ -70,6 +70,10 @@ func (p *bcdVarPrefixer) Inspect() string {
 	return fmt.Sprintf("BCD %s length", strings.Repeat("L", p.Digits))
 }
 
+func (p *bcdVarPrefixer) InspectName() string {
+	return fmt.Sprintf("%s", strings.Repeat("L", p.Digits))
+}
+
 type bcdFixedPrefixer struct {
 }
 
@@ -91,4 +95,8 @@ func (p *bcdFixedPrefixer) Length() int {
 
 func (p *bcdFixedPrefixer) Inspect() string {
 	return "BCD fixed length"
+}
+
+func (p *bcdFixedPrefixer) InspectName() string {
+	return "Fixed"
 }

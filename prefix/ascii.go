@@ -57,6 +57,10 @@ func (p *asciiVarPrefixer) Inspect() string {
 	return fmt.Sprintf("ASCII %s length", strings.Repeat("L", p.Digits))
 }
 
+func (p *asciiVarPrefixer) InspectName() string {
+	return fmt.Sprintf("%s", strings.Repeat("L", p.Digits))
+}
+
 type asciiFixedPrefixer struct {
 }
 
@@ -78,4 +82,8 @@ func (p *asciiFixedPrefixer) Length() int {
 
 func (p *asciiFixedPrefixer) Inspect() string {
 	return "ASCII fixed length"
+}
+
+func (p *asciiFixedPrefixer) InspectName() string {
+	return "Fixed"
 }

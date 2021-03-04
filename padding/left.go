@@ -15,7 +15,7 @@ func NewLeftPadder(pad rune) Padder {
 	buf := make([]byte, utf8.RuneLen(pad))
 	utf8.EncodeRune(buf, pad)
 
-	return &leftPadder{buf}
+	return &leftPadder{pad: buf}
 }
 
 func (p *leftPadder) Pad(data []byte, length int) []byte {
@@ -33,4 +33,12 @@ func (p *leftPadder) Unpad(data []byte) []byte {
 	return bytes.TrimLeftFunc(data, func(r rune) bool {
 		return r == pad
 	})
+}
+
+func (p *leftPadder) Inspect() *string {
+	if len(p.pad) == 0 {
+		return nil
+	}
+	padString := string(p.pad)
+	return &padString
 }

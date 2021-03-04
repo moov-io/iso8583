@@ -12,6 +12,9 @@ type Prefixer interface {
 
 	// Returns human readable information about length prefixer
 	Inspect() string
+
+	// Returns Prefixer name
+	InspectName() string
 }
 
 type Prefixers struct {
