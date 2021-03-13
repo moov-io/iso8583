@@ -1,0 +1,9 @@
+# What is ISO 8583?
+
+ISO 8583 is an international standard for card-originated financial transaction messages that defines both message format and communication flow. It was created by ISO (the International Organization for Standardization) to improve overall reliability, security, and quality of card transactions. ISO 8583 supports card purchases, withdrawals, deposits, refunds, reversals, balance inquiries, inter-account transfers, administrative messages, secure key exchanges, and more. Involved parties include POS terminals, ATMs, payment gateways, acquirers, networks, and issuers. The standard is widely adopted by major card networks around the globe including Visa, Mastercard, and Verve.
+
+There are three versions of ISO 8583 (1987, 1993, 2003) with no major differences between them. Differences include a few varied data fields and field lengths. For example, the response code field (#39) is two digits long in 1987, but three digits long in 1993 and 2003. The 1987 standard is most commonly used, and 2003 is rarely adopted.
+
+An ISO 8583 message is composed of a message type indicator (MTI), bitmaps, and data elements. While most of the data elements are defined explicitly, some are reserved for custom use. Since ISO 8583 is a standard and not a regulation, it's not absolutely mandatory that a network follows it strictly. However, the availability of custom data fields handles all network-specific needs in most cases. It should be noted ISO 8583 does not define a communication protocol and may require header or trailer data depending on implementation.
+
+Data fields may be fixed length or varied, and may or may not exist. Bitmaps indicate which fields do exist in the ISO 8583 message. Additionally, a four digit MTI at the start of every message defines some general, yet essential information.

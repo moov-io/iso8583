@@ -18,16 +18,9 @@
 package fuzzreader
 
 import (
-	"io/ioutil"
-	"path/filepath"
-	"runtime"
+	"fmt"
 
-	"github.com/moov-io/iso8583/pkg/lib"
-)
-
-var (
-	_, b, _, _ = runtime.Caller(0)
-	basePath   = filepath.Dir(b)
+	"github.com/moov-io/iso8583"
 )
 
 // Return codes (from go-fuzz docs)
@@ -38,36 +31,16 @@ var (
 // added to corpus even if gives new coverage; and 0 otherwise; other values are
 // reserved for future use.
 func Fuzz(data []byte) int {
-	jsonData, err := ioutil.ReadFile(filepath.Join(basePath, "..", "testdata", "specification_ver_1987.json"))
+	message := iso8583.NewMessage(iso8583.Spec87)
+
+	err := message.Unpack(data)
 	if err != nil {
 		return -1
 	}
 
-	spec, err := lib.NewSpecificationWithJson(jsonData)
+	_, err = message.Pack()
 	if err != nil {
-		return -1
-	}
-
-	message, err := lib.NewISO8583Message(spec)
-	if err != nil {
-		return -1
-	}
-
-	// Parse from raw data
-	read, err := message.Load(data)
-	if err != nil {
-		return 0
-	}
-
-	// Check read size
-	if read != len(data) {
-		return 0
-	}
-
-	// Validate message
-	err = message.Validate()
-	if err != nil {
-		return 0
+		panic(fmt.Errorf("failed to pack unpacked message: %v", err))
 	}
 
 	return 1
