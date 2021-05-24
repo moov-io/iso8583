@@ -54,12 +54,15 @@ func (p *bcdVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-
 	if dataLen > maxLen {
 		return 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
 	}
 
-	return dataLen, nil
+	if dataLen%2 != 0 {
+		dataLen += 1
+	}
+
+	return dataLen / 2, nil
 }
 
 func (p *bcdVarPrefixer) Length() int {

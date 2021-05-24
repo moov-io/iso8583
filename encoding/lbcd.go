@@ -26,10 +26,10 @@ func (e *lBCDEncoder) Encode(src []byte) ([]byte, error) {
 func (e *lBCDEncoder) Decode(src []byte, length int) ([]byte, error) {
 	dec := bcd.NewDecoder(bcd.Standard)
 	dst := make([]byte, bcd.DecodedLen(len(src)))
-	_, err := dec.Decode(dst, src)
+	n, err := dec.Decode(dst, src)
 	if err != nil {
 		return nil, err
 	}
 
-	return dst[:length], nil
+	return dst[:n], nil
 }
