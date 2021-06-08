@@ -12,6 +12,5 @@ func TestHex(t *testing.T) {
 	dataLen, err := pref.DecodeLength(16, []byte("whatever"))
 
 	require.NoError(t, err)
-	require.Equal(t, 32, dataLen)
-
+	require.Equal(t, 16, dataLen)
 }

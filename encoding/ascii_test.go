@@ -10,12 +10,13 @@ func TestASCII(t *testing.T) {
 	enc := &asciiEncoder{}
 
 	t.Run("Decode", func(t *testing.T) {
-		res, err := enc.Decode([]byte("hello"), 0)
+		res, read, err := enc.Decode([]byte("hello"), 5)
 
 		require.NoError(t, err)
 		require.Equal(t, []byte("hello"), res)
+		require.Equal(t, 5, read)
 
-		_, err = enc.Decode([]byte("hello, 世界!"), 0)
+		_, _, err = enc.Decode([]byte("hello, 世界!"), 10)
 		require.Error(t, err)
 	})
 

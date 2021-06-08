@@ -73,7 +73,7 @@ func TestBCDFixedPrefixer(t *testing.T) {
 	dataLen, err := pref.DecodeLength(8, []byte("1234"))
 
 	require.NoError(t, err)
-	require.Equal(t, 4, dataLen)
+	require.Equal(t, 8, dataLen)
 }
 
 func TestBCDFixedPrefixer_EncodeLengthValidation(t *testing.T) {

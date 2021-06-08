@@ -19,7 +19,7 @@ func (p *hexFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 }
 
 func (p *hexFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, error) {
-	return fixLen * 2, nil
+	return fixLen, nil
 }
 
 func (p *hexFixedPrefixer) Length() int {

@@ -4,7 +4,7 @@ type Prefixer interface {
 	// Returns field length encoded into []byte
 	EncodeLength(maxLen, length int) ([]byte, error)
 
-	// Returns field length read from data
+	// Returns the size of the field (number of characters, HEX-digits, bytes)
 	DecodeLength(maxLen int, data []byte) (int, error)
 
 	// Returns the number of bytes that takes to encode the length
