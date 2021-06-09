@@ -428,7 +428,7 @@ func TestMessageJSON(t *testing.T) {
 		message.Field(3, "123456")
 		message.Field(4, "100")
 
-		want := `{"fields":{"0":{"value":"0100"},"1":{"value":"700000000000000000000000000000000000000000000000"},"2":{"value":"4242424242424242"},"3":{"value":123456},"4":{"value":"100"}}}`
+		want := `{"fields":{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":123456,"4":"100"}}`
 
 		got, err := json.Marshal(message)
 		require.NoError(t, err)

@@ -153,9 +153,5 @@ func (f *Bitmap) setBitmapFields() bool {
 
 // Returns HEX encoded bitmap (if any)
 func (f *Bitmap) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&struct {
-		Value string `json:"value"`
-	}{
-		Value: strings.ToUpper(hex.EncodeToString(f.Bytes())),
-	})
+	return json.Marshal(strings.ToUpper(hex.EncodeToString(f.Bytes())))
 }
