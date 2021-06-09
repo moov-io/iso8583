@@ -16,5 +16,5 @@ func TestHex(t *testing.T) {
 
 	got, err = enc.Encode([]byte{0xAA, 0xBB, 0xCC})
 	require.NoError(t, err)
-	require.Equal(t, []byte("aabbcc"), got)
+	require.Equal(t, []byte("AABBCC"), got)
 }
