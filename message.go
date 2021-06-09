@@ -264,10 +264,6 @@ func (om OrderedMap) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type jsonStruct struct {
-	Fields OrderedMap `json:"fields"`
-}
-
 func (m *Message) MarshalJSON() ([]byte, error) {
 	// by packing the message we will generate bitmap
 	// create HEX representation
@@ -276,9 +272,7 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	jsonData := &jsonStruct{
-		Fields: m.fields,
-	}
+	jsonData := OrderedMap(m.fields)
 
 	return json.Marshal(jsonData)
 }
