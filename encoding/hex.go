@@ -3,6 +3,7 @@ package encoding
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
 )
 
 // ASCII HEX encoder
@@ -14,7 +15,10 @@ func (e hexEncoder) Encode(data []byte) ([]byte, error) {
 	out := make([]byte, hex.EncodedLen(len(data)))
 	hex.Encode(out, data)
 
-	return out, nil
+	str := string(out)
+	str = strings.ToUpper(str)
+
+	return []byte(str), nil
 }
 
 // Decodes ASCII hex and returns bytes
