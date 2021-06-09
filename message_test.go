@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -380,5 +381,57 @@ func TestPackUnpack(t *testing.T) {
 		assert.Equal(t, string([]byte{1, 2, 3, 4, 5, 6, 7, 8}), data.F52.Value)
 		assert.Equal(t, 1234000000000000, data.F53.Value)
 		assert.Equal(t, "Another test text", data.F120.Value)
+	})
+}
+
+func TestMessageJSON(t *testing.T) {
+	spec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.Hex,
+				Pref:        prefix.Hex.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			3: field.NewNumeric(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			4: field.NewString(&field.Spec{
+				Length:      12,
+				Description: "Transaction Amount",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+		},
+	}
+
+	t.Run("Test JSON encoding", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.MTI("0100")
+		message.Field(2, "4242424242424242")
+		message.Field(3, "123456")
+		message.Field(4, "100")
+
+		want := `{"fields":{"0":{"value":"0100"},"1":{"value":"700000000000000000000000000000000000000000000000"},"2":{"value":"4242424242424242"},"3":{"value":123456},"4":{"value":"100"}}}`
+
+		got, err := json.Marshal(message)
+		require.NoError(t, err)
+		require.Equal(t, want, string(got))
 	})
 }

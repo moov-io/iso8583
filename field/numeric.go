@@ -8,7 +8,7 @@ import (
 var _ Field = (*Numeric)(nil)
 
 type Numeric struct {
-	Value int
+	Value int `json:"value"`
 	spec  *Spec
 }
 

@@ -7,7 +7,7 @@ import (
 var _ Field = (*String)(nil)
 
 type String struct {
-	Value string
+	Value string `json:"value"`
 	spec  *Spec
 }
 

@@ -1,8 +1,11 @@
 package iso8583
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/moov-io/iso8583/field"
 )
@@ -226,4 +229,56 @@ func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) error {
 	dataField.Addr().Elem().Set(reflect.ValueOf(fl))
 
 	return nil
+}
+
+// Custom type to sort keys in resulting JSON
+type OrderedMap map[int]field.Field
+
+func (om OrderedMap) MarshalJSON() ([]byte, error) {
+	keys := make([]int, 0, len(om))
+	for k := range om {
+		keys = append(keys, k)
+	}
+
+	sort.Ints(keys)
+
+	buf := &bytes.Buffer{}
+	buf.Write([]byte{'{'})
+	for _, i := range keys {
+		b, err := json.Marshal(om[i])
+		if err != nil {
+			return nil, err
+		}
+		buf.WriteString(fmt.Sprintf("%q:", fmt.Sprintf("%v", i)))
+		buf.Write(b)
+
+		// if it's the last item, don't add ,
+		if i == keys[len(keys)-1] {
+			continue
+		}
+
+		buf.Write([]byte{','})
+	}
+	buf.Write([]byte{'}'})
+
+	return buf.Bytes(), nil
+}
+
+type jsonStruct struct {
+	Fields OrderedMap `json:"fields"`
+}
+
+func (m *Message) MarshalJSON() ([]byte, error) {
+	// by packing the message we will generate bitmap
+	// create HEX representation
+	// and validate message against the spec
+	if _, err := m.Pack(); err != nil {
+		return nil, err
+	}
+
+	jsonData := &jsonStruct{
+		Fields: m.fields,
+	}
+
+	return json.Marshal(jsonData)
 }
