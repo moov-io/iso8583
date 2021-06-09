@@ -3,8 +3,9 @@ module github.com/moov-io/iso8583
 go 1.15
 
 require (
-	github.com/boljen/go-bitmap v0.0.0-20151001105940-23cd2fb0ce7d
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/yerden/go-util v1.1.3
-	golang.org/x/tools/gopls v0.6.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )

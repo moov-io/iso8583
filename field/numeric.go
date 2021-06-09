@@ -64,6 +64,7 @@ func (f *Numeric) Pack() ([]byte, error) {
 	return append(packedLength, packed...), nil
 }
 
+// returns number of bytes was read
 func (f *Numeric) Unpack(data []byte) (int, error) {
 	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
@@ -71,8 +72,7 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 	}
 
 	start := f.spec.Pref.Length()
-	end := f.spec.Pref.Length() + dataLen
-	raw, err := f.spec.Enc.Decode(data[start:end], f.spec.Length)
+	raw, read, err := f.spec.Enc.Decode(data[start:], dataLen)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode content: %v", err)
 	}
@@ -86,5 +86,5 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 		return 0, fmt.Errorf("failed to convert into number: %v", err)
 	}
 
-	return dataLen + f.spec.Pref.Length(), nil
+	return read + f.spec.Pref.Length(), nil
 }

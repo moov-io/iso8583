@@ -75,7 +75,7 @@ func TestHexBitmap(t *testing.T) {
 		_, err := field.Unpack([]byte("4000"))
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "not enough data to read 1 bitmap")
+		require.Contains(t, err.Error(), "for 1 bitmap: not enough data to read")
 	})
 
 	t.Run("When bit for secondary bitmap is set but not enough data to read", func(t *testing.T) {
@@ -89,7 +89,7 @@ func TestHexBitmap(t *testing.T) {
 		_, err := field.Unpack([]byte("c0001000000000008000000000000100"))
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "not enough data to read 3 bitmap")
+		require.Contains(t, err.Error(), "for 3 bitmap: not enough data to read")
 	})
 
 	t.Run("With primary bitmap only it returns signle bitmap length", func(t *testing.T) {

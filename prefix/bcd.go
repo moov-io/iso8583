@@ -45,7 +45,7 @@ func (p *bcdVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
 		return 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", p.Length(), len(data))
 	}
 
-	bDigits, err := encoding.BCD.Decode(data[:p.Length()], p.Digits)
+	bDigits, _, err := encoding.BCD.Decode(data[:p.Length()], p.Digits)
 	if err != nil {
 		return 0, err
 	}
@@ -81,8 +81,9 @@ func (p *bcdFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	return []byte{}, nil
 }
 
+// Returns number of characters that should be decoded
 func (p *bcdFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, error) {
-	return bcd.EncodedLen(fixLen), nil
+	return fixLen, nil
 }
 
 func (p *bcdFixedPrefixer) Length() int {

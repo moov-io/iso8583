@@ -70,8 +70,7 @@ func (f *String) Unpack(data []byte) (int, error) {
 	}
 
 	start := f.spec.Pref.Length()
-	end := f.spec.Pref.Length() + dataLen
-	raw, err := f.spec.Enc.Decode(data[start:end], f.spec.Length)
+	raw, read, err := f.spec.Enc.Decode(data[start:], dataLen)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode content: %v", err)
 	}
@@ -82,5 +81,5 @@ func (f *String) Unpack(data []byte) (int, error) {
 
 	f.Value = string(raw)
 
-	return dataLen + f.spec.Pref.Length(), nil
+	return read + f.spec.Pref.Length(), nil
 }

@@ -166,7 +166,7 @@ func (m *Message) Unpack(src []byte) error {
 	// unpack MTI
 	read, err := m.fields[0].Unpack(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to unpack MTI: %v", err)
 	}
 
 	off = read
@@ -174,7 +174,7 @@ func (m *Message) Unpack(src []byte) error {
 	// unpack Bitmap
 	read, err = m.fields[1].Unpack(src[off:])
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to unpack bitmapt: %v", err)
 	}
 
 	off += read

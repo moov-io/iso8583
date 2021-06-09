@@ -76,18 +76,11 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 
 	// read max
 	for i := 0; i < maxBitmaps; i++ {
-		start := i * minLen
-		end := (i + 1) * minLen
-
-		if len(data) < end {
-			return 0, fmt.Errorf("not enough data to read %d bitmap", i+1)
-		}
-
-		decoded, err := f.spec.Enc.Decode(data[start:end], 0)
+		decoded, readDecoded, err := f.spec.Enc.Decode(data[read:], minLen)
 		if err != nil {
-			return 0, fmt.Errorf("failed to decode content: %v", err)
+			return 0, fmt.Errorf("failed to decode content for %d bitmap: %v", i+1, err)
 		}
-		read += minLen
+		read += readDecoded
 
 		rawBitmap = append(rawBitmap, decoded...)
 		bitmap := utils.NewBitmapFromData(decoded)

@@ -18,14 +18,16 @@ func (e asciiEncoder) Encode(data []byte) ([]byte, error) {
 	return out, nil
 }
 
-func (e asciiEncoder) Decode(data []byte, _ int) ([]byte, error) {
+func (e asciiEncoder) Decode(data []byte, length int) ([]byte, int, error) {
+	// read only 'length' bytes (1 byte - 1 ASCII character)
+	data = data[:length]
 	out := []byte{}
 	for _, r := range data {
 		if r > 127 {
-			return nil, fmt.Errorf("invalid ASCII char: '%s'", string(r))
+			return nil, 0, fmt.Errorf("invalid ASCII char: '%s'", string(r))
 		}
 		out = append(out, r)
 	}
 
-	return out, nil
+	return out, length, nil
 }

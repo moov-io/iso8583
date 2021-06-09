@@ -23,13 +23,22 @@ func (e *lBCDEncoder) Encode(src []byte) ([]byte, error) {
 	return dst[:n], nil
 }
 
-func (e *lBCDEncoder) Decode(src []byte, length int) ([]byte, error) {
-	dec := bcd.NewDecoder(bcd.Standard)
-	dst := make([]byte, bcd.DecodedLen(len(src)))
-	_, err := dec.Decode(dst, src)
-	if err != nil {
-		return nil, err
+func (e *lBCDEncoder) Decode(src []byte, length int) ([]byte, int, error) {
+	decodedLen := length
+	if length%2 != 0 {
+		decodedLen += 1
 	}
 
-	return dst[:length], nil
+	read := bcd.EncodedLen(decodedLen)
+
+	dec := bcd.NewDecoder(bcd.Standard)
+	dst := make([]byte, decodedLen)
+	_, err := dec.Decode(dst, src)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// because it's left aligned, we return data from
+	// 0 index
+	return dst[:length], read, nil
 }
