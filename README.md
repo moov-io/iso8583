@@ -33,6 +33,7 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 	- [Define Specification](#define-your-specification)
 	- [Build Message](#build-and-pack-the-message)
 	- [Parse Message](#parse-the-message-and-access-the-data)
+	- JSON Encoding
 - [Learn About ISO 8583](#learn-about-iso-8583)
 - [Getting Help](#getting-help)
 - [Contributing](#contributing)
@@ -211,6 +212,32 @@ data.F4.Value // is a string "100"
 ```
 
 For complete code samples please check [./message_test.go](./message_test.go).
+
+### JSON Encoding
+
+You can serialize message into JSON format:
+
+```go
+message := iso8583.NewMessage(spec)
+message.MTI("0100")
+message.Field(2, "4242424242424242")
+message.Field(3, "123456")
+message.Field(4, "100")
+
+jsonMessage, err := json.Marshal(message)
+```
+
+it will produce following JSON:
+
+```json
+{
+   "0":"0100",
+   "1":"700000000000000000000000000000000000000000000000",
+   "2":"4242424242424242",
+   "3":123456,
+   "4":"100"
+}
+```
 
 ## Learn About ISO 8583
 
