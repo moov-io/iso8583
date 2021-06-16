@@ -1,7 +1,10 @@
 package field
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -146,4 +149,9 @@ func (f *Bitmap) setBitmapFields() bool {
 	}
 
 	return false
+}
+
+// Returns HEX encoded bitmap (if any)
+func (f *Bitmap) MarshalJSON() ([]byte, error) {
+	return json.Marshal(strings.ToUpper(hex.EncodeToString(f.Bytes())))
 }

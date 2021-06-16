@@ -1,13 +1,14 @@
 package field
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
 var _ Field = (*String)(nil)
 
 type String struct {
-	Value string
+	Value string `json:"value"`
 	spec  *Spec
 }
 
@@ -82,4 +83,8 @@ func (f *String) Unpack(data []byte) (int, error) {
 	f.Value = string(raw)
 
 	return read + f.spec.Pref.Length(), nil
+}
+
+func (f *String) MarshalJSON() ([]byte, error) {
+	return json.Marshal(f.Value)
 }
