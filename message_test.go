@@ -32,12 +32,30 @@ func TestMessage(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			3: field.NewNumeric(&field.Spec{
+			3: field.NewSubfields(&field.Spec{
 				Length:      6,
 				Description: "Processing Code",
-				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.Fixed,
-				Pad:         padding.Left('0'),
+				Fields: map[int]field.Field{
+					1: field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					2: field.NewString(&field.Spec{
+						Length:      2,
+						Description: "From Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					3: field.NewString(&field.Spec{
+						Length:      2,
+						Description: "To Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
 			}),
 			4: field.NewString(&field.Spec{
 				Length:      12,
@@ -52,9 +70,9 @@ func TestMessage(t *testing.T) {
 	t.Run("Test packing and unpacking untyped fields", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.MTI("0100")
-		message.Field(2, "4242424242424242")
-		message.Field(3, "123456")
-		message.Field(4, "100")
+		require.NoError(t, message.Field(2, "4242424242424242"))
+		require.NoError(t, message.Field(3, "123456"))
+		require.NoError(t, message.Field(4, "100"))
 
 		got, err := message.Pack()
 
@@ -66,16 +84,33 @@ func TestMessage(t *testing.T) {
 		message = NewMessage(spec)
 		message.Unpack([]byte(want))
 
-		require.Equal(t, "0100", message.GetMTI())
-		require.Equal(t, "4242424242424242", message.GetString(2))
-		require.Equal(t, "123456", message.GetString(3))
-		require.Equal(t, "100", message.GetString(4))
+		s, err := message.GetMTI()
+		require.NoError(t, err)
+		require.Equal(t, "0100", s)
+
+		s, err = message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", s)
+
+		s, err = message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "123456", s)
+
+		s, err = message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", s)
 	})
 
 	t.Run("Test unpacking with typed fields", func(t *testing.T) {
+		type TestISOF3Data struct {
+			F1 *field.String
+			F2 *field.String
+			F3 *field.String
+		}
+
 		type ISO87Data struct {
 			F2 *field.String
-			F3 *field.Numeric
+			F3 *TestISOF3Data
 			F4 *field.String
 		}
 
@@ -87,21 +122,37 @@ func TestMessage(t *testing.T) {
 
 		require.NoError(t, err)
 
-		require.Equal(t, "4242424242424242", message.GetString(2))
-		require.Equal(t, "123456", message.GetString(3))
-		require.Equal(t, "100", message.GetString(4))
+		s, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", s)
+
+		s, err = message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "123456", s)
+
+		s, err = message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", s)
 
 		data := message.Data().(*ISO87Data)
 
 		require.Equal(t, "4242424242424242", data.F2.Value)
-		require.Equal(t, 123456, data.F3.Value)
+		require.Equal(t, "12", data.F3.F1.Value)
+		require.Equal(t, "34", data.F3.F2.Value)
+		require.Equal(t, "56", data.F3.F3.Value)
 		require.Equal(t, "100", data.F4.Value)
 	})
 
 	t.Run("Test packing with typed fields", func(t *testing.T) {
+		type TestISOF3Data struct {
+			F1 *field.String
+			F2 *field.String
+			F3 *field.String
+		}
+
 		type ISO87Data struct {
 			F2 *field.String
-			F3 *field.Numeric
+			F3 *TestISOF3Data
 			F4 *field.String
 		}
 
@@ -109,13 +160,16 @@ func TestMessage(t *testing.T) {
 		message.MTI("0100")
 		err := message.SetData(&ISO87Data{
 			F2: field.NewStringValue("4242424242424242"),
-			F3: field.NewNumericValue(123456),
+			F3: &TestISOF3Data{
+				F1: field.NewStringValue("12"),
+				F2: field.NewStringValue("34"),
+				F3: field.NewStringValue("56"),
+			},
 			F4: field.NewStringValue("100"),
 		})
 		require.NoError(t, err)
 
 		rawMsg, err := message.Pack()
-
 		require.NoError(t, err)
 
 		wantMsg := []byte("01007000000000000000164242424242424242123456000000000100")
@@ -143,11 +197,30 @@ func TestPackUnpack(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			3: field.NewString(&field.Spec{
+			3: field.NewSubfields(&field.Spec{
 				Length:      6,
 				Description: "Processing Code",
-				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.Fixed,
+				Fields: map[int]field.Field{
+					1: field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					2: field.NewString(&field.Spec{
+						Length:      2,
+						Description: "From Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					3: field.NewString(&field.Spec{
+						Length:      2,
+						Description: "To Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
 			}),
 			4: field.NewNumeric(&field.Spec{
 				Length:      12,
@@ -283,9 +356,15 @@ func TestPackUnpack(t *testing.T) {
 		},
 	}
 
+	type TestISOF3Data struct {
+		F1 *field.String
+		F2 *field.String
+		F3 *field.String
+	}
+
 	type TestISOData struct {
 		F2   *field.String
-		F3   *field.String
+		F3   *TestISOF3Data
 		F4   *field.Numeric
 		F7   *field.Numeric
 		F11  *field.Numeric
@@ -311,8 +390,12 @@ func TestPackUnpack(t *testing.T) {
 	t.Run("Pack data", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.SetData(&TestISOData{
-			F2:   field.NewStringValue("4276555555555555"),
-			F3:   field.NewStringValue("000000"),
+			F2: field.NewStringValue("4276555555555555"),
+			F3: &TestISOF3Data{
+				F1: field.NewStringValue("00"),
+				F2: field.NewStringValue("00"),
+				F3: field.NewStringValue("00"),
+			},
 			F4:   field.NewNumericValue(77700),
 			F7:   field.NewNumericValue(701111844),
 			F11:  field.NewNumericValue(123),
@@ -354,14 +437,24 @@ func TestPackUnpack(t *testing.T) {
 
 		require.NoError(t, err)
 
-		require.Equal(t, "4276555555555555", message.GetString(2))
-		require.Equal(t, "000000", message.GetString(3))
-		require.Equal(t, "77700", message.GetString(4))
+		s, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4276555555555555", s)
+
+		s, err = message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "000000", s)
+
+		s, err = message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "77700", s)
 
 		data := message.Data().(*TestISOData)
 
 		assert.Equal(t, "4276555555555555", data.F2.Value)
-		assert.Equal(t, "000000", data.F3.Value)
+		assert.Equal(t, "00", data.F3.F1.Value)
+		assert.Equal(t, "00", data.F3.F2.Value)
+		assert.Equal(t, "00", data.F3.F3.Value)
 		assert.Equal(t, 77700, data.F4.Value)
 		assert.Equal(t, 701111844, data.F7.Value)
 		assert.Equal(t, 123, data.F11.Value)
@@ -404,12 +497,30 @@ func TestMessageJSON(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			3: field.NewNumeric(&field.Spec{
+			3: field.NewSubfields(&field.Spec{
 				Length:      6,
 				Description: "Processing Code",
-				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.Fixed,
-				Pad:         padding.Left('0'),
+				Fields: map[int]field.Field{
+					1: field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					2: field.NewString(&field.Spec{
+						Length:      2,
+						Description: "From Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					3: field.NewString(&field.Spec{
+						Length:      2,
+						Description: "To Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
 			}),
 			4: field.NewString(&field.Spec{
 				Length:      12,
@@ -421,14 +532,33 @@ func TestMessageJSON(t *testing.T) {
 		},
 	}
 
+	type TestISOF3Data struct {
+		F1 *field.String
+		F2 *field.String
+		F3 *field.String
+	}
+
+	type TestISOData struct {
+		F2 *field.String
+		F3 *TestISOF3Data
+		F4 *field.String
+	}
+
 	t.Run("Test JSON encoding", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.MTI("0100")
-		message.Field(2, "4242424242424242")
-		message.Field(3, "123456")
-		message.Field(4, "100")
+		err := message.SetData(&TestISOData{
+			F2: field.NewStringValue("4242424242424242"),
+			F3: &TestISOF3Data{
+				F1: field.NewStringValue("12"),
+				F2: field.NewStringValue("34"),
+				F3: field.NewStringValue("56"),
+			},
+			F4: field.NewStringValue("100"),
+		})
+		require.NoError(t, err)
 
-		want := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":123456,"4":"100"}`
+		want := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
 
 		got, err := json.Marshal(message)
 		require.NoError(t, err)

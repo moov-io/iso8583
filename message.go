@@ -1,11 +1,9 @@
 package iso8583
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"sort"
 
 	"github.com/moov-io/iso8583/field"
 )
@@ -39,37 +37,40 @@ func (m *Message) SetData(data interface{}) error {
 		return nil
 	}
 
-	// get the struct
-	str := reflect.ValueOf(data).Elem()
-
-	if reflect.TypeOf(str).Kind() != reflect.Struct {
-		return fmt.Errorf("failed to set data as struct is expected, got: %s", reflect.TypeOf(str).Kind())
+	dataStruct := reflect.ValueOf(data)
+	strKind := dataStruct.Kind()
+	if strKind == reflect.Ptr || strKind == reflect.Interface {
+		// get the struct
+		dataStruct = dataStruct.Elem()
 	}
 
-	for i, fl := range m.fields {
+	if reflect.TypeOf(dataStruct).Kind() != reflect.Struct {
+		return fmt.Errorf("failed to set data as struct is expected, got: %s", reflect.TypeOf(dataStruct).Kind())
+	}
+
+	for i, specField := range m.fields {
 		fieldName := fmt.Sprintf("F%d", i)
 
 		// get the struct field
-		dataField := str.FieldByName(fieldName)
+		dataField := dataStruct.FieldByName(fieldName)
 
-		if dataField == (reflect.Value{}) || dataField.IsNil() {
+		// no data field was found with this name
+		if dataField == (reflect.Value{}) {
 			continue
 		}
 
-		if dataField.Type() != reflect.TypeOf(fl) {
-			return fmt.Errorf("failed to set data: type of the field %d: %v does not match the type in the spec: %v", i, dataField.Type(), reflect.TypeOf(fl))
+		isNil := dataField.IsNil()
+		if isNil {
+			dataField.Set(reflect.New(dataField.Type().Elem()))
+		}
+		if err := specField.SetData(dataField.Interface()); err != nil {
+			return fmt.Errorf("failed to set data for field %d: %w", i, err)
+		}
+		if !isNil {
+			m.fieldsMap[i] = struct{}{}
 		}
 
-		// set data field spec for the message spec field
-		specField := m.fields[i]
-		df := dataField.Interface().(field.Field)
-		df.SetSpec(specField.Spec())
-
-		// use data field as a message field
-		m.fields[i] = df
-		m.fieldsMap[i] = struct{}{}
 	}
-
 	return nil
 }
 
@@ -89,35 +90,41 @@ func (m *Message) MTI(val string) {
 	m.fields[0].SetBytes([]byte(val))
 }
 
-func (m *Message) Field(id int, val string) {
-	m.fieldsMap[id] = struct{}{}
-	m.fields[id].SetBytes([]byte(val))
+func (m *Message) Field(id int, val string) error {
+	if f, ok := m.fields[id]; ok {
+		m.fieldsMap[id] = struct{}{}
+		return f.SetBytes([]byte(val))
+	}
+	return fmt.Errorf("failed to set field %d. ID does not exist", id)
 }
 
-func (m *Message) BinaryField(id int, val []byte) {
-	m.fieldsMap[id] = struct{}{}
-	m.fields[id].SetBytes(val)
+func (m *Message) BinaryField(id int, val []byte) error {
+	if f, ok := m.fields[id]; ok {
+		m.fieldsMap[id] = struct{}{}
+		return f.SetBytes(val)
+	}
+	return fmt.Errorf("failed to set binary field %d. ID does not exist", id)
 }
 
-func (m *Message) GetMTI() string {
+func (m *Message) GetMTI() (string, error) {
 	// check index
 	return m.fields[0].String()
 }
 
-func (m *Message) GetString(id int) string {
-	if _, ok := m.fieldsMap[id]; ok {
-		return m.fields[id].String()
+func (m *Message) GetString(id int) (string, error) {
+	if f, ok := m.fields[id]; ok {
+		m.fieldsMap[id] = struct{}{}
+		return f.String()
 	}
-
-	return ""
+	return "", fmt.Errorf("failed to get string for field %d. ID does not exist", id)
 }
 
-func (m *Message) GetBytes(id int) []byte {
-	if _, ok := m.fieldsMap[id]; ok {
-		return m.fields[id].Bytes()
+func (m *Message) GetBytes(id int) ([]byte, error) {
+	if f, ok := m.fields[id]; ok {
+		m.fieldsMap[id] = struct{}{}
+		return f.Bytes()
 	}
-
-	return nil
+	return nil, fmt.Errorf("failed to get bytes for field %d. ID does not exist", id)
 }
 
 func (m *Message) Pack() ([]byte, error) {
@@ -184,84 +191,22 @@ func (m *Message) Unpack(src []byte) error {
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
 		if m.Bitmap().IsSet(i) {
-			field, ok := m.fields[i]
+			fl, ok := m.fields[i]
 			if !ok {
 				return fmt.Errorf("failed to unpack field %d: no specification found", i)
 			}
 
 			m.fieldsMap[i] = struct{}{}
-			read, err = field.Unpack(src[off:])
+			read, err = fl.Unpack(src[off:])
 			if err != nil {
-				return fmt.Errorf("failed to unpack field %d (%s): %v", i, field.Spec().Description, err)
+				return fmt.Errorf("failed to unpack field %d (%s): %v", i, fl.Spec().Description, err)
 			}
 
-			err = m.linkDataFieldWithMessageField(i, field)
-			if err != nil {
-				return fmt.Errorf("failed to unpack field %d: %v", i, err)
-			}
 			off += read
 		}
 	}
 
 	return nil
-}
-
-func (m *Message) linkDataFieldWithMessageField(i int, fl field.Field) error {
-	if m.data == nil {
-		return nil
-	}
-
-	// get the struct
-	str := reflect.ValueOf(m.data).Elem()
-
-	fieldName := fmt.Sprintf("F%d", i)
-
-	// get the struct field
-	dataField := str.FieldByName(fieldName)
-	if dataField == (reflect.Value{}) {
-		return nil
-	}
-
-	if dataField.Type() != reflect.TypeOf(fl) {
-		return fmt.Errorf("field type: %v does not match the type in the spec: %v", dataField.Type(), reflect.TypeOf(fl))
-	}
-
-	dataField.Addr().Elem().Set(reflect.ValueOf(fl))
-
-	return nil
-}
-
-// Custom type to sort keys in resulting JSON
-type OrderedMap map[int]field.Field
-
-func (om OrderedMap) MarshalJSON() ([]byte, error) {
-	keys := make([]int, 0, len(om))
-	for k := range om {
-		keys = append(keys, k)
-	}
-
-	sort.Ints(keys)
-
-	buf := &bytes.Buffer{}
-	buf.Write([]byte{'{'})
-	for _, i := range keys {
-		b, err := json.Marshal(om[i])
-		if err != nil {
-			return nil, err
-		}
-		buf.WriteString(fmt.Sprintf("%q:", fmt.Sprintf("%v", i)))
-		buf.Write(b)
-
-		// if it's the last item, don't add ,
-		if i == keys[len(keys)-1] {
-			continue
-		}
-
-		buf.Write([]byte{','})
-	}
-	buf.Write([]byte{'}'})
-
-	return buf.Bytes(), nil
 }
 
 func (m *Message) MarshalJSON() ([]byte, error) {
@@ -272,7 +217,7 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	jsonData := OrderedMap(m.fields)
+	jsonData := field.OrderedMap(m.fields)
 
 	return json.Marshal(jsonData)
 }

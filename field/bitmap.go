@@ -17,9 +17,10 @@ var _ Field = (*Bitmap)(nil)
 type Bitmap struct {
 	spec   *Spec
 	bitmap *utils.Bitmap
+	data   *Bitmap
 }
 
-func NewBitmap(spec *Spec) Field {
+func NewBitmap(spec *Spec) *Bitmap {
 	return &Bitmap{
 		spec:   spec,
 		bitmap: utils.NewBitmap(64 * maxBitmaps),
@@ -34,16 +35,17 @@ func (f *Bitmap) SetSpec(spec *Spec) {
 	f.spec = spec
 }
 
-func (f *Bitmap) SetBytes(b []byte) {
+func (f *Bitmap) SetBytes(b []byte) error {
 	f.bitmap = utils.NewBitmapFromData(b)
+	return nil
 }
 
-func (f *Bitmap) Bytes() []byte {
-	return f.bitmap.Bytes()
+func (f *Bitmap) Bytes() ([]byte, error) {
+	return f.bitmap.Bytes(), nil
 }
 
-func (f *Bitmap) String() string {
-	return f.bitmap.String()
+func (f *Bitmap) String() (string, error) {
+	return f.bitmap.String(), nil
 }
 
 func (f *Bitmap) Pack() ([]byte, error) {
@@ -52,7 +54,10 @@ func (f *Bitmap) Pack() ([]byte, error) {
 	count := f.bitmapsCount()
 
 	// here we have max possible bytes for the bitmap 8*maxBitmaps
-	data := f.Bytes()
+	data, err := f.Bytes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve bytes: %v", err)
+	}
 
 	data = data[0 : 8*count]
 
@@ -95,7 +100,29 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 	}
 
 	f.bitmap = utils.NewBitmapFromData(rawBitmap)
+
+	if f.data != nil {
+		*(f.data) = *f
+	}
+
 	return read, nil
+}
+
+func (f *Bitmap) SetData(data interface{}) error {
+	if data == nil {
+		return nil
+	}
+
+	bmap, ok := data.(*Bitmap)
+	if !ok {
+		return fmt.Errorf("data does not match required *Bitmap type")
+	}
+
+	f.data = bmap
+	if bmap.bitmap != nil {
+		f.bitmap = bmap.bitmap
+	}
+	return nil
 }
 
 func (f *Bitmap) Reset() {
@@ -153,5 +180,9 @@ func (f *Bitmap) setBitmapFields() bool {
 
 // Returns HEX encoded bitmap (if any)
 func (f *Bitmap) MarshalJSON() ([]byte, error) {
-	return json.Marshal(strings.ToUpper(hex.EncodeToString(f.Bytes())))
+	data, err := f.Bytes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve bytes: %v", err)
+	}
+	return json.Marshal(strings.ToUpper(hex.EncodeToString(data)))
 }
