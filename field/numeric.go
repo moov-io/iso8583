@@ -82,9 +82,17 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 		raw = f.spec.Pad.Unpad(raw)
 	}
 
-	f.Value, err = strconv.Atoi(string(raw))
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert into number: %v", err)
+	if len(raw) == 0 {
+		// for a length 0 raw, string(raw) would become "" which makes Atoi return an error
+		// however for example "0000" (value 0 left-padded with '0') should have 0 as output, not an error
+		// so if the length of raw is 0, set f.Value to 0 instead of parsing the raw
+		f.Value = 0
+	} else {
+		// otherwise parse the raw to an int
+		f.Value, err = strconv.Atoi(string(raw))
+		if err != nil {
+			return 0, fmt.Errorf("failed to convert into number: %v", err)
+		}
 	}
 
 	return read + f.spec.Pref.Length(), nil
