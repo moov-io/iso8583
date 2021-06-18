@@ -85,7 +85,7 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 	if len(raw) == 0 {
 		// for a length 0 raw, string(raw) would become "" which makes Atoi return an error
 		// however for example "0000" (value 0 left-padded with '0') should have 0 as output, not an error
-		// so if the lenght of raw is 0, set f.Value to 0 instead of parsing the raw
+		// so if the length of raw is 0, set f.Value to 0 instead of parsing the raw
 		f.Value = 0
 	} else {
 		// otherwise parse the raw to an int
