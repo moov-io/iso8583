@@ -9,7 +9,9 @@ import (
 )
 
 type Spec struct {
-	Length      int
+	Length int
+	// Only applicable Composite and other bespoke field types.
+	IDLength    int
 	Description string
 	Enc         encoding.Encoder
 	Pref        prefix.Prefixer

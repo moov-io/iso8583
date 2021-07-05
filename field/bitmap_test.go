@@ -231,17 +231,13 @@ func TestBitmap_SetData(t *testing.T) {
 	t.Run("Pack returns bytes using the bitmap provided using SetData", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
-		data := &Bitmap{}
-		bitmap.SetData(data)
-		// set bit: 10
-		read, err := bitmap.Unpack(bitmapBytes)
-		require.NoError(t, err)
-		require.Equal(t, 16, read) // 16 is 8 bytes (one bitmap) encoded in hex
+		data := NewBitmap(nil)
+		data.Set(20) // first bitmap field
 
-		bitmapBytes, err := bitmap.Bytes()
+		bitmap.SetData(data)
+
+		packed, err := bitmap.Pack()
 		require.NoError(t, err)
-		dataBytes, err := data.Bytes()
-		require.NoError(t, err)
-		require.Equal(t, bitmapBytes, dataBytes)
+		require.Len(t, packed, 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
 	})
 }

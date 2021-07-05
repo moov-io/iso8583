@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/moov-io/iso8583/field"
 )
@@ -12,6 +13,7 @@ type Message struct {
 	fields    map[int]field.Field
 	spec      *MessageSpec
 	data      interface{}
+	dataValue *reflect.Value
 	fieldsMap map[int]struct{}
 	bitmap    *field.Bitmap
 }
@@ -38,8 +40,7 @@ func (m *Message) SetData(data interface{}) error {
 	}
 
 	dataStruct := reflect.ValueOf(data)
-	strKind := dataStruct.Kind()
-	if strKind == reflect.Ptr || strKind == reflect.Interface {
+	if dataStruct.Kind() == reflect.Ptr || dataStruct.Kind() == reflect.Interface {
 		// get the struct
 		dataStruct = dataStruct.Elem()
 	}
@@ -48,29 +49,7 @@ func (m *Message) SetData(data interface{}) error {
 		return fmt.Errorf("failed to set data as struct is expected, got: %s", reflect.TypeOf(dataStruct).Kind())
 	}
 
-	for i, specField := range m.fields {
-		fieldName := fmt.Sprintf("F%d", i)
-
-		// get the struct field
-		dataField := dataStruct.FieldByName(fieldName)
-
-		// no data field was found with this name
-		if dataField == (reflect.Value{}) {
-			continue
-		}
-
-		isNil := dataField.IsNil()
-		if isNil {
-			dataField.Set(reflect.New(dataField.Type().Elem()))
-		}
-		if err := specField.SetData(dataField.Interface()); err != nil {
-			return fmt.Errorf("failed to set data for field %d: %w", i, err)
-		}
-		if !isNil {
-			m.fieldsMap[i] = struct{}{}
-		}
-
-	}
+	m.dataValue = &dataStruct
 	return nil
 }
 
@@ -131,37 +110,31 @@ func (m *Message) Pack() ([]byte, error) {
 	packed := []byte{}
 	m.Bitmap().Reset()
 
-	// build the bitmap
-	maxId := 0
+	ids, err := m.setPackableDataFields()
+	if err != nil {
+		return nil, fmt.Errorf("failed to pack message: %w", err)
+	}
 
-	for id := range m.fieldsMap {
-		if id > maxId {
-			maxId = id
-		}
-
+	for _, id := range ids {
 		// indexes 0 and 1 are for mti and bitmap
 		// regular field number startd from index 2
 		if id < 2 {
 			continue
 		}
-
 		m.Bitmap().Set(id)
 	}
 
 	// pack fields
-	for i := 0; i <= maxId; i++ {
-		if _, ok := m.fieldsMap[i]; ok {
-			field, ok := m.fields[i]
-			if !ok {
-				return nil, fmt.Errorf("failed to pack field %d: no specification found", i)
-			}
-
-			packedField, err := field.Pack()
-			if err != nil {
-				return nil, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
-			}
-			packed = append(packed, packedField...)
+	for _, i := range ids {
+		field, ok := m.fields[i]
+		if !ok {
+			return nil, fmt.Errorf("failed to pack field %d: no specification found", i)
 		}
+		packedField, err := field.Pack()
+		if err != nil {
+			return nil, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
+		}
+		packed = append(packed, packedField...)
 	}
 
 	return packed, nil
@@ -196,6 +169,12 @@ func (m *Message) Unpack(src []byte) error {
 				return fmt.Errorf("failed to unpack field %d: no specification found", i)
 			}
 
+			if m.dataValue != nil {
+				if err := m.setUnpackableDataField(i, fl); err != nil {
+					return err
+				}
+			}
+
 			m.fieldsMap[i] = struct{}{}
 			read, err = fl.Unpack(src[off:])
 			if err != nil {
@@ -220,4 +199,60 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 	jsonData := field.OrderedMap(m.fields)
 
 	return json.Marshal(jsonData)
+}
+
+func (m *Message) setPackableDataFields() ([]int, error) {
+	// Indexes 0 and 1 represent the mti and bitmap.
+	// These fields are always populated.
+	populatedFieldIDs := []int{0, 1}
+
+	for id, field := range m.fields {
+		// regular field number start from index 2
+		if id < 2 {
+			continue
+		}
+
+		// These fields are set using the typed API
+		if m.dataValue != nil {
+			dataField := m.dataFieldValue(id)
+			// no non-nil data field was found with this name
+			if dataField == (reflect.Value{}) || dataField.IsNil() {
+				continue
+			}
+			if err := field.SetData(dataField.Interface()); err != nil {
+				return nil, fmt.Errorf("failed to set data for field %d: %w", id, err)
+			}
+		}
+
+		// These fields are set using the untyped API
+		_, ok := m.fieldsMap[id]
+		if ok || m.dataValue != nil {
+			populatedFieldIDs = append(populatedFieldIDs, id)
+		}
+	}
+	sort.Ints(populatedFieldIDs)
+
+	return populatedFieldIDs, nil
+}
+
+func (m *Message) setUnpackableDataField(id int, specField field.Field) error {
+	dataField := m.dataFieldValue(id)
+	// no data field was found with this name
+	if dataField == (reflect.Value{}) {
+		return nil
+	}
+
+	isNil := dataField.IsNil()
+	if isNil {
+		dataField.Set(reflect.New(dataField.Type().Elem()))
+	}
+	if err := specField.SetData(dataField.Interface()); err != nil {
+		return fmt.Errorf("failed to set data for field %d: %w", id, err)
+	}
+
+	return nil
+}
+
+func (m *Message) dataFieldValue(id int) reflect.Value {
+	return m.dataValue.FieldByName(fmt.Sprintf("F%d", id))
 }

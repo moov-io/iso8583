@@ -32,7 +32,7 @@ func TestMessage(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			3: field.NewSubfields(&field.Spec{
+			3: field.NewComposite(&field.Spec{
 				Length:      6,
 				Description: "Processing Code",
 				Pref:        prefix.ASCII.Fixed,
@@ -197,7 +197,7 @@ func TestPackUnpack(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			3: field.NewSubfields(&field.Spec{
+			3: field.NewComposite(&field.Spec{
 				Length:      6,
 				Description: "Processing Code",
 				Pref:        prefix.ASCII.Fixed,
@@ -333,6 +333,12 @@ func TestPackUnpack(t *testing.T) {
 				Enc:         encoding.LBCD,
 				Pref:        prefix.BCD.Fixed,
 			}),
+			50: field.NewNumeric(&field.Spec{
+				Length:      3,
+				Description: "Field 50",
+				Enc:         encoding.LBCD,
+				Pad:         padding.Left('0'),
+			}),
 			// this one should be binary...
 			52: field.NewString(&field.Spec{
 				Length:      8,
@@ -382,6 +388,7 @@ func TestPackUnpack(t *testing.T) {
 		F42  *field.String
 		F43  *field.String
 		F49  *field.Numeric
+		F50  *field.Numeric
 		F52  *field.String
 		F53  *field.Numeric
 		F120 *field.String
@@ -389,33 +396,35 @@ func TestPackUnpack(t *testing.T) {
 
 	t.Run("Pack data", func(t *testing.T) {
 		message := NewMessage(spec)
-		message.SetData(&TestISOData{
+		err := message.SetData(&TestISOData{
 			F2: field.NewStringValue("4276555555555555"),
 			F3: &TestISOF3Data{
 				F1: field.NewStringValue("00"),
 				F2: field.NewStringValue("00"),
 				F3: field.NewStringValue("00"),
 			},
-			F4:   field.NewNumericValue(77700),
-			F7:   field.NewNumericValue(701111844),
-			F11:  field.NewNumericValue(123),
-			F12:  field.NewNumericValue(131844),
-			F13:  field.NewNumericValue(701),
-			F14:  field.NewNumericValue(1902),
-			F19:  field.NewNumericValue(643),
-			F22:  field.NewNumericValue(901),
-			F25:  field.NewNumericValue(2),
-			F32:  field.NewNumericValue(123456),
-			F35:  field.NewStringValue("4276555555555555=12345678901234567890"),
-			F37:  field.NewStringValue("987654321001"),
-			F41:  field.NewStringValue("00000321"),
-			F42:  field.NewStringValue("120000000000034"),
-			F43:  field.NewStringValue("Test text"),
-			F49:  field.NewNumericValue(643),
+			F4:  field.NewNumericValue(77700),
+			F7:  field.NewNumericValue(701111844),
+			F11: field.NewNumericValue(123),
+			F12: field.NewNumericValue(131844),
+			F13: field.NewNumericValue(701),
+			F14: field.NewNumericValue(1902),
+			F19: field.NewNumericValue(643),
+			F22: field.NewNumericValue(901),
+			F25: field.NewNumericValue(2),
+			F32: field.NewNumericValue(123456),
+			F35: field.NewStringValue("4276555555555555=12345678901234567890"),
+			F37: field.NewStringValue("987654321001"),
+			F41: field.NewStringValue("00000321"),
+			F42: field.NewStringValue("120000000000034"),
+			F43: field.NewStringValue("Test text"),
+			F49: field.NewNumericValue(643),
+			// F50 left nil to ensure that it has not been populated in the bitmap
 			F52:  field.NewStringValue(string([]byte{1, 2, 3, 4, 5, 6, 7, 8})),
 			F53:  field.NewNumericValue(1234000000000000),
 			F120: field.NewStringValue("Another test text"),
 		})
+		require.NoError(t, err)
 
 		message.MTI("0100")
 
@@ -471,6 +480,7 @@ func TestPackUnpack(t *testing.T) {
 		assert.Equal(t, "120000000000034", data.F42.Value)
 		assert.Equal(t, "Test text", data.F43.Value)
 		assert.Equal(t, 643, data.F49.Value)
+		assert.Nil(t, data.F50)
 		assert.Equal(t, string([]byte{1, 2, 3, 4, 5, 6, 7, 8}), data.F52.Value)
 		assert.Equal(t, 1234000000000000, data.F53.Value)
 		assert.Equal(t, "Another test text", data.F120.Value)
@@ -497,7 +507,7 @@ func TestMessageJSON(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			3: field.NewSubfields(&field.Spec{
+			3: field.NewComposite(&field.Spec{
 				Length:      6,
 				Description: "Processing Code",
 				Pref:        prefix.ASCII.Fixed,
