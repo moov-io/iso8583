@@ -3,6 +3,7 @@ package iso8583
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 
@@ -154,6 +155,29 @@ func (m *Message) Pack() ([]byte, error) {
 	}
 
 	return packed, nil
+}
+
+func (m *Message) Read(reader io.Reader) error {
+	var src []byte
+	var err error
+
+	if m.header != nil {
+		_, err := m.header.Unpack(reader)
+		if err != nil {
+			return fmt.Errorf("failed to unpack header: %v", err)
+		}
+		src = make([]byte, m.header.Length())
+		_, err = io.ReadFull(reader, src)
+		if err != nil {
+			return fmt.Errorf("failed to read the message after header: %v", err)
+		}
+	} else {
+		src, err = io.ReadAll(reader)
+		if err != nil {
+			return fmt.Errorf("failed to read src from the reader: %v", err)
+		}
+	}
+	return m.Unpack(src)
 }
 
 func (m *Message) Unpack(src []byte) error {
