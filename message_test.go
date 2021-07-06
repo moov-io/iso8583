@@ -1,11 +1,13 @@
 package iso8583
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
+	"github.com/moov-io/iso8583/header"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/stretchr/testify/assert"
@@ -443,6 +445,103 @@ func TestPackUnpack(t *testing.T) {
 
 		rawMsg := []byte{48, 49, 48, 48, 242, 60, 36, 129, 40, 224, 152, 0, 0, 0, 0, 0, 0, 0, 1, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 55, 65, 110, 111, 116, 104, 101, 114, 32, 116, 101, 115, 116, 32, 116, 101, 120, 116}
 		err := message.Unpack([]byte(rawMsg))
+
+		require.NoError(t, err)
+
+		s, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4276555555555555", s)
+
+		s, err = message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "000000", s)
+
+		s, err = message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "77700", s)
+
+		data := message.Data().(*TestISOData)
+
+		assert.Equal(t, "4276555555555555", data.F2.Value)
+		assert.Equal(t, "00", data.F3.F1.Value)
+		assert.Equal(t, "00", data.F3.F2.Value)
+		assert.Equal(t, "00", data.F3.F3.Value)
+		assert.Equal(t, 77700, data.F4.Value)
+		assert.Equal(t, 701111844, data.F7.Value)
+		assert.Equal(t, 123, data.F11.Value)
+		assert.Equal(t, 131844, data.F12.Value)
+		assert.Equal(t, 701, data.F13.Value)
+		assert.Equal(t, 1902, data.F14.Value)
+		assert.Equal(t, 643, data.F19.Value)
+		assert.Equal(t, 901, data.F22.Value)
+		assert.Equal(t, 2, data.F25.Value)
+		assert.Equal(t, 123456, data.F32.Value)
+		assert.Equal(t, "4276555555555555=12345678901234567890", data.F35.Value)
+		assert.Equal(t, "987654321001", data.F37.Value)
+		assert.Equal(t, "00000321", data.F41.Value)
+		assert.Equal(t, "120000000000034", data.F42.Value)
+		assert.Equal(t, "Test text", data.F43.Value)
+		assert.Equal(t, 643, data.F49.Value)
+		assert.Nil(t, data.F50)
+		assert.Equal(t, string([]byte{1, 2, 3, 4, 5, 6, 7, 8}), data.F52.Value)
+		assert.Equal(t, 1234000000000000, data.F53.Value)
+		assert.Equal(t, "Another test text", data.F120.Value)
+	})
+
+	t.Run("Pack message with header", func(t *testing.T) {
+		hdr := header.NewBaseHeader()
+		message := NewMessage(spec)
+		message.SetHeader(hdr)
+
+		err := message.SetData(&TestISOData{
+			F2: field.NewStringValue("4276555555555555"),
+			F3: &TestISOF3Data{
+				F1: field.NewStringValue("00"),
+				F2: field.NewStringValue("00"),
+				F3: field.NewStringValue("00"),
+			},
+			F4:  field.NewNumericValue(77700),
+			F7:  field.NewNumericValue(701111844),
+			F11: field.NewNumericValue(123),
+			F12: field.NewNumericValue(131844),
+			F13: field.NewNumericValue(701),
+			F14: field.NewNumericValue(1902),
+			F19: field.NewNumericValue(643),
+			F22: field.NewNumericValue(901),
+			F25: field.NewNumericValue(2),
+			F32: field.NewNumericValue(123456),
+			F35: field.NewStringValue("4276555555555555=12345678901234567890"),
+			F37: field.NewStringValue("987654321001"),
+			F41: field.NewStringValue("00000321"),
+			F42: field.NewStringValue("120000000000034"),
+			F43: field.NewStringValue("Test text"),
+			F49: field.NewNumericValue(643),
+			// F50 left nil to ensure that it has not been populated in the bitmap
+			F52:  field.NewStringValue(string([]byte{1, 2, 3, 4, 5, 6, 7, 8})),
+			F53:  field.NewNumericValue(1234000000000000),
+			F120: field.NewStringValue("Another test text"),
+		})
+		require.NoError(t, err)
+
+		message.MTI("0100")
+
+		got, err := message.Pack()
+
+		// header is 0261
+		want := []byte{48, 50, 54, 49, 48, 49, 48, 48, 242, 60, 36, 129, 40, 224, 152, 0, 0, 0, 0, 0, 0, 0, 1, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 55, 65, 110, 111, 116, 104, 101, 114, 32, 116, 101, 115, 116, 32, 116, 101, 120, 116}
+
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Equal(t, want, got)
+	})
+
+	t.Run("Unpack message with header", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.SetData(&TestISOData{})
+
+		want := []byte{48, 50, 54, 49, 48, 49, 48, 48, 242, 60, 36, 129, 40, 224, 152, 0, 0, 0, 0, 0, 0, 0, 1, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 55, 65, 110, 111, 116, 104, 101, 114, 32, 116, 101, 115, 116, 32, 116, 101, 120, 116}
+
+		err := message.Unpack(bytes.NewReader(want))
 
 		require.NoError(t, err)
 

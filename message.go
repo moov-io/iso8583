@@ -7,9 +7,11 @@ import (
 	"sort"
 
 	"github.com/moov-io/iso8583/field"
+	"github.com/moov-io/iso8583/header"
 )
 
 type Message struct {
+	header    header.Header
 	fields    map[int]field.Field
 	spec      *MessageSpec
 	data      interface{}
@@ -26,6 +28,10 @@ func NewMessage(spec *MessageSpec) *Message {
 		spec:      spec,
 		fieldsMap: map[int]struct{}{},
 	}
+}
+
+func (m *Message) SetHeader(h header.Header) {
+	m.header = h
 }
 
 func (m *Message) Data() interface{} {
@@ -135,6 +141,16 @@ func (m *Message) Pack() ([]byte, error) {
 			return nil, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
 		}
 		packed = append(packed, packedField...)
+	}
+
+	if m.header != nil {
+		m.header.SetLength(len(packed))
+		hdr, err := m.header.Pack()
+		if err != nil {
+			return nil, fmt.Errorf("packing header: %v", err)
+		}
+
+		packed = append(hdr, packed...)
 	}
 
 	return packed, nil
