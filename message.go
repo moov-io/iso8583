@@ -144,16 +144,6 @@ func (m *Message) Pack() ([]byte, error) {
 		packed = append(packed, packedField...)
 	}
 
-	if m.header != nil {
-		m.header.SetLength(len(packed))
-		hdr, err := m.header.Pack()
-		if err != nil {
-			return nil, fmt.Errorf("packing header: %v", err)
-		}
-
-		packed = append(hdr, packed...)
-	}
-
 	return packed, nil
 }
 
@@ -178,6 +168,30 @@ func (m *Message) Read(reader io.Reader) error {
 		}
 	}
 	return m.Unpack(src)
+}
+
+func (m *Message) Write(writer io.Writer) error {
+	packed, err := m.Pack()
+	if err != nil {
+		return fmt.Errorf("failed to pack message: %v", err)
+	}
+
+	if m.header != nil {
+		m.header.SetLength(len(packed))
+		hdr, err := m.header.Pack()
+		if err != nil {
+			return fmt.Errorf("packing header: %v", err)
+		}
+
+		packed = append(hdr, packed...)
+	}
+
+	_, err = writer.Write(packed)
+	if err != nil {
+		return fmt.Errorf("writing into writer header: %v", err)
+	}
+
+	return nil
 }
 
 func (m *Message) Unpack(src []byte) error {
