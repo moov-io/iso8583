@@ -54,6 +54,12 @@ go get github.com/moov-io/iso8583
 
 ### Define your specification
 
+Our default specification [(spec87.go](./spec87.go)) is suitable for the majority of use cases. Simply instantiate a new message using spec87:
+```
+isomessage := iso8583.NewMessage(iso8583.Spec87)
+```
+If this spec does not meet your needs, we encourage you to modify it or create your own using the information below. 
+
 First, you need to define the format of the message fields that are described in your ISO8583 specification. Each data field has a type and its own spec. You can create a `NewBitmap`, `NewString`, or `NewNumeric` field. Each individual field spec consists of a few elements:
 
 | Element          | Notes                                                                                                                                                                                                                       | Example                    |
@@ -258,7 +264,9 @@ Twitter [@moov_io](https://twitter.com/moov_io)	| You can follow Moov.IO's Twitt
 
 ## Contributing
 
-Yes please! Please review our [Contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started! Check out our [issues for first time contributors](https://github.com/moov-io/ach/contribute) for something to help out with.
+**While [Spec87](./spec87.go) is appropriate for most users, we hope to see improvements or variations of this specification for different systems. Please do not hesitate to contribute issues, questions, or PRs to cover new use cases. Tests are also appreciated if possible!**
+
+Please review our [Contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started! Check out our [issues for first time contributors](https://github.com/moov-io/ach/contribute) for something to help out with.
 
 This project uses [Go Modules](https://github.com/golang/go/wiki/Modules) and uses Go v1.14 or higher. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/ach/releases/latest) as well. We highly recommend you use a tagged release for production.
 
