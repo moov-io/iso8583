@@ -26,24 +26,24 @@ Moov's mission is to give developers an easy way to create and integrate bank pr
 
 ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an international standard for card-originated financial transaction messages that defines both message format and communication flow. It's used by major card networks around the globe including Visa, Mastercard, and Verve. The standard supports card purchases, withdrawals, deposits, refunds, reversals, balance inquiries, inter-account transfers, administrative messages, secure key exchanges, and more.
 
-## Table of Contents
+## Table of contents
 
-- [Project Status](#project-status)
-- [Go Module](#go-library)
-	- [Define Specification](#define-your-specification)
-	- [Build Message](#build-and-pack-the-message)
-	- [Parse Message](#parse-the-message-and-access-the-data)
-	- JSON Encoding
-- [Learn About ISO 8583](#learn-about-iso-8583)
-- [Getting Help](#getting-help)
+- [Project status](#project-status)
+- [Go module](#go-library)
+	- [Define specification](#define-your-specification)
+	- [Build message](#build-and-pack-the-message)
+	- [Parse message](#parse-the-message-and-access-the-data)
+	- [JSON encoding](#json-encoding)
+- [Learn about ISO 8583](#learn-about-iso-8583)
+- [Getting help](#getting-help)
 - [Contributing](#contributing)
-- [Related Projects](#related-projects)
+- [Related projects](#related-projects)
 
-## Project Status
+## Project status
 
 Moov ISO8583 currently offers a Go package with plans for an API in the near future. Please star the project if you are interested in its progress. The project supports generating and parsing ISO8583 messages. Feedback on this early version of the project is appreciated and vital to its success. Please let us know if you encounter any bugs/unclear documentation or have feature suggestions by opening up an issue. Thanks!
 
-## Go Library
+## Go library
 
 This project uses [Go Modules](https://github.com/golang/go/wiki/Modules) and Go v1.14 or higher. See [Golang's install instructions](https://golang.org/doc/install) for help in setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
 
@@ -53,6 +53,12 @@ go get github.com/moov-io/iso8583
 ```
 
 ### Define your specification
+
+Our default specification [(spec87.go](./spec87.go)) is suitable for the majority of use cases. Simply instantiate a new message using Spec87:
+```
+isomessage := iso8583.NewMessage(iso8583.Spec87)
+```
+If this spec does not meet your needs, we encourage you to modify it or create your own using the information below. 
 
 First, you need to define the format of the message fields that are described in your ISO8583 specification. Each data field has a type and its own spec. You can create a `NewBitmap`, `NewString`, or `NewNumeric` field. Each individual field spec consists of a few elements:
 
@@ -213,7 +219,7 @@ data.F4.Value // is a string "100"
 
 For complete code samples please check [./message_test.go](./message_test.go).
 
-### JSON Encoding
+### JSON encoding
 
 You can serialize message into JSON format:
 
@@ -239,7 +245,7 @@ it will produce following JSON:
 }
 ```
 
-## Learn About ISO 8583
+## Learn about ISO 8583
 
 - [Intro to ISO 8583](./docs/intro.md)
 - [Message Type Indicator](./docs/mti.md)
@@ -247,22 +253,24 @@ it will produce following JSON:
 - [Data Fields](./docs/data-elements.md)
 - [ISO 8583 Terms and Definitions](https://www.iso.org/obp/ui/#iso:std:iso:8583:-1:ed-1:v1:en)
 
-## Getting Help
+## Getting help
 
  channel | info
  ------- | -------
 [Project Documentation](https://github.com/moov-io/iso8583/tree/master/docs) | Our project documentation available online.
-Twitter [@moov_io](https://twitter.com/moov_io)	| You can follow Moov.IO's Twitter feed to get updates on our project(s). You can also tweet us questions or just share blogs or stories.
+Twitter [@moov](https://twitter.com/moov)	| You can follow Moov.io's Twitter feed to get updates on our project(s). You can also tweet us questions or just share blogs or stories.
 [GitHub Issue](https://github.com/moov-io/iso8583/issues/new) | If you are able to reproduce a problem please open a GitHub Issue under the specific project that caused the error.
-[moov-io slack](https://slack.moov.io/) | Join our slack channel to have an interactive discussion about the development of the project.
+[moov-io slack](https://slack.moov.io/) | Join our slack channel (`#iso8583`) to have an interactive discussion about the development of the project.
 
 ## Contributing
 
-Yes please! Please review our [Contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started! Check out our [issues for first time contributors](https://github.com/moov-io/ach/contribute) for something to help out with.
+**While [Spec87](./spec87.go) is appropriate for most users, we hope to see improvements and variations of this specification for different systems by the community. Please do not hesitate to contribute issues, questions, or PRs to cover new use cases. Tests are also appreciated if possible!**
+
+Please review our [Contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started! Check out our [issues for first time contributors](https://github.com/moov-io/ach/contribute) for something to help out with.
 
 This project uses [Go Modules](https://github.com/golang/go/wiki/Modules) and uses Go v1.14 or higher. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/ach/releases/latest) as well. We highly recommend you use a tagged release for production.
 
-## Related Projects
+## Related projects
 As part of Moov's initiative to offer open source fintech infrastructure, we have a large collection of active projects you may find useful:
 
 - [Moov ACH](https://github.com/moov-io/ach) provides ACH file generation and parsing, supporting all Standard Entry Codes for the primary method of money movement throughout the United States.
@@ -273,9 +281,9 @@ As part of Moov's initiative to offer open source fintech infrastructure, we hav
 
 - [Moov Wire](https://github.com/moov-io/wire) implements an interface to write files for the Fedwire Funds Service, a real-time gross settlement funds transfer system operated by the United States Federal Reserve Banks.
 
-- [Moov Image Cash Letter](https://github.com/moov-io/imagecashletter) implements Image Cash Letter (ICL) files used for Check21, X.9 or check truncation files for exchange and remote deposit in the U.S.
+- [Moov ImageCashLetter](https://github.com/moov-io/imagecashletter) implements Image Cash Letter (ICL) files used for Check21, X.9 or check truncation files for exchange and remote deposit in the U.S.
 
-- [Moov Metro 2](https://github.com/moov-io/metro2) provides a way to easily read, create, and validate Metro 2 format, which is used for consumer credit history reporting by the United States credit bureaus.
+- [Moov Metro2](https://github.com/moov-io/metro2) provides a way to easily read, create, and validate Metro 2 format, which is used for consumer credit history reporting by the United States credit bureaus.
 
 
 ## License
