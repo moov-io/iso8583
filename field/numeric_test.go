@@ -75,7 +75,7 @@ func TestNumericFieldWithNotANumber(t *testing.T) {
 }
 
 func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
-	field := NewNumeric(&Spec{
+	numeric := NewNumeric(&Spec{
 		Length:      4,
 		Description: "Field",
 		Enc:         encoding.ASCII,
@@ -83,20 +83,22 @@ func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
 		Pad:         padding.Left('0'),
 	})
 
-	num := field.(*Numeric)
+	numeric.SetBytes([]byte("0"))
+	require.Equal(t, 0, numeric.Value)
 
-	field.SetBytes([]byte("0"))
-	require.Equal(t, 0, num.Value)
-
-	packed, err := field.Pack()
+	packed, err := numeric.Pack()
 
 	require.NoError(t, err)
 	require.Equal(t, "0000", string(packed))
 
-	length, err := field.Unpack([]byte("0000"))
+	length, err := numeric.Unpack([]byte("0000"))
 
 	require.NoError(t, err)
 	require.Equal(t, 4, length)
-	require.Equal(t, "0", string(field.Bytes()))
-	require.Equal(t, 0, num.Value)
+
+	bs, err := numeric.Bytes()
+	require.NoError(t, err)
+	require.Equal(t, "0", string(bs))
+
+	require.Equal(t, 0, numeric.Value)
 }
