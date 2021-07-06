@@ -54,7 +54,7 @@ go get github.com/moov-io/iso8583
 
 ### Define your specification
 
-Our default specification [(spec87.go](./spec87.go)) is suitable for the majority of use cases. Simply instantiate a new message using spec87:
+Our default specification [(spec87.go](./spec87.go)) is suitable for the majority of use cases. Simply instantiate a new message using Spec87:
 ```
 isomessage := iso8583.NewMessage(iso8583.Spec87)
 ```
