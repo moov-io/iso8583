@@ -10,9 +10,10 @@ var _ Field = (*String)(nil)
 type String struct {
 	Value string `json:"value"`
 	spec  *Spec
+	data  *String
 }
 
-func NewString(spec *Spec) Field {
+func NewString(spec *Spec) *String {
 	return &String{
 		spec: spec,
 	}
@@ -32,16 +33,17 @@ func (f *String) SetSpec(spec *Spec) {
 	f.spec = spec
 }
 
-func (f *String) SetBytes(b []byte) {
+func (f *String) SetBytes(b []byte) error {
 	f.Value = string(b)
+	return nil
 }
 
-func (f *String) Bytes() []byte {
-	return []byte(f.Value)
+func (f *String) Bytes() ([]byte, error) {
+	return []byte(f.Value), nil
 }
 
-func (f *String) String() string {
-	return f.Value
+func (f *String) String() (string, error) {
+	return f.Value, nil
 }
 
 func (f *String) Pack() ([]byte, error) {
@@ -82,7 +84,28 @@ func (f *String) Unpack(data []byte) (int, error) {
 
 	f.Value = string(raw)
 
+	if f.data != nil {
+		*(f.data) = *f
+	}
+
 	return read + f.spec.Pref.Length(), nil
+}
+
+func (f *String) SetData(data interface{}) error {
+	if data == nil {
+		return nil
+	}
+
+	str, ok := data.(*String)
+	if !ok {
+		return fmt.Errorf("data does not match required *String type")
+	}
+
+	f.data = str
+	if str.Value != "" {
+		f.Value = str.Value
+	}
+	return nil
 }
 
 func (f *String) MarshalJSON() ([]byte, error) {

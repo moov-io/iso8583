@@ -11,9 +11,10 @@ var _ Field = (*Numeric)(nil)
 type Numeric struct {
 	Value int `json:"value"`
 	spec  *Spec
+	data  *Numeric
 }
 
-func NewNumeric(spec *Spec) Field {
+func NewNumeric(spec *Spec) *Numeric {
 	return &Numeric{
 		spec: spec,
 	}
@@ -33,16 +34,20 @@ func (f *Numeric) SetSpec(spec *Spec) {
 	f.spec = spec
 }
 
-func (f *Numeric) SetBytes(b []byte) {
-	f.Value, _ = strconv.Atoi(string(b))
+func (f *Numeric) SetBytes(b []byte) error {
+	val, err := strconv.Atoi(string(b))
+	if err == nil {
+		f.Value = val
+	}
+	return err
 }
 
-func (f *Numeric) Bytes() []byte {
-	return []byte(strconv.Itoa(f.Value))
+func (f *Numeric) Bytes() ([]byte, error) {
+	return []byte(strconv.Itoa(f.Value)), nil
 }
 
-func (f *Numeric) String() string {
-	return strconv.Itoa(f.Value)
+func (f *Numeric) String() (string, error) {
+	return strconv.Itoa(f.Value), nil
 }
 
 func (f *Numeric) Pack() ([]byte, error) {
@@ -95,7 +100,28 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 		}
 	}
 
+	if f.data != nil {
+		*(f.data) = *f
+	}
+
 	return read + f.spec.Pref.Length(), nil
+}
+
+func (f *Numeric) SetData(data interface{}) error {
+	if data == nil {
+		return nil
+	}
+
+	num, ok := data.(*Numeric)
+	if !ok {
+		return fmt.Errorf("data does not match required *Numeric type")
+	}
+
+	f.data = num
+	if num.Value != 0 {
+		f.Value = num.Value
+	}
+	return nil
 }
 
 func (f *Numeric) MarshalJSON() ([]byte, error) {
