@@ -3,13 +3,16 @@ package iso8583
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 
 	"github.com/moov-io/iso8583/field"
+	"github.com/moov-io/iso8583/header"
 )
 
 type Message struct {
+	header    header.Header
 	fields    map[int]field.Field
 	spec      *MessageSpec
 	data      interface{}
@@ -26,6 +29,10 @@ func NewMessage(spec *MessageSpec) *Message {
 		spec:      spec,
 		fieldsMap: map[int]struct{}{},
 	}
+}
+
+func (m *Message) SetHeader(h header.Header) {
+	m.header = h
 }
 
 func (m *Message) Data() interface{} {
@@ -138,6 +145,53 @@ func (m *Message) Pack() ([]byte, error) {
 	}
 
 	return packed, nil
+}
+
+func (m *Message) Read(reader io.Reader) error {
+	var src []byte
+	var err error
+
+	if m.header != nil {
+		_, err := m.header.Read(reader)
+		if err != nil {
+			return fmt.Errorf("failed to unpack header: %v", err)
+		}
+		src = make([]byte, m.header.Length())
+		_, err = io.ReadFull(reader, src)
+		if err != nil {
+			return fmt.Errorf("failed to read the message after header: %v", err)
+		}
+	} else {
+		src, err = io.ReadAll(reader)
+		if err != nil {
+			return fmt.Errorf("failed to read src from the reader: %v", err)
+		}
+	}
+	return m.Unpack(src)
+}
+
+func (m *Message) Write(writer io.Writer) error {
+	packed, err := m.Pack()
+	if err != nil {
+		return fmt.Errorf("failed to pack message: %v", err)
+	}
+
+	if m.header != nil {
+		m.header.SetLength(len(packed))
+		hdr, err := m.header.Pack()
+		if err != nil {
+			return fmt.Errorf("packing header: %v", err)
+		}
+
+		packed = append(hdr, packed...)
+	}
+
+	_, err = writer.Write(packed)
+	if err != nil {
+		return fmt.Errorf("writing into writer header: %v", err)
+	}
+
+	return nil
 }
 
 func (m *Message) Unpack(src []byte) error {
