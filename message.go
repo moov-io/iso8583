@@ -152,7 +152,7 @@ func (m *Message) Read(reader io.Reader) error {
 	var err error
 
 	if m.header != nil {
-		_, err := m.header.Unpack(reader)
+		_, err := m.header.Read(reader)
 		if err != nil {
 			return fmt.Errorf("failed to unpack header: %v", err)
 		}

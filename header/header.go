@@ -8,7 +8,7 @@ import (
 
 type Header interface {
 	Pack() ([]byte, error)
-	Unpack(reader io.Reader) (int, error)
+	Read(reader io.Reader) (int, error)
 	SetLength(length int)
 	Length() int
 }
@@ -33,9 +33,9 @@ func (h *BaseHeader) Pack() ([]byte, error) {
 	return []byte(fmt.Sprintf("%04d", h.Len)), nil
 }
 
-func (h *BaseHeader) Unpack(reader io.Reader) (int, error) {
+func (h *BaseHeader) Read(reader io.Reader) (int, error) {
 	buf := make([]byte, 4)
-	read, err := reader.Read(buf)
+	read, err := io.ReadFull(reader, buf)
 	if err != nil {
 		return 0, fmt.Errorf("reading header: %v", err)
 	}
