@@ -1,54 +1,26 @@
 package header
 
 import (
-	"fmt"
 	"io"
-	"strconv"
 )
 
+// Header is the interface for ISO Headers
+//
+// If iso8583 Message has a header then `message.Read` will read the header
+// first, and after decoding the length from the header will read
+// `header.Length()` bytes of the message and unpack read data. Similar happens
+// for `message.Write` if header is set. It packs the message first, then
+// prepends header with the length of the message to the packed message.
 type Header interface {
+	// Pack packs the length of the header
 	Pack() ([]byte, error)
+
+	// Read reads N bytes of the header from the Reader
 	Read(reader io.Reader) (int, error)
+
+	// SetLength sets the length of the message
 	SetLength(length int)
+
+	// Length returns the length of the message
 	Length() int
-}
-
-type BaseHeader struct {
-	Len int
-}
-
-func NewBaseHeader() *BaseHeader {
-	return &BaseHeader{}
-}
-
-func (h *BaseHeader) SetLength(length int) {
-	h.Len = length
-}
-
-func (h *BaseHeader) Length() int {
-	return h.Len
-}
-
-func (h *BaseHeader) Pack() ([]byte, error) {
-	return []byte(fmt.Sprintf("%04d", h.Len)), nil
-}
-
-func (h *BaseHeader) Read(reader io.Reader) (int, error) {
-	buf := make([]byte, 4)
-	read, err := io.ReadFull(reader, buf)
-	if err != nil {
-		return 0, fmt.Errorf("reading header: %v", err)
-	}
-
-	if read != 4 {
-		return 0, fmt.Errorf("excepted to read 4 bytes of the header, got: %v", read)
-	}
-
-	l, err := strconv.Atoi(string(buf))
-	if err != nil {
-		return 0, fmt.Errorf("converting header to int: %v", err)
-	}
-	h.Len = l
-
-	return read, nil
 }

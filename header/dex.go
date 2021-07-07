@@ -10,6 +10,7 @@ import (
 
 var _ Header = (*VisaDexHeader)(nil)
 
+// Visa DEX header is 2 bytes of BCD encoded length
 type VisaDexHeader struct {
 	Len int
 }
