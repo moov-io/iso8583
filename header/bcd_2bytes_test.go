@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestVisaDEXHeader(t *testing.T) {
+func TestBCD2BytesHeader(t *testing.T) {
 	t.Run("Pack returns BCD encoded length", func(t *testing.T) {
-		header := NewVisaDEXHeader()
+		header := NewBCD2BytesHeader()
 
 		header.SetLength(115)
 		packed, err := header.Pack()
@@ -20,7 +20,7 @@ func TestVisaDEXHeader(t *testing.T) {
 	})
 
 	t.Run("Read reads 2 bytes and decode length from BCD", func(t *testing.T) {
-		header := NewVisaDEXHeader()
+		header := NewBCD2BytesHeader()
 
 		// len 115 encoded in BCD
 		packed := []byte{0x01, 0x15}
@@ -31,7 +31,7 @@ func TestVisaDEXHeader(t *testing.T) {
 	})
 
 	t.Run("Read returns error when not enough data to read", func(t *testing.T) {
-		header := NewVisaDEXHeader()
+		header := NewBCD2BytesHeader()
 
 		// len 115 encoded in BCD
 		packed := []byte{0x01}

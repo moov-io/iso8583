@@ -8,26 +8,26 @@ import (
 	"github.com/moov-io/iso8583/encoding"
 )
 
-var _ Header = (*VisaDexHeader)(nil)
+var _ Header = (*BCD2BytesHeader)(nil)
 
 // Visa DEX header is 2 bytes of BCD encoded length
-type VisaDexHeader struct {
+type BCD2BytesHeader struct {
 	Len int
 }
 
-func NewVisaDEXHeader() *VisaDexHeader {
-	return &VisaDexHeader{}
+func NewBCD2BytesHeader() *BCD2BytesHeader {
+	return &BCD2BytesHeader{}
 }
 
-func (h *VisaDexHeader) SetLength(length int) {
+func (h *BCD2BytesHeader) SetLength(length int) {
 	h.Len = length
 }
 
-func (h *VisaDexHeader) Length() int {
+func (h *BCD2BytesHeader) Length() int {
 	return h.Len
 }
 
-func (h *VisaDexHeader) Pack() ([]byte, error) {
+func (h *BCD2BytesHeader) Pack() ([]byte, error) {
 	strLen := fmt.Sprintf("%04d", h.Len)
 	res, err := encoding.BCD.Encode([]byte(strLen))
 	if err != nil {
@@ -37,7 +37,7 @@ func (h *VisaDexHeader) Pack() ([]byte, error) {
 	return res, nil
 }
 
-func (h *VisaDexHeader) Read(reader io.Reader) (int, error) {
+func (h *BCD2BytesHeader) Read(reader io.Reader) (int, error) {
 	buf := make([]byte, 2)
 	read, err := io.ReadFull(reader, buf)
 	if err != nil {
