@@ -1,6 +1,9 @@
 package encoding
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+)
 
 var ASCII Encoder = &asciiEncoder{}
 
@@ -16,6 +19,22 @@ func (e asciiEncoder) Encode(data []byte) ([]byte, error) {
 	}
 
 	return out, nil
+}
+
+func (e asciiEncoder) DecodeFrom(r io.Reader, length int) (data []byte, read int, err error) {
+	data = make([]byte, length)
+	read, err = io.ReadFull(r, data)
+	if err != nil {
+		return nil, read, fmt.Errorf("reading %d bytes from reader: %v", length, err)
+	}
+
+	for _, r := range data {
+		if r > 127 {
+			return nil, 0, fmt.Errorf("invalid ASCII char: '%s'", string(r))
+		}
+	}
+
+	return data, read, nil
 }
 
 func (e asciiEncoder) Decode(data []byte, length int) ([]byte, int, error) {

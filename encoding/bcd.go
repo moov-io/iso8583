@@ -1,6 +1,8 @@
 package encoding
 
 import (
+	"io"
+
 	"github.com/yerden/go-util/bcd"
 )
 
@@ -44,4 +46,8 @@ func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 	// read only what we need
 	// e.g. 0643 => 643
 	return dst[decodedLen-length:], read, nil
+}
+
+func (e bcdEncoder) DecodeFrom(io.Reader, int) (data []byte, read int, err error) {
+	return nil, 0, nil
 }
