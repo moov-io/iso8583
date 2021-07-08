@@ -1,6 +1,7 @@
 package field
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -26,7 +27,7 @@ func TestNumericField(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "       100", string(packed))
 
-	length, err := numeric.Unpack([]byte("      9876"))
+	length, err := numeric.ReadFrom(strings.NewReader("      9876"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
 
@@ -45,7 +46,7 @@ func TestNumericField(t *testing.T) {
 	numeric = NewNumeric(spec)
 	data := NewNumericValue(0)
 	numeric.SetData(data)
-	length, err = numeric.Unpack([]byte("      9876"))
+	length, err = numeric.ReadFrom(strings.NewReader("      9876"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
 	require.Equal(t, 9876, data.Value)
@@ -68,7 +69,7 @@ func TestNumericFieldWithNotANumber(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "         0", string(packed))
 
-	_, err = numeric.Unpack([]byte("hhhhhhhhhh"))
+	_, err = numeric.ReadFrom(strings.NewReader("hhhhhhhhhh"))
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to convert into number")
@@ -91,7 +92,7 @@ func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "0000", string(packed))
 
-	length, err := numeric.Unpack([]byte("0000"))
+	length, err := numeric.ReadFrom(strings.NewReader("0000"))
 
 	require.NoError(t, err)
 	require.Equal(t, 4, length)

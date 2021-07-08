@@ -3,6 +3,7 @@ package field
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strconv"
 )
 
@@ -71,14 +72,13 @@ func (f *Numeric) Pack() ([]byte, error) {
 }
 
 // returns number of bytes was read
-func (f *Numeric) Unpack(data []byte) (int, error) {
-	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
+func (f *Numeric) ReadFrom(r io.Reader) (int, error) {
+	dataLen, err := f.spec.Pref.ReadLength(f.spec.Length, r)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %v", err)
+		return 0, fmt.Errorf("reading length: %v", err)
 	}
 
-	start := f.spec.Pref.Length()
-	raw, read, err := f.spec.Enc.Decode(data[start:], dataLen)
+	raw, read, err := f.spec.Enc.DecodeFrom(r, dataLen)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode content: %v", err)
 	}

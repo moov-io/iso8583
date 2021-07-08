@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/moov-io/iso8583/utils"
@@ -73,22 +74,25 @@ func (f *Bitmap) Pack() ([]byte, error) {
 // if there is only primary bitmap (bit 1 is not set) we return only 8 bytes (or 16 for hex encoding)
 // if secondary bitmap presents (bit 1 is set) we return 16 bytes (or 32 for hex encoding)
 // and so on for maxBitmaps
-func (f *Bitmap) Unpack(data []byte) (int, error) {
-	minLen, err := f.spec.Pref.DecodeLength(minBitmapLength, data)
+func (f *Bitmap) ReadFrom(r io.Reader) (int, error) {
+	minLen, err := f.spec.Pref.ReadLength(minBitmapLength, r)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %v", err)
+		return 0, fmt.Errorf("reading length: %v", err)
 	}
+
+	fmt.Printf("minLen = %+v\n", minLen)
 
 	rawBitmap := make([]byte, 0)
 	read := 0
 
 	// read max
 	for i := 0; i < maxBitmaps; i++ {
-		decoded, readDecoded, err := f.spec.Enc.Decode(data[read:], minLen)
+		decoded, readDecoded, err := f.spec.Enc.DecodeFrom(r, minLen)
 		if err != nil {
-			return 0, fmt.Errorf("failed to decode content for %d bitmap: %v", i+1, err)
+			return 0, fmt.Errorf("decoding content for %d bitmap: %v", i+1, err)
 		}
 		read += readDecoded
+		fmt.Printf("decoded = %+v\n", decoded)
 
 		rawBitmap = append(rawBitmap, decoded...)
 		bitmap := utils.NewBitmapFromData(decoded)

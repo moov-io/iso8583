@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/yerden/go-util/bcd"
@@ -48,6 +49,30 @@ func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 	return dst[decodedLen-length:], read, nil
 }
 
-func (e bcdEncoder) DecodeFrom(io.Reader, int) (data []byte, read int, err error) {
-	return nil, 0, nil
+func (e bcdEncoder) DecodeFrom(r io.Reader, length int) (data []byte, read int, err error) {
+	// for BCD encoding the length should be even
+	decodedLen := length
+	if length%2 != 0 {
+		decodedLen += 1
+	}
+
+	// how many bytes we will read
+	read = bcd.EncodedLen(decodedLen)
+	src := make([]byte, read)
+	_, err = io.ReadFull(r, src)
+	if err != nil {
+		return nil, 0, fmt.Errorf("reading data: %v", err)
+	}
+
+	dec := bcd.NewDecoder(bcd.Standard)
+	data = make([]byte, decodedLen)
+	_, err = dec.Decode(data, src)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// becase BCD is right aligned, we skip first bytes and
+	// read only what we need
+	// e.g. 0643 => 643
+	return data[decodedLen-length:], read, nil
 }

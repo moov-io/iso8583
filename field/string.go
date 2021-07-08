@@ -3,6 +3,7 @@ package field
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 )
 
 var _ Field = (*String)(nil)
@@ -66,14 +67,46 @@ func (f *String) Pack() ([]byte, error) {
 	return append(packedLength, packed...), nil
 }
 
-func (f *String) Unpack(data []byte) (int, error) {
-	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
-	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %v", err)
+func (f *String) WriteTo(w io.Writer) error {
+	data := []byte(f.Value)
+
+	if f.spec.Pad != nil {
+		data = f.spec.Pad.Pad(data, f.spec.Length)
 	}
 
-	start := f.spec.Pref.Length()
-	raw, read, err := f.spec.Enc.Decode(data[start:], dataLen)
+	packed, err := f.spec.Enc.Encode(data)
+	if err != nil {
+		return fmt.Errorf("failed to encode content: %v", err)
+	}
+
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
+	if err != nil {
+		return fmt.Errorf("failed to encode length: %v", err)
+	}
+
+	n, err := w.Write(packedLength)
+	if err != nil {
+		return fmt.Errorf("writing packed length: %v", err)
+	}
+	fmt.Printf("write n = %+v\n", n)
+
+	n, err = w.Write(packed)
+	if err != nil {
+		return fmt.Errorf("writing packed data: %v", err)
+	}
+	fmt.Printf("write n = %+v\n", n)
+
+	return nil
+}
+
+func (f *String) ReadFrom(r io.Reader) (int, error) {
+	dataLen, err := f.spec.Pref.ReadLength(f.spec.Length, r)
+	if err != nil {
+		return 0, fmt.Errorf("reading length: %v", err)
+	}
+
+	// start := f.spec.Pref.Length()
+	raw, read, err := f.spec.Enc.DecodeFrom(r, dataLen)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode content: %v", err)
 	}

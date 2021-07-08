@@ -3,6 +3,7 @@ package iso8583
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 
@@ -149,9 +150,7 @@ func (m *Message) Pack() ([]byte, error) {
 	return packed, nil
 }
 
-func (m *Message) Unpack(src []byte) error {
-	var off int
-
+func (m *Message) ReadFrom(r io.Reader) error {
 	m.fieldsMap = map[int]struct{}{}
 	m.Bitmap().Reset()
 
@@ -161,12 +160,10 @@ func (m *Message) Unpack(src []byte) error {
 		return err
 	}
 
-	read, err := mti.Unpack(src)
+	_, err = mti.ReadFrom(r)
 	if err != nil {
 		return fmt.Errorf("failed to unpack MTI: %v", err)
 	}
-
-	off = read
 
 	// unpack Bitmap
 	bitmap, err := m.GetField(1)
@@ -174,12 +171,10 @@ func (m *Message) Unpack(src []byte) error {
 		return err
 	}
 
-	read, err = bitmap.Unpack(src[off:])
+	_, err = bitmap.ReadFrom(r)
 	if err != nil {
 		return fmt.Errorf("failed to unpack bitmapt: %v", err)
 	}
-
-	off += read
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
 		if m.Bitmap().IsSet(i) {
@@ -195,12 +190,10 @@ func (m *Message) Unpack(src []byte) error {
 			}
 
 			m.fieldsMap[i] = struct{}{}
-			read, err = fl.Unpack(src[off:])
+			_, err = fl.ReadFrom(r)
 			if err != nil {
 				return fmt.Errorf("failed to unpack field %d (%s): %v", i, fl.Spec().Description, err)
 			}
-
-			off += read
 		}
 	}
 

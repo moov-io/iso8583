@@ -18,6 +18,7 @@
 package fuzzreader
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/moov-io/iso8583"
@@ -33,7 +34,7 @@ import (
 func Fuzz(data []byte) int {
 	message := iso8583.NewMessage(iso8583.Spec87)
 
-	err := message.Unpack(data)
+	err := message.ReadFrom(bytes.NewReader(data))
 	if err != nil {
 		return -1
 	}

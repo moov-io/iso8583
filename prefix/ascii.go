@@ -2,6 +2,7 @@ package prefix
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -30,6 +31,25 @@ func (p *asciiVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	res := fmt.Sprintf("%0*d", p.Digits, dataLen)
 
 	return []byte(res), nil
+}
+
+func (p *asciiVarPrefixer) ReadLength(maxLen int, r io.Reader) (int, error) {
+	data := make([]byte, p.Digits)
+	_, err := io.ReadFull(r, data)
+	if err != nil {
+		return 0, fmt.Errorf("reading %d digits of the length prefix: %v", p.Digits, err)
+	}
+
+	dataLen, err := strconv.Atoi(string(data))
+	if err != nil {
+		return 0, err
+	}
+
+	if dataLen > maxLen {
+		return 0, fmt.Errorf("data length: %d is larger than maximum %d", dataLen, maxLen)
+	}
+
+	return dataLen, nil
 }
 
 func (p *asciiVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
@@ -66,6 +86,10 @@ func (p *asciiFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	}
 
 	return []byte{}, nil
+}
+
+func (p *asciiFixedPrefixer) ReadLength(fixLen int, r io.Reader) (int, error) {
+	return fixLen, nil
 }
 
 func (p *asciiFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, error) {

@@ -2,6 +2,7 @@ package field
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -197,7 +198,7 @@ func TestCompositePacking(t *testing.T) {
 		err := composite.SetData(&TestDataIncorrectType{})
 		require.NoError(t, err)
 
-		read, err := composite.Unpack([]byte("ABCD12"))
+		read, err := composite.ReadFrom(strings.NewReader("ABCD12"))
 		require.Equal(t, 0, read)
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to set data for field 1: data does not match required *String type")
@@ -211,7 +212,7 @@ func TestCompositePacking(t *testing.T) {
 		require.NoError(t, err)
 
 		// Last two characters must be an integer type. F3 fails to unpack.
-		read, err := composite.Unpack([]byte("ABCDEF"))
+		read, err := composite.ReadFrom(strings.NewReader("ABCDEF"))
 		require.Equal(t, 0, read)
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to unpack subfield 3: failed to convert into number: strconv.Atoi: parsing \"EF\": invalid syntax")
@@ -246,7 +247,7 @@ func TestCompositePacking(t *testing.T) {
 		require.NoError(t, err)
 
 		// Length of denoted by prefix is too long, causing failure to decode length.
-		read, err := composite.Unpack([]byte("7ABCD123"))
+		read, err := composite.ReadFrom(strings.NewReader("7ABCD123"))
 		require.Equal(t, 0, read)
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to decode length: data length: 7 is larger than maximum 4")
@@ -283,7 +284,7 @@ func TestCompositePacking(t *testing.T) {
 		require.NoError(t, err)
 
 		// Length of input too long, causing failure to decode length.
-		read, err := composite.Unpack([]byte("ABCD123"))
+		read, err := composite.ReadFrom(strings.NewReader("ABCD123"))
 		require.Equal(t, 0, read)
 		require.Error(t, err)
 		require.EqualError(t, err, "data length: 4 does not match aggregate data read from decoded subfields: 7")
@@ -296,7 +297,7 @@ func TestCompositePacking(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		read, err := composite.Unpack([]byte("ABCD12"))
+		read, err := composite.ReadFrom(strings.NewReader("ABCD12"))
 		require.Equal(t, compositeTestSpec.Length, read)
 		require.NoError(t, err)
 
@@ -396,10 +397,10 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.NoError(t, err)
 
 		// F3 fails to unpack - it requires len to be defined instead of AB.
-		read, err := composite.Unpack([]byte("180102AB0202CD03AB12"))
+		read, err := composite.ReadFrom(strings.NewReader("180102AB0202CD03AB12"))
 		require.Equal(t, 0, read)
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to unpack subfield 3: failed to decode length: strconv.Atoi: parsing \"AB\": invalid syntax")
+		require.EqualError(t, err, "failed to unpack subfield 3: reading length: strconv.Atoi: parsing \"AB\": invalid syntax")
 	})
 
 	t.Run("Unpack returns an error on data having subfield ID not in spec", func(t *testing.T) {
@@ -410,7 +411,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.NoError(t, err)
 
 		// Index 2-3 should have '01' rather than '11'.
-		read, err := composite.Unpack([]byte("181102AB0202CD030212"))
+		read, err := composite.ReadFrom(strings.NewReader("181102AB0202CD030212"))
 		require.Equal(t, 0, read)
 		require.EqualError(t, err, "failed to unpack subfield 11: field not defined in Spec")
 	})
@@ -423,7 +424,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.NoError(t, err)
 
 		// Index 0, 1 should have '01' rather than 'ID'.
-		read, err := composite.Unpack([]byte("18ID02AB0202CD030212"))
+		read, err := composite.ReadFrom(strings.NewReader("18ID02AB0202CD030212"))
 		require.Equal(t, 0, read)
 		require.EqualError(t, err, "failed to convert subfield ID \"ID\" to int")
 	})
@@ -435,7 +436,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		read, err := composite.Unpack([]byte("280202CD0302120102AB04060102YZ"))
+		read, err := composite.ReadFrom(strings.NewReader("280202CD0302120102AB04060102YZ"))
 
 		require.NoError(t, err)
 		require.Equal(t, 30, read)
@@ -453,7 +454,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		read, err := composite.Unpack([]byte("120302120102AB"))
+		read, err := composite.ReadFrom(strings.NewReader("120302120102AB"))
 
 		require.NoError(t, err)
 		require.Equal(t, 14, read)

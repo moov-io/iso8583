@@ -1,8 +1,10 @@
 package field
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 	"strconv"
@@ -134,14 +136,12 @@ func (f *Composite) Pack() ([]byte, error) {
 // Unpack takes in a byte array and serializes them into the receiver's
 // subfields. An offset (unit depends on encoding and prefix values) is
 // returned on success. A non-nil error is returned on failure.
-func (f *Composite) Unpack(data []byte) (int, error) {
-	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
+func (f *Composite) ReadFrom(r io.Reader) (int, error) {
+	dataLen, err := f.spec.Pref.ReadLength(f.spec.Length, r)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %v", err)
 	}
-	offset := f.spec.Pref.Length()
-
-	read, err := f.unpack(data[offset:])
+	read, err := f.unpack(r, dataLen)
 	if err != nil {
 		return 0, err
 	}
@@ -149,7 +149,7 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 		return 0, fmt.Errorf("data length: %v does not match aggregate data read from decoded subfields: %v", dataLen, read)
 	}
 
-	return offset + read, nil
+	return f.spec.Pref.Length() + read, nil
 }
 
 // SetBytes iterates over the receiver's subfields and unpacks them.
@@ -157,7 +157,7 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 // pack all subfields in full. However, unlike Unpack(), it requires the
 // aggregate length of the subfields not to be encoded in the prefix.
 func (f *Composite) SetBytes(data []byte) error {
-	_, err := f.unpack(data)
+	_, err := f.unpack(bytes.NewReader(data), len(data))
 	return err
 }
 
@@ -222,33 +222,33 @@ func (f *Composite) pack() ([]byte, error) {
 	return packed, nil
 }
 
-func (f *Composite) unpack(data []byte) (int, error) {
+func (f *Composite) unpack(r io.Reader, length int) (int, error) {
 	if f.spec.IDLength > 0 {
-		return f.unpackFieldsByID(data)
+		return f.unpackFieldsByID(r, length)
 	}
-	return f.unpackFields(data)
+	return f.unpackFields(r)
 }
 
-func (f *Composite) unpackFields(data []byte) (int, error) {
-	offset := 0
+func (f *Composite) unpackFields(r io.Reader) (int, error) {
+	totalRead := 0
 	for _, id := range f.orderedSpecFieldIDs {
 		specField := f.idToFieldMap[id]
 		if err := f.setSubfieldData(id, specField); err != nil {
 			return 0, err
 		}
-		read, err := specField.Unpack(data[offset:])
+		read, err := specField.ReadFrom(r)
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield %d: %v", id, err)
 		}
-		offset += read
+		totalRead += read
 	}
-	return offset, nil
+	return totalRead, nil
 }
 
-func (f *Composite) unpackFieldsByID(data []byte) (int, error) {
-	offset := 0
-	for offset < len(data) {
-		idBytes, read, err := f.spec.Enc.Decode(data[offset:], f.spec.IDLength)
+func (f *Composite) unpackFieldsByID(r io.Reader, length int) (int, error) {
+	totalRead := 0
+	for totalRead < length {
+		idBytes, read, err := f.spec.Enc.DecodeFrom(r, f.spec.IDLength)
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield ID: %w", err)
 		}
@@ -262,19 +262,19 @@ func (f *Composite) unpackFieldsByID(data []byte) (int, error) {
 		if !ok {
 			return 0, fmt.Errorf("failed to unpack subfield %d: field not defined in Spec", id)
 		}
-		offset += read
+		totalRead += read
 
 		if err := f.setSubfieldData(id, specField); err != nil {
 			return 0, err
 		}
 
-		read, err = specField.Unpack(data[offset:])
+		read, err = specField.ReadFrom(r)
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield %d: %v", id, err)
 		}
-		offset += read
+		totalRead += read
 	}
-	return offset, nil
+	return totalRead, nil
 }
 
 func (f *Composite) setSubfieldData(id int, specField Field) error {

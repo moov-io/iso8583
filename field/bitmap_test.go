@@ -1,6 +1,8 @@
 package field
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -17,7 +19,7 @@ func TestHexBitmap(t *testing.T) {
 		})
 
 		// set bit: 10
-		read, err := bitmap.Unpack([]byte("004000000000000000000000000000000000000000000000"))
+		read, err := bitmap.ReadFrom(strings.NewReader("004000000000000000000000000000000000000000000000"))
 
 		require.NoError(t, err)
 		require.Equal(t, 16, read) // 16 is 8 bytes (one bitmap) encoded in hex
@@ -33,7 +35,7 @@ func TestHexBitmap(t *testing.T) {
 		})
 
 		// set bits: 1, 10, 70
-		read, err := bitmap.Unpack([]byte("804000000000000004000000000000000000000000000000"))
+		read, err := bitmap.ReadFrom(strings.NewReader("804000000000000004000000000000000000000000000000"))
 
 		require.NoError(t, err)
 		require.Equal(t, 32, read) // 32 is 16 bytes (two bitmaps) encoded in hex
@@ -50,7 +52,7 @@ func TestHexBitmap(t *testing.T) {
 		})
 
 		// set bits: 1, 10, 65, 140
-		read, err := bitmap.Unpack([]byte("804000000000000080000000000000000010000000000000"))
+		read, err := bitmap.ReadFrom(strings.NewReader("804000000000000080000000000000000010000000000000"))
 
 		require.NoError(t, err)
 		require.Equal(t, 48, read) // 48 is 24 bytes (three bitmaps) encoded in hex
@@ -66,10 +68,10 @@ func TestHexBitmap(t *testing.T) {
 			Pref:        prefix.Hex.Fixed,
 		})
 
-		_, err := bitmap.Unpack([]byte("4000"))
+		_, err := bitmap.ReadFrom(strings.NewReader("4000"))
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "for 1 bitmap: not enough data to read")
+		require.Contains(t, err.Error(), "unexpected EOF")
 	})
 
 	t.Run("When bit for secondary bitmap is set but not enough data to read", func(t *testing.T) {
@@ -80,10 +82,11 @@ func TestHexBitmap(t *testing.T) {
 		})
 
 		// bits 2, 20, 65, 120 are set, but no data for third bitmap
-		_, err := bitmap.Unpack([]byte("c0001000000000008000000000000100"))
+		_, err := bitmap.ReadFrom(strings.NewReader("c0001000000000008000000000000100"))
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "for 3 bitmap: not enough data to read")
+		require.Contains(t, err.Error(), "for 3 bitmap")
+		require.Contains(t, err.Error(), "EOF")
 	})
 
 	t.Run("With primary bitmap only it returns signle bitmap length", func(t *testing.T) {
@@ -217,7 +220,7 @@ func TestBitmap_SetData(t *testing.T) {
 		data := &Bitmap{}
 		bitmap.SetData(data)
 		// set bit: 10
-		read, err := bitmap.Unpack(bitmapBytes)
+		read, err := bitmap.ReadFrom(bytes.NewReader(bitmapBytes))
 		require.NoError(t, err)
 		require.Equal(t, 16, read) // 16 is 8 bytes (one bitmap) encoded in hex
 

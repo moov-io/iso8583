@@ -1,6 +1,9 @@
 package prefix
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+)
 
 var Hex = Prefixers{
 	Fixed: &hexFixedPrefixer{},
@@ -16,6 +19,10 @@ func (p *hexFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	}
 
 	return []byte{}, nil
+}
+
+func (p *hexFixedPrefixer) ReadLength(fixLen int, r io.Reader) (int, error) {
+	return fixLen, nil
 }
 
 func (p *hexFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, error) {

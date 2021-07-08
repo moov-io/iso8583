@@ -1,7 +1,9 @@
 package iso8583
 
 import (
+	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -82,7 +84,7 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, want, string(got))
 
 		message = NewMessage(spec)
-		message.Unpack([]byte(want))
+		message.ReadFrom(strings.NewReader(want))
 
 		s, err := message.GetMTI()
 		require.NoError(t, err)
@@ -118,7 +120,7 @@ func TestMessage(t *testing.T) {
 		message.SetData(&ISO87Data{})
 
 		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
-		err := message.Unpack([]byte(rawMsg))
+		err := message.ReadFrom(bytes.NewReader(rawMsg))
 
 		require.NoError(t, err)
 
@@ -442,7 +444,7 @@ func TestPackUnpack(t *testing.T) {
 		message.SetData(&TestISOData{})
 
 		rawMsg := []byte{48, 49, 48, 48, 242, 60, 36, 129, 40, 224, 152, 0, 0, 0, 0, 0, 0, 0, 1, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 55, 65, 110, 111, 116, 104, 101, 114, 32, 116, 101, 115, 116, 32, 116, 101, 120, 116}
-		err := message.Unpack([]byte(rawMsg))
+		err := message.ReadFrom(bytes.NewReader(rawMsg))
 
 		require.NoError(t, err)
 
