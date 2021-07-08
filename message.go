@@ -106,6 +106,14 @@ func (m *Message) GetBytes(id int) ([]byte, error) {
 	return nil, fmt.Errorf("failed to get bytes for field %d. ID does not exist", id)
 }
 
+func (m *Message) GetField(id int) (field.Field, error) {
+	if f, ok := m.fields[id]; ok {
+		return f, nil
+	}
+
+	return nil, fmt.Errorf("failed to get the field %d. ID does not exist", id)
+}
+
 func (m *Message) Pack() ([]byte, error) {
 	packed := []byte{}
 	m.Bitmap().Reset()
@@ -126,10 +134,11 @@ func (m *Message) Pack() ([]byte, error) {
 
 	// pack fields
 	for _, i := range ids {
-		field, ok := m.fields[i]
-		if !ok {
-			return nil, fmt.Errorf("failed to pack field %d: no specification found", i)
+		field, err := m.GetField(i)
+		if err != nil {
+			return nil, err
 		}
+
 		packedField, err := field.Pack()
 		if err != nil {
 			return nil, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
@@ -147,7 +156,12 @@ func (m *Message) Unpack(src []byte) error {
 	m.Bitmap().Reset()
 
 	// unpack MTI
-	read, err := m.fields[0].Unpack(src)
+	mti, err := m.GetField(0)
+	if err != nil {
+		return err
+	}
+
+	read, err := mti.Unpack(src)
 	if err != nil {
 		return fmt.Errorf("failed to unpack MTI: %v", err)
 	}
@@ -155,7 +169,12 @@ func (m *Message) Unpack(src []byte) error {
 	off = read
 
 	// unpack Bitmap
-	read, err = m.fields[1].Unpack(src[off:])
+	bitmap, err := m.GetField(1)
+	if err != nil {
+		return err
+	}
+
+	read, err = bitmap.Unpack(src[off:])
 	if err != nil {
 		return fmt.Errorf("failed to unpack bitmapt: %v", err)
 	}
@@ -164,9 +183,9 @@ func (m *Message) Unpack(src []byte) error {
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
 		if m.Bitmap().IsSet(i) {
-			fl, ok := m.fields[i]
-			if !ok {
-				return fmt.Errorf("failed to unpack field %d: no specification found", i)
+			fl, err := m.GetField(i)
+			if err != nil {
+				return err
 			}
 
 			if m.dataValue != nil {
