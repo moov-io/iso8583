@@ -119,18 +119,33 @@ func (f *Composite) SetData(data interface{}) error {
 
 // Pack deserialises data held by the receiver (via SetData)
 // into bytes and returns an error on failure.
-func (f *Composite) Pack() ([]byte, error) {
-	packed, err := f.pack()
+func (f *Composite) WriteTo(w io.Writer) (n int, err error) {
+	packed := bytes.NewBuffer([]byte{})
+	err = f.pack(packed)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, packed.Len())
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %v", err)
+		return 0, fmt.Errorf("failed to encode length: %v", err)
 	}
 
-	return append(packedLength, packed...), nil
+	m, err := w.Write(packedLength)
+	if err != nil {
+		return m, fmt.Errorf("writing packed length: %v", err)
+	}
+
+	n += m
+
+	m, err = w.Write(packed.Bytes())
+	if err != nil {
+		return m, fmt.Errorf("writing packed field: %v", err)
+	}
+
+	n += m
+
+	return n, nil
 }
 
 // ReadFrom takes in an io.Reader and reads data from it and then serializes
@@ -166,7 +181,13 @@ func (f *Composite) SetBytes(data []byte) error {
 // does not incorporate the encoded aggregate length of the subfields in the
 // prefix.
 func (f *Composite) Bytes() ([]byte, error) {
-	return f.pack()
+	buf := bytes.NewBuffer([]byte{})
+	err := f.pack(buf)
+	if err != nil {
+		return nil, fmt.Errorf("packing: %v", err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 // String iterates over the receiver's subfields, packs them and converts the
@@ -186,8 +207,7 @@ func (f *Composite) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonData)
 }
 
-func (f *Composite) pack() ([]byte, error) {
-	packed := []byte{}
+func (f *Composite) pack(w io.Writer) error {
 	for _, id := range f.orderedSpecFieldIDs {
 		specField := f.idToFieldMap[id]
 
@@ -202,25 +222,27 @@ func (f *Composite) pack() ([]byte, error) {
 			}
 
 			if err := specField.SetData(dataField.Interface()); err != nil {
-				return nil, fmt.Errorf("failed to set data for field %d: %w", id, err)
+				return fmt.Errorf("failed to set data for field %d: %w", id, err)
 			}
 		}
 
 		if f.spec.IDLength > 0 {
 			idBytes, err := f.spec.Enc.Encode(idToBytes(f.spec.IDLength, id))
 			if err != nil {
-				return nil, fmt.Errorf("failed to convert subfield ID \"%s\" to int", idBytes)
+				return fmt.Errorf("failed to convert subfield ID \"%s\" to int", idBytes)
 			}
-			packed = append(packed, idBytes...)
+			_, err = w.Write(idBytes)
+			if err != nil {
+				return fmt.Errorf("writing IDs: %v", err)
+			}
 		}
 
-		packedBytes, err := specField.Pack()
+		_, err := specField.WriteTo(w)
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack subfield %d: %v", id, err)
+			return fmt.Errorf("failed to pack subfield %d: %v", id, err)
 		}
-		packed = append(packed, packedBytes...)
 	}
-	return packed, nil
+	return nil
 }
 
 func (f *Composite) unpack(r io.Reader, length int) (int, error) {

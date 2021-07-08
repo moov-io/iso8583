@@ -140,13 +140,9 @@ func (m *Message) WriteTo(w io.Writer) (n int, err error) {
 			return 0, err
 		}
 
-		packed, err := field.Pack()
+		m, err := field.WriteTo(w)
 		if err != nil {
 			return 0, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
-		}
-		m, err := w.Write(packed)
-		if err != nil {
-			return 0, fmt.Errorf("writing packe field: %v", err)
 		}
 		n += m
 	}

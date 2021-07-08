@@ -1,6 +1,7 @@
 package field
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"testing"
@@ -113,7 +114,8 @@ func TestCompositePacking(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, err = composite.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		_, err = composite.WriteTo(buf)
 		require.EqualError(t, err, "failed to set data for field 1: data does not match required *String type")
 	})
 
@@ -130,7 +132,8 @@ func TestCompositePacking(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		_, err = composite.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		_, err = composite.WriteTo(buf)
 		require.EqualError(t, err, "failed to pack subfield 1: failed to encode length: field length: 4 should be fixed: 2")
 	})
 
@@ -168,7 +171,8 @@ func TestCompositePacking(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		_, err = composite.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		_, err = composite.WriteTo(buf)
 		require.EqualError(t, err, "failed to encode length: field length: 6 should be fixed: 4")
 	})
 
@@ -183,11 +187,12 @@ func TestCompositePacking(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		packed, err := composite.Pack()
+		packed := bytes.NewBuffer([]byte{})
+		_, err = composite.WriteTo(packed)
 		require.NoError(t, err)
 
 		require.NoError(t, err)
-		require.Equal(t, "ABCD12", string(packed))
+		require.Equal(t, "ABCD12", packed.String())
 	})
 
 	t.Run("ReadFrom returns an error on mismatch of subfield types", func(t *testing.T) {
@@ -345,8 +350,8 @@ func TestCompositePackingWithID(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		b, err := composite.Pack()
-		require.Nil(t, b)
+		buf := bytes.NewBuffer([]byte{})
+		_, err = composite.WriteTo(buf)
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to encode length: field length: 12 should be fixed: 6")
 	})
@@ -365,11 +370,11 @@ func TestCompositePackingWithID(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		packed, err := composite.Pack()
-		require.NoError(t, err)
+		packed := bytes.NewBuffer([]byte{})
+		_, err = composite.WriteTo(packed)
 
 		require.NoError(t, err)
-		require.Equal(t, "280102AB0202CD03021204060102YZ", string(packed))
+		require.Equal(t, "280102AB0202CD03021204060102YZ", packed.String())
 	})
 
 	t.Run("Pack correctly serializes partially populated data to bytes", func(t *testing.T) {
@@ -382,11 +387,11 @@ func TestCompositePackingWithID(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		packed, err := composite.Pack()
-		require.NoError(t, err)
+		packed := bytes.NewBuffer([]byte{})
+		_, err = composite.WriteTo(packed)
 
 		require.NoError(t, err)
-		require.Equal(t, "120102AB030212", string(packed))
+		require.Equal(t, "120102AB030212", packed.String())
 	})
 
 	t.Run("ReadFrom returns an error on failure of subfield to unpack bytes", func(t *testing.T) {

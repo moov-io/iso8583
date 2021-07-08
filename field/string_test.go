@@ -67,7 +67,7 @@ func TestStringFieldReader(t *testing.T) {
 	require.Equal(t, "hello", str.Value)
 
 	buf := &bytes.Buffer{}
-	err := str.WriteTo(buf)
+	_, err := str.WriteTo(buf)
 	require.NoError(t, err)
 	require.Equal(t, "     hello", buf.String())
 

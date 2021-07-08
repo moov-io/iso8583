@@ -49,7 +49,7 @@ func (f *Bitmap) String() (string, error) {
 	return f.bitmap.String(), nil
 }
 
-func (f *Bitmap) Pack() ([]byte, error) {
+func (f *Bitmap) WriteTo(w io.Writer) (n int, err error) {
 	f.setBitmapFields()
 
 	count := f.bitmapsCount()
@@ -57,17 +57,22 @@ func (f *Bitmap) Pack() ([]byte, error) {
 	// here we have max possible bytes for the bitmap 8*maxBitmaps
 	data, err := f.Bytes()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve bytes: %v", err)
+		return 0, fmt.Errorf("failed to retrieve bytes: %v", err)
 	}
 
 	data = data[0 : 8*count]
 
 	packed, err := f.spec.Enc.Encode(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %v", err)
+		return 0, fmt.Errorf("failed to encode content: %v", err)
 	}
 
-	return packed, nil
+	n, err = w.Write(packed)
+	if err != nil {
+		return n, fmt.Errorf("writing packed data: %v", err)
+	}
+
+	return n, nil
 }
 
 // ReadFrom of the Bitmap field reads data of varied length
@@ -80,8 +85,6 @@ func (f *Bitmap) ReadFrom(r io.Reader) (int, error) {
 		return 0, fmt.Errorf("reading length: %v", err)
 	}
 
-	fmt.Printf("minLen = %+v\n", minLen)
-
 	rawBitmap := make([]byte, 0)
 	read := 0
 
@@ -92,7 +95,6 @@ func (f *Bitmap) ReadFrom(r io.Reader) (int, error) {
 			return 0, fmt.Errorf("decoding content for %d bitmap: %v", i+1, err)
 		}
 		read += readDecoded
-		fmt.Printf("decoded = %+v\n", decoded)
 
 		rawBitmap = append(rawBitmap, decoded...)
 		bitmap := utils.NewBitmapFromData(decoded)

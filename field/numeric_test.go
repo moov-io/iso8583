@@ -1,6 +1,7 @@
 package field
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -23,9 +24,10 @@ func TestNumericField(t *testing.T) {
 	numeric.SetBytes([]byte("100"))
 	require.Equal(t, 100, numeric.Value)
 
-	packed, err := numeric.Pack()
+	packed := bytes.NewBuffer([]byte{})
+	_, err := numeric.WriteTo(packed)
 	require.NoError(t, err)
-	require.Equal(t, "       100", string(packed))
+	require.Equal(t, "       100", packed.String())
 
 	length, err := numeric.ReadFrom(strings.NewReader("      9876"))
 	require.NoError(t, err)
@@ -39,9 +41,10 @@ func TestNumericField(t *testing.T) {
 
 	numeric = NewNumeric(spec)
 	numeric.SetData(NewNumericValue(9876))
-	packed, err = numeric.Pack()
+	packed = bytes.NewBuffer([]byte{})
+	_, err = numeric.WriteTo(packed)
 	require.NoError(t, err)
-	require.Equal(t, "      9876", string(packed))
+	require.Equal(t, "      9876", packed.String())
 
 	numeric = NewNumeric(spec)
 	data := NewNumericValue(0)
@@ -64,10 +67,11 @@ func TestNumericFieldWithNotANumber(t *testing.T) {
 	numeric.SetBytes([]byte("hello"))
 	require.Equal(t, 0, numeric.Value)
 
-	packed, err := numeric.Pack()
+	packed := bytes.NewBuffer([]byte{})
+	_, err := numeric.WriteTo(packed)
 
 	require.NoError(t, err)
-	require.Equal(t, "         0", string(packed))
+	require.Equal(t, "         0", packed.String())
 
 	_, err = numeric.ReadFrom(strings.NewReader("hhhhhhhhhh"))
 
@@ -87,10 +91,11 @@ func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
 	numeric.SetBytes([]byte("0"))
 	require.Equal(t, 0, numeric.Value)
 
-	packed, err := numeric.Pack()
+	packed := bytes.NewBuffer([]byte{})
+	_, err := numeric.WriteTo(packed)
 
 	require.NoError(t, err)
-	require.Equal(t, "0000", string(packed))
+	require.Equal(t, "0000", packed.String())
 
 	length, err := numeric.ReadFrom(strings.NewReader("0000"))
 

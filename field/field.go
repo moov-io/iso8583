@@ -6,8 +6,7 @@ type Field interface {
 	Spec() *Spec
 	SetSpec(spec *Spec)
 
-	Pack() ([]byte, error)
-
+	WriteTo(io.Writer) (int, error)
 	ReadFrom(io.Reader) (int, error)
 
 	SetBytes(b []byte) error

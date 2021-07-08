@@ -67,7 +67,7 @@ func (f *String) Pack() ([]byte, error) {
 	return append(packedLength, packed...), nil
 }
 
-func (f *String) WriteTo(w io.Writer) error {
+func (f *String) WriteTo(w io.Writer) (n int, err error) {
 	data := []byte(f.Value)
 
 	if f.spec.Pad != nil {
@@ -76,27 +76,29 @@ func (f *String) WriteTo(w io.Writer) error {
 
 	packed, err := f.spec.Enc.Encode(data)
 	if err != nil {
-		return fmt.Errorf("failed to encode content: %v", err)
+		return 0, fmt.Errorf("failed to encode content: %v", err)
 	}
 
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
-		return fmt.Errorf("failed to encode length: %v", err)
+		return 0, fmt.Errorf("failed to encode length: %v", err)
 	}
 
-	n, err := w.Write(packedLength)
+	m, err := w.Write(packedLength)
 	if err != nil {
-		return fmt.Errorf("writing packed length: %v", err)
+		return m, fmt.Errorf("writing packed length: %v", err)
 	}
-	fmt.Printf("write n = %+v\n", n)
 
-	n, err = w.Write(packed)
+	n += m
+
+	m, err = w.Write(packed)
 	if err != nil {
-		return fmt.Errorf("writing packed data: %v", err)
+		return m, fmt.Errorf("writing packed field: %v", err)
 	}
-	fmt.Printf("write n = %+v\n", n)
 
-	return nil
+	n += m
+
+	return n, nil
 }
 
 func (f *String) ReadFrom(r io.Reader) (int, error) {

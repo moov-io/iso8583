@@ -51,7 +51,7 @@ func (f *Numeric) String() (string, error) {
 	return strconv.Itoa(f.Value), nil
 }
 
-func (f *Numeric) Pack() ([]byte, error) {
+func (f *Numeric) WriteTo(w io.Writer) (n int, err error) {
 	data := []byte(strconv.Itoa(f.Value))
 
 	if f.spec.Pad != nil {
@@ -60,15 +60,29 @@ func (f *Numeric) Pack() ([]byte, error) {
 
 	packed, err := f.spec.Enc.Encode(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %v", err)
+		return 0, fmt.Errorf("failed to encode content: %v", err)
 	}
 
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %v", err)
+		return 0, fmt.Errorf("failed to encode length: %v", err)
 	}
 
-	return append(packedLength, packed...), nil
+	m, err := w.Write(packedLength)
+	if err != nil {
+		return m, fmt.Errorf("writing packed length: %v", err)
+	}
+
+	n += m
+
+	m, err = w.Write(packed)
+	if err != nil {
+		return m, fmt.Errorf("writing packed field: %v", err)
+	}
+
+	n += m
+
+	return n, nil
 }
 
 // returns number of bytes was read

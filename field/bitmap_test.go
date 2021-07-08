@@ -98,10 +98,12 @@ func TestHexBitmap(t *testing.T) {
 
 		bitmap.Set(20) // first bitmap field
 
-		data, err := bitmap.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		length, err := bitmap.WriteTo(buf)
 
 		require.NoError(t, err)
-		require.Len(t, data, 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
+		require.Len(t, buf.Bytes(), 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
+		require.Equal(t, 16, length)    // 16 bytes is 8 bytes (one bitmap) encoded in hex
 	})
 
 	t.Run("With secondary bitmap it returns length of two bitmaps", func(t *testing.T) {
@@ -114,10 +116,12 @@ func TestHexBitmap(t *testing.T) {
 		bitmap.Set(20) // first bitmap field
 		bitmap.Set(70) // second bitmap field
 
-		data, err := bitmap.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		length, err := bitmap.WriteTo(buf)
 
 		require.NoError(t, err)
-		require.Len(t, data, 32) // 32 bytes is 16 bytes (two bitmaps) encoded in hex
+		require.Len(t, buf.Bytes(), 32) // 32 bytes is 16 bytes (two bitmaps) encoded in hex
+		require.Equal(t, 32, length)
 	})
 
 	t.Run("With third bitmap it returns length of three bitmaps", func(t *testing.T) {
@@ -131,10 +135,12 @@ func TestHexBitmap(t *testing.T) {
 		bitmap.Set(70)  // second bitmap field
 		bitmap.Set(150) // third bitmap field
 
-		data, err := bitmap.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		length, err := bitmap.WriteTo(buf)
 
 		require.NoError(t, err)
-		require.Len(t, data, 48) // 48 bytes is 24 bytes (three bitmaps) encoded in hex
+		require.Len(t, buf.Bytes(), 48) // 48 bytes is 24 bytes (three bitmaps) encoded in hex
+		require.Equal(t, 48, length)
 	})
 }
 
@@ -148,10 +154,12 @@ func TestBinaryBitmap(t *testing.T) {
 
 		bitmap.Set(20) // first bitmap field
 
-		data, err := bitmap.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		length, err := bitmap.WriteTo(buf)
 
 		require.NoError(t, err)
-		require.Len(t, data, 8)
+		require.Len(t, buf.Bytes(), 8)
+		require.Equal(t, 8, length)
 	})
 
 	t.Run("With secondary bitmap it returns length of two bitmaps", func(t *testing.T) {
@@ -164,10 +172,12 @@ func TestBinaryBitmap(t *testing.T) {
 		bitmap.Set(20) // first bitmap field
 		bitmap.Set(70) // second bitmap field
 
-		data, err := bitmap.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		length, err := bitmap.WriteTo(buf)
 
 		require.NoError(t, err)
-		require.Len(t, data, 16)
+		require.Len(t, buf.Bytes(), 16)
+		require.Equal(t, 16, length)
 	})
 
 	t.Run("With third bitmap it returns length of three bitmaps", func(t *testing.T) {
@@ -181,10 +191,12 @@ func TestBinaryBitmap(t *testing.T) {
 		bitmap.Set(70)  // second bitmap field
 		bitmap.Set(150) // third bitmap field
 
-		data, err := bitmap.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		length, err := bitmap.WriteTo(buf)
 
 		require.NoError(t, err)
-		require.Len(t, data, 24)
+		require.Len(t, buf.Bytes(), 24)
+		require.Equal(t, 24, length)
 	})
 }
 
@@ -231,7 +243,7 @@ func TestBitmap_SetData(t *testing.T) {
 		require.Equal(t, bitmapBytes, dataBytes)
 	})
 
-	t.Run("Pack returns bytes using the bitmap provided using SetData", func(t *testing.T) {
+	t.Run("WriteTo writes bytes using the bitmap provided using SetData", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
 		data := NewBitmap(nil)
@@ -239,8 +251,10 @@ func TestBitmap_SetData(t *testing.T) {
 
 		bitmap.SetData(data)
 
-		packed, err := bitmap.Pack()
+		buf := bytes.NewBuffer([]byte{})
+		length, err := bitmap.WriteTo(buf)
 		require.NoError(t, err)
-		require.Len(t, packed, 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
+		require.Len(t, buf.Bytes(), 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
+		require.Equal(t, 16, length)
 	})
 }
