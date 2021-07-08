@@ -70,9 +70,9 @@ func (f *Bitmap) Pack() ([]byte, error) {
 	return packed, nil
 }
 
-// Unpack of the Bitmap field returns data of varied length
-// if there is only primary bitmap (bit 1 is not set) we return only 8 bytes (or 16 for hex encoding)
-// if secondary bitmap presents (bit 1 is set) we return 16 bytes (or 32 for hex encoding)
+// ReadFrom of the Bitmap field reads data of varied length
+// if there is only primary bitmap (bit 1 is not set) we read only 8 bytes (or 16 for hex encoding)
+// if secondary bitmap presents (bit 1 is set) we read 16 bytes (or 32 for hex encoding)
 // and so on for maxBitmaps
 func (f *Bitmap) ReadFrom(r io.Reader) (int, error) {
 	minLen, err := f.spec.Pref.ReadLength(minBitmapLength, r)

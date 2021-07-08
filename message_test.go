@@ -179,7 +179,7 @@ func TestMessage(t *testing.T) {
 	})
 }
 
-func TestPackUnpack(t *testing.T) {
+func TestPackAndReadFrom(t *testing.T) {
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
 			0: field.NewString(&field.Spec{
@@ -439,7 +439,7 @@ func TestPackUnpack(t *testing.T) {
 		require.Equal(t, want, got)
 	})
 
-	t.Run("Unpack data", func(t *testing.T) {
+	t.Run("ReadFrom data", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.SetData(&TestISOData{})
 

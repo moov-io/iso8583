@@ -190,7 +190,7 @@ func TestCompositePacking(t *testing.T) {
 		require.Equal(t, "ABCD12", string(packed))
 	})
 
-	t.Run("Unpack returns an error on mismatch of subfield types", func(t *testing.T) {
+	t.Run("ReadFrom returns an error on mismatch of subfield types", func(t *testing.T) {
 		type TestDataIncorrectType struct {
 			F1 *Numeric
 		}
@@ -204,7 +204,7 @@ func TestCompositePacking(t *testing.T) {
 		require.EqualError(t, err, "failed to set data for field 1: data does not match required *String type")
 	})
 
-	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
+	t.Run("ReadFrom returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
 		data := &CompsiteTestData{}
 
 		composite := NewComposite(compositeTestSpec)
@@ -218,7 +218,7 @@ func TestCompositePacking(t *testing.T) {
 		require.EqualError(t, err, "failed to unpack subfield 3: failed to convert into number: strconv.Atoi: parsing \"EF\": invalid syntax")
 	})
 
-	t.Run("Unpack returns an error on length of data exceeding max length", func(t *testing.T) {
+	t.Run("ReadFrom returns an error on length of data exceeding max length", func(t *testing.T) {
 		spec := &Spec{
 			Length: 4,
 			Pref:   prefix.ASCII.L,
@@ -253,7 +253,7 @@ func TestCompositePacking(t *testing.T) {
 		require.EqualError(t, err, "failed to decode length: data length: 7 is larger than maximum 4")
 	})
 
-	t.Run("Unpack returns an error on offset not matching data length", func(t *testing.T) {
+	t.Run("ReadFrom returns an error on offset not matching data length", func(t *testing.T) {
 		invalidSpec := &Spec{
 			// Base field length < summation of lengths of subfields
 			// This will throw an error when encoding the field's length.
@@ -290,7 +290,7 @@ func TestCompositePacking(t *testing.T) {
 		require.EqualError(t, err, "data length: 4 does not match aggregate data read from decoded subfields: 7")
 	})
 
-	t.Run("Unpack correctly deserialises bytes to the data struct", func(t *testing.T) {
+	t.Run("ReadFrom correctly deserialises bytes to the data struct", func(t *testing.T) {
 		data := &CompsiteTestData{}
 
 		composite := NewComposite(compositeTestSpec)
@@ -389,7 +389,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.Equal(t, "120102AB030212", string(packed))
 	})
 
-	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
+	t.Run("ReadFrom returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
 		data := &CompsiteTestData{}
 
 		composite := NewComposite(compositeTestSpecWithIDLength)
@@ -403,7 +403,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.EqualError(t, err, "failed to unpack subfield 3: reading length: strconv.Atoi: parsing \"AB\": invalid syntax")
 	})
 
-	t.Run("Unpack returns an error on data having subfield ID not in spec", func(t *testing.T) {
+	t.Run("ReadFrom returns an error on data having subfield ID not in spec", func(t *testing.T) {
 		data := &CompsiteTestData{}
 
 		composite := NewComposite(compositeTestSpecWithIDLength)
@@ -416,7 +416,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.EqualError(t, err, "failed to unpack subfield 11: field not defined in Spec")
 	})
 
-	t.Run("Unpack returns an error on failure to unpack subfield ID", func(t *testing.T) {
+	t.Run("ReadFrom returns an error on failure to unpack subfield ID", func(t *testing.T) {
 		data := &CompsiteTestData{}
 
 		composite := NewComposite(compositeTestSpecWithIDLength)
@@ -429,7 +429,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.EqualError(t, err, "failed to convert subfield ID \"ID\" to int")
 	})
 
-	t.Run("Unpack correctly deserialises out of order composite subfields to the data struct", func(t *testing.T) {
+	t.Run("ReadFrom correctly deserialises out of order composite subfields to the data struct", func(t *testing.T) {
 		data := &CompsiteTestData{}
 
 		composite := NewComposite(compositeTestSpecWithIDLength)
@@ -447,7 +447,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.Equal(t, "YZ", data.F4.F1.Value)
 	})
 
-	t.Run("Unpack correctly deserialises partial subfields to the data struct", func(t *testing.T) {
+	t.Run("ReadFrom correctly deserialises partial subfields to the data struct", func(t *testing.T) {
 		data := &CompsiteTestData{}
 
 		composite := NewComposite(compositeTestSpecWithIDLength)

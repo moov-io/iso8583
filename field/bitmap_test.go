@@ -214,7 +214,7 @@ func TestBitmap_SetData(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("Unpack sets the data field with the correct bitmap provided using SetData", func(t *testing.T) {
+	t.Run("ReadFrom sets the data field with the correct bitmap provided using SetData", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
 		data := &Bitmap{}

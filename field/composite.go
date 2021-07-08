@@ -133,9 +133,10 @@ func (f *Composite) Pack() ([]byte, error) {
 	return append(packedLength, packed...), nil
 }
 
-// Unpack takes in a byte array and serializes them into the receiver's
-// subfields. An offset (unit depends on encoding and prefix values) is
-// returned on success. A non-nil error is returned on failure.
+// ReadFrom takes in an io.Reader and reads data from it and then serializes
+// them into the receiver's subfields. An offset (unit depends on encoding and
+// prefix values) is returned on success. A non-nil error is returned on
+// failure.
 func (f *Composite) ReadFrom(r io.Reader) (int, error) {
 	dataLen, err := f.spec.Pref.ReadLength(f.spec.Length, r)
 	if err != nil {
@@ -154,7 +155,7 @@ func (f *Composite) ReadFrom(r io.Reader) (int, error) {
 
 // SetBytes iterates over the receiver's subfields and unpacks them.
 // Data passed into this method must consist of the necessary information to
-// pack all subfields in full. However, unlike Unpack(), it requires the
+// pack all subfields in full. However, unlike ReadFrom(), it requires the
 // aggregate length of the subfields not to be encoded in the prefix.
 func (f *Composite) SetBytes(data []byte) error {
 	_, err := f.unpack(bytes.NewReader(data), len(data))

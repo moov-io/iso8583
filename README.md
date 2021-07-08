@@ -181,8 +181,14 @@ When you have a binary (packed) message and you know the specification it follow
 With this approach you can easily access fields as strings:
 
 ```go
+file, err := os.Open("iso8583.dat")
+if err != nil {
+	return nil, fmt.Errorf("reading file: %v", err)
+}
+defer file.Close()
+
 message := NewMessage(spec)
-message.Unpack(rawMessage)
+message.ReadFrom(file)
 
 message.GetMTI() // MTI: 0100
 message.GetString(2) // Card number: 4242424242424242
@@ -206,7 +212,7 @@ message := NewMessage(spec)
 message.SetData(&ISO87Data{})
 
 // let's unpack binary message
-err := message.Unpack(rawMessage)
+err := message.ReadFrom(bytes.NewReader(rawMessage))
 
 // to get access to typed data we have to get Data from the message and convert it into our ISO87Data type
 data := message.Data().(*ISO87Data)
