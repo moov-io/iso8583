@@ -34,12 +34,16 @@ import (
 func Fuzz(data []byte) int {
 	message := iso8583.NewMessage(iso8583.Spec87)
 
-	err := message.ReadFrom(bytes.NewReader(data))
+	n, err := message.ReadFrom(bytes.NewReader(data))
 	if err != nil {
 		return -1
 	}
+	if n != len(data) {
+		return -1
+	}
 
-	_, err = message.Pack()
+	packed := bytes.NewBuffer([]byte{})
+	_, err = message.WriteTo(packed)
 	if err != nil {
 		panic(fmt.Errorf("failed to pack unpacked message: %v", err))
 	}

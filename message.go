@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -115,13 +116,12 @@ func (m *Message) GetField(id int) (field.Field, error) {
 	return nil, fmt.Errorf("failed to get the field %d. ID does not exist", id)
 }
 
-func (m *Message) Pack() ([]byte, error) {
-	packed := []byte{}
+func (m *Message) WriteTo(w io.Writer) (n int, err error) {
 	m.Bitmap().Reset()
 
 	ids, err := m.setPackableDataFields()
 	if err != nil {
-		return nil, fmt.Errorf("failed to pack message: %w", err)
+		return 0, fmt.Errorf("failed to pack message: %w", err)
 	}
 
 	for _, id := range ids {
@@ -137,74 +137,81 @@ func (m *Message) Pack() ([]byte, error) {
 	for _, i := range ids {
 		field, err := m.GetField(i)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
 
-		packedField, err := field.Pack()
+		packed, err := field.Pack()
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
+			return 0, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
 		}
-		packed = append(packed, packedField...)
+		m, err := w.Write(packed)
+		if err != nil {
+			return 0, fmt.Errorf("writing packe field: %v", err)
+		}
+		n += m
 	}
 
-	return packed, nil
+	return n, nil
 }
 
-func (m *Message) ReadFrom(r io.Reader) error {
+func (m *Message) ReadFrom(r io.Reader) (n int, err error) {
 	m.fieldsMap = map[int]struct{}{}
 	m.Bitmap().Reset()
 
 	// unpack MTI
 	mti, err := m.GetField(0)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	_, err = mti.ReadFrom(r)
+	read, err := mti.ReadFrom(r)
 	if err != nil {
-		return fmt.Errorf("failed to unpack MTI: %v", err)
+		return read, fmt.Errorf("failed to unpack MTI: %v", err)
 	}
+	n += read
 
 	// unpack Bitmap
 	bitmap, err := m.GetField(1)
 	if err != nil {
-		return err
+		return n, err
 	}
 
-	_, err = bitmap.ReadFrom(r)
+	read, err = bitmap.ReadFrom(r)
 	if err != nil {
-		return fmt.Errorf("failed to unpack bitmapt: %v", err)
+		return n + read, fmt.Errorf("failed to unpack bitmapt: %v", err)
 	}
+	n += read
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
 		if m.Bitmap().IsSet(i) {
 			fl, err := m.GetField(i)
 			if err != nil {
-				return err
+				return n, err
 			}
 
 			if m.dataValue != nil {
 				if err := m.setUnpackableDataField(i, fl); err != nil {
-					return err
+					return n, err
 				}
 			}
 
 			m.fieldsMap[i] = struct{}{}
-			_, err = fl.ReadFrom(r)
+			read, err = fl.ReadFrom(r)
 			if err != nil {
-				return fmt.Errorf("failed to unpack field %d (%s): %v", i, fl.Spec().Description, err)
+				return n + read, fmt.Errorf("failed to unpack field %d (%s): %v", i, fl.Spec().Description, err)
 			}
+			n += read
 		}
 	}
 
-	return nil
+	return n, nil
 }
 
 func (m *Message) MarshalJSON() ([]byte, error) {
 	// by packing the message we will generate bitmap
 	// create HEX representation
 	// and validate message against the spec
-	if _, err := m.Pack(); err != nil {
+	if _, err := m.WriteTo(&bytes.Buffer{}); err != nil {
 		return nil, err
 	}
 
