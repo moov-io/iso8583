@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 
@@ -27,26 +28,7 @@ func (e *bcdEncoder) Encode(src []byte) ([]byte, error) {
 }
 
 func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, int, error) {
-	// for BCD encoding the length should be even
-	decodedLen := length
-	if length%2 != 0 {
-		decodedLen += 1
-	}
-
-	// how many bytes we will read
-	read := bcd.EncodedLen(decodedLen)
-
-	dec := bcd.NewDecoder(bcd.Standard)
-	dst := make([]byte, decodedLen)
-	_, err := dec.Decode(dst, src)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// becase BCD is right aligned, we skip first bytes and
-	// read only what we need
-	// e.g. 0643 => 643
-	return dst[decodedLen-length:], read, nil
+	return e.DecodeFrom(bytes.NewReader(src), length)
 }
 
 func (e bcdEncoder) DecodeFrom(r io.Reader, length int) (data []byte, read int, err error) {

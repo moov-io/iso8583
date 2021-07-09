@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 )
@@ -21,6 +22,10 @@ func (e asciiEncoder) Encode(data []byte) ([]byte, error) {
 	return out, nil
 }
 
+func (e asciiEncoder) Decode(data []byte, length int) ([]byte, int, error) {
+	return e.DecodeFrom(bytes.NewReader(data), length)
+}
+
 func (e asciiEncoder) DecodeFrom(r io.Reader, length int) (data []byte, read int, err error) {
 	data = make([]byte, length)
 	read, err = io.ReadFull(r, data)
@@ -35,18 +40,4 @@ func (e asciiEncoder) DecodeFrom(r io.Reader, length int) (data []byte, read int
 	}
 
 	return data, read, nil
-}
-
-func (e asciiEncoder) Decode(data []byte, length int) ([]byte, int, error) {
-	// read only 'length' bytes (1 byte - 1 ASCII character)
-	data = data[:length]
-	out := []byte{}
-	for _, r := range data {
-		if r > 127 {
-			return nil, 0, fmt.Errorf("invalid ASCII char: '%s'", string(r))
-		}
-		out = append(out, r)
-	}
-
-	return out, length, nil
 }

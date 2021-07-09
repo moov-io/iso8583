@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 
@@ -27,23 +28,7 @@ func (e *lBCDEncoder) Encode(src []byte) ([]byte, error) {
 }
 
 func (e *lBCDEncoder) Decode(src []byte, length int) ([]byte, int, error) {
-	decodedLen := length
-	if length%2 != 0 {
-		decodedLen += 1
-	}
-
-	read := bcd.EncodedLen(decodedLen)
-
-	dec := bcd.NewDecoder(bcd.Standard)
-	dst := make([]byte, decodedLen)
-	_, err := dec.Decode(dst, src)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// because it's left aligned, we return data from
-	// 0 index
-	return dst[:length], read, nil
+	return e.DecodeFrom(bytes.NewReader(src), length)
 }
 
 func (e lBCDEncoder) DecodeFrom(r io.Reader, length int) (data []byte, read int, err error) {
