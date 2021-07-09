@@ -1,7 +1,9 @@
 package field
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -102,6 +104,7 @@ func TestComposite_SetData(t *testing.T) {
 }
 
 func TestCompositePacking(t *testing.T) {
+
 	t.Run("Pack returns an error on mismatch of subfield types", func(t *testing.T) {
 		type TestDataIncorrectType struct {
 			F1 *Numeric
@@ -187,6 +190,23 @@ func TestCompositePacking(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, "ABCD12", string(packed))
+	})
+
+	t.Run("WriteTo writes serialized data into writer", func(t *testing.T) {
+		data := &CompsiteTestData{
+			F1: NewStringValue("AB"),
+			F2: NewStringValue("CD"),
+			F3: NewNumericValue(12),
+		}
+
+		composite := NewComposite(compositeTestSpec)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		var packed bytes.Buffer
+		_, err = composite.WriteTo(&packed)
+		require.NoError(t, err)
+		require.Equal(t, "ABCD12", packed.String())
 	})
 
 	t.Run("Unpack returns an error on mismatch of subfield types", func(t *testing.T) {
@@ -305,6 +325,23 @@ func TestCompositePacking(t *testing.T) {
 		require.Equal(t, 12, data.F3.Value)
 		require.Nil(t, data.F4)
 	})
+
+	t.Run("ReadFrom reads data from reader and deserialises it to the data struct", func(t *testing.T) {
+		data := &CompsiteTestData{}
+
+		composite := NewComposite(compositeTestSpec)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		read, err := composite.ReadFrom(strings.NewReader("ABCD12"))
+		require.Equal(t, compositeTestSpec.Length, read)
+		require.NoError(t, err)
+
+		require.Equal(t, "AB", data.F1.Value)
+		require.Equal(t, "CD", data.F2.Value)
+		require.Equal(t, 12, data.F3.Value)
+		require.Nil(t, data.F4)
+	})
 }
 
 func TestCompositePackingWithID(t *testing.T) {
@@ -399,7 +436,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		read, err := composite.Unpack([]byte("180102AB0202CD03AB12"))
 		require.Equal(t, 0, read)
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to unpack subfield 3: failed to decode length: strconv.Atoi: parsing \"AB\": invalid syntax")
+		require.EqualError(t, err, "failed to unpack subfield 3: reading length: strconv.Atoi: parsing \"AB\": invalid syntax")
 	})
 
 	t.Run("Unpack returns an error on data having subfield ID not in spec", func(t *testing.T) {

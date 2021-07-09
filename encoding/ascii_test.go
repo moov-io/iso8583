@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -8,6 +9,14 @@ import (
 
 func TestASCII(t *testing.T) {
 	enc := &asciiEncoder{}
+
+	t.Run("DecodeFrom", func(t *testing.T) {
+		res, read, err := enc.DecodeFrom(strings.NewReader("hello"), 5)
+
+		require.NoError(t, err)
+		require.Equal(t, []byte("hello"), res)
+		require.Equal(t, 5, read)
+	})
 
 	t.Run("Decode", func(t *testing.T) {
 		res, read, err := enc.Decode([]byte("hello"), 5)

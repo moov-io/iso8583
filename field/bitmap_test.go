@@ -1,6 +1,8 @@
 package field
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -9,6 +11,39 @@ import (
 )
 
 func TestHexBitmap(t *testing.T) {
+	t.Run("ReadFrom reads bitmap from the reader", func(t *testing.T) {
+		bitmap := NewBitmap(&Spec{
+			Description: "Bitmap",
+			Enc:         encoding.Hex,
+			Pref:        prefix.Hex.Fixed,
+		})
+
+		// set bit: 10
+		read, err := bitmap.ReadFrom(strings.NewReader("004000000000000000000000000000000000000000000000"))
+
+		require.NoError(t, err)
+		require.Equal(t, 16, read) // 16 is 8 bytes (one bitmap) encoded in hex
+
+		require.True(t, bitmap.IsSet(10))
+	})
+
+	t.Run("WriteTo writes bitmap to the writer", func(t *testing.T) {
+		bitmap := NewBitmap(&Spec{
+			Description: "Bitmap",
+			Enc:         encoding.Hex,
+			Pref:        prefix.Hex.Fixed,
+		})
+
+		bitmap.Set(20) // first bitmap field
+
+		var buf bytes.Buffer
+		n, err := bitmap.WriteTo(&buf)
+
+		require.NoError(t, err)
+		require.Equal(t, 16, buf.Len()) // 16 bytes is 8 bytes (one bitmap) encoded in hex
+		require.Equal(t, 16, n)
+	})
+
 	t.Run("Read only first bitmap", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
@@ -69,7 +104,7 @@ func TestHexBitmap(t *testing.T) {
 		_, err := bitmap.Unpack([]byte("4000"))
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "for 1 bitmap: not enough data to read")
+		require.Contains(t, err.Error(), "unexpected EOF")
 	})
 
 	t.Run("When bit for secondary bitmap is set but not enough data to read", func(t *testing.T) {
@@ -83,7 +118,8 @@ func TestHexBitmap(t *testing.T) {
 		_, err := bitmap.Unpack([]byte("c0001000000000008000000000000100"))
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "for 3 bitmap: not enough data to read")
+		require.Contains(t, err.Error(), "for 3 bitmap")
+		require.Contains(t, err.Error(), "EOF")
 	})
 
 	t.Run("With primary bitmap only it returns signle bitmap length", func(t *testing.T) {

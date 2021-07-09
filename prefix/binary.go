@@ -2,6 +2,7 @@ package prefix
 
 import (
 	"fmt"
+	"io"
 )
 
 var Binary = Prefixers{
@@ -19,6 +20,9 @@ func (p *binaryFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) 
 	return []byte{}, nil
 }
 
+func (p *binaryFixedPrefixer) ReadLength(maxLen int, r io.Reader) (int, error) {
+	return 0, nil
+}
 func (p *binaryFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, error) {
 	return fixLen, nil
 }

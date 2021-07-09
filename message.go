@@ -1,8 +1,10 @@
 package iso8583
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 
@@ -14,8 +16,10 @@ type Message struct {
 	spec      *MessageSpec
 	data      interface{}
 	dataValue *reflect.Value
-	fieldsMap map[int]struct{}
 	bitmap    *field.Bitmap
+
+	// fieldsMap is used internally to track which field of the message was set
+	fieldsMap map[int]struct{}
 }
 
 func NewMessage(spec *MessageSpec) *Message {
@@ -106,13 +110,36 @@ func (m *Message) GetBytes(id int) ([]byte, error) {
 	return nil, fmt.Errorf("failed to get bytes for field %d. ID does not exist", id)
 }
 
+func (m *Message) GetField(id int) (field.Field, error) {
+	if f, ok := m.fields[id]; ok {
+		return f, nil
+	}
+
+	return nil, fmt.Errorf("failed to get the field %d. ID does not exist", id)
+}
+
 func (m *Message) Pack() ([]byte, error) {
-	packed := []byte{}
+	var buf bytes.Buffer
+
+	_, err := m.WriteTo(&buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), err
+}
+
+func (m *Message) Unpack(src []byte) error {
+	_, err := m.ReadFrom(bytes.NewReader(src))
+	return err
+}
+
+func (m *Message) WriteTo(w io.Writer) (n int, err error) {
 	m.Bitmap().Reset()
 
 	ids, err := m.setPackableDataFields()
 	if err != nil {
-		return nil, fmt.Errorf("failed to pack message: %w", err)
+		return 0, fmt.Errorf("failed to pack message: %w", err)
 	}
 
 	for _, id := range ids {
@@ -126,73 +153,83 @@ func (m *Message) Pack() ([]byte, error) {
 
 	// pack fields
 	for _, i := range ids {
-		field, ok := m.fields[i]
-		if !ok {
-			return nil, fmt.Errorf("failed to pack field %d: no specification found", i)
-		}
-		packedField, err := field.Pack()
+		field, err := m.GetField(i)
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
+			return 0, err
 		}
-		packed = append(packed, packedField...)
+
+		m, err := field.WriteTo(w)
+		if err != nil {
+			return 0, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
+		}
+		n += m
 	}
 
-	return packed, nil
+	return n, nil
 }
 
-func (m *Message) Unpack(src []byte) error {
-	var off int
-
+// ReadFrom reads message from io.Reader. The amount of bytes read depends on two things:
+// * if ISO header presents, ReadFrom reads header and then data specified in
+// the header (not implemented yet)
+// * ReadFrom reads message according its spec and fields specified in the bitmap
+func (m *Message) ReadFrom(r io.Reader) (n int, err error) {
 	m.fieldsMap = map[int]struct{}{}
 	m.Bitmap().Reset()
 
 	// unpack MTI
-	read, err := m.fields[0].Unpack(src)
+	mti, err := m.GetField(0)
 	if err != nil {
-		return fmt.Errorf("failed to unpack MTI: %v", err)
+		return 0, err
 	}
 
-	off = read
+	read, err := mti.ReadFrom(r)
+	if err != nil {
+		return read, fmt.Errorf("failed to unpack MTI: %v", err)
+	}
+	n += read
 
 	// unpack Bitmap
-	read, err = m.fields[1].Unpack(src[off:])
+	bitmap, err := m.GetField(1)
 	if err != nil {
-		return fmt.Errorf("failed to unpack bitmapt: %v", err)
+		return n, err
 	}
 
-	off += read
+	read, err = bitmap.ReadFrom(r)
+	if err != nil {
+		return n + read, fmt.Errorf("failed to unpack bitmapt: %v", err)
+	}
+	n += read
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
 		if m.Bitmap().IsSet(i) {
-			fl, ok := m.fields[i]
-			if !ok {
-				return fmt.Errorf("failed to unpack field %d: no specification found", i)
+			fl, err := m.GetField(i)
+			if err != nil {
+				return n, err
 			}
 
 			if m.dataValue != nil {
 				if err := m.setUnpackableDataField(i, fl); err != nil {
-					return err
+					return n, err
 				}
 			}
 
 			m.fieldsMap[i] = struct{}{}
-			read, err = fl.Unpack(src[off:])
+			read, err = fl.ReadFrom(r)
 			if err != nil {
-				return fmt.Errorf("failed to unpack field %d (%s): %v", i, fl.Spec().Description, err)
+				return n + read, fmt.Errorf("failed to unpack field %d (%s): %v", i, fl.Spec().Description, err)
 			}
-
-			off += read
+			n += read
 		}
 	}
 
-	return nil
+	return n, nil
 }
 
 func (m *Message) MarshalJSON() ([]byte, error) {
 	// by packing the message we will generate bitmap
 	// create HEX representation
 	// and validate message against the spec
-	if _, err := m.Pack(); err != nil {
+	if _, err := m.WriteTo(&bytes.Buffer{}); err != nil {
 		return nil, err
 	}
 

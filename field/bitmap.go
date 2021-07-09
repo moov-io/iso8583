@@ -1,9 +1,11 @@
 package field
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/moov-io/iso8583/utils"
@@ -49,6 +51,24 @@ func (f *Bitmap) String() (string, error) {
 }
 
 func (f *Bitmap) Pack() ([]byte, error) {
+	var buf bytes.Buffer
+
+	_, err := f.WriteTo(&buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), err
+}
+
+// Unpack of the Bitmap field returns data of varied length
+// if there is only primary bitmap (bit 1 is not set) we return only 8 bytes (or 16 for hex encoding)
+// if secondary bitmap presents (bit 1 is set) we return 16 bytes (or 32 for hex encoding)
+func (f *Bitmap) Unpack(data []byte) (int, error) {
+	return f.ReadFrom(bytes.NewReader(data))
+}
+
+func (f *Bitmap) WriteTo(w io.Writer) (n int, err error) {
 	f.setBitmapFields()
 
 	count := f.bitmapsCount()
@@ -56,27 +76,32 @@ func (f *Bitmap) Pack() ([]byte, error) {
 	// here we have max possible bytes for the bitmap 8*maxBitmaps
 	data, err := f.Bytes()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve bytes: %v", err)
+		return 0, fmt.Errorf("failed to retrieve bytes: %v", err)
 	}
 
 	data = data[0 : 8*count]
 
 	packed, err := f.spec.Enc.Encode(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %v", err)
+		return 0, fmt.Errorf("failed to encode content: %v", err)
 	}
 
-	return packed, nil
+	n, err = w.Write(packed)
+	if err != nil {
+		return n, fmt.Errorf("writing packed data: %v", err)
+	}
+
+	return n, nil
 }
 
-// Unpack of the Bitmap field returns data of varied length
-// if there is only primary bitmap (bit 1 is not set) we return only 8 bytes (or 16 for hex encoding)
-// if secondary bitmap presents (bit 1 is set) we return 16 bytes (or 32 for hex encoding)
+// ReadFrom of the Bitmap field reads data of varied length
+// if there is only primary bitmap (bit 1 is not set) we read only 8 bytes (or 16 for hex encoding)
+// if secondary bitmap presents (bit 1 is set) we read 16 bytes (or 32 for hex encoding)
 // and so on for maxBitmaps
-func (f *Bitmap) Unpack(data []byte) (int, error) {
-	minLen, err := f.spec.Pref.DecodeLength(minBitmapLength, data)
+func (f *Bitmap) ReadFrom(r io.Reader) (int, error) {
+	minLen, err := f.spec.Pref.ReadLength(minBitmapLength, r)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %v", err)
+		return 0, fmt.Errorf("reading length: %v", err)
 	}
 
 	rawBitmap := make([]byte, 0)
@@ -84,9 +109,9 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 
 	// read max
 	for i := 0; i < maxBitmaps; i++ {
-		decoded, readDecoded, err := f.spec.Enc.Decode(data[read:], minLen)
+		decoded, readDecoded, err := f.spec.Enc.DecodeFrom(r, minLen)
 		if err != nil {
-			return 0, fmt.Errorf("failed to decode content for %d bitmap: %v", i+1, err)
+			return 0, fmt.Errorf("decoding content for %d bitmap: %v", i+1, err)
 		}
 		read += readDecoded
 

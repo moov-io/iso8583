@@ -2,6 +2,7 @@ package prefix
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -38,6 +39,29 @@ func (p *bcdVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	}
 
 	return res, nil
+}
+func (p *bcdVarPrefixer) ReadLength(maxLen int, r io.Reader) (int, error) {
+	data := make([]byte, p.Length())
+	_, err := io.ReadFull(r, data)
+	if err != nil {
+		return 0, fmt.Errorf("reading data: %v", err)
+	}
+
+	bDigits, _, err := encoding.BCD.Decode(data, p.Digits)
+	if err != nil {
+		return 0, fmt.Errorf("decoding into BCD: %v", err)
+	}
+
+	dataLen, err := strconv.Atoi(string(bDigits))
+	if err != nil {
+		return 0, fmt.Errorf("convering into int: %v", err)
+	}
+
+	if dataLen > maxLen {
+		return 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
+	}
+
+	return dataLen, nil
 }
 
 func (p *bcdVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
@@ -79,6 +103,10 @@ func (p *bcdFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	}
 
 	return []byte{}, nil
+}
+
+func (p *bcdFixedPrefixer) ReadLength(fixLen int, r io.Reader) (int, error) {
+	return fixLen, nil
 }
 
 // Returns number of characters that should be decoded

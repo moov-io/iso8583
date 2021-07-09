@@ -33,6 +33,7 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 	- [Define specification](#define-your-specification)
 	- [Build message](#build-and-pack-the-message)
 	- [Parse message](#parse-the-message-and-access-the-data)
+	- [Work with `io.Reader` and `io.Writer`](#work-with-ioreader-and-iowriter)
 	- [JSON encoding](#json-encoding)
 - [Learn about ISO 8583](#learn-about-iso-8583)
 - [Getting help](#getting-help)
@@ -218,6 +219,47 @@ data.F4.Value // is a string "100"
 ```
 
 For complete code samples please check [./message_test.go](./message_test.go).
+
+### Work with `io.Reader` and `io.Writer`
+
+When there is a need, you can read message from the file or network by using `ReadFrom`:
+
+```go
+file, err := os.Open("iso8583.dat")
+if err != nil {
+	return nil, fmt.Errorf("reading file: %v", err)
+}
+defer file.Close()
+
+message := NewMessage(spec)
+message.ReadFrom(file)
+
+// now you can access all fields
+message.GetMTI() // MTI: 0100
+```
+
+Similarly, you can write into file or network using `WriteTo`:
+
+```go
+message := NewMessage(spec)
+
+// sets message type indicator at field 0
+message.MTI("0100")
+
+// set all message fields you need as strings
+message.Field(2, "4242424242424242")
+message.Field(3, "123456")
+message.Field(4, "100")
+
+file, err := os.Open("iso8583.dat")
+if err != nil {
+	return nil, fmt.Errorf("reading file: %v", err)
+}
+defer file.Close()
+
+// let's write the binary message into file
+n, err := message.WriteTo(file)
+```
 
 ### JSON encoding
 

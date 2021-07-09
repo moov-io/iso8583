@@ -1,6 +1,8 @@
 package field
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -49,4 +51,27 @@ func TestStringField(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
 	require.Equal(t, "olleh", data.Value)
+
+	t.Run("ReadFrom reads data from the reader", func(t *testing.T) {
+		str := NewString(spec)
+
+		length, err := str.ReadFrom(strings.NewReader("     olleh"))
+
+		require.NoError(t, err)
+		require.Equal(t, "olleh", str.Value)
+		require.Equal(t, 10, length)
+	})
+
+	t.Run("WritesTo writes data to the writer", func(t *testing.T) {
+		str := NewString(spec)
+		str.Value = "hello"
+
+		var buf bytes.Buffer
+
+		length, err := str.WriteTo(&buf)
+
+		require.NoError(t, err)
+		require.Equal(t, "     hello", buf.String())
+		require.Equal(t, 10, length)
+	})
 }

@@ -13,13 +13,13 @@ type Spec struct {
 	// Only applicable Composite and other bespoke field types.
 	IDLength    int
 	Description string
-	Enc         encoding.Encoder
+	Enc         encoding.Coder
 	Pref        prefix.Prefixer
 	Pad         padding.Padder
 	Fields      map[int]Field
 }
 
-func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {
+func NewSpec(length int, desc string, enc encoding.Coder, pref prefix.Prefixer) *Spec {
 	return &Spec{
 		Length:      length,
 		Description: desc,

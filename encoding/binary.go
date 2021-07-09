@@ -1,6 +1,11 @@
 package encoding
 
-var Binary Encoder = &binaryEncoder{}
+import (
+	"bytes"
+	"io"
+)
+
+var Binary Coder = &binaryEncoder{}
 
 type binaryEncoder struct{}
 
@@ -11,7 +16,12 @@ func (e binaryEncoder) Encode(data []byte) ([]byte, error) {
 }
 
 func (e binaryEncoder) Decode(data []byte, length int) ([]byte, int, error) {
-	out := append([]byte(nil), data...)
+	return e.DecodeFrom(bytes.NewReader(data), length)
+}
 
-	return out[:length], length, nil
+func (e binaryEncoder) DecodeFrom(r io.Reader, length int) (data []byte, read int, err error) {
+	data = make([]byte, length)
+	read, err = io.ReadFull(r, data)
+
+	return data, read, err
 }
