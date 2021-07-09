@@ -116,6 +116,22 @@ func (m *Message) GetField(id int) (field.Field, error) {
 	return nil, fmt.Errorf("failed to get the field %d. ID does not exist", id)
 }
 
+func (m *Message) Pack() ([]byte, error) {
+	var buf bytes.Buffer
+
+	_, err := m.WriteTo(&buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), err
+}
+
+func (m *Message) Unpack(src []byte) error {
+	_, err := m.ReadFrom(bytes.NewReader(src))
+	return err
+}
+
 func (m *Message) WriteTo(w io.Writer) (n int, err error) {
 	m.Bitmap().Reset()
 

@@ -69,6 +69,45 @@ func TestMessage(t *testing.T) {
 		},
 	}
 
+	t.Run("Test WriteTo and ReadFrom", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.MTI("0100")
+		require.NoError(t, message.Field(2, "4242424242424242"))
+		require.NoError(t, message.Field(3, "123456"))
+		require.NoError(t, message.Field(4, "100"))
+
+		var buf bytes.Buffer
+		length, err := message.WriteTo(&buf)
+
+		require.NoError(t, err)
+		require.Equal(t, length, buf.Len())
+
+		want := "01007000000000000000164242424242424242123456000000000100"
+		require.Equal(t, want, buf.String())
+
+		message = NewMessage(spec)
+		length, err = message.ReadFrom(strings.NewReader(want))
+
+		require.NoError(t, err)
+		require.Equal(t, length, buf.Len())
+
+		s, err := message.GetMTI()
+		require.NoError(t, err)
+		require.Equal(t, "0100", s)
+
+		s, err = message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", s)
+
+		s, err = message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "123456", s)
+
+		s, err = message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", s)
+	})
+
 	t.Run("Test packing and unpacking untyped fields", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.MTI("0100")
@@ -76,15 +115,15 @@ func TestMessage(t *testing.T) {
 		require.NoError(t, message.Field(3, "123456"))
 		require.NoError(t, message.Field(4, "100"))
 
-		packed := bytes.NewBuffer([]byte{})
-		_, err := message.WriteTo(packed)
+		got, err := message.Pack()
 
 		want := "01007000000000000000164242424242424242123456000000000100"
 		require.NoError(t, err)
-		require.Equal(t, want, packed.String())
+		require.NotNil(t, got)
+		require.Equal(t, want, string(got))
 
 		message = NewMessage(spec)
-		message.ReadFrom(strings.NewReader(want))
+		message.Unpack([]byte(want))
 
 		s, err := message.GetMTI()
 		require.NoError(t, err)
@@ -120,10 +159,9 @@ func TestMessage(t *testing.T) {
 		message.SetData(&ISO87Data{})
 
 		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
-		n, err := message.ReadFrom(bytes.NewReader(rawMsg))
+		err := message.Unpack(rawMsg)
 
 		require.NoError(t, err)
-		require.Equal(t, len(rawMsg), n)
 
 		s, err := message.GetString(2)
 		require.NoError(t, err)
@@ -172,16 +210,15 @@ func TestMessage(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		packed := bytes.NewBuffer([]byte{})
-		_, err = message.WriteTo(packed)
+		rawMsg, err := message.Pack()
 		require.NoError(t, err)
 
 		wantMsg := []byte("01007000000000000000164242424242424242123456000000000100")
-		require.Equal(t, wantMsg, packed.Bytes())
+		require.Equal(t, wantMsg, rawMsg)
 	})
 }
 
-func TestPackAndReadFrom(t *testing.T) {
+func TestPackUnpack(t *testing.T) {
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
 			0: field.NewString(&field.Spec{
@@ -432,24 +469,23 @@ func TestPackAndReadFrom(t *testing.T) {
 
 		message.MTI("0100")
 
-		packed := bytes.NewBuffer([]byte{})
-		_, err = message.WriteTo(packed)
+		got, err := message.Pack()
 
 		want := []byte{48, 49, 48, 48, 242, 60, 36, 129, 40, 224, 152, 0, 0, 0, 0, 0, 0, 0, 1, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 55, 65, 110, 111, 116, 104, 101, 114, 32, 116, 101, 115, 116, 32, 116, 101, 120, 116}
 
 		require.NoError(t, err)
-		require.Equal(t, want, packed.Bytes())
+		require.NotNil(t, got)
+		require.Equal(t, want, got)
 	})
 
-	t.Run("ReadFrom data", func(t *testing.T) {
+	t.Run("Unpack data", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.SetData(&TestISOData{})
 
 		rawMsg := []byte{48, 49, 48, 48, 242, 60, 36, 129, 40, 224, 152, 0, 0, 0, 0, 0, 0, 0, 1, 0, 49, 54, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 55, 55, 55, 48, 48, 48, 55, 48, 49, 49, 49, 49, 56, 52, 52, 48, 48, 48, 49, 50, 51, 49, 51, 49, 56, 52, 52, 48, 55, 48, 49, 49, 57, 48, 50, 6, 67, 57, 48, 49, 48, 50, 48, 54, 49, 50, 51, 52, 53, 54, 51, 55, 52, 50, 55, 54, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 53, 61, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 48, 49, 48, 48, 48, 48, 48, 51, 50, 49, 49, 50, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 51, 52, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 84, 101, 115, 116, 32, 116, 101, 120, 116, 100, 48, 1, 2, 3, 4, 5, 6, 7, 8, 49, 50, 51, 52, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 55, 65, 110, 111, 116, 104, 101, 114, 32, 116, 101, 115, 116, 32, 116, 101, 120, 116}
-		n, err := message.ReadFrom(bytes.NewReader(rawMsg))
+		err := message.Unpack(rawMsg)
 
 		require.NoError(t, err)
-		require.Equal(t, len(rawMsg), n)
 
 		s, err := message.GetString(2)
 		require.NoError(t, err)
