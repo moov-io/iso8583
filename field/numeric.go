@@ -101,7 +101,7 @@ func (f *Numeric) WriteTo(w io.Writer) (n int, err error) {
 	return n, nil
 }
 
-// returns number of bytes was read
+// Returns number of bytes was read
 func (f *Numeric) ReadFrom(r io.Reader) (int, error) {
 	dataLen, err := f.spec.Pref.ReadLength(f.spec.Length, r)
 	if err != nil {

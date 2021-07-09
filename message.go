@@ -166,6 +166,10 @@ func (m *Message) WriteTo(w io.Writer) (n int, err error) {
 	return n, nil
 }
 
+// ReadFrom reads message from io.Reader. The amount of bytes read depends on two things:
+// * if ISO header presents, ReadFrom reads header and then data specified in
+// the header (not implemented yet)
+// * ReadFrom reads message according its spec and fields specified in the bitmap
 func (m *Message) ReadFrom(r io.Reader) (n int, err error) {
 	m.fieldsMap = map[int]struct{}{}
 	m.Bitmap().Reset()
