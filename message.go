@@ -16,8 +16,10 @@ type Message struct {
 	spec      *MessageSpec
 	data      interface{}
 	dataValue *reflect.Value
-	fieldsMap map[int]struct{}
 	bitmap    *field.Bitmap
+
+	// fieldsMap is used internally to track which field of the message was set
+	fieldsMap map[int]struct{}
 }
 
 func NewMessage(spec *MessageSpec) *Message {
