@@ -7,7 +7,7 @@ import (
 	"github.com/yerden/go-util/bcd"
 )
 
-var BCD Encoder = &bcdEncoder{}
+var BCD Coder = &bcdEncoder{}
 
 type bcdEncoder struct{}
 

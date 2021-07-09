@@ -2,7 +2,7 @@ package encoding
 
 import "io"
 
-var Binary Encoder = &binaryEncoder{}
+var Binary Coder = &binaryEncoder{}
 
 type binaryEncoder struct{}
 

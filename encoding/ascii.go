@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-var ASCII Encoder = &asciiEncoder{}
+var ASCII Coder = &asciiEncoder{}
 
 type asciiEncoder struct{}
 
