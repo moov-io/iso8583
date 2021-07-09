@@ -11,7 +11,7 @@ import (
 )
 
 func TestHexBitmap(t *testing.T) {
-	t.Run("Read only first bitmap", func(t *testing.T) {
+	t.Run("ReadFrom reads bitmap from the reader", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
 			Enc:         encoding.Hex,
@@ -27,6 +27,39 @@ func TestHexBitmap(t *testing.T) {
 		require.True(t, bitmap.IsSet(10))
 	})
 
+	t.Run("WriteTo writes bitmap to the writer", func(t *testing.T) {
+		bitmap := NewBitmap(&Spec{
+			Description: "Bitmap",
+			Enc:         encoding.Hex,
+			Pref:        prefix.Hex.Fixed,
+		})
+
+		bitmap.Set(20) // first bitmap field
+
+		var buf bytes.Buffer
+		n, err := bitmap.WriteTo(&buf)
+
+		require.NoError(t, err)
+		require.Equal(t, 16, buf.Len()) // 16 bytes is 8 bytes (one bitmap) encoded in hex
+		require.Equal(t, 16, n)
+	})
+
+	t.Run("Read only first bitmap", func(t *testing.T) {
+		bitmap := NewBitmap(&Spec{
+			Description: "Bitmap",
+			Enc:         encoding.Hex,
+			Pref:        prefix.Hex.Fixed,
+		})
+
+		// set bit: 10
+		read, err := bitmap.Unpack([]byte("004000000000000000000000000000000000000000000000"))
+
+		require.NoError(t, err)
+		require.Equal(t, 16, read) // 16 is 8 bytes (one bitmap) encoded in hex
+
+		require.True(t, bitmap.IsSet(10))
+	})
+
 	t.Run("Read two bitmaps", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
@@ -35,7 +68,7 @@ func TestHexBitmap(t *testing.T) {
 		})
 
 		// set bits: 1, 10, 70
-		read, err := bitmap.ReadFrom(strings.NewReader("804000000000000004000000000000000000000000000000"))
+		read, err := bitmap.Unpack([]byte("804000000000000004000000000000000000000000000000"))
 
 		require.NoError(t, err)
 		require.Equal(t, 32, read) // 32 is 16 bytes (two bitmaps) encoded in hex
@@ -52,7 +85,7 @@ func TestHexBitmap(t *testing.T) {
 		})
 
 		// set bits: 1, 10, 65, 140
-		read, err := bitmap.ReadFrom(strings.NewReader("804000000000000080000000000000000010000000000000"))
+		read, err := bitmap.Unpack([]byte("804000000000000080000000000000000010000000000000"))
 
 		require.NoError(t, err)
 		require.Equal(t, 48, read) // 48 is 24 bytes (three bitmaps) encoded in hex
@@ -68,7 +101,7 @@ func TestHexBitmap(t *testing.T) {
 			Pref:        prefix.Hex.Fixed,
 		})
 
-		_, err := bitmap.ReadFrom(strings.NewReader("4000"))
+		_, err := bitmap.Unpack([]byte("4000"))
 
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "unexpected EOF")
@@ -82,7 +115,7 @@ func TestHexBitmap(t *testing.T) {
 		})
 
 		// bits 2, 20, 65, 120 are set, but no data for third bitmap
-		_, err := bitmap.ReadFrom(strings.NewReader("c0001000000000008000000000000100"))
+		_, err := bitmap.Unpack([]byte("c0001000000000008000000000000100"))
 
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "for 3 bitmap")
@@ -98,12 +131,10 @@ func TestHexBitmap(t *testing.T) {
 
 		bitmap.Set(20) // first bitmap field
 
-		buf := bytes.NewBuffer([]byte{})
-		length, err := bitmap.WriteTo(buf)
+		data, err := bitmap.Pack()
 
 		require.NoError(t, err)
-		require.Len(t, buf.Bytes(), 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
-		require.Equal(t, 16, length)    // 16 bytes is 8 bytes (one bitmap) encoded in hex
+		require.Len(t, data, 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
 	})
 
 	t.Run("With secondary bitmap it returns length of two bitmaps", func(t *testing.T) {
@@ -116,12 +147,10 @@ func TestHexBitmap(t *testing.T) {
 		bitmap.Set(20) // first bitmap field
 		bitmap.Set(70) // second bitmap field
 
-		buf := bytes.NewBuffer([]byte{})
-		length, err := bitmap.WriteTo(buf)
+		data, err := bitmap.Pack()
 
 		require.NoError(t, err)
-		require.Len(t, buf.Bytes(), 32) // 32 bytes is 16 bytes (two bitmaps) encoded in hex
-		require.Equal(t, 32, length)
+		require.Len(t, data, 32) // 32 bytes is 16 bytes (two bitmaps) encoded in hex
 	})
 
 	t.Run("With third bitmap it returns length of three bitmaps", func(t *testing.T) {
@@ -135,12 +164,10 @@ func TestHexBitmap(t *testing.T) {
 		bitmap.Set(70)  // second bitmap field
 		bitmap.Set(150) // third bitmap field
 
-		buf := bytes.NewBuffer([]byte{})
-		length, err := bitmap.WriteTo(buf)
+		data, err := bitmap.Pack()
 
 		require.NoError(t, err)
-		require.Len(t, buf.Bytes(), 48) // 48 bytes is 24 bytes (three bitmaps) encoded in hex
-		require.Equal(t, 48, length)
+		require.Len(t, data, 48) // 48 bytes is 24 bytes (three bitmaps) encoded in hex
 	})
 }
 
@@ -154,12 +181,10 @@ func TestBinaryBitmap(t *testing.T) {
 
 		bitmap.Set(20) // first bitmap field
 
-		buf := bytes.NewBuffer([]byte{})
-		length, err := bitmap.WriteTo(buf)
+		data, err := bitmap.Pack()
 
 		require.NoError(t, err)
-		require.Len(t, buf.Bytes(), 8)
-		require.Equal(t, 8, length)
+		require.Len(t, data, 8)
 	})
 
 	t.Run("With secondary bitmap it returns length of two bitmaps", func(t *testing.T) {
@@ -172,12 +197,10 @@ func TestBinaryBitmap(t *testing.T) {
 		bitmap.Set(20) // first bitmap field
 		bitmap.Set(70) // second bitmap field
 
-		buf := bytes.NewBuffer([]byte{})
-		length, err := bitmap.WriteTo(buf)
+		data, err := bitmap.Pack()
 
 		require.NoError(t, err)
-		require.Len(t, buf.Bytes(), 16)
-		require.Equal(t, 16, length)
+		require.Len(t, data, 16)
 	})
 
 	t.Run("With third bitmap it returns length of three bitmaps", func(t *testing.T) {
@@ -191,12 +214,10 @@ func TestBinaryBitmap(t *testing.T) {
 		bitmap.Set(70)  // second bitmap field
 		bitmap.Set(150) // third bitmap field
 
-		buf := bytes.NewBuffer([]byte{})
-		length, err := bitmap.WriteTo(buf)
+		data, err := bitmap.Pack()
 
 		require.NoError(t, err)
-		require.Len(t, buf.Bytes(), 24)
-		require.Equal(t, 24, length)
+		require.Len(t, data, 24)
 	})
 }
 
@@ -226,13 +247,13 @@ func TestBitmap_SetData(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("ReadFrom sets the data field with the correct bitmap provided using SetData", func(t *testing.T) {
+	t.Run("Unpack sets the data field with the correct bitmap provided using SetData", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
 		data := &Bitmap{}
 		bitmap.SetData(data)
 		// set bit: 10
-		read, err := bitmap.ReadFrom(bytes.NewReader(bitmapBytes))
+		read, err := bitmap.Unpack(bitmapBytes)
 		require.NoError(t, err)
 		require.Equal(t, 16, read) // 16 is 8 bytes (one bitmap) encoded in hex
 
@@ -243,7 +264,7 @@ func TestBitmap_SetData(t *testing.T) {
 		require.Equal(t, bitmapBytes, dataBytes)
 	})
 
-	t.Run("WriteTo writes bytes using the bitmap provided using SetData", func(t *testing.T) {
+	t.Run("Pack returns bytes using the bitmap provided using SetData", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
 		data := NewBitmap(nil)
@@ -251,10 +272,8 @@ func TestBitmap_SetData(t *testing.T) {
 
 		bitmap.SetData(data)
 
-		buf := bytes.NewBuffer([]byte{})
-		length, err := bitmap.WriteTo(buf)
+		packed, err := bitmap.Pack()
 		require.NoError(t, err)
-		require.Len(t, buf.Bytes(), 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
-		require.Equal(t, 16, length)
+		require.Len(t, packed, 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
 	})
 }

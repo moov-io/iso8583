@@ -42,8 +42,8 @@ func Fuzz(data []byte) int {
 		return -1
 	}
 
-	packed := bytes.NewBuffer([]byte{})
-	_, err = message.WriteTo(packed)
+	var packed bytes.Buffer
+	_, err = message.WriteTo(&packed)
 	if err != nil {
 		panic(fmt.Errorf("failed to pack unpacked message: %v", err))
 	}

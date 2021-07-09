@@ -1,6 +1,7 @@
 package field
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -48,23 +49,18 @@ func (f *String) String() (string, error) {
 }
 
 func (f *String) Pack() ([]byte, error) {
-	data := []byte(f.Value)
+	var buf bytes.Buffer
 
-	if f.spec.Pad != nil {
-		data = f.spec.Pad.Pad(data, f.spec.Length)
-	}
-
-	packed, err := f.spec.Enc.Encode(data)
+	_, err := f.WriteTo(&buf)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %v", err)
+		return nil, err
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %v", err)
-	}
+	return buf.Bytes(), err
+}
 
-	return append(packedLength, packed...), nil
+func (f *String) Unpack(data []byte) (int, error) {
+	return f.ReadFrom(bytes.NewReader(data))
 }
 
 func (f *String) WriteTo(w io.Writer) (n int, err error) {

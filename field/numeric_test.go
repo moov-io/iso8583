@@ -1,8 +1,6 @@
 package field
 
 import (
-	"bytes"
-	"strings"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -24,12 +22,11 @@ func TestNumericField(t *testing.T) {
 	numeric.SetBytes([]byte("100"))
 	require.Equal(t, 100, numeric.Value)
 
-	packed := bytes.NewBuffer([]byte{})
-	_, err := numeric.WriteTo(packed)
+	packed, err := numeric.Pack()
 	require.NoError(t, err)
-	require.Equal(t, "       100", packed.String())
+	require.Equal(t, "       100", string(packed))
 
-	length, err := numeric.ReadFrom(strings.NewReader("      9876"))
+	length, err := numeric.Unpack([]byte("      9876"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
 
@@ -41,15 +38,14 @@ func TestNumericField(t *testing.T) {
 
 	numeric = NewNumeric(spec)
 	numeric.SetData(NewNumericValue(9876))
-	packed = bytes.NewBuffer([]byte{})
-	_, err = numeric.WriteTo(packed)
+	packed, err = numeric.Pack()
 	require.NoError(t, err)
-	require.Equal(t, "      9876", packed.String())
+	require.Equal(t, "      9876", string(packed))
 
 	numeric = NewNumeric(spec)
 	data := NewNumericValue(0)
 	numeric.SetData(data)
-	length, err = numeric.ReadFrom(strings.NewReader("      9876"))
+	length, err = numeric.Unpack([]byte("      9876"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
 	require.Equal(t, 9876, data.Value)
@@ -67,13 +63,12 @@ func TestNumericFieldWithNotANumber(t *testing.T) {
 	numeric.SetBytes([]byte("hello"))
 	require.Equal(t, 0, numeric.Value)
 
-	packed := bytes.NewBuffer([]byte{})
-	_, err := numeric.WriteTo(packed)
+	packed, err := numeric.Pack()
 
 	require.NoError(t, err)
-	require.Equal(t, "         0", packed.String())
+	require.Equal(t, "         0", string(packed))
 
-	_, err = numeric.ReadFrom(strings.NewReader("hhhhhhhhhh"))
+	_, err = numeric.Unpack([]byte("hhhhhhhhhh"))
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to convert into number")
@@ -91,13 +86,12 @@ func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
 	numeric.SetBytes([]byte("0"))
 	require.Equal(t, 0, numeric.Value)
 
-	packed := bytes.NewBuffer([]byte{})
-	_, err := numeric.WriteTo(packed)
+	packed, err := numeric.Pack()
 
 	require.NoError(t, err)
-	require.Equal(t, "0000", packed.String())
+	require.Equal(t, "0000", string(packed))
 
-	length, err := numeric.ReadFrom(strings.NewReader("0000"))
+	length, err := numeric.Unpack([]byte("0000"))
 
 	require.NoError(t, err)
 	require.Equal(t, 4, length)

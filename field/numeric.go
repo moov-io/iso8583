@@ -1,6 +1,7 @@
 package field
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -49,6 +50,21 @@ func (f *Numeric) Bytes() ([]byte, error) {
 
 func (f *Numeric) String() (string, error) {
 	return strconv.Itoa(f.Value), nil
+}
+
+func (f *Numeric) Pack() ([]byte, error) {
+	var buf bytes.Buffer
+
+	_, err := f.WriteTo(&buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), err
+}
+
+func (f *Numeric) Unpack(data []byte) (int, error) {
+	return f.ReadFrom(bytes.NewReader(data))
 }
 
 func (f *Numeric) WriteTo(w io.Writer) (n int, err error) {

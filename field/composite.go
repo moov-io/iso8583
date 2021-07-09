@@ -119,9 +119,30 @@ func (f *Composite) SetData(data interface{}) error {
 
 // Pack deserialises data held by the receiver (via SetData)
 // into bytes and returns an error on failure.
+func (f *Composite) Pack() ([]byte, error) {
+	var buf bytes.Buffer
+
+	_, err := f.WriteTo(&buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), err
+}
+
+// Unpack takes in a byte array and serializes them into the receiver's
+// subfields. Returns bytes read from data on success.
+// A non-nil error is returned on failure.
+func (f *Composite) Unpack(data []byte) (int, error) {
+	return f.ReadFrom(bytes.NewReader(data))
+}
+
+// Pack deserialises data held by the receiver (via SetData)
+// into bytes and returns an error on failure.
 func (f *Composite) WriteTo(w io.Writer) (n int, err error) {
-	packed := bytes.NewBuffer([]byte{})
-	err = f.pack(packed)
+	var packed bytes.Buffer
+
+	err = f.pack(&packed)
 	if err != nil {
 		return 0, err
 	}
@@ -149,9 +170,8 @@ func (f *Composite) WriteTo(w io.Writer) (n int, err error) {
 }
 
 // ReadFrom takes in an io.Reader and reads data from it and then serializes
-// them into the receiver's subfields. An offset (unit depends on encoding and
-// prefix values) is returned on success. A non-nil error is returned on
-// failure.
+// them into the receiver's subfields. Returns bytes read on success. A non-nil
+// error is returned on failure.
 func (f *Composite) ReadFrom(r io.Reader) (int, error) {
 	dataLen, err := f.spec.Pref.ReadLength(f.spec.Length, r)
 	if err != nil {
@@ -181,8 +201,8 @@ func (f *Composite) SetBytes(data []byte) error {
 // does not incorporate the encoded aggregate length of the subfields in the
 // prefix.
 func (f *Composite) Bytes() ([]byte, error) {
-	buf := bytes.NewBuffer([]byte{})
-	err := f.pack(buf)
+	var buf bytes.Buffer
+	err := f.pack(&buf)
 	if err != nil {
 		return nil, fmt.Errorf("packing: %v", err)
 	}

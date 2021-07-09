@@ -1,6 +1,7 @@
 package field
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -47,6 +48,24 @@ func (f *Bitmap) Bytes() ([]byte, error) {
 
 func (f *Bitmap) String() (string, error) {
 	return f.bitmap.String(), nil
+}
+
+func (f *Bitmap) Pack() ([]byte, error) {
+	var buf bytes.Buffer
+
+	_, err := f.WriteTo(&buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), err
+}
+
+// Unpack of the Bitmap field returns data of varied length
+// if there is only primary bitmap (bit 1 is not set) we return only 8 bytes (or 16 for hex encoding)
+// if secondary bitmap presents (bit 1 is set) we return 16 bytes (or 32 for hex encoding)
+func (f *Bitmap) Unpack(data []byte) (int, error) {
+	return f.ReadFrom(bytes.NewReader(data))
 }
 
 func (f *Bitmap) WriteTo(w io.Writer) (n int, err error) {
