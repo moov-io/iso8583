@@ -245,6 +245,34 @@ it will produce following JSON:
 }
 ```
 
+## CLI
+
+CLI suports following command:
+
+* `display` to display ACH file in a human-readable format
+
+### Display
+
+To display ACH files in a human-readable format
+
+```
+iso8583 display message.dat
+```
+
+Here the output:
+
+```
+ISO 8583 Message
+****************
+MTI.............................: 0100
+Bitmap..........................: A2380000008000000400000000000000
+Bitmap 1 bits...................: 10100010 10100010 10100010 10100010 10100010 10100010 10100010 10100010
+Bitmap 2 bits...................: 10100010 10100010 10100010 10100010 10100010 10100010 10100010 10100010
+Bitmap 3 bits...................: 10100010 10100010 10100010 10100010 10100010 10100010 10100010 10100010
+001 Processing Code.............: 000001
+011 System Trace Audit Number...: 005835
+```
+
 ## Learn about ISO 8583
 
 - [Intro to ISO 8583](./docs/intro.md)
