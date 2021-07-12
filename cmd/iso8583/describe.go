@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/moov-io/iso8583"
-	"github.com/moov-io/iso8583/describe"
+	"github.com/moov-io/iso8583/cmd/iso8583/describe"
 )
 
 var specs = map[string]*iso8583.MessageSpec{
