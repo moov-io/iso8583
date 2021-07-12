@@ -4,38 +4,91 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/moov-io/iso8583"
+	"github.com/moov-io/iso8583/field"
 )
 
 func Message(w io.Writer, message *iso8583.Message) error {
-	fmt.Fprintf(w, "ISO 8583 Message\n****************\n")
+	fmt.Fprintf(w, "ISO 8583 Message:\n")
+
+	printer := fieldPrinter{}
 
 	mti, err := message.GetMTI()
 	if err != nil {
 		return fmt.Errorf("getting MTI: %w", err)
 	}
-	printField("MTI", mti)
+	printer.addField("MTI", mti)
 
 	bitmapRaw, err := message.Bitmap().Bytes()
 	if err != nil {
 		return fmt.Errorf("getting bitmap bytes: %w", err)
 	}
-	printField("Bitmap", strings.ToUpper(hex.EncodeToString(bitmapRaw)))
+	printer.addField("Bitmap", strings.ToUpper(hex.EncodeToString(bitmapRaw)))
 
 	bitmap, err := message.Bitmap().String()
 	if err != nil {
 		return fmt.Errorf("getting bitmap: %w", err)
 	}
-	printField("Bitmap bits", bitmap)
+	printer.addField("Bitmap bits", bitmap)
+
+	// display the rest of all set fields
+	fields := message.GetFields()
+	for _, i := range sortFieldIDs(fields) {
+		// skip the bitmap
+		if i == 1 {
+			continue
+		}
+		field := fields[i]
+		desc := field.Spec().Description
+		str, err := field.String()
+		if err != nil {
+			return fmt.Errorf("getting string value of field %d: %w", i, err)
+		}
+		printer.addField(fmt.Sprintf("F%03d %s", i, desc), str)
+	}
+
+	printer.print()
 
 	return nil
 }
 
-var lableLength = 30
+func sortFieldIDs(fields map[int]field.Field) []int {
+	keys := make([]int, 0, len(fields))
+	for k := range fields {
+		keys = append(keys, k)
+	}
 
-func printField(name string, value interface{}) {
-	padding := strings.Repeat(".", lableLength-len(name))
-	fmt.Printf("%s%s: %v\n", name, padding, value)
+	sort.Ints(keys)
+
+	return keys
+}
+
+type printableField struct {
+	description string
+	value       string
+}
+type fieldPrinter struct {
+	fields []printableField
+	maxLen int
+}
+
+func (p *fieldPrinter) addField(description, value string) {
+	field := printableField{description, value}
+	if len(description) > p.maxLen {
+		p.maxLen = len(description)
+	}
+
+	p.fields = append(p.fields, field)
+}
+
+func (p *fieldPrinter) print() {
+	// let's add some space after the description
+	maxDescriptionLength := p.maxLen + 3
+	for _, field := range p.fields {
+		padding := strings.Repeat(".", maxDescriptionLength-len(field.description))
+		fmt.Printf("%s%s: %v\n", field.description, padding, field.value)
+	}
 }

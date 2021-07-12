@@ -16,7 +16,7 @@ var specs = map[string]*iso8583.MessageSpec{
 func Describe(paths []string, specName string) error {
 	spec := specs[specName]
 	if spec == nil {
-		return fmt.Errorf("unknown built-in spec %s", spec)
+		return fmt.Errorf("unknown built-in spec %s", specName)
 	}
 
 	for _, path := range paths {

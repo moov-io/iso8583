@@ -19,12 +19,12 @@ func main() {
 		fmt.Fprintf(os.Stdout, "Available commands:\n")
 
 		// TODO: we will print all commands when we have more than one
-		fmt.Fprintf(os.Stdout, "  describe: display ISO 8583 file in a human-readable format\n")
+		fmt.Fprintf(os.Stdout, "  %s: display ISO 8583 file in a human-readable format\n", describeCmd)
 		fmt.Fprintf(os.Stdout, "\n")
 	}
 
 	describeCommand.Usage = func() {
-		fmt.Fprintf(os.Stdout, "Display ISO 8583 file in a human-readable format.\n\nUsage:\n  %s describe <files> [flags]\n\n", programName)
+		fmt.Fprintf(os.Stdout, "Display ISO 8583 file in a human-readable format.\n\nUsage:\n  %s %s <files> [flags]\n\n", programName, describeCmd)
 		fmt.Fprintf(os.Stdout, "Flags: \n")
 		describeCommand.PrintDefaults()
 		fmt.Fprintf(os.Stdout, "\n")
@@ -41,7 +41,7 @@ func main() {
 	}
 
 	switch os.Args[1] {
-	case "describe":
+	case describeCmd:
 		describeArgs := os.Args[2:]
 		if len(describeArgs) == 0 {
 			describeCommand.Usage()

@@ -106,6 +106,19 @@ func (m *Message) GetBytes(id int) ([]byte, error) {
 	return nil, fmt.Errorf("failed to get bytes for field %d. ID does not exist", id)
 }
 
+func (m *Message) GetField(id int) field.Field {
+	return m.fields[id]
+}
+
+// Fields returns the map of the set fields
+func (m *Message) GetFields() map[int]field.Field {
+	fields := map[int]field.Field{}
+	for i := range m.fieldsMap {
+		fields[i] = m.GetField(i)
+	}
+	return fields
+}
+
 func (m *Message) Pack() ([]byte, error) {
 	packed := []byte{}
 	m.Bitmap().Reset()
