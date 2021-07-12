@@ -6,6 +6,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/field"
@@ -77,8 +78,8 @@ type fieldPrinter struct {
 
 func (p *fieldPrinter) addField(description, value string) {
 	field := printableField{description, value}
-	if len(description) > p.maxLen {
-		p.maxLen = len(description)
+	if descLen := utf8.RuneCountInString(description); descLen > p.maxLen {
+		p.maxLen = descLen
 	}
 
 	p.fields = append(p.fields, field)
@@ -88,7 +89,7 @@ func (p *fieldPrinter) print() {
 	// let's add some space after the description
 	maxDescriptionLength := p.maxLen + 3
 	for _, field := range p.fields {
-		padding := strings.Repeat(".", maxDescriptionLength-len(field.description))
+		padding := strings.Repeat(".", maxDescriptionLength-utf8.RuneCountInString(field.description))
 		fmt.Printf("%s%s: %v\n", field.description, padding, field.value)
 	}
 }
