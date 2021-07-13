@@ -1,5 +1,8 @@
 # This is an example .goreleaser.yml file with some sane defaults.
 # Make sure to check the documentation at http://goreleaser.com
+release:
+  draft: true # we only publish after the Windows MSI gets uploaded
+
 builds:
   - env:
       - CGO_ENABLED=0
@@ -7,13 +10,19 @@ builds:
       - linux
       - windows
       - darwin
+    main: ./cmd/iso8583
+    ldflags:
+      - -X github.com/moov-io/iso8583.Version={{.Version}}
 archives:
   - replacements:
-      darwin: Darwin
+      darwin: macOs
       linux: Linux
       windows: Windows
-      386: i386
-      amd64: x86_64
+      386: 32-bit
+      amd64: 64-bit
+    format_overrides:
+      - goos: windows
+        format: zip
 checksum:
   name_template: 'checksums.txt'
 snapshot:

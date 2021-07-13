@@ -38,3 +38,4 @@ tmp/
 api/*.jar
 spec87_temp_test.go
 dist/
+.DS_Store
