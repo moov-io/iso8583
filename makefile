@@ -25,6 +25,10 @@ docker-fuzz:
 	docker build --pull -t moov/iso8583fuzz:$(VERSION) . -f Dockerfile-fuzz
 	docker tag moov/iso8583fuzz:$(VERSION) moov/iso8583fuzz:latest
 
+build:
+	@mkdir -p ./bin/
+	go build -ldflags "-X github.com/moov-io/iso8583.Version=${VERSION}" -o bin/iso8583 github.com/moov-io/iso8583/cmd/iso8583
+
 release-push:
 	docker push moov/iso8583fuzz:$(VERSION)
 
