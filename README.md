@@ -48,6 +48,7 @@ Moov ISO8583 currently offers a Go package with plans for an API in the near fut
 This project uses [Go Modules](https://github.com/golang/go/wiki/Modules) and Go v1.14 or higher. See [Golang's install instructions](https://golang.org/doc/install) for help in setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
 
 ### Installation
+
 ```
 go get github.com/moov-io/iso8583
 ```
@@ -251,17 +252,15 @@ CLI suports following command:
 
 * `display` to display ISO8583 message in a human-readable format
 
-### Install CLI
+### Installation
 
-*Currently, you need to have a Golang installed in order to install `iso8583` CLI.*
+`iso8583` CLI is available as downloadable binaries from the [releases page](https://github.com/moov-io/iso8583/releases/latest) for MacOS, Windows and Linux.
 
-To install `iso8583` CLI:
+Here is an example how to install MacOS version:
 
 ```
-go install github.com/moov-io/iso8583/cmd/iso8583
+wget -O ./iso8583 https://github.com/moov-io/iso8583/releases/download/v0.4.3/iso8583_0.4.3_macOs_64-bit.tar.gz && chmod +x ./iso8583
 ```
-
-CLI will be installed into `$HOME/go/bin` directory. Please, add it into your $PATH environment variable.
 
 
 ### Display
