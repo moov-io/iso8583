@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/moov-io/iso8583"
 )
 
 var (
@@ -13,6 +15,7 @@ var (
 )
 
 func main() {
+	versionFlag := flag.Bool("version", false, "show version")
 	describeCommand := flag.NewFlagSet("describe", flag.ExitOnError)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stdout, "Work seamlessly with ISO 8583 from the command line.\n\nUsage:\n  %s <command> [flags]\n\n", programName)
@@ -34,6 +37,11 @@ func main() {
 	specName := describeCommand.String("spec", "87", "name of built-in spec")
 
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Fprintf(os.Stdout, "Version: %s\n\n", iso8583.Version)
+		os.Exit(0)
+	}
 
 	if len(os.Args) < 2 {
 		flag.Usage()
