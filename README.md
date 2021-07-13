@@ -259,7 +259,7 @@ CLI suports following command:
 Here is an example how to install MacOS version:
 
 ```
-wget -O ./iso8583 https://github.com/moov-io/iso8583/releases/download/v0.4.6/iso8583_0.4.5-3_darwin_amd64 && chmod +x ./iso8583
+wget -O ./iso8583 https://github.com/moov-io/iso8583/releases/download/v0.4.6/iso8583_0.4.6_darwin_amd64 && chmod +x ./iso8583
 ```
 
 Now you can run CLI:
