@@ -259,7 +259,20 @@ CLI suports following command:
 Here is an example how to install MacOS version:
 
 ```
-wget -O ./iso8583 https://github.com/moov-io/iso8583/releases/download/v0.4.3/iso8583_0.4.3_macOs_64-bit.tar.gz && chmod +x ./iso8583
+wget -O ./iso8583 https://github.com/moov-io/iso8583/releases/download/v0.4.6/iso8583_0.4.5-3_darwin_amd64 && chmod +x ./iso8583
+```
+
+Now you can run CLI:
+
+```
+➜ ./iso8583
+Work seamlessly with ISO 8583 from the command line.
+
+Usage:
+  iso8583 <command> [flags]
+
+Available commands:
+  describe: display ISO 8583 file in a human-readable format
 ```
 
 
