@@ -251,19 +251,28 @@ CLI suports following command:
 
 * `display` to display ACH file in a human-readable format
 
+### Install CLI
+
+*Currently, you need to have a Golang installed in order to install `iso8583` CLI.*
+
+To install `iso8583` CLI:
+
+```
+go install github.com/moov-io/iso8583/cmd/iso8583
+```
+
+CLI will be installed into `$HOME/go/bin` directory. Please, add it into your $PATH environment variable.
+
+
 ### Display
 
 To display ACH files in a human-readable format
 
-```
-iso8583 display message.dat
-```
-
-Here the output:
+Example:
 
 ```
-ISO 8583 Message
-****************
+➜ ./bin/iso8583 describe msg.bin
+ISO 8583 Message:
 MTI.............................: 0100
 Bitmap..........................: A2380000008000000400000000000000
 Bitmap 1 bits...................: 10100010 10100010 10100010 10100010 10100010 10100010 10100010 10100010
