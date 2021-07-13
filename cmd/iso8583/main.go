@@ -40,7 +40,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	switch os.Args[1] {
+	command := flag.Arg(0)
+
+	switch command {
 	case describeCmd:
 		describeArgs := os.Args[2:]
 		if len(describeArgs) == 0 {
@@ -55,7 +57,8 @@ func main() {
 			os.Exit(1)
 		}
 	default:
-		flag.PrintDefaults()
+		fmt.Fprintf(os.Stdout, "Uknown command: %s\n\n", command)
+		flag.Usage()
 		os.Exit(1)
 	}
 

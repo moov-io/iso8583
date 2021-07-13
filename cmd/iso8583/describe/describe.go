@@ -6,7 +6,7 @@ import (
 	"io"
 	"sort"
 	"strings"
-	"unicode/utf8"
+	"text/tabwriter"
 
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/field"
@@ -15,25 +15,25 @@ import (
 func Message(w io.Writer, message *iso8583.Message) error {
 	fmt.Fprintf(w, "ISO 8583 Message:\n")
 
-	printer := fieldPrinter{}
+	tw := tabwriter.NewWriter(w, 0, 0, 3, '.', 0)
 
 	mti, err := message.GetMTI()
 	if err != nil {
 		return fmt.Errorf("getting MTI: %w", err)
 	}
-	printer.addField("MTI", mti)
+	fmt.Fprintf(tw, "MTI\t: %s\n", mti)
 
 	bitmapRaw, err := message.Bitmap().Bytes()
 	if err != nil {
 		return fmt.Errorf("getting bitmap bytes: %w", err)
 	}
-	printer.addField("Bitmap", strings.ToUpper(hex.EncodeToString(bitmapRaw)))
+	fmt.Fprintf(tw, "Bitmap\t: %s\n", strings.ToUpper(hex.EncodeToString(bitmapRaw)))
 
 	bitmap, err := message.Bitmap().String()
 	if err != nil {
 		return fmt.Errorf("getting bitmap: %w", err)
 	}
-	printer.addField("Bitmap bits", bitmap)
+	fmt.Fprintf(tw, "Bitmap bits\t: %s\n", bitmap)
 
 	// display the rest of all set fields
 	fields := message.GetFields()
@@ -48,10 +48,10 @@ func Message(w io.Writer, message *iso8583.Message) error {
 		if err != nil {
 			return fmt.Errorf("getting string value of field %d: %w", i, err)
 		}
-		printer.addField(fmt.Sprintf("F%03d %s", i, desc), str)
+		fmt.Fprintf(tw, fmt.Sprintf("F%03d %s\t: %%s\n", i, desc), str)
 	}
 
-	printer.print()
+	tw.Flush()
 
 	return nil
 }
@@ -65,31 +65,4 @@ func sortFieldIDs(fields map[int]field.Field) []int {
 	sort.Ints(keys)
 
 	return keys
-}
-
-type printableField struct {
-	description string
-	value       string
-}
-type fieldPrinter struct {
-	fields []printableField
-	maxLen int
-}
-
-func (p *fieldPrinter) addField(description, value string) {
-	field := printableField{description, value}
-	if descLen := utf8.RuneCountInString(description); descLen > p.maxLen {
-		p.maxLen = descLen
-	}
-
-	p.fields = append(p.fields, field)
-}
-
-func (p *fieldPrinter) print() {
-	// let's add some space after the description
-	maxDescriptionLength := p.maxLen + 3
-	for _, field := range p.fields {
-		padding := strings.Repeat(".", maxDescriptionLength-utf8.RuneCountInString(field.description))
-		fmt.Printf("%s%s: %v\n", field.description, padding, field.value)
-	}
 }
