@@ -10,12 +10,15 @@ import (
 )
 
 type Message struct {
-	fields    map[int]field.Field
 	spec      *MessageSpec
 	data      interface{}
 	dataValue *reflect.Value
-	fieldsMap map[int]struct{}
 	bitmap    *field.Bitmap
+
+	// stores all fields according to the spec
+	fields map[int]field.Field
+	// tracks which fields were set
+	fieldsMap map[int]struct{}
 }
 
 func NewMessage(spec *MessageSpec) *Message {
