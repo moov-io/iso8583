@@ -13,10 +13,6 @@ builds:
     main: ./cmd/iso8583
     ldflags:
       - -X github.com/moov-io/iso8583.Version={{.Version}}
-archives:
-  - format_overrides:
-      - goos: windows
-        format: zip
 checksum:
   name_template: 'checksums.txt'
 snapshot:
