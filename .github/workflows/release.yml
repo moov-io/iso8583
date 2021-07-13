@@ -3,6 +3,8 @@ name: Create Release
 on:
   push:
     tags: [ "v*.*.*" ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   testing:
@@ -24,7 +26,7 @@ jobs:
     - name: Check
       run: make check
 
-  goreleaser:
+  create_release:
       runs-on: ubuntu-latest
       steps:
         -
