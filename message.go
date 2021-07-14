@@ -212,7 +212,8 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	jsonData := field.OrderedMap(m.fields)
+	// get only filds that were set
+	jsonData := field.OrderedMap(m.GetFields())
 
 	return json.Marshal(jsonData)
 }
@@ -238,6 +239,9 @@ func (m *Message) setPackableDataFields() ([]int, error) {
 			if err := field.SetData(dataField.Interface()); err != nil {
 				return nil, fmt.Errorf("failed to set data for field %d: %w", id, err)
 			}
+
+			// mark field as set
+			m.fieldsMap[id] = struct{}{}
 		}
 
 		// These fields are set using the untyped API
