@@ -574,4 +574,17 @@ func TestMessageJSON(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, want, string(got))
 	})
+
+	t.Run("Test JSON encoding untyped", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.MTI("0100")
+		message.Field(2, "4242424242424242")
+		message.Field(4, "100")
+
+		want := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
+
+		got, err := json.Marshal(message)
+		require.NoError(t, err)
+		require.Equal(t, want, string(got))
+	})
 }
