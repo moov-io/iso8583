@@ -10,7 +10,7 @@ import (
 // keep it here for a little while for compatibility
 // all new specs and updates to Spec87 should go to ./specs
 var Spec87 *MessageSpec = &MessageSpec{
-	Name: "ISO 8583:1987 ASCII",
+	Name: "ISO 8583 v1987 ASCII",
 	Fields: map[int]field.Field{
 		0: field.NewString(&field.Spec{
 			Length:      4,
