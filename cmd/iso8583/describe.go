@@ -22,7 +22,12 @@ func Describe(paths []string, specName string) error {
 	for _, path := range paths {
 		message, err := createMessageFromFile(path, spec)
 		if err != nil {
-			return fmt.Errorf("creating message from file: %w", err)
+			if message == nil {
+				return fmt.Errorf("creating message from file: %w", err)
+			}
+
+			fmt.Fprintf(os.Stdout, "Failed to create message from file: %v\n", err)
+			fmt.Fprintf(os.Stdout, "Trying to describe file anyway...\n")
 		}
 
 		err = describe.Message(os.Stdout, message)
@@ -49,7 +54,7 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 	message := iso8583.NewMessage(spec)
 	err = message.Unpack(raw)
 	if err != nil {
-		return nil, fmt.Errorf("unpacking ISO 8583 message: %v", err)
+		return message, fmt.Errorf("unpacking ISO 8583 message: %v", err)
 	}
 
 	return message, nil

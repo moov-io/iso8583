@@ -37,6 +37,9 @@ func Message(w io.Writer, message *iso8583.Message) error {
 
 	// display the rest of all set fields
 	fields := message.GetFields()
+
+	var errorList []string
+
 	for _, i := range sortFieldIDs(fields) {
 		// skip the bitmap
 		if i == 1 {
@@ -46,12 +49,22 @@ func Message(w io.Writer, message *iso8583.Message) error {
 		desc := field.Spec().Description
 		str, err := field.String()
 		if err != nil {
-			return fmt.Errorf("getting string value of field %d: %w", i, err)
+			errorList = append(errorList, err.Error())
+			continue
 		}
 		fmt.Fprintf(tw, fmt.Sprintf("F%03d %s\t: %%s\n", i, desc), str)
 	}
 
 	tw.Flush()
+
+	if len(errorList) > 0 {
+		fmt.Fprintf(w, "\nUnpacking Errors:\n")
+		for _, err := range errorList {
+			fmt.Fprintf(w, "- %s:\n", err)
+		}
+
+		return fmt.Errorf("displaying fields: %s", strings.Join(errorList, ","))
+	}
 
 	return nil
 }
