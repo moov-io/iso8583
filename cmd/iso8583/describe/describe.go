@@ -13,7 +13,11 @@ import (
 )
 
 func Message(w io.Writer, message *iso8583.Message) error {
-	fmt.Fprintf(w, "ISO 8583 Message:\n")
+	specName := "ISO 8583"
+	if spec := message.GetSpec(); spec != nil && spec.Name != "" {
+		specName = spec.Name
+	}
+	fmt.Fprintf(w, "%s Message:\n", specName)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 3, '.', 0)
 

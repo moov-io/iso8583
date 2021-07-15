@@ -7,6 +7,7 @@ import (
 )
 
 type MessageSpec struct {
+	Name   string
 	Fields map[int]field.Field
 }
 

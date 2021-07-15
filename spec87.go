@@ -8,6 +8,7 @@ import (
 )
 
 var Spec87 *MessageSpec = &MessageSpec{
+	Name: "ISO 8583:1987 ASCII",
 	Fields: map[int]field.Field{
 		0: field.NewString(&field.Spec{
 			Length:      4,
