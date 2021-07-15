@@ -7,14 +7,16 @@ import (
 
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/cmd/iso8583/describe"
+	"github.com/moov-io/iso8583/specs"
 )
 
-var specs = map[string]*iso8583.MessageSpec{
-	"87": iso8583.Spec87,
+var availableSpecs = map[string]*iso8583.MessageSpec{
+	"87ascii": specs.Spec87ASCII,
+	"87hex":   specs.Spec87Hex,
 }
 
 func Describe(paths []string, specName string) error {
-	spec := specs[specName]
+	spec := availableSpecs[specName]
 	if spec == nil {
 		return fmt.Errorf("unknown built-in spec %s", specName)
 	}

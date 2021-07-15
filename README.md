@@ -57,9 +57,15 @@ go get github.com/moov-io/iso8583
 
 ### Define your specification
 
-Our default specification [(spec87.go](./spec87.go)) is suitable for the majority of use cases. Simply instantiate a new message using Spec87:
+Currently, we support following ISO 8583 specifications:
+
+* [Spec87ASCII](./specs/spec87ascii.go) - 1987 version of the spec with ASCII encoding
+* [Spec87Hex](./specs/spec87hex.go) - 1987 version of the spec with Hex encoding
+
+Spec87ASCII is suitable for the majority of use cases. Simply instantiate a new message using `specs.Spec87ASCII`:
+
 ```
-isomessage := iso8583.NewMessage(iso8583.Spec87)
+isomessage := iso8583.NewMessage(specs.Spec87ASCII)
 ```
 If this spec does not meet your needs, we encourage you to modify it or create your own using the information below. 
 
@@ -78,7 +84,7 @@ While some ISO8583 specifications do not have field 0 and field 1, we use them f
 The following example creates a full specification with three individual fields (excluding MTI and Bitmap):
 
 ```go
-spec := &MessageSpec{
+spec := &iso8583.MessageSpec{
 	Fields: map[int]field.Field{
 		0: field.NewString(&field.Spec{
 			Length:      4,
@@ -282,7 +288,7 @@ if reqLen != header.Length() {
 	// handle error
 }
 
-message := iso8583.NewMessage(iso8583.Spec87)
+message := iso8583.NewMessage(specs.Spec87ASCII)
 message.Unpack(buf)
 ```
 
@@ -351,6 +357,13 @@ Bitmap bits.....................: 10100010 10100010 10100010 10100010 10100010 1
 011 System Trace Audit Number...: 005835
 ```
 
+You can specify which of the built-in specs to use to the describe message via
+the `spec` flag:
+
+```
+➜ ./bin/iso8583 describe -spec spec87hex msg.bin
+```
+
 ## Learn about ISO 8583
 
 - [Intro to ISO 8583](./docs/intro.md)
@@ -370,7 +383,7 @@ Twitter [@moov](https://twitter.com/moov)	| You can follow Moov.io's Twitter fee
 
 ## Contributing
 
-**While [Spec87](./spec87.go) is appropriate for most users, we hope to see improvements and variations of this specification for different systems by the community. Please do not hesitate to contribute issues, questions, or PRs to cover new use cases. Tests are also appreciated if possible!**
+**While [Spec87ASCII](./specs/spec87ascii.go) is appropriate for most users, we hope to see improvements and variations of this specification for different systems by the community. Please do not hesitate to contribute issues, questions, or PRs to cover new use cases. Tests are also appreciated if possible!**
 
 Please review our [Contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started! Check out our [issues for first time contributors](https://github.com/moov-io/iso8583/contribute) for something to help out with.
 
