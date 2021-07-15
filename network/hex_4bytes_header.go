@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 )
 
@@ -40,12 +41,16 @@ func (h *Hex4BytesHeader) ReadFrom(r io.Reader) (int, error) {
 		return 0, fmt.Errorf("expected to read 4 bytes of the header, got: %v", read)
 	}
 
-	l, err := strconv.ParseInt(string(buf), 16, 64)
+	parsed, err := strconv.ParseInt(string(buf), 16, 64)
 	if err != nil {
 		return 0, fmt.Errorf("converting hex to int: %v", err)
 	}
 
-	h.Len = int(l)
+	if parsed < 0 || parsed > math.MaxInt32 {
+		return 0, fmt.Errorf("converting parsed integer into smaller bit size than expected: %d", parsed)
+	}
+
+	h.Len = int(parsed)
 
 	return read, nil
 }
