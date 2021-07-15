@@ -12,8 +12,10 @@ import (
 	"github.com/moov-io/iso8583/field"
 )
 
+var defaultSpecName = "ISO 8583"
+
 func Message(w io.Writer, message *iso8583.Message) error {
-	specName := "ISO 8583"
+	specName := defaultSpecName
 	if spec := message.GetSpec(); spec != nil && spec.Name != "" {
 		specName = spec.Name
 	}
