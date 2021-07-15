@@ -11,8 +11,8 @@ import (
 )
 
 var availableSpecs = map[string]*iso8583.MessageSpec{
-	"87":    specs.Spec87ASCII,
-	"87hex": specs.Spec87Hex,
+	"87ascii": specs.Spec87ASCII,
+	"87hex":   specs.Spec87Hex,
 }
 
 func Describe(paths []string, specName string) error {

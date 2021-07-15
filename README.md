@@ -357,6 +357,13 @@ Bitmap bits.....................: 10100010 10100010 10100010 10100010 10100010 1
 011 System Trace Audit Number...: 005835
 ```
 
+You can specify which of the built-in specs to use to the describe message via
+the `spec` flag:
+
+```
+➜ ./bin/iso8583 describe -spec spec87hex msg.bin
+```
+
 ## Learn about ISO 8583
 
 - [Intro to ISO 8583](./docs/intro.md)
