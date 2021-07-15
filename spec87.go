@@ -402,6 +402,12 @@ var Spec87 *MessageSpec = &MessageSpec{
 			Enc:         encoding.Hex,
 			Pref:        prefix.Hex.Fixed,
 		}),
+		70: field.NewString(&field.Spec{
+			Length:      3,
+			Description: "Network management information code",
+			Enc:         encoding.ASCII,
+			Pref:        prefix.ASCII.Fixed,
+		}),
 		90: field.NewString(&field.Spec{
 			Length:      42,
 			Description: "Original Data Elements",
