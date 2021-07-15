@@ -1,15 +1,15 @@
-package iso8583
+package specs
 
 import (
+	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 )
 
-// keep it here for a little while for compatibility
-// all new specs and updates to Spec87 should go to ./specs
-var Spec87 *MessageSpec = &MessageSpec{
+// we keep it for compatibility reasons
+var Spec87ASCII *iso8583.MessageSpec = &iso8583.MessageSpec{
 	Name: "ISO 8583:1987 ASCII",
 	Fields: map[int]field.Field{
 		0: field.NewString(&field.Spec{
@@ -404,12 +404,6 @@ var Spec87 *MessageSpec = &MessageSpec{
 			Description: "Message Authentication Code (MAC)",
 			Enc:         encoding.Hex,
 			Pref:        prefix.Hex.Fixed,
-		}),
-		70: field.NewString(&field.Spec{
-			Length:      3,
-			Description: "Network management information code",
-			Enc:         encoding.ASCII,
-			Pref:        prefix.ASCII.Fixed,
 		}),
 		90: field.NewString(&field.Spec{
 			Length:      42,
