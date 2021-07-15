@@ -72,6 +72,10 @@ func (m *Message) MTI(val string) {
 	m.fields[0].SetBytes([]byte(val))
 }
 
+func (m *Message) GetSpec() *MessageSpec {
+	return m.spec
+}
+
 func (m *Message) Field(id int, val string) error {
 	if f, ok := m.fields[id]; ok {
 		m.fieldsMap[id] = struct{}{}
