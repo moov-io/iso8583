@@ -34,6 +34,8 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 	- [Build message](#build-and-pack-the-message)
 	- [Parse message](#parse-the-message-and-access-the-data)
 	- [JSON encoding](#json-encoding)
+	- [Network header](#network-header)
+- [ISO8583 CLI](#cli)
 - [Learn about ISO 8583](#learn-about-iso-8583)
 - [Getting help](#getting-help)
 - [Contributing](#contributing)
@@ -243,6 +245,63 @@ it will produce following JSON:
    "2":"4242424242424242",
    "3":123456,
    "4":"100"
+}
+```
+
+### Network Header
+
+All messages between the client/server (ISO host and endpoint) have a message
+length header. It can be a 4 bytes ASCII or 2 bytes BCD encoded length. We
+provide a `network.Header` interface to simplify the reading and writing of the
+network header.
+
+Following network headers are supported:
+
+* ASCII4Bytes - message length encoded in 4 bytes ASCII, e.g., 0115 for 115
+  bytes of the message
+* BCD2Bytes - message length encoded in 2 bytes BCD, e.g, {0x01, x15} for 115
+  bytes of the message
+
+You can read network header from the network connection like this:
+
+```go
+header := network.NewBCD2BytesHeader()
+_, err := header.ReadFrom(conn)
+if err != nil {
+	// handle error
+}
+
+// Make a buffer to hold message
+buf := make([]byte, header.Length())
+// Read the incoming message into the buffer.
+read, err := conn.Read(buf)
+if err != nil {
+	// handle error
+}
+if reqLen != header.Length() {
+	// handle error
+}
+
+message := iso8583.NewMessage(iso8583.Spec87)
+message.Unpack(buf)
+```
+
+Here is an example of how to write network header into network connection:
+
+```go
+header := network.NewBCD2BytesHeader()
+packed, err := message.Pack()
+if err != nil {
+	// handle error
+}
+header.SetLength(len(packed))
+_, err = header.WriteTo(conn)
+if err != nil {
+	// handle error
+}
+n, err := conn.Write(packed)
+if err != nil {
+	// handle error
 }
 ```
 
