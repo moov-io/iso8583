@@ -10,7 +10,6 @@ import (
 
 // we keep it for compatibility reasons
 var Spec87ASCII *iso8583.MessageSpec = &iso8583.MessageSpec{
-	Name: "ISO 8583:1987 ASCII",
 	Fields: map[int]field.Field{
 		0: field.NewString(&field.Spec{
 			Length:      4,

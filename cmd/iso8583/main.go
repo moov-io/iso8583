@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/moov-io/iso8583"
 )
@@ -59,6 +60,18 @@ func main() {
 		}
 
 		describeCommand.Parse(os.Args[2:])
+
+		if availableSpecs[*specName] == nil {
+			fmt.Fprintf(os.Stdout, "Unknown spec: %s\n\n", *specName)
+
+			var names []string
+			for name := range availableSpecs {
+				names = append(names, name)
+			}
+			fmt.Fprintf(os.Stdout, "Supported specs: %s\n\n", strings.Join(names, ", "))
+			os.Exit(1)
+		}
+
 		err := Describe(describeCommand.Args(), *specName)
 		if err != nil {
 			fmt.Fprintf(os.Stdout, "Error describing files: %s\n", err)
