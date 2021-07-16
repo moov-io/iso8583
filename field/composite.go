@@ -141,7 +141,10 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 	}
 	offset := f.spec.Pref.Length()
 
-	read, err := f.unpack(data[offset:])
+	// data is stripped of the prefix before it is provided to unpack().
+	// Therefore, it is unaware of when to stop parsing unless we bound the
+	// length of the slice by the data length.
+	read, err := f.unpack(data[offset : offset+dataLen])
 	if err != nil {
 		return 0, err
 	}

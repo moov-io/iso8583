@@ -462,6 +462,26 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.Nil(t, data.F2)
 		require.Equal(t, 12, data.F3.Value)
 	})
+
+	t.Run("Unpack correctly ignores excess bytes in excess of the length described by the prefix", func(t *testing.T) {
+		data := &CompsiteTestData{}
+
+		composite := NewComposite(compositeTestSpecWithIDLength)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		// "04060102YZ" falls outside of the bounds of the 18 byte limit imposed
+		// by the prefix. Therefore, F4 must be nil.
+		read, err := composite.Unpack([]byte("180202CD0302120102AB04060102YZ"))
+
+		require.NoError(t, err)
+		require.Equal(t, 20, read)
+
+		require.Equal(t, "AB", data.F1.Value)
+		require.Equal(t, "CD", data.F2.Value)
+		require.Equal(t, 12, data.F3.Value)
+		require.Nil(t, data.F4)
+	})
 }
 
 func TestCompositeHandlesValidSpecs(t *testing.T) {
