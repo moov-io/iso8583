@@ -35,6 +35,7 @@ var Spec87ASCII *iso8583.MessageSpec = &iso8583.MessageSpec{
 			Description: "Processing Code",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
+			Pad:         padding.Left('0'),
 		}),
 		4: field.NewString(&field.Spec{
 			Length:      12,
