@@ -62,6 +62,7 @@ func (m *Message) Bitmap() *field.Bitmap {
 	}
 
 	m.bitmap = m.fields[1].(*field.Bitmap)
+	m.bitmap.Reset()
 	m.fieldsMap[1] = struct{}{}
 
 	return m.bitmap
