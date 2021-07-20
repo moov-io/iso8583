@@ -263,9 +263,11 @@ network header.
 
 Following network headers are supported:
 
+* Binary2Bytes - message length encoded in 2 bytes, e.g, {0x00 0x73} for 115
+  bytes of the message
 * ASCII4Bytes - message length encoded in 4 bytes ASCII, e.g., 0115 for 115
   bytes of the message
-* BCD2Bytes - message length encoded in 2 bytes BCD, e.g, {0x01, x15} for 115
+* BCD2Bytes - message length encoded in 2 bytes BCD, e.g, {0x01, 0x15} for 115
   bytes of the message
 
 You can read network header from the network connection like this:
@@ -280,7 +282,7 @@ if err != nil {
 // Make a buffer to hold message
 buf := make([]byte, header.Length())
 // Read the incoming message into the buffer.
-read, err := conn.Read(buf)
+read, err := io.ReadFull(conn, buf)
 if err != nil {
 	// handle error
 }
