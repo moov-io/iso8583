@@ -282,7 +282,7 @@ if err != nil {
 // Make a buffer to hold message
 buf := make([]byte, header.Length())
 // Read the incoming message into the buffer.
-read, err := conn.Read(buf)
+read, err := io.ReadFull(conn, buf)
 if err != nil {
 	// handle error
 }
