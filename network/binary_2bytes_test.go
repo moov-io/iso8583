@@ -11,7 +11,7 @@ func TestBinary2BytesHeader(t *testing.T) {
 	t.Run("Pack returns binary encoded length", func(t *testing.T) {
 		header := NewBinary2BytesHeader()
 
-		header.SetLength(115)
+		header.SetLength(319)
 		var buf bytes.Buffer
 		n, err := header.WriteTo(&buf)
 
