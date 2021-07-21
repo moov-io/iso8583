@@ -1,6 +1,6 @@
 package iso8583
 
-// MesssageTypeIndicator message type indicator is a four-digit numeric field which indicates the overall function of the message
+// MesssageTypeIndicator message type indicator is a four-digit numeric field which indicates the overall function of the ISO 8583:1987 message
 type MesssageTypeIndicator string
 
 const (
