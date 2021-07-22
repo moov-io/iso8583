@@ -41,6 +41,33 @@ func Describe(paths []string, specName string) error {
 	return nil
 }
 
+func DescribeWithSpecFile(paths []string, specFileName string) error {
+
+	spec, err := createSpecFromFile(specFileName)
+	if err != nil || spec == nil {
+		return fmt.Errorf("creating spec from file: %w", err)
+	}
+
+	for _, path := range paths {
+		message, err := createMessageFromFile(path, spec)
+		if err != nil {
+			if message == nil {
+				return fmt.Errorf("creating message from file: %w", err)
+			}
+
+			fmt.Fprintf(os.Stdout, "Failed to create message from file: %v\n", err)
+			fmt.Fprintf(os.Stdout, "Trying to describe file anyway...\n")
+		}
+
+		err = describe.Message(os.Stdout, message)
+		if err != nil {
+			return fmt.Errorf("describing message: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Message, error) {
 	fd, err := os.Open(path)
 	if err != nil {
@@ -60,4 +87,19 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 	}
 
 	return message, nil
+}
+
+func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {
+	fd, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("problem opening %s: %v", path, err)
+	}
+	defer fd.Close()
+
+	raw, err := ioutil.ReadAll(fd)
+	if err != nil {
+		return nil, fmt.Errorf("reading file %s: %v", path, err)
+	}
+
+	return specs.Builder.ImportJSON(raw)
 }
