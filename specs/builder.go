@@ -195,11 +195,33 @@ func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]b
 
 func getPrefixInterface(prefixName string, length int) prefix.Prefixer {
 
+	prefixName = "*" + prefixName
 	var pref prefix.Prefixer
 
-	switch "*" + prefixName {
+	switch prefixName {
 	case reflect.TypeOf(prefix.ASCII.Fixed).String():
 		pref = prefix.ASCII.Fixed
+	case reflect.TypeOf(prefix.BCD.Fixed).String():
+		pref = prefix.BCD.Fixed
+	case reflect.TypeOf(prefix.Hex.Fixed).String():
+		pref = prefix.Hex.Fixed
+	case reflect.TypeOf(prefix.Binary.Fixed).String():
+		pref = prefix.Binary.Fixed
+	case reflect.TypeOf(prefix.EBCDIC.Fixed).String():
+		pref = prefix.EBCDIC.Fixed
+	}
+
+	if pref != nil {
+		return pref
+	}
+
+	return getVarPrefixInterface(prefixName, length)
+}
+
+func getVarPrefixInterface(prefixName string, length int) prefix.Prefixer {
+	var pref prefix.Prefixer
+
+	switch prefixName {
 	case reflect.TypeOf(prefix.ASCII.L).String():
 		if length == 1 {
 			pref = prefix.ASCII.L
@@ -210,8 +232,6 @@ func getPrefixInterface(prefixName string, length int) prefix.Prefixer {
 		} else if length == 4 {
 			pref = prefix.ASCII.LLLL
 		}
-	case reflect.TypeOf(prefix.BCD.Fixed).String():
-		pref = prefix.BCD.Fixed
 	case reflect.TypeOf(prefix.BCD.L).String():
 		if length == 1 {
 			pref = prefix.BCD.L
@@ -222,8 +242,6 @@ func getPrefixInterface(prefixName string, length int) prefix.Prefixer {
 		} else if length == 4 {
 			pref = prefix.BCD.LLLL
 		}
-	case reflect.TypeOf(prefix.Hex.Fixed).String():
-		pref = prefix.Hex.Fixed
 	case reflect.TypeOf(prefix.Hex.L).String():
 		if length == 1 {
 			pref = prefix.Hex.L
@@ -234,8 +252,6 @@ func getPrefixInterface(prefixName string, length int) prefix.Prefixer {
 		} else if length == 4 {
 			pref = prefix.Hex.LLLL
 		}
-	case reflect.TypeOf(prefix.Binary.Fixed).String():
-		pref = prefix.Binary.Fixed
 	case reflect.TypeOf(prefix.Binary.L).String():
 		if length == 1 {
 			pref = prefix.Binary.L
@@ -246,8 +262,6 @@ func getPrefixInterface(prefixName string, length int) prefix.Prefixer {
 		} else if length == 4 {
 			pref = prefix.Binary.LLLL
 		}
-	case reflect.TypeOf(prefix.EBCDIC.Fixed).String():
-		pref = prefix.EBCDIC.Fixed
 	case reflect.TypeOf(prefix.EBCDIC.L).String():
 		if length == 1 {
 			pref = prefix.EBCDIC.L
@@ -262,7 +276,6 @@ func getPrefixInterface(prefixName string, length int) prefix.Prefixer {
 
 	return pref
 }
-
 func getEncodingInterface(encName string) encoding.Encoder {
 
 	var enc encoding.Encoder
