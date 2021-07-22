@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/moov-io/iso8583"
-	"github.com/moov-io/iso8583/cmd/iso8583/describe"
+	msg "github.com/moov-io/iso8583/cmd/iso8583/describe"
 	"github.com/moov-io/iso8583/specs"
 )
 
@@ -15,12 +15,7 @@ var availableSpecs = map[string]*iso8583.MessageSpec{
 	"87hex":   specs.Spec87Hex,
 }
 
-func Describe(paths []string, specName string) error {
-	spec := availableSpecs[specName]
-	if spec == nil {
-		return fmt.Errorf("unknown built-in spec %s", specName)
-	}
-
+func describe(paths []string, spec *iso8583.MessageSpec) error {
 	for _, path := range paths {
 		message, err := createMessageFromFile(path, spec)
 		if err != nil {
@@ -32,13 +27,22 @@ func Describe(paths []string, specName string) error {
 			fmt.Fprintf(os.Stdout, "Trying to describe file anyway...\n")
 		}
 
-		err = describe.Message(os.Stdout, message)
+		err = msg.Message(os.Stdout, message)
 		if err != nil {
 			return fmt.Errorf("describing message: %w", err)
 		}
 	}
-
 	return nil
+}
+
+func Describe(paths []string, specName string) error {
+
+	spec := availableSpecs[specName]
+	if spec == nil {
+		return fmt.Errorf("unknown built-in spec %s", specName)
+	}
+
+	return describe(paths, spec)
 }
 
 func DescribeWithSpecFile(paths []string, specFileName string) error {
@@ -48,24 +52,7 @@ func DescribeWithSpecFile(paths []string, specFileName string) error {
 		return fmt.Errorf("creating spec from file: %w", err)
 	}
 
-	for _, path := range paths {
-		message, err := createMessageFromFile(path, spec)
-		if err != nil {
-			if message == nil {
-				return fmt.Errorf("creating message from file: %w", err)
-			}
-
-			fmt.Fprintf(os.Stdout, "Failed to create message from file: %v\n", err)
-			fmt.Fprintf(os.Stdout, "Trying to describe file anyway...\n")
-		}
-
-		err = describe.Message(os.Stdout, message)
-		if err != nil {
-			return fmt.Errorf("describing message: %w", err)
-		}
-	}
-
-	return nil
+	return describe(paths, spec)
 }
 
 func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Message, error) {

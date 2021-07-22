@@ -15,6 +15,10 @@ import (
 	"github.com/moov-io/iso8583/prefix"
 )
 
+const (
+	FieldPrefix = "Field"
+)
+
 var Builder MessageSpecBuilder = &messageSpecBuilder{}
 
 type MessageSpecBuilder interface {
@@ -22,8 +26,7 @@ type MessageSpecBuilder interface {
 	ExportJSON(spec *iso8583.MessageSpec) ([]byte, error)
 }
 
-type messageSpecBuilder struct {
-}
+type messageSpecBuilder struct{}
 
 type specDummy struct {
 	Name   string                `json:"name,omitempty" xml:"name,omitempty"`
@@ -64,7 +67,7 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 
 	for key, dummyField := range dummy.Fields {
 		index := 0
-		_, err := fmt.Sscanf(key, "Field%d", &index)
+		_, err := fmt.Sscanf(key, FieldPrefix+"%d", &index)
 		if err != nil {
 			return nil, fmt.Errorf("invalid field index, index's format is `Field`+index ")
 		}
@@ -76,7 +79,7 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 		var newField field.Field
 
 		switch dummyField.Type {
-		case reflect.TypeOf(field.String{}).String():
+		case reflect.TypeOf(field.String{}).Name():
 			newField = field.NewString(&field.Spec{
 				Length:      dummyField.Length,
 				IDLength:    dummyField.IDLength,
@@ -85,7 +88,7 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 				Pref:        pref,
 				Pad:         pad,
 			})
-		case reflect.TypeOf(field.Numeric{}).String():
+		case reflect.TypeOf(field.Numeric{}).Name():
 			newField = field.NewNumeric(&field.Spec{
 				Length:      dummyField.Length,
 				IDLength:    dummyField.IDLength,
@@ -94,7 +97,7 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 				Pref:        pref,
 				Pad:         pad,
 			})
-		case reflect.TypeOf(field.Binary{}).String():
+		case reflect.TypeOf(field.Binary{}).Name():
 			newField = field.NewBinary(&field.Spec{
 				Length:      dummyField.Length,
 				IDLength:    dummyField.IDLength,
@@ -103,7 +106,7 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 				Pref:        pref,
 				Pad:         pad,
 			})
-		case reflect.TypeOf(field.Bitmap{}).String():
+		case reflect.TypeOf(field.Bitmap{}).Name():
 			newField = field.NewBitmap(&field.Spec{
 				Length:      dummyField.Length,
 				IDLength:    dummyField.IDLength,
@@ -134,9 +137,9 @@ func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]b
 	}
 
 	for index, orgField := range orgSpec.Fields {
-		dummyName := fmt.Sprintf("Field%03d", index)
+		dummyName := fmt.Sprintf(FieldPrefix+"%03d", index)
 		dummyField := fieldDummy{
-			Type: reflect.TypeOf(orgField).Elem().String(),
+			Type: reflect.TypeOf(orgField).Elem().Name(),
 		}
 
 		switch reflect.TypeOf(orgField).Elem() {
@@ -147,15 +150,13 @@ func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]b
 			dummyField.IDLength = spec.IDLength
 			dummyField.Description = spec.Description
 			if spec.Enc != nil {
-				dummyField.Enc = reflect.TypeOf(spec.Enc).Elem().String()
+				dummyField.Enc = reflect.TypeOf(spec.Enc).Elem().Name()
 			}
 			if spec.Pref != nil {
-				dummyField.Prefix = reflect.TypeOf(spec.Pref).Elem().String()
+				dummyField.Prefix = reflect.TypeOf(spec.Pref).Elem().Name()
 
-				lengthStr := ""
-				dummy := ""
-				fmt.Sscanf(spec.Pref.Inspect(), "%s %s %s", &dummy, &lengthStr, &dummy)
-				if lengthStr != "" && lengthStr != "fixed" && strings.ToUpper(lengthStr) == strings.Repeat("L", len(lengthStr)) {
+				var lengthStr, str1, str2 string
+				if fmt.Sscanf(spec.Pref.Inspect(), "%s %s %s", &str1, &lengthStr, &str2); len(lengthStr) > 0 && lengthStr != "fixed" && strings.ToUpper(lengthStr) == strings.Repeat("L", len(lengthStr)) {
 					dummyField.PrefixLength = len(lengthStr)
 				}
 			}
@@ -195,106 +196,49 @@ func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]b
 
 func getPrefixInterface(prefixName string, length int) prefix.Prefixer {
 
-	prefixName = "*" + prefixName
-	var pref prefix.Prefixer
-
-	switch prefixName {
-	case reflect.TypeOf(prefix.ASCII.Fixed).String():
-		pref = prefix.ASCII.Fixed
-	case reflect.TypeOf(prefix.BCD.Fixed).String():
-		pref = prefix.BCD.Fixed
-	case reflect.TypeOf(prefix.Hex.Fixed).String():
-		pref = prefix.Hex.Fixed
-	case reflect.TypeOf(prefix.Binary.Fixed).String():
-		pref = prefix.Binary.Fixed
-	case reflect.TypeOf(prefix.EBCDIC.Fixed).String():
-		pref = prefix.EBCDIC.Fixed
+	var prefixes = map[string]prefix.Prefixer{
+		"asciiFixedPrefixer":     prefix.ASCII.Fixed,
+		"asciiVarPrefixer.L":     prefix.ASCII.L,
+		"asciiVarPrefixer.LL":    prefix.ASCII.LL,
+		"asciiVarPrefixer.LLL":   prefix.ASCII.LLL,
+		"asciiVarPrefixer.LLLL":  prefix.ASCII.LLLL,
+		"bcdFixedPrefixer":       prefix.BCD.Fixed,
+		"bcdVarPrefixer.L":       prefix.BCD.L,
+		"bcdVarPrefixer.LL":      prefix.BCD.LL,
+		"bcdVarPrefixer.LLL":     prefix.BCD.LLL,
+		"bcdVarPrefixer.LLLL":    prefix.BCD.LLLL,
+		"hexFixedPrefixer":       prefix.Hex.Fixed,
+		"hexVarPrefixer.L":       prefix.Hex.L,
+		"hexVarPrefixer.LL":      prefix.Hex.LL,
+		"hexVarPrefixer.LLL":     prefix.Hex.LLL,
+		"hexVarPrefixer.LLLL":    prefix.Hex.LLLL,
+		"ebcdicFixedPrefixer":    prefix.EBCDIC.Fixed,
+		"ebcdicVarPrefixer.L":    prefix.EBCDIC.L,
+		"ebcdicVarPrefixer.LL":   prefix.EBCDIC.LL,
+		"ebcdicVarPrefixer.LLL":  prefix.EBCDIC.LLL,
+		"ebcdicVarPrefixer.LLLL": prefix.EBCDIC.LLLL,
+		"binaryFixedPrefixer":    prefix.Binary.Fixed,
 	}
 
-	if pref != nil {
-		return pref
+	if length > 0 {
+		prefixName = prefixName + "." + strings.Repeat("L", length)
 	}
 
-	return getVarPrefixInterface(prefixName, length)
+	return prefixes[prefixName]
 }
 
-func getVarPrefixInterface(prefixName string, length int) prefix.Prefixer {
-	var pref prefix.Prefixer
-
-	switch prefixName {
-	case reflect.TypeOf(prefix.ASCII.L).String():
-		if length == 1 {
-			pref = prefix.ASCII.L
-		} else if length == 2 {
-			pref = prefix.ASCII.LL
-		} else if length == 3 {
-			pref = prefix.ASCII.LLL
-		} else if length == 4 {
-			pref = prefix.ASCII.LLLL
-		}
-	case reflect.TypeOf(prefix.BCD.L).String():
-		if length == 1 {
-			pref = prefix.BCD.L
-		} else if length == 2 {
-			pref = prefix.BCD.LL
-		} else if length == 3 {
-			pref = prefix.BCD.LLL
-		} else if length == 4 {
-			pref = prefix.BCD.LLLL
-		}
-	case reflect.TypeOf(prefix.Hex.L).String():
-		if length == 1 {
-			pref = prefix.Hex.L
-		} else if length == 2 {
-			pref = prefix.Hex.LL
-		} else if length == 3 {
-			pref = prefix.Hex.LLL
-		} else if length == 4 {
-			pref = prefix.Hex.LLLL
-		}
-	case reflect.TypeOf(prefix.Binary.L).String():
-		if length == 1 {
-			pref = prefix.Binary.L
-		} else if length == 2 {
-			pref = prefix.Binary.LL
-		} else if length == 3 {
-			pref = prefix.Binary.LLL
-		} else if length == 4 {
-			pref = prefix.Binary.LLLL
-		}
-	case reflect.TypeOf(prefix.EBCDIC.L).String():
-		if length == 1 {
-			pref = prefix.EBCDIC.L
-		} else if length == 2 {
-			pref = prefix.EBCDIC.LL
-		} else if length == 3 {
-			pref = prefix.EBCDIC.LLL
-		} else if length == 4 {
-			pref = prefix.EBCDIC.LLLL
-		}
-	}
-
-	return pref
-}
 func getEncodingInterface(encName string) encoding.Encoder {
 
-	var enc encoding.Encoder
-
-	switch "*" + encName {
-	case reflect.TypeOf(encoding.ASCII).String():
-		enc = encoding.ASCII
-	case reflect.TypeOf(encoding.BCD).String():
-		enc = encoding.BCD
-	case reflect.TypeOf(encoding.Binary).String():
-		enc = encoding.Binary
-	case reflect.TypeOf(encoding.EBCDIC).String():
-		enc = encoding.EBCDIC
-	case reflect.TypeOf(encoding.Hex).String():
-		enc = encoding.Hex
-	case reflect.TypeOf(encoding.LBCD).String():
-		enc = encoding.LBCD
+	var encodes = map[string]encoding.Encoder{
+		"asciiEncoder":  encoding.ASCII,
+		"bcdEncoder":    encoding.BCD,
+		"ebcdicEncoder": encoding.EBCDIC,
+		"binaryEncoder": encoding.Binary,
+		"hexEncoder":    encoding.Hex,
+		"lBCDEncoder":   encoding.LBCD,
 	}
-	return enc
+
+	return encodes[encName]
 }
 
 func getPadInterface(info *padDummy) padding.Padder {
