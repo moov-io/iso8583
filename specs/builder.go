@@ -69,9 +69,9 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 			return nil, fmt.Errorf("invalid field index, index's format is `Field`+index ")
 		}
 
-		enc := encodingInterfaceFromName(dummyField.Enc)
-		pref := prefixInterfaceFromName(dummyField.Prefix, dummyField.PrefixLength)
-		pad := padInterfaceFromInfo(dummyField.Padding)
+		enc := getEncodingInterface(dummyField.Enc)
+		pref := getPrefixInterface(dummyField.Prefix, dummyField.PrefixLength)
+		pad := getPadInterface(dummyField.Padding)
 
 		var newField field.Field
 
@@ -193,7 +193,7 @@ func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]b
 	return outputBuffer.Bytes(), nil
 }
 
-func prefixInterfaceFromName(prefixName string, length int) prefix.Prefixer {
+func getPrefixInterface(prefixName string, length int) prefix.Prefixer {
 
 	var pref prefix.Prefixer
 
@@ -263,7 +263,7 @@ func prefixInterfaceFromName(prefixName string, length int) prefix.Prefixer {
 	return pref
 }
 
-func encodingInterfaceFromName(encName string) encoding.Encoder {
+func getEncodingInterface(encName string) encoding.Encoder {
 
 	var enc encoding.Encoder
 
@@ -284,7 +284,7 @@ func encodingInterfaceFromName(encName string) encoding.Encoder {
 	return enc
 }
 
-func padInterfaceFromInfo(info *padDummy) padding.Padder {
+func getPadInterface(info *padDummy) padding.Padder {
 	if info == nil || info.Type == "" {
 		return nil
 	}
