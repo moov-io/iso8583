@@ -19,6 +19,46 @@ const (
 	FieldPrefix = "Field"
 )
 
+var (
+	fieldConstructor = map[string]func(spec *field.Spec) field.Field{
+		"String":  func(spec *field.Spec) field.Field { return field.NewString(spec) },
+		"Numeric": func(spec *field.Spec) field.Field { return field.NewNumeric(spec) },
+		"Binary":  func(spec *field.Spec) field.Field { return field.NewBinary(spec) },
+		"Bitmap":  func(spec *field.Spec) field.Field { return field.NewBitmap(spec) },
+	}
+	prefixes = map[string]prefix.Prefixer{
+		"ascii.fixed":  prefix.ASCII.Fixed,
+		"ascii.l":      prefix.ASCII.L,
+		"ascii.ll":     prefix.ASCII.LL,
+		"ascii.lll":    prefix.ASCII.LLL,
+		"ascii.llll":   prefix.ASCII.LLLL,
+		"bcd.fixed":    prefix.BCD.Fixed,
+		"bcd.l":        prefix.BCD.L,
+		"bcd.ll":       prefix.BCD.LL,
+		"bcd.lll":      prefix.BCD.LLL,
+		"bcd.llll":     prefix.BCD.LLLL,
+		"hex.fixed":    prefix.Hex.Fixed,
+		"hex.l":        prefix.Hex.L,
+		"hex.ll":       prefix.Hex.LL,
+		"hex.lll":      prefix.Hex.LLL,
+		"hex.llll":     prefix.Hex.LLLL,
+		"ebcdic.fixed": prefix.EBCDIC.Fixed,
+		"ebcdic.l":     prefix.EBCDIC.L,
+		"ebcdic.ll":    prefix.EBCDIC.LL,
+		"ebcdic.lll":   prefix.EBCDIC.LLL,
+		"ebcdic.llll":  prefix.EBCDIC.LLLL,
+		"binary.fixed": prefix.Binary.Fixed,
+	}
+	encodings = map[string]encoding.Encoder{
+		"asciiEncoder":  encoding.ASCII,
+		"bcdEncoder":    encoding.BCD,
+		"ebcdicEncoder": encoding.EBCDIC,
+		"binaryEncoder": encoding.Binary,
+		"hexEncoder":    encoding.Hex,
+		"lBCDEncoder":   encoding.LBCD,
+	}
+)
+
 var Builder MessageSpecBuilder = &messageSpecBuilder{}
 
 type MessageSpecBuilder interface {
@@ -34,14 +74,13 @@ type specDummy struct {
 }
 
 type fieldDummy struct {
-	Type         string    `json:"type,omitempty" xml:"type,omitempty"`
-	Length       int       `json:"length,omitempty" xml:"length,omitempty"`
-	IDLength     int       `json:"id_length,omitempty" xml:"id_length,omitempty"`
-	Description  string    `json:"description,omitempty" xml:"description,omitempty"`
-	Enc          string    `json:"enc,omitempty" xml:"enc,omitempty"`
-	Prefix       string    `json:"prefix,omitempty" xml:"prefix,omitempty"`
-	PrefixLength int       `json:"prefix_length,omitempty" xml:"prefix_length,omitempty"`
-	Padding      *padDummy `json:"padding,omitempty" xml:"padding,omitempty"`
+	Type        string    `json:"type,omitempty" xml:"type,omitempty"`
+	Length      int       `json:"length,omitempty" xml:"length,omitempty"`
+	IDLength    int       `json:"id_length,omitempty" xml:"id_length,omitempty"`
+	Description string    `json:"description,omitempty" xml:"description,omitempty"`
+	Enc         string    `json:"enc,omitempty" xml:"enc,omitempty"`
+	Prefix      string    `json:"prefix,omitempty" xml:"prefix,omitempty"`
+	Padding     *padDummy `json:"padding,omitempty" xml:"padding,omitempty"`
 }
 
 type padDummy struct {
@@ -72,15 +111,12 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 			return nil, fmt.Errorf("invalid field index, index's format is `Field`+index ")
 		}
 
-		enc := getEncodingInterface(dummyField.Enc)
-		pref := getPrefixInterface(dummyField.Prefix, dummyField.PrefixLength)
-		pad := getPadInterface(dummyField.Padding)
+		if constructor := fieldConstructor[dummyField.Type]; constructor != nil {
+			enc := encodings[dummyField.Enc]
+			pref := prefixes[strings.ToLower(dummyField.Prefix)]
+			pad := getPadInterface(dummyField.Padding)
 
-		var newField field.Field
-
-		switch dummyField.Type {
-		case reflect.TypeOf(field.String{}).Name():
-			newField = field.NewString(&field.Spec{
+			spec.Fields[index] = constructor(&field.Spec{
 				Length:      dummyField.Length,
 				IDLength:    dummyField.IDLength,
 				Description: dummyField.Description,
@@ -88,38 +124,8 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 				Pref:        pref,
 				Pad:         pad,
 			})
-		case reflect.TypeOf(field.Numeric{}).Name():
-			newField = field.NewNumeric(&field.Spec{
-				Length:      dummyField.Length,
-				IDLength:    dummyField.IDLength,
-				Description: dummyField.Description,
-				Enc:         enc,
-				Pref:        pref,
-				Pad:         pad,
-			})
-		case reflect.TypeOf(field.Binary{}).Name():
-			newField = field.NewBinary(&field.Spec{
-				Length:      dummyField.Length,
-				IDLength:    dummyField.IDLength,
-				Description: dummyField.Description,
-				Enc:         enc,
-				Pref:        pref,
-				Pad:         pad,
-			})
-		case reflect.TypeOf(field.Bitmap{}).Name():
-			newField = field.NewBitmap(&field.Spec{
-				Length:      dummyField.Length,
-				IDLength:    dummyField.IDLength,
-				Description: dummyField.Description,
-				Enc:         enc,
-				Pref:        pref,
-				Pad:         pad,
-			})
-		default:
-			continue
 		}
 
-		spec.Fields[index] = newField
 	}
 
 	return &spec, nil
@@ -153,11 +159,9 @@ func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]b
 				dummyField.Enc = reflect.TypeOf(spec.Enc).Elem().Name()
 			}
 			if spec.Pref != nil {
-				dummyField.Prefix = reflect.TypeOf(spec.Pref).Elem().Name()
-
-				var lengthStr, str1, str2 string
-				if fmt.Sscanf(spec.Pref.Inspect(), "%s %s %s", &str1, &lengthStr, &str2); len(lengthStr) > 0 && lengthStr != "fixed" && strings.ToUpper(lengthStr) == strings.Repeat("L", len(lengthStr)) {
-					dummyField.PrefixLength = len(lengthStr)
+				var lengthStr, prefixStr, str2 string
+				if fmt.Sscanf(spec.Pref.Inspect(), "%s %s %s", &prefixStr, &lengthStr, &str2); len(prefixStr) > 0 {
+					dummyField.Prefix = prefixStr + "." + lengthStr
 				}
 			}
 			if spec.Pad != nil {
@@ -165,7 +169,7 @@ func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]b
 				switch reflect.TypeOf(spec.Pad).Elem().String() {
 				case "padding.leftPadder":
 					if spec.Pad.Inspect() != nil {
-						pad.Type = reflect.TypeOf(spec.Pad).Elem().String()
+						pad.Type = reflect.TypeOf(spec.Pad).Elem().Name()
 						pad.Pad, _ = utf8.DecodeRune(spec.Pad.Inspect())
 					}
 				}
@@ -194,53 +198,6 @@ func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]b
 	return outputBuffer.Bytes(), nil
 }
 
-func getPrefixInterface(prefixName string, length int) prefix.Prefixer {
-
-	var prefixes = map[string]prefix.Prefixer{
-		"asciiFixedPrefixer":     prefix.ASCII.Fixed,
-		"asciiVarPrefixer.L":     prefix.ASCII.L,
-		"asciiVarPrefixer.LL":    prefix.ASCII.LL,
-		"asciiVarPrefixer.LLL":   prefix.ASCII.LLL,
-		"asciiVarPrefixer.LLLL":  prefix.ASCII.LLLL,
-		"bcdFixedPrefixer":       prefix.BCD.Fixed,
-		"bcdVarPrefixer.L":       prefix.BCD.L,
-		"bcdVarPrefixer.LL":      prefix.BCD.LL,
-		"bcdVarPrefixer.LLL":     prefix.BCD.LLL,
-		"bcdVarPrefixer.LLLL":    prefix.BCD.LLLL,
-		"hexFixedPrefixer":       prefix.Hex.Fixed,
-		"hexVarPrefixer.L":       prefix.Hex.L,
-		"hexVarPrefixer.LL":      prefix.Hex.LL,
-		"hexVarPrefixer.LLL":     prefix.Hex.LLL,
-		"hexVarPrefixer.LLLL":    prefix.Hex.LLLL,
-		"ebcdicFixedPrefixer":    prefix.EBCDIC.Fixed,
-		"ebcdicVarPrefixer.L":    prefix.EBCDIC.L,
-		"ebcdicVarPrefixer.LL":   prefix.EBCDIC.LL,
-		"ebcdicVarPrefixer.LLL":  prefix.EBCDIC.LLL,
-		"ebcdicVarPrefixer.LLLL": prefix.EBCDIC.LLLL,
-		"binaryFixedPrefixer":    prefix.Binary.Fixed,
-	}
-
-	if length > 0 {
-		prefixName = prefixName + "." + strings.Repeat("L", length)
-	}
-
-	return prefixes[prefixName]
-}
-
-func getEncodingInterface(encName string) encoding.Encoder {
-
-	var encodes = map[string]encoding.Encoder{
-		"asciiEncoder":  encoding.ASCII,
-		"bcdEncoder":    encoding.BCD,
-		"ebcdicEncoder": encoding.EBCDIC,
-		"binaryEncoder": encoding.Binary,
-		"hexEncoder":    encoding.Hex,
-		"lBCDEncoder":   encoding.LBCD,
-	}
-
-	return encodes[encName]
-}
-
 func getPadInterface(info *padDummy) padding.Padder {
 	if info == nil || info.Type == "" {
 		return nil
@@ -248,7 +205,7 @@ func getPadInterface(info *padDummy) padding.Padder {
 
 	var pad padding.Padder
 	switch info.Type {
-	case "padding.leftPadder":
+	case "leftPadder":
 		pad = padding.Left(info.Pad)
 	}
 
