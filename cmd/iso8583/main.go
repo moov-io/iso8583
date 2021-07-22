@@ -41,7 +41,7 @@ func main() {
 	availableSpecNames := strings.Join(specNames, ", ")
 
 	specName := describeCommand.String("spec", "87ascii", fmt.Sprintf("name of built-in spec: %s", availableSpecNames))
-	specFileName := describeCommand.String("spec-file", "", fmt.Sprintf("customized specification file"))
+	specFileName := describeCommand.String("spec-file", "", "customized specification file")
 
 	flag.Parse()
 
