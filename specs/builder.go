@@ -19,12 +19,14 @@ const (
 	FieldPrefix = "Field"
 )
 
+type fieldConstructorFunc func(spec *field.Spec) field.Field
+
 var (
-	fieldConstructor = map[string]func(spec *field.Spec) field.Field{
-		"String":  func(spec *field.Spec) field.Field { return field.NewString(spec) },
-		"Numeric": func(spec *field.Spec) field.Field { return field.NewNumeric(spec) },
-		"Binary":  func(spec *field.Spec) field.Field { return field.NewBinary(spec) },
-		"Bitmap":  func(spec *field.Spec) field.Field { return field.NewBitmap(spec) },
+	fieldConstructor = map[string]fieldConstructorFunc{
+		"String":  newString,
+		"Numeric": newNumeric,
+		"Binary":  newBinary,
+		"Bitmap":  newBitmap,
 	}
 	prefixes = map[string]prefix.Prefixer{
 		"ascii.fixed":  prefix.ASCII.Fixed,
@@ -117,7 +119,14 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 		}
 
 		enc := encodings[dummyField.Enc]
+		if enc == nil {
+			return nil, fmt.Errorf("encoding is missed, enc is mandatory field")
+		}
 		pref := prefixes[strings.ToLower(dummyField.Prefix)]
+		if pref == nil {
+			return nil, fmt.Errorf("prefix is missed, prefix is mandatory field")
+		}
+
 		pad := getPadInterface(dummyField.Padding)
 
 		spec.Fields[index] = constructor(&field.Spec{
@@ -214,3 +223,11 @@ func getPadInterface(info *padDummy) padding.Padder {
 
 	return pad
 }
+
+func newString(spec *field.Spec) field.Field { return field.NewString(spec) }
+
+func newNumeric(spec *field.Spec) field.Field { return field.NewNumeric(spec) }
+
+func newBinary(spec *field.Spec) field.Field { return field.NewBinary(spec) }
+
+func newBitmap(spec *field.Spec) field.Field { return field.NewBitmap(spec) }
