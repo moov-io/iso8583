@@ -175,6 +175,30 @@ func TestMessage(t *testing.T) {
 		wantMsg := []byte("01007000000000000000164242424242424242123456000000000100")
 		require.Equal(t, wantMsg, rawMsg)
 	})
+
+	t.Run("Test remove field from message", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.MTI("0100")
+		require.NoError(t, message.Field(2, "4242424242424242"))
+		require.NoError(t, message.Field(3, "123456"))
+		require.NoError(t, message.Field(4, "100"))
+
+		got, err := message.Pack()
+
+		want := "01007000000000000000164242424242424242123456000000000100"
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Equal(t, want, string(got))
+
+		message.RemoveField(3)
+
+		got, err = message.Pack()
+
+		want = "01005000000000000000164242424242424242000000000100"
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Equal(t, want, string(got))
+	})
 }
 
 func TestPackUnpack(t *testing.T) {

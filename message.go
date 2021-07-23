@@ -118,6 +118,10 @@ func (m *Message) GetField(id int) field.Field {
 	return m.fields[id]
 }
 
+func (m *Message) RemoveField(id int) {
+	delete(m.fieldsMap, id)
+}
+
 // Fields returns the map of the set fields
 func (m *Message) GetFields() map[int]field.Field {
 	fields := map[int]field.Field{}
