@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/moov-io/iso8583"
-	msg "github.com/moov-io/iso8583/cmd/iso8583/describe"
+	"github.com/moov-io/iso8583/cmd/iso8583/describe"
 	"github.com/moov-io/iso8583/specs"
 )
 
@@ -15,7 +15,7 @@ var availableSpecs = map[string]*iso8583.MessageSpec{
 	"87hex":   specs.Spec87Hex,
 }
 
-func describe(paths []string, spec *iso8583.MessageSpec) error {
+func describeMessage(paths []string, spec *iso8583.MessageSpec) error {
 	for _, path := range paths {
 		message, err := createMessageFromFile(path, spec)
 		if err != nil {
@@ -27,7 +27,7 @@ func describe(paths []string, spec *iso8583.MessageSpec) error {
 			fmt.Fprintf(os.Stdout, "Trying to describe file anyway...\n")
 		}
 
-		err = msg.Message(os.Stdout, message)
+		err = describe.Message(os.Stdout, message)
 		if err != nil {
 			return fmt.Errorf("describing message: %w", err)
 		}
@@ -42,7 +42,7 @@ func Describe(paths []string, specName string) error {
 		return fmt.Errorf("unknown built-in spec %s", specName)
 	}
 
-	return describe(paths, spec)
+	return describeMessage(paths, spec)
 }
 
 func DescribeWithSpecFile(paths []string, specFileName string) error {
@@ -52,7 +52,7 @@ func DescribeWithSpecFile(paths []string, specFileName string) error {
 		return fmt.Errorf("creating spec from file: %w", err)
 	}
 
-	return describe(paths, spec)
+	return describeMessage(paths, spec)
 }
 
 func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Message, error) {
