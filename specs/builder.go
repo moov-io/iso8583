@@ -120,11 +120,11 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 
 		enc := encodings[dummyField.Enc]
 		if enc == nil {
-			return nil, fmt.Errorf("encoding is missed, enc is mandatory field")
+			return nil, fmt.Errorf("encoding(%s) is incorrect, enc is mandatory field", dummyField.Enc)
 		}
 		pref := prefixes[strings.ToLower(dummyField.Prefix)]
 		if pref == nil {
-			return nil, fmt.Errorf("prefix is missed, prefix is mandatory field")
+			return nil, fmt.Errorf("prefix(%s) is incorrect, prefix is mandatory field", dummyField.Prefix)
 		}
 
 		pad := getPadInterface(dummyField.Padding)
