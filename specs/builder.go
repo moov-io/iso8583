@@ -111,20 +111,23 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 			return nil, fmt.Errorf("invalid field index, index's format is `Field`+index ")
 		}
 
-		if constructor := fieldConstructor[dummyField.Type]; constructor != nil {
-			enc := encodings[dummyField.Enc]
-			pref := prefixes[strings.ToLower(dummyField.Prefix)]
-			pad := getPadInterface(dummyField.Padding)
-
-			spec.Fields[index] = constructor(&field.Spec{
-				Length:      dummyField.Length,
-				IDLength:    dummyField.IDLength,
-				Description: dummyField.Description,
-				Enc:         enc,
-				Pref:        pref,
-				Pad:         pad,
-			})
+		constructor := fieldConstructor[dummyField.Type]
+		if constructor == nil {
+			return nil, fmt.Errorf("unable create field with %s", dummyField.Type)
 		}
+
+		enc := encodings[dummyField.Enc]
+		pref := prefixes[strings.ToLower(dummyField.Prefix)]
+		pad := getPadInterface(dummyField.Padding)
+
+		spec.Fields[index] = constructor(&field.Spec{
+			Length:      dummyField.Length,
+			IDLength:    dummyField.IDLength,
+			Description: dummyField.Description,
+			Enc:         enc,
+			Pref:        pref,
+			Pad:         pad,
+		})
 
 	}
 
