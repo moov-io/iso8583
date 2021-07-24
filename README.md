@@ -363,8 +363,17 @@ You can specify which of the built-in specs to use to the describe message via
 the `spec` flag:
 
 ```
-➜ ./bin/iso8583 describe -spec spec87hex msg.bin
+➜ ./bin/iso8583 describe -spec spec87ascii msg.bin
 ```
+
+You can also define your spec in JSON format and describe message using the spec file with `spec-file` flag:
+
+```
+➜ ./bin/iso8583 describe -spec-file ./examples/specs/spec87ascii.json msg.bin
+```
+
+Please, check the example of the JSON spec file [spec87ascii.json](./examples/specs/spec87ascii.json).
+
 
 ## Learn about ISO 8583
 
