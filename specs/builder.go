@@ -5,16 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
+	"strconv"
 
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
-)
-
-const (
-	FieldPrefix = "Field"
 )
 
 type fieldConstructorFunc func(spec *field.Spec) field.Field
@@ -95,8 +93,8 @@ type MessageSpecBuilder interface {
 type messageSpecBuilder struct{}
 
 type specDummy struct {
-	Name   string                `json:"name,omitempty" xml:"name,omitempty"`
-	Fields map[string]fieldDummy `json:"fields,omitempty" xml:"fields,omitempty"`
+	Name   string          `json:"name,omitempty" xml:"name,omitempty"`
+	Fields orderedFieldMap `json:"fields,omitempty" xml:"fields,omitempty"`
 }
 
 type fieldDummy struct {
@@ -132,7 +130,7 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 
 	for key, dummyField := range dummySpec.Fields {
 		index := 0
-		_, err := fmt.Sscanf(key, FieldPrefix+"%d", &index)
+		_, err := fmt.Sscanf(key, "%d", &index)
 		if err != nil {
 			return nil, fmt.Errorf("invalid field index, index's format is `Field`+index ")
 		}
@@ -229,7 +227,7 @@ func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]
 		}
 
 		fieldType := reflect.TypeOf(origField).Elem().Name()
-		fieldName := fmt.Sprintf(FieldPrefix+"%03d", index)
+		fieldName := fmt.Sprintf("%d", index)
 
 		dummyField.Type = fieldType
 
@@ -247,4 +245,42 @@ func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]
 	}
 
 	return outputBuffer.Bytes(), nil
+}
+
+type orderedFieldMap map[string]fieldDummy
+
+func (om orderedFieldMap) MarshalJSON() ([]byte, error) {
+	keys := make([]int, 0, len(om))
+	for k := range om {
+		index, err := strconv.Atoi(k)
+		if err != nil {
+			return nil, fmt.Errorf("convering field index into int: %v", err)
+		}
+
+		keys = append(keys, index)
+	}
+
+	sort.Ints(keys)
+
+	buf := &bytes.Buffer{}
+	buf.Write([]byte{'{'})
+	for _, i := range keys {
+		strIndex := strconv.Itoa(i)
+		b, err := json.Marshal(om[strIndex])
+		if err != nil {
+			return nil, err
+		}
+		buf.WriteString(fmt.Sprintf("\"%s\":", strIndex))
+		buf.Write(b)
+
+		// don't add "," if it's the last item
+		if i == keys[len(keys)-1] {
+			break
+		}
+
+		buf.Write([]byte{','})
+	}
+	buf.Write([]byte{'}'})
+
+	return buf.Bytes(), nil
 }
