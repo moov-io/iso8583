@@ -1,7 +1,7 @@
 package specs
 
 import (
-	"fmt"
+	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -12,8 +12,6 @@ func TestBuilder(t *testing.T) {
 
 	asciiJson, err := Builder.ExportJSON(Spec87ASCII)
 	require.NoError(t, err)
-
-	fmt.Printf("asciiJson = %+v\n", string(asciiJson))
 
 	asciiSpec, err := Builder.ImportJSON(asciiJson)
 	require.NoError(t, err)
@@ -28,4 +26,14 @@ func TestBuilder(t *testing.T) {
 
 	require.Equal(t, true, reflect.DeepEqual(Spec87Hex.Name, hexSpec.Name))
 
+}
+
+func TestExampleJSONSpec(t *testing.T) {
+	asciiJson, err := ioutil.ReadFile("../examples/specs/spec87ascii.json")
+	require.NoError(t, err)
+
+	asciiSpec, err := Builder.ImportJSON(asciiJson)
+	require.NoError(t, err)
+
+	require.Equal(t, true, reflect.DeepEqual(Spec87ASCII, asciiSpec))
 }
