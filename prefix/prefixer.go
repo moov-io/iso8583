@@ -10,7 +10,13 @@ type Prefixer interface {
 	// Returns the number of bytes that takes to encode the length
 	Length() int
 
-	// Returns human readable information about length prefixer
+	// Returns human readable information about length prefixer. Returned value
+	// is used to create prefixer when we build spec from a JSON spec.
+	// Returned value should be in the following format:
+	//  PrefixerName.Length
+	// Examples:
+	//  ASCII.LL
+	//  Hex.Fixed
 	Inspect() string
 }
 

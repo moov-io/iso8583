@@ -38,7 +38,7 @@ func (p *hexFixedPrefixer) Length() int {
 }
 
 func (p *hexFixedPrefixer) Inspect() string {
-	return "Hex fixed length"
+	return "Hex.Fixed"
 }
 
 type hexVarPrefixer struct {
@@ -90,5 +90,5 @@ func (p *hexVarPrefixer) Length() int {
 }
 
 func (p *hexVarPrefixer) Inspect() string {
-	return fmt.Sprintf("HEX %s length", strings.Repeat("L", p.Digits))
+	return fmt.Sprintf("Hex.%s", strings.Repeat("L", p.Digits))
 }

@@ -11,3 +11,7 @@ func (p *nonePadder) Pad(data []byte, length int) []byte {
 func (p *nonePadder) Unpad(data []byte) []byte {
 	return data
 }
+
+func (p *nonePadder) Inspect() []byte {
+	return nil
+}

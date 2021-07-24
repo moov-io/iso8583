@@ -65,7 +65,7 @@ func (p *ebcdicVarPrefixer) Length() int {
 }
 
 func (p *ebcdicVarPrefixer) Inspect() string {
-	return fmt.Sprintf("EBCDIC %s length", strings.Repeat("L", p.Digits))
+	return fmt.Sprintf("EBCDIC.%s", strings.Repeat("L", p.Digits))
 }
 
 type ebcdicFixedPrefixer struct {
@@ -89,5 +89,5 @@ func (p *ebcdicFixedPrefixer) Length() int {
 }
 
 func (p *ebcdicFixedPrefixer) Inspect() string {
-	return "EBCDIC fixed length"
+	return "EBCDIC.Fixed"
 }

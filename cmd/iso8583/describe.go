@@ -15,12 +15,7 @@ var availableSpecs = map[string]*iso8583.MessageSpec{
 	"87hex":   specs.Spec87Hex,
 }
 
-func Describe(paths []string, specName string) error {
-	spec := availableSpecs[specName]
-	if spec == nil {
-		return fmt.Errorf("unknown built-in spec %s", specName)
-	}
-
+func describeMessage(paths []string, spec *iso8583.MessageSpec) error {
 	for _, path := range paths {
 		message, err := createMessageFromFile(path, spec)
 		if err != nil {
@@ -37,14 +32,31 @@ func Describe(paths []string, specName string) error {
 			return fmt.Errorf("describing message: %w", err)
 		}
 	}
-
 	return nil
+}
+
+func Describe(paths []string, specName string) error {
+	spec := availableSpecs[specName]
+	if spec == nil {
+		return fmt.Errorf("unknown built-in spec %s", specName)
+	}
+
+	return describeMessage(paths, spec)
+}
+
+func DescribeWithSpecFile(paths []string, specFileName string) error {
+	spec, err := createSpecFromFile(specFileName)
+	if err != nil || spec == nil {
+		return fmt.Errorf("creating spec from file: %w", err)
+	}
+
+	return describeMessage(paths, spec)
 }
 
 func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Message, error) {
 	fd, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("problem opening %s: %v", path, err)
+		return nil, fmt.Errorf("opening file %s: %v", path, err)
 	}
 	defer fd.Close()
 
@@ -56,8 +68,23 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 	message := iso8583.NewMessage(spec)
 	err = message.Unpack(raw)
 	if err != nil {
-		return message, fmt.Errorf("unpacking ISO 8583 message: %v", err)
+		return message, fmt.Errorf("unpacking message: %v", err)
 	}
 
 	return message, nil
+}
+
+func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {
+	fd, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("opening file %s: %v", path, err)
+	}
+	defer fd.Close()
+
+	raw, err := ioutil.ReadAll(fd)
+	if err != nil {
+		return nil, fmt.Errorf("reading file %s: %v", path, err)
+	}
+
+	return specs.Builder.ImportJSON(raw)
 }

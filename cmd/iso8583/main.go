@@ -28,7 +28,7 @@ func main() {
 	}
 
 	describeCommand.Usage = func() {
-		fmt.Fprintf(os.Stdout, "Display ISO 8583 file in a human-readable format.\n\nUsage:\n  %s %s <files> [flags]\n\n", programName, describeCmd)
+		fmt.Fprintf(os.Stdout, "Display ISO 8583 file in a human-readable format.\n\nUsage:\n  %s %s [flags] <files> \n\n", programName, describeCmd)
 		fmt.Fprintf(os.Stdout, "Flags: \n")
 		describeCommand.PrintDefaults()
 		fmt.Fprintf(os.Stdout, "\n")
@@ -41,6 +41,7 @@ func main() {
 	availableSpecNames := strings.Join(specNames, ", ")
 
 	specName := describeCommand.String("spec", "87ascii", fmt.Sprintf("name of built-in spec: %s", availableSpecNames))
+	specFileName := describeCommand.String("spec-file", "", "path to customized specification file in JSON format")
 
 	flag.Parse()
 
@@ -66,13 +67,17 @@ func main() {
 
 		describeCommand.Parse(os.Args[2:])
 
-		if availableSpecs[*specName] == nil {
+		var err error
+		if specFileName != nil && *specFileName != "" {
+			err = DescribeWithSpecFile(describeCommand.Args(), *specFileName)
+		} else if availableSpecs[*specName] != nil {
+			err = Describe(describeCommand.Args(), *specName)
+		} else {
 			fmt.Fprintf(os.Stdout, "Unknown spec: %s\n\n", *specName)
 			fmt.Fprintf(os.Stdout, "Supported specs: %s\n\n", availableSpecNames)
 			os.Exit(1)
 		}
 
-		err := Describe(describeCommand.Args(), *specName)
 		if err != nil {
 			fmt.Fprintf(os.Stdout, "Error describing files: %s\n", err)
 			os.Exit(1)

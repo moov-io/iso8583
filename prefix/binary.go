@@ -28,5 +28,5 @@ func (p *binaryFixedPrefixer) Length() int {
 }
 
 func (p *binaryFixedPrefixer) Inspect() string {
-	return "Binary fixed length"
+	return "Binary.Fixed"
 }

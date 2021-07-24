@@ -34,3 +34,7 @@ func (p *leftPadder) Unpad(data []byte) []byte {
 		return r == pad
 	})
 }
+
+func (p *leftPadder) Inspect() []byte {
+	return p.pad
+}
