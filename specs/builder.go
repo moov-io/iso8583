@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
-	"unicode/utf8"
 
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/encoding"
@@ -23,41 +21,67 @@ type fieldConstructorFunc func(spec *field.Spec) field.Field
 
 var (
 	fieldConstructor = map[string]fieldConstructorFunc{
-		"String":  newString,
-		"Numeric": newNumeric,
-		"Binary":  newBinary,
-		"Bitmap":  newBitmap,
+		"String":  func(spec *field.Spec) field.Field { return field.NewString(spec) },
+		"Numeric": func(spec *field.Spec) field.Field { return field.NewNumeric(spec) },
+		"Binary":  func(spec *field.Spec) field.Field { return field.NewBinary(spec) },
+		"Bitmap":  func(spec *field.Spec) field.Field { return field.NewBitmap(spec) },
 	}
-	prefixes = map[string]prefix.Prefixer{
-		"ascii.fixed":  prefix.ASCII.Fixed,
-		"ascii.l":      prefix.ASCII.L,
-		"ascii.ll":     prefix.ASCII.LL,
-		"ascii.lll":    prefix.ASCII.LLL,
-		"ascii.llll":   prefix.ASCII.LLLL,
-		"bcd.fixed":    prefix.BCD.Fixed,
-		"bcd.l":        prefix.BCD.L,
-		"bcd.ll":       prefix.BCD.LL,
-		"bcd.lll":      prefix.BCD.LLL,
-		"bcd.llll":     prefix.BCD.LLLL,
-		"hex.fixed":    prefix.Hex.Fixed,
-		"hex.l":        prefix.Hex.L,
-		"hex.ll":       prefix.Hex.LL,
-		"hex.lll":      prefix.Hex.LLL,
-		"hex.llll":     prefix.Hex.LLLL,
-		"ebcdic.fixed": prefix.EBCDIC.Fixed,
-		"ebcdic.l":     prefix.EBCDIC.L,
-		"ebcdic.ll":    prefix.EBCDIC.LL,
-		"ebcdic.lll":   prefix.EBCDIC.LLL,
-		"ebcdic.llll":  prefix.EBCDIC.LLLL,
-		"binary.fixed": prefix.Binary.Fixed,
+
+	prefixesExtToInt = map[string]prefix.Prefixer{
+		"ASCII.Fixed":  prefix.ASCII.Fixed,
+		"ASCII.L":      prefix.ASCII.L,
+		"ASCII.LL":     prefix.ASCII.LL,
+		"ASCII.LLL":    prefix.ASCII.LLL,
+		"ASCII.LLLL":   prefix.ASCII.LLLL,
+		"BCD.Fixed":    prefix.BCD.Fixed,
+		"BCD.L":        prefix.BCD.L,
+		"BCD.LL":       prefix.BCD.LL,
+		"BCD.LLL":      prefix.BCD.LLL,
+		"BCD.LLLL":     prefix.BCD.LLLL,
+		"Hex.Fixed":    prefix.Hex.Fixed,
+		"Hex.L":        prefix.Hex.L,
+		"Hex.LL":       prefix.Hex.LL,
+		"Hex.LLL":      prefix.Hex.LLL,
+		"Hex.LLLL":     prefix.Hex.LLLL,
+		"EBCDIC.Fixed": prefix.EBCDIC.Fixed,
+		"EBCDIC.L":     prefix.EBCDIC.L,
+		"EBCDIC.LL":    prefix.EBCDIC.LL,
+		"EBCDIC.LLL":   prefix.EBCDIC.LLL,
+		"EBCDIC.LLLL":  prefix.EBCDIC.LLLL,
+		"Binary.Fixed": prefix.Binary.Fixed,
 	}
-	encodings = map[string]encoding.Encoder{
-		"asciiEncoder":  encoding.ASCII,
-		"bcdEncoder":    encoding.BCD,
-		"ebcdicEncoder": encoding.EBCDIC,
-		"binaryEncoder": encoding.Binary,
-		"hexEncoder":    encoding.Hex,
-		"lBCDEncoder":   encoding.LBCD,
+
+	encodingsExtToInt = map[string]encoding.Encoder{
+		"ASCII":  encoding.ASCII,
+		"BCD":    encoding.BCD,
+		"EBCDIC": encoding.EBCDIC,
+		"Binary": encoding.Binary,
+		"Hex":    encoding.Hex,
+		"LBCD":   encoding.LBCD,
+	}
+
+	encodingsIntToExt = map[string]string{
+		"asciiEncoder":  "ASCII",
+		"bcdEncoder":    "BCD",
+		"ebcdicEncoder": "EBCDIC",
+		"binaryEncoder": "Binary",
+		"hexEncoder":    "Hex",
+		"lBCDEncoder":   "LBCD",
+	}
+
+	paddersIntToExt = map[string]string{
+		"leftPadder": "Left",
+		"nonePadder": "None",
+	}
+
+	paddersExtToInt = map[string]func(pad string) padding.Padder{
+		"Left": func(pad string) padding.Padder {
+			if runes := []rune(pad); len(runes) == 1 {
+				return padding.Left(runes[0])
+			}
+			return nil
+		},
+		"None": func(pad string) padding.Padder { return padding.None },
 	}
 )
 
@@ -87,26 +111,26 @@ type fieldDummy struct {
 
 type padDummy struct {
 	Type string `json:"type" xml:"type"`
-	Pad  rune   `json:"pad" xml:"pad"`
+	Pad  string `json:"pad" xml:"pad"`
 }
 
 func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec, error) {
-	dummy := specDummy{}
-	err := json.Unmarshal(raw, &dummy)
+	dummySpec := specDummy{}
+	err := json.Unmarshal(raw, &dummySpec)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshaling spec: %v", err)
 	}
 
-	if len(dummy.Fields) == 0 {
-		return nil, fmt.Errorf("invalid json spec file")
+	if len(dummySpec.Fields) == 0 {
+		return nil, fmt.Errorf("no fields in JSON file")
 	}
 
 	spec := iso8583.MessageSpec{
-		Name:   dummy.Name,
+		Name:   dummySpec.Name,
 		Fields: make(map[int]field.Field),
 	}
 
-	for key, dummyField := range dummy.Fields {
+	for key, dummyField := range dummySpec.Fields {
 		index := 0
 		_, err := fmt.Sscanf(key, FieldPrefix+"%d", &index)
 		if err != nil {
@@ -115,19 +139,25 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 
 		constructor := fieldConstructor[dummyField.Type]
 		if constructor == nil {
-			return nil, fmt.Errorf("unable create field with %s", dummyField.Type)
+			return nil, fmt.Errorf("no constructor for filed type: %s for field: %d", dummyField.Type, index)
 		}
 
-		enc := encodings[dummyField.Enc]
+		enc := encodingsExtToInt[dummyField.Enc]
 		if enc == nil {
-			return nil, fmt.Errorf("encoding(%s) is incorrect, enc is mandatory field", dummyField.Enc)
-		}
-		pref := prefixes[strings.ToLower(dummyField.Prefix)]
-		if pref == nil {
-			return nil, fmt.Errorf("prefix(%s) is incorrect, prefix is mandatory field", dummyField.Prefix)
+			return nil, fmt.Errorf("unknown encoding: %s for field: %d", dummyField.Enc, index)
 		}
 
-		pad := getPadInterface(dummyField.Padding)
+		pref := prefixesExtToInt[dummyField.Prefix]
+		if pref == nil {
+			return nil, fmt.Errorf("unknown prefix: %s for field: %d", dummyField.Prefix, index)
+		}
+
+		var padder padding.Padder
+		if dummyField.Padding != nil {
+			if padderConstructor := paddersExtToInt[dummyField.Padding.Type]; padderConstructor != nil {
+				padder = padderConstructor(dummyField.Padding.Pad)
+			}
+		}
 
 		spec.Fields[index] = constructor(&field.Spec{
 			Length:      dummyField.Length,
@@ -135,7 +165,7 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 			Description: dummyField.Description,
 			Enc:         enc,
 			Pref:        pref,
-			Pad:         pad,
+			Pad:         padder,
 		})
 
 	}
@@ -143,58 +173,67 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 	return &spec, nil
 }
 
-func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]byte, error) {
-
-	if orgSpec == nil {
+func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]byte, error) {
+	if origSpec == nil {
 		return nil, fmt.Errorf("invalid message spec")
 	}
 
 	dummyJson := specDummy{
-		Name:   orgSpec.Name,
+		Name:   origSpec.Name,
 		Fields: make(map[string]fieldDummy),
 	}
 
-	for index, orgField := range orgSpec.Fields {
-		dummyName := fmt.Sprintf(FieldPrefix+"%03d", index)
-		dummyField := fieldDummy{
-			Type: reflect.TypeOf(orgField).Elem().Name(),
+	for index, origField := range origSpec.Fields {
+		dummyField := fieldDummy{}
+
+		spec := origField.Spec()
+
+		dummyField.Length = spec.Length
+		dummyField.IDLength = spec.IDLength
+		dummyField.Description = spec.Description
+
+		if spec.Enc == nil {
+			return nil, fmt.Errorf("missing required spec Enc for field %d", index)
 		}
 
-		switch reflect.TypeOf(orgField).Elem() {
-		case reflect.TypeOf(field.String{}), reflect.TypeOf(field.Numeric{}), reflect.TypeOf(field.Binary{}), reflect.TypeOf(field.Bitmap{}):
-			spec := orgField.Spec()
-
-			dummyField.Length = spec.Length
-			dummyField.IDLength = spec.IDLength
-			dummyField.Description = spec.Description
-			if spec.Enc != nil {
-				dummyField.Enc = reflect.TypeOf(spec.Enc).Elem().Name()
-			}
-			if spec.Pref != nil {
-				var lengthStr, prefixStr, str2 string
-				if fmt.Sscanf(spec.Pref.Inspect(), "%s %s %s", &prefixStr, &lengthStr, &str2); len(prefixStr) > 0 {
-					dummyField.Prefix = prefixStr + "." + lengthStr
-				}
-			}
-			if spec.Pad != nil {
-				pad := padDummy{}
-				switch reflect.TypeOf(spec.Pad).Elem().String() {
-				case "padding.leftPadder":
-					if spec.Pad.Inspect() != nil {
-						pad.Type = reflect.TypeOf(spec.Pad).Elem().Name()
-						pad.Pad, _ = utf8.DecodeRune(spec.Pad.Inspect())
-					}
-				}
-				if pad.Type != "" {
-					dummyField.Padding = &pad
-				}
-			}
-
-		default:
-			continue
+		if spec.Pref == nil {
+			return nil, fmt.Errorf("missing required spec Pref for field %d", index)
 		}
 
-		dummyJson.Fields[dummyName] = dummyField
+		// set encoding
+		encType := reflect.TypeOf(spec.Enc).Elem().Name()
+		if enc, found := encodingsIntToExt[encType]; found {
+			dummyField.Enc = enc
+		} else {
+			return nil, fmt.Errorf("unknown encoding type: %s", encType)
+		}
+
+		// set prefixer
+		// Inspect() makes a trick for us when we don't have to implement
+		// any internal to external representation logic.
+		dummyField.Prefix = spec.Pref.Inspect()
+
+		// set padding
+		if spec.Pad != nil {
+			paddingType := reflect.TypeOf(spec.Pad).Elem().Name()
+			if padder, found := paddersIntToExt[paddingType]; found {
+				pad := spec.Pad.Inspect()
+				dummyPadding := padDummy{
+					Type: padder,
+					Pad:  string(pad),
+				}
+				dummyField.Padding = &dummyPadding
+			} else {
+				return nil, fmt.Errorf("unknown padding type: %s", paddingType)
+			}
+		}
+
+		fieldType := reflect.TypeOf(origField).Elem().Name()
+		fieldName := fmt.Sprintf(FieldPrefix+"%03d", index)
+
+		dummyField.Type = fieldType
+
+		dummyJson.Fields[fieldName] = dummyField
 	}
 
 	outputBuffer := new(bytes.Buffer)
@@ -209,25 +248,3 @@ func (builder *messageSpecBuilder) ExportJSON(orgSpec *iso8583.MessageSpec) ([]b
 
 	return outputBuffer.Bytes(), nil
 }
-
-func getPadInterface(info *padDummy) padding.Padder {
-	if info == nil || info.Type == "" {
-		return nil
-	}
-
-	var pad padding.Padder
-	switch info.Type {
-	case "leftPadder":
-		pad = padding.Left(info.Pad)
-	}
-
-	return pad
-}
-
-func newString(spec *field.Spec) field.Field { return field.NewString(spec) }
-
-func newNumeric(spec *field.Spec) field.Field { return field.NewNumeric(spec) }
-
-func newBinary(spec *field.Spec) field.Field { return field.NewBinary(spec) }
-
-func newBitmap(spec *field.Spec) field.Field { return field.NewBitmap(spec) }

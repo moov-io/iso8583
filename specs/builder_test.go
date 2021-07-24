@@ -1,6 +1,7 @@
 package specs
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -11,6 +12,8 @@ func TestBuilder(t *testing.T) {
 
 	asciiJson, err := Builder.ExportJSON(Spec87ASCII)
 	require.NoError(t, err)
+
+	fmt.Printf("asciiJson = %+v\n", string(asciiJson))
 
 	asciiSpec, err := Builder.ImportJSON(asciiJson)
 	require.NoError(t, err)
