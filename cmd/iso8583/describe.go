@@ -36,7 +36,6 @@ func describeMessage(paths []string, spec *iso8583.MessageSpec) error {
 }
 
 func Describe(paths []string, specName string) error {
-
 	spec := availableSpecs[specName]
 	if spec == nil {
 		return fmt.Errorf("unknown built-in spec %s", specName)
@@ -46,7 +45,6 @@ func Describe(paths []string, specName string) error {
 }
 
 func DescribeWithSpecFile(paths []string, specFileName string) error {
-
 	spec, err := createSpecFromFile(specFileName)
 	if err != nil || spec == nil {
 		return fmt.Errorf("creating spec from file: %w", err)
@@ -58,7 +56,7 @@ func DescribeWithSpecFile(paths []string, specFileName string) error {
 func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Message, error) {
 	fd, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("problem opening %s: %v", path, err)
+		return nil, fmt.Errorf("opening file %s: %v", path, err)
 	}
 	defer fd.Close()
 
@@ -70,7 +68,7 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 	message := iso8583.NewMessage(spec)
 	err = message.Unpack(raw)
 	if err != nil {
-		return message, fmt.Errorf("unpacking ISO 8583 message: %v", err)
+		return message, fmt.Errorf("unpacking message: %v", err)
 	}
 
 	return message, nil
@@ -79,7 +77,7 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {
 	fd, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("problem opening %s: %v", path, err)
+		return nil, fmt.Errorf("opening file %s: %v", path, err)
 	}
 	defer fd.Close()
 
