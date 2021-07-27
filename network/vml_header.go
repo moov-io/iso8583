@@ -17,7 +17,10 @@ const (
 
 type VMLH struct {
 	Len uint16
-	//
+
+	// When no message traffic during at least 10 seconds,
+	// Visa sends a session control message (Heartbeat or Idle-Time)
+	// IsSessionControl flag is set to true for such messages
 	IsSessionControl bool
 }
 
@@ -40,12 +43,28 @@ func (h *VMLH) Length() int {
 }
 
 func (h *VMLH) WriteTo(w io.Writer) (int, error) {
-	err := binary.Write(w, binary.BigEndian, h.Len)
+	if h.Len > MaxMessageLength {
+		return 0, fmt.Errorf("length %d exceeds max length %d", h.Len, MaxMessageLength)
+	}
+
+	var buf bytes.Buffer
+
+	err := binary.Write(&buf, binary.BigEndian, h.Len)
 	if err != nil {
 		return 0, fmt.Errorf("wrigint uint16 into writer: %v", err)
 	}
 
-	return binary.Size(h.Len), nil
+	_, err = buf.Write([]byte{0x00, 0x00})
+	if err != nil {
+		return 0, fmt.Errorf("writing reserved bytes: %v", err)
+	}
+
+	n, err := w.Write(buf.Bytes())
+	if err != nil {
+		return 0, fmt.Errorf("writing header: %v", err)
+	}
+
+	return n, nil
 }
 
 func (h *VMLH) ReadFrom(r io.Reader) (int, error) {
@@ -61,6 +80,10 @@ func (h *VMLH) ReadFrom(r io.Reader) (int, error) {
 	err = binary.Read(bytes.NewReader(header), binary.BigEndian, &h.Len)
 	if err != nil {
 		return 0, fmt.Errorf("reading uint16 length from reader: %v", err)
+	}
+
+	if h.Len > MaxMessageLength {
+		return 0, fmt.Errorf("length %d exceeds max length %d", h.Len, MaxMessageLength)
 	}
 
 	// read message format and platform
