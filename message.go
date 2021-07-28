@@ -168,6 +168,11 @@ func (m *Message) Unpack(src []byte) error {
 	m.Bitmap().Reset()
 
 	// unpack MTI
+	if m.dataValue != nil {
+		if err := m.setUnpackableDataField(0); err != nil {
+			return err
+		}
+	}
 	read, err := m.fields[0].Unpack(src)
 	if err != nil {
 		return fmt.Errorf("failed to unpack MTI: %v", err)
@@ -191,7 +196,7 @@ func (m *Message) Unpack(src []byte) error {
 			}
 
 			if m.dataValue != nil {
-				if err := m.setUnpackableDataField(i, fl); err != nil {
+				if err := m.setUnpackableDataField(i); err != nil {
 					return err
 				}
 			}
@@ -224,13 +229,13 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 }
 
 func (m *Message) setPackableDataFields() ([]int, error) {
-	// Indexes 0 and 1 represent the mti and bitmap.
-	// These fields are always populated.
+	// Index 0 and 1 represent the MTI and bitmap respectively.
+	// These fields are assumed to be always populated.
 	populatedFieldIDs := []int{0, 1}
 
 	for id, field := range m.fields {
-		// regular field number start from index 2
-		if id < 2 {
+		// represents the bitmap
+		if id == 1 {
 			continue
 		}
 
@@ -251,7 +256,7 @@ func (m *Message) setPackableDataFields() ([]int, error) {
 
 		// These fields are set using the untyped API
 		_, ok := m.fieldsMap[id]
-		if ok || m.dataValue != nil {
+		if (ok || m.dataValue != nil) && id != 0 {
 			populatedFieldIDs = append(populatedFieldIDs, id)
 		}
 	}
@@ -260,7 +265,12 @@ func (m *Message) setPackableDataFields() ([]int, error) {
 	return populatedFieldIDs, nil
 }
 
-func (m *Message) setUnpackableDataField(id int, specField field.Field) error {
+func (m *Message) setUnpackableDataField(id int) error {
+	specField, ok := m.fields[id]
+	if !ok {
+		return fmt.Errorf("failed to unpack field %d: no specification found", id)
+	}
+
 	dataField := m.dataFieldValue(id)
 	// no data field was found with this name
 	if dataField == (reflect.Value{}) {
