@@ -256,8 +256,8 @@ func (m *Message) setPackableDataFields() ([]int, error) {
 
 		// These fields are set using the untyped API
 		_, ok := m.fieldsMap[id]
-                // We don't wish set the MTI again, hence we ignore the 0 
-                // index
+		// We don't wish set the MTI again, hence we ignore the 0
+		// index
 		if (ok || m.dataValue != nil) && id != 0 {
 			populatedFieldIDs = append(populatedFieldIDs, id)
 		}
