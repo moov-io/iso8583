@@ -109,6 +109,7 @@ func TestMessage(t *testing.T) {
 		}
 
 		type ISO87Data struct {
+			F0 *field.String
 			F2 *field.String
 			F3 *TestISOF3Data
 			F4 *field.String
@@ -136,6 +137,7 @@ func TestMessage(t *testing.T) {
 
 		data := message.Data().(*ISO87Data)
 
+		require.Equal(t, "0100", data.F0.Value)
 		require.Equal(t, "4242424242424242", data.F2.Value)
 		require.Equal(t, "12", data.F3.F1.Value)
 		require.Equal(t, "34", data.F3.F2.Value)
@@ -151,14 +153,15 @@ func TestMessage(t *testing.T) {
 		}
 
 		type ISO87Data struct {
+			F0 *field.String
 			F2 *field.String
 			F3 *TestISOF3Data
 			F4 *field.String
 		}
 
 		message := NewMessage(spec)
-		message.MTI("0100")
 		err := message.SetData(&ISO87Data{
+			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
 			F3: &TestISOF3Data{
 				F1: field.NewStringValue("12"),
