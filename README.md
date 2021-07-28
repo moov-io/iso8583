@@ -269,6 +269,7 @@ Following network headers are supported:
   bytes of the message
 * BCD2Bytes - message length encoded in 2 bytes BCD, e.g, {0x01, 0x15} for 115
   bytes of the message
+* VMLH (Visa Message Length Header) - message length encoded in 2 bytes + 2 reserved bytes
 
 You can read network header from the network connection like this:
 
