@@ -176,7 +176,7 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, wantMsg, rawMsg)
 	})
 
-	t.Run("Test remove field from message", func(t *testing.T) {
+	t.Run("Test remove one untyped field from message", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.MTI("0100")
 		require.NoError(t, message.Field(2, "4242424242424242"))
@@ -190,7 +190,7 @@ func TestMessage(t *testing.T) {
 		require.NotNil(t, got)
 		require.Equal(t, want, string(got))
 
-		message.RemoveField(3)
+		message.RemoveFields(3)
 
 		got, err = message.Pack()
 
@@ -199,6 +199,73 @@ func TestMessage(t *testing.T) {
 		require.NotNil(t, got)
 		require.Equal(t, want, string(got))
 	})
+
+	t.Run("Test remove many untyped fields from message", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.MTI("0100")
+		require.NoError(t, message.Field(2, "4242424242424242"))
+		require.NoError(t, message.Field(3, "123456"))
+		require.NoError(t, message.Field(4, "100"))
+
+		got, err := message.Pack()
+
+		want := "01007000000000000000164242424242424242123456000000000100"
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Equal(t, want, string(got))
+
+		message.RemoveFields(3, 4)
+
+		got, err = message.Pack()
+
+		want = "01004000000000000000164242424242424242"
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Equal(t, want, string(got))
+	})
+
+	t.Run("Test remove typed fields", func(t *testing.T) {
+		type TestISOF3Data struct {
+			F1 *field.String
+			F2 *field.String
+			F3 *field.String
+		}
+
+		type ISO87Data struct {
+			F2 *field.String
+			F3 *TestISOF3Data
+			F4 *field.String
+		}
+
+		message := NewMessage(spec)
+		message.MTI("0100")
+		err := message.SetData(&ISO87Data{
+			F2: field.NewStringValue("4242424242424242"),
+			F3: &TestISOF3Data{
+				F1: field.NewStringValue("12"),
+				F2: field.NewStringValue("34"),
+				F3: field.NewStringValue("56"),
+			},
+			F4: field.NewStringValue("100"),
+		})
+		require.NoError(t, err)
+
+		rawMsg, err := message.Pack()
+		require.NoError(t, err)
+
+		wantMsg := []byte("01007000000000000000164242424242424242123456000000000100")
+		require.Equal(t, wantMsg, rawMsg)
+
+		message.RemoveFields(3, 4)
+
+		rawMsg, err = message.Pack()
+		require.NoError(t, err)
+
+		wantMsg = []byte("01004000000000000000164242424242424242")
+		require.Equal(t, wantMsg, rawMsg)
+
+	})
+
 }
 
 func TestPackUnpack(t *testing.T) {

@@ -118,8 +118,18 @@ func (m *Message) GetField(id int) field.Field {
 	return m.fields[id]
 }
 
-func (m *Message) RemoveField(id int) {
-	delete(m.fieldsMap, id)
+func (m *Message) RemoveFields(ids ...int) {
+	for _, id := range ids {
+		delete(m.fieldsMap, id)
+
+		if m.dataValue != nil {
+			dataField := m.dataFieldValue(id)
+			if dataField == (reflect.Value{}) || dataField.IsNil() {
+				continue
+			}
+			dataField.Set(reflect.Zero(dataField.Type()))
+		}
+	}
 }
 
 // Fields returns the map of the set fields
