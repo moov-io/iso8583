@@ -8,15 +8,15 @@ import (
 )
 
 // Custom type to sort keys in resulting JSON
-type OrderedMap map[int]Field
+type OrderedMap map[string]Field
 
 func (om OrderedMap) MarshalJSON() ([]byte, error) {
-	keys := make([]int, 0, len(om))
+	keys := make([]string, 0, len(om))
 	for k := range om {
 		keys = append(keys, k)
 	}
 
-	sort.Ints(keys)
+	sort.Strings(keys)
 
 	buf := &bytes.Buffer{}
 	buf.Write([]byte{'{'})
@@ -25,7 +25,7 @@ func (om OrderedMap) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		buf.WriteString(fmt.Sprintf("\"%d\":", i))
+		buf.WriteString(fmt.Sprintf("\"%v\":", i))
 		buf.Write(b)
 
 		// don't add "," if it's the last item

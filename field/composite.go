@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strconv"
 
 	"github.com/moov-io/iso8583/padding"
 )
@@ -13,7 +12,7 @@ import (
 var _ Field = (*Composite)(nil)
 
 // Composite is a wrapper object designed to hold ISO8583 subfields and
-// subelements.  Because Composite handles both of these usecases generically,
+// subelements. Because Composite handles both of these usecases generically,
 // we refer to them collectively as 'subfields' throughout the receiver's
 // documentation and error messages.
 //
@@ -50,20 +49,17 @@ var _ Field = (*Composite)(nil)
 type Composite struct {
 	spec *Spec
 
-	orderedSpecFieldIDs []int
-	idToFieldMap        map[int]Field
+	orderedSpecFieldIDs []string
+	idToFieldMap        map[string]Field
 
-	fieldsMap map[int]struct{}
-	data      *reflect.Value
+	data *reflect.Value
 }
 
 // NewComposite creates a new instance of the *Composite struct,
 // validates and sets its Spec before returning it.
 // Refer to SetSpec() for more information on Spec validation.
 func NewComposite(spec *Spec) *Composite {
-	f := &Composite{
-		fieldsMap: map[int]struct{}{},
-	}
+	f := &Composite{}
 	f.SetSpec(spec)
 	return f
 }
@@ -194,7 +190,7 @@ func (f *Composite) pack() ([]byte, error) {
 		specField := f.idToFieldMap[id]
 
 		if f.data != nil {
-			fieldName := fmt.Sprintf("F%d", id)
+			fieldName := fmt.Sprintf("F%v", id)
 			// get the struct field
 			dataField := f.data.FieldByName(fieldName)
 
@@ -204,21 +200,25 @@ func (f *Composite) pack() ([]byte, error) {
 			}
 
 			if err := specField.SetData(dataField.Interface()); err != nil {
-				return nil, fmt.Errorf("failed to set data for field %d: %w", id, err)
+				return nil, fmt.Errorf("failed to set data for field %v: %w", id, err)
 			}
 		}
 
-		if f.spec.IDLength > 0 {
-			idBytes, err := f.spec.Enc.Encode(idToBytes(f.spec.IDLength, id))
+                if f.spec.Tag != nil && f.spec.Tag.Length > 0 {
+                        idBytes := []byte(id)
+                        if f.spec.Tag.Pad != nil {
+                                idBytes = f.spec.Tag.Pad.Pad(idBytes, f.spec.Tag.Length)
+                        }
+                        idBytes, err := f.spec.Tag.Enc.Encode(idBytes)
 			if err != nil {
-				return nil, fmt.Errorf("failed to convert subfield ID \"%s\" to int", idBytes)
+				return nil, fmt.Errorf("failed to convert subfield ID \"%v\" to int", idBytes)
 			}
 			packed = append(packed, idBytes...)
 		}
 
 		packedBytes, err := specField.Pack()
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack subfield %d: %v", id, err)
+			return nil, fmt.Errorf("failed to pack subfield %v: %v", id, err)
 		}
 		packed = append(packed, packedBytes...)
 	}
@@ -226,7 +226,7 @@ func (f *Composite) pack() ([]byte, error) {
 }
 
 func (f *Composite) unpack(data []byte) (int, error) {
-	if f.spec.IDLength > 0 {
+        if f.spec.Tag != nil && f.spec.Tag.Length > 0 {
 		return f.unpackFieldsByID(data)
 	}
 	return f.unpackFields(data)
@@ -241,7 +241,7 @@ func (f *Composite) unpackFields(data []byte) (int, error) {
 		}
 		read, err := specField.Unpack(data[offset:])
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %d: %v", id, err)
+			return 0, fmt.Errorf("failed to unpack subfield %v: %v", id, err)
 		}
 		offset += read
 	}
@@ -251,19 +251,17 @@ func (f *Composite) unpackFields(data []byte) (int, error) {
 func (f *Composite) unpackFieldsByID(data []byte) (int, error) {
 	offset := 0
 	for offset < len(data) {
-		idBytes, read, err := f.spec.Enc.Decode(data[offset:], f.spec.IDLength)
+                idBytes, read, err := f.spec.Tag.Enc.Decode(data[offset:], f.spec.Tag.Length)
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield ID: %w", err)
 		}
-
-		id, err := strconv.Atoi(string(idBytes))
-		if err != nil {
-			return 0, fmt.Errorf("failed to convert subfield ID \"%s\" to int", string(idBytes))
-		}
-
+                if f.spec.Tag.Pad != nil {
+                        idBytes = f.spec.Tag.Pad.Unpad(idBytes)
+                }
+		id := string(idBytes)
 		specField, ok := f.idToFieldMap[id]
 		if !ok {
-			return 0, fmt.Errorf("failed to unpack subfield %d: field not defined in Spec", id)
+			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", id)
 		}
 		offset += read
 
@@ -273,19 +271,19 @@ func (f *Composite) unpackFieldsByID(data []byte) (int, error) {
 
 		read, err = specField.Unpack(data[offset:])
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %d: %v", id, err)
+			return 0, fmt.Errorf("failed to unpack subfield %v: %v", id, err)
 		}
 		offset += read
 	}
 	return offset, nil
 }
 
-func (f *Composite) setSubfieldData(id int, specField Field) error {
+func (f *Composite) setSubfieldData(id string, specField Field) error {
 	if f.data == nil {
 		return nil
 	}
 
-	fieldName := fmt.Sprintf("F%d", id)
+	fieldName := fmt.Sprintf("F%v", id)
 
 	// get the struct field
 	dataField := f.data.FieldByName(fieldName)
@@ -296,7 +294,7 @@ func (f *Composite) setSubfieldData(id int, specField Field) error {
 			dataField.Set(reflect.New(dataField.Type().Elem()))
 		}
 		if err := specField.SetData(dataField.Interface()); err != nil {
-			return fmt.Errorf("failed to set data for field %d: %w", id, err)
+			return fmt.Errorf("failed to set data for field %v: %w", id, err)
 		}
 	}
 
@@ -305,24 +303,27 @@ func (f *Composite) setSubfieldData(id int, specField Field) error {
 
 func validateCompositeSpec(spec *Spec) error {
 	if spec.Pad != nil && spec.Pad != padding.None {
-		return fmt.Errorf("Composite spec only supports nil or None padding values")
+                return fmt.Errorf("Composite spec only supports nil or None spec padding values")
 	}
-	if spec.Enc == nil && spec.IDLength > 0 {
-		return fmt.Errorf("Composite spec requires an Enc to be defined if IDLength > 0")
+        if spec.Enc != nil {
+                return fmt.Errorf("Composite spec only supports a nil Enc value")
+        }
+        if spec.Tag != nil && spec.Tag.Enc == nil && spec.Tag.Length > 0 {
+                return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
 	}
 	return nil
 }
 
-func orderedKeys(kvs map[int]Field) []int {
-	keys := make([]int, 0)
+func orderedKeys(kvs map[string]Field) []string {
+	keys := make([]string, 0)
 	for k := range kvs {
 		keys = append(keys, k)
 	}
-	sort.Ints(keys)
+	sort.Strings(keys)
 	return keys
 }
 
-func idToBytes(length int, id int) []byte {
-	idFmt := fmt.Sprintf("%%0%dd", length)
+func idToBytes(length int, id string) []byte {
+	idFmt := fmt.Sprintf("%%0%ds", length)
 	return []byte(fmt.Sprintf(idFmt, id))
 }

@@ -16,20 +16,20 @@ var (
 		Description: "Test Spec",
 		Pref:        prefix.ASCII.Fixed,
 		Pad:         padding.None,
-		Fields: map[int]Field{
-			1: NewString(&Spec{
+		Fields: map[string]Field{
+			"1": NewString(&Spec{
 				Length:      2,
 				Description: "String Field",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.Fixed,
 			}),
-			2: NewString(&Spec{
+			"2": NewString(&Spec{
 				Length:      2,
 				Description: "String Field",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.Fixed,
 			}),
-			3: NewNumeric(&Spec{
+			"3": NewNumeric(&Spec{
 				Length:      2,
 				Description: "Numeric Field",
 				Enc:         encoding.ASCII,
@@ -40,37 +40,42 @@ var (
 	compositeTestSpecWithIDLength = &Spec{
 		Length:      30,
 		Description: "Test Spec",
-		IDLength:    2,
 		Pref:        prefix.ASCII.LL,
-		Enc:         encoding.ASCII,
-		Pad:         padding.None,
-		Fields: map[int]Field{
-			1: NewString(&Spec{
+                Tag: &TagSpec{
+                        Length:    2,
+                        Enc:         encoding.ASCII,
+                        Pad:         padding.Left('0'),
+                },
+		Fields: map[string]Field{
+			"1": NewString(&Spec{
 				Length:      2,
 				Description: "String Field",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			2: NewString(&Spec{
+			"2": NewString(&Spec{
 				Length:      2,
 				Description: "String Field",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			3: NewNumeric(&Spec{
+			"3": NewNumeric(&Spec{
 				Length:      2,
 				Description: "Numeric Field",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			4: NewComposite(&Spec{
+			"4": NewComposite(&Spec{
 				Length:      6,
-				IDLength:    2,
 				Description: "Sub-Composite Field",
-				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
-				Fields: map[int]Field{
-					1: NewString(&Spec{
+                                Tag: &TagSpec{
+                                        Length:    2,
+                                        Enc:         encoding.ASCII,
+                                        Pad:         padding.Left('0'),
+                                },
+				Fields: map[string]Field{
+					"1": NewString(&Spec{
 						Length:      2,
 						Description: "String Field",
 						Enc:         encoding.ASCII,
@@ -139,18 +144,18 @@ func TestCompositePacking(t *testing.T) {
 			// This will throw an error when encoding the field's length.
 			Length: 4,
 			Pref:   prefix.ASCII.Fixed,
-			Fields: map[int]Field{
-				1: NewString(&Spec{
+			Fields: map[string]Field{
+				"1": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
 				}),
-				2: NewString(&Spec{
+				"2": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
 				}),
-				3: NewNumeric(&Spec{
+				"3": NewNumeric(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
@@ -221,18 +226,18 @@ func TestCompositePacking(t *testing.T) {
 		spec := &Spec{
 			Length: 4,
 			Pref:   prefix.ASCII.L,
-			Fields: map[int]Field{
-				1: NewString(&Spec{
+			Fields: map[string]Field{
+				"1": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
 				}),
-				2: NewString(&Spec{
+				"2": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
 				}),
-				3: NewNumeric(&Spec{
+				"3": NewNumeric(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
@@ -258,18 +263,18 @@ func TestCompositePacking(t *testing.T) {
 			// This will throw an error when encoding the field's length.
 			Length: 4,
 			Pref:   prefix.ASCII.Fixed,
-			Fields: map[int]Field{
-				1: NewString(&Spec{
+			Fields: map[string]Field{
+				"1": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
 				}),
-				2: NewString(&Spec{
+				"2": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
 				}),
-				3: NewNumeric(&Spec{
+				"3": NewNumeric(&Spec{
 					Length: 3,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
@@ -313,21 +318,24 @@ func TestCompositePackingWithID(t *testing.T) {
 		// This will throw an error when encoding the field's length.
 		invalidSpec := &Spec{
 			Length:   6,
-			IDLength: 2,
 			Pref:     prefix.ASCII.Fixed,
-			Enc:      encoding.ASCII,
-			Fields: map[int]Field{
-				1: NewString(&Spec{
+                        Tag: &TagSpec{
+                                Length:    2,
+                                Enc:         encoding.ASCII,
+                                Pad:         padding.Left('0'),
+                        },
+			Fields: map[string]Field{
+				"1": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
 				}),
-				2: NewString(&Spec{
+				"2": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
 				}),
-				3: NewNumeric(&Spec{
+				"3": NewNumeric(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pref:   prefix.ASCII.Fixed,
@@ -367,7 +375,6 @@ func TestCompositePackingWithID(t *testing.T) {
 		packed, err := composite.Pack()
 		require.NoError(t, err)
 
-		require.NoError(t, err)
 		require.Equal(t, "280102AB0202CD03021204060102YZ", string(packed))
 	})
 
@@ -415,7 +422,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.EqualError(t, err, "failed to unpack subfield 11: field not defined in Spec")
 	})
 
-	t.Run("Unpack returns an error on failure to unpack subfield ID", func(t *testing.T) {
+        t.Run("Unpack returns an error on if subfield not defined in spec", func(t *testing.T) {
 		data := &CompsiteTestData{}
 
 		composite := NewComposite(compositeTestSpecWithIDLength)
@@ -425,7 +432,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		// Index 0, 1 should have '01' rather than 'ID'.
 		read, err := composite.Unpack([]byte("18ID02AB0202CD030212"))
 		require.Equal(t, 0, read)
-		require.EqualError(t, err, "failed to convert subfield ID \"ID\" to int")
+		require.EqualError(t, err, "failed to unpack subfield ID: field not defined in Spec")
 	})
 
 	t.Run("Unpack correctly deserialises out of order composite subfields to the data struct", func(t *testing.T) {
@@ -494,7 +501,7 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 			spec: &Spec{
 				Length: 6,
 				Pref:   prefix.ASCII.Fixed,
-				Fields: map[int]Field{},
+				Fields: map[string]Field{},
 			},
 		},
 		{
@@ -502,7 +509,7 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 			spec: &Spec{
 				Length: 6,
 				Pref:   prefix.ASCII.Fixed,
-				Fields: map[int]Field{},
+				Fields: map[string]Field{},
 			},
 		},
 		{
@@ -511,7 +518,7 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 				Length: 6,
 				Pref:   prefix.ASCII.Fixed,
 				Pad:    padding.None,
-				Fields: map[int]Field{},
+				Fields: map[string]Field{},
 			},
 		},
 	}
@@ -537,22 +544,35 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 	}{
 		{
 			desc: "panics on non-None / non-nil Pad value being defined in spec",
-			err:  "Composite spec only supports nil or None padding values",
+			err:  "Composite spec only supports nil or None spec padding values",
 			spec: &Spec{
 				Length: 6,
 				Pref:   prefix.ASCII.Fixed,
 				Pad:    padding.Left('0'),
-				Fields: map[int]Field{},
+				Fields: map[string]Field{},
+			},
+		},
+		{
+			desc: "panics on non-nil Enc value being defined in spec",
+			err:  "Composite spec only supports a nil Enc value",
+			spec: &Spec{
+				Length:   6,
+                                Enc: encoding.ASCII,
+				Pref:     prefix.ASCII.Fixed,
+				Fields:   map[string]Field{},
 			},
 		},
 		{
 			desc: "panics on nil Enc value being defined in spec if IDLength > 0",
-			err:  "Composite spec requires an Enc to be defined if IDLength > 0",
+                        err:  "Composite spec requires a Tag.Enc to be defined if Tag.Length > 0",
 			spec: &Spec{
 				Length:   6,
-				IDLength: 2,
 				Pref:     prefix.ASCII.Fixed,
-				Fields:   map[int]Field{},
+				Fields:   map[string]Field{},
+                                Tag: &TagSpec{
+                                        Length:    2,
+                                        Pad:         padding.Left('0'),
+                                },
 			},
 		},
 	}
