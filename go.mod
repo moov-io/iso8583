@@ -1,4 +1,4 @@
-module github.com/moov-io/iso8583
+module github.com/franizus/iso8583
 
 go 1.15
 
