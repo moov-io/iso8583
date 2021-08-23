@@ -1,0 +1,483 @@
+{
+	"name": "ISO 8583 v1987 ASCII",
+	"fields": {
+		"Field000": {
+			"type": "String",
+			"length": 4,
+			"description": "Message Type Indicator",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field001": {
+			"type": "Bitmap",
+			"length": 16,
+			"description": "Bitmap",
+			"enc": "hexEncoder",
+			"prefix": "Hex.fixed"
+		},
+		"Field002": {
+			"type": "String",
+			"length": 19,
+			"description": "Primary Account Number",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LL"
+		},
+		"Field003": {
+			"type": "Numeric",
+			"length": 6,
+			"description": "Processing Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed",
+			"padding": {
+				"type": "leftPadder",
+				"pad": 48
+			}
+		},
+		"Field004": {
+			"type": "String",
+			"length": 12,
+			"description": "Transaction Amount",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed",
+			"padding": {
+				"type": "leftPadder",
+				"pad": 48
+			}
+		},
+		"Field005": {
+			"type": "String",
+			"length": 12,
+			"description": "Settlement Amount",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed",
+			"padding": {
+				"type": "leftPadder",
+				"pad": 48
+			}
+		},
+		"Field006": {
+			"type": "String",
+			"length": 12,
+			"description": "Billing Amount",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed",
+			"padding": {
+				"type": "leftPadder",
+				"pad": 48
+			}
+		},
+		"Field007": {
+			"type": "String",
+			"length": 10,
+			"description": "Transmission Date & Time",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field008": {
+			"type": "String",
+			"length": 8,
+			"description": "Billing Fee Amount",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field009": {
+			"type": "String",
+			"length": 8,
+			"description": "Settlement Conversion Rate",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field010": {
+			"type": "String",
+			"length": 8,
+			"description": "Cardholder Billing Conversion Rate",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field011": {
+			"type": "String",
+			"length": 6,
+			"description": "Systems Trace Audit Number (STAN)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field012": {
+			"type": "String",
+			"length": 6,
+			"description": "Local Transaction Time",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field013": {
+			"type": "String",
+			"length": 4,
+			"description": "Local Transaction Date",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field014": {
+			"type": "String",
+			"length": 4,
+			"description": "Expiration Date",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field015": {
+			"type": "String",
+			"length": 4,
+			"description": "Settlement Date",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field016": {
+			"type": "String",
+			"length": 4,
+			"description": "Currency Conversion Date",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field017": {
+			"type": "String",
+			"length": 4,
+			"description": "Capture Date",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field018": {
+			"type": "String",
+			"length": 4,
+			"description": "Merchant Type",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field019": {
+			"type": "String",
+			"length": 3,
+			"description": "Acquiring Institution Country Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field020": {
+			"type": "String",
+			"length": 3,
+			"description": "PAN Extended Country Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field021": {
+			"type": "String",
+			"length": 3,
+			"description": "Forwarding Institution Country Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field022": {
+			"type": "String",
+			"length": 3,
+			"description": "Point of Sale (POS) Entry Mode",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field023": {
+			"type": "String",
+			"length": 3,
+			"description": "Card Sequence Number (CSN)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field024": {
+			"type": "String",
+			"length": 3,
+			"description": "Function Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field025": {
+			"type": "String",
+			"length": 2,
+			"description": "Point of Service Condition Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field026": {
+			"type": "String",
+			"length": 2,
+			"description": "Point of Service PIN Capture Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field027": {
+			"type": "String",
+			"length": 1,
+			"description": "Authorizing Identification Response Length",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field028": {
+			"type": "String",
+			"length": 9,
+			"description": "Transaction Fee Amount",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field029": {
+			"type": "String",
+			"length": 9,
+			"description": "Settlement Fee Amount",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field030": {
+			"type": "String",
+			"length": 9,
+			"description": "Transaction Processing Fee Amount",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field031": {
+			"type": "String",
+			"length": 9,
+			"description": "Settlement Processing Fee Amount",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field032": {
+			"type": "String",
+			"length": 11,
+			"description": "Acquiring Institution Identification Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LL"
+		},
+		"Field033": {
+			"type": "String",
+			"length": 11,
+			"description": "Forwarding Institution Identification Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LL"
+		},
+		"Field034": {
+			"type": "String",
+			"length": 28,
+			"description": "Extended Primary Account Number",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LL"
+		},
+		"Field035": {
+			"type": "String",
+			"length": 37,
+			"description": "Track 2 Data",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LL"
+		},
+		"Field036": {
+			"type": "String",
+			"length": 104,
+			"description": "Track 3 Data",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field037": {
+			"type": "String",
+			"length": 12,
+			"description": "Retrieval Reference Number",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field038": {
+			"type": "String",
+			"length": 6,
+			"description": "Authorization Identification Response",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field039": {
+			"type": "String",
+			"length": 2,
+			"description": "Response Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field040": {
+			"type": "String",
+			"length": 3,
+			"description": "Service Restriction Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field041": {
+			"type": "String",
+			"length": 8,
+			"description": "Card Acceptor Terminal Identification",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field042": {
+			"type": "String",
+			"length": 15,
+			"description": "Card Acceptor Identification Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field043": {
+			"type": "String",
+			"length": 40,
+			"description": "Card Acceptor Name/Location",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field044": {
+			"type": "String",
+			"length": 99,
+			"description": "Additional Data",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LL"
+		},
+		"Field045": {
+			"type": "String",
+			"length": 76,
+			"description": "Track 1 Data",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LL"
+		},
+		"Field046": {
+			"type": "String",
+			"length": 999,
+			"description": "Additional data (ISO)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field047": {
+			"type": "String",
+			"length": 999,
+			"description": "Additional data (National)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field048": {
+			"type": "String",
+			"length": 999,
+			"description": "Additional data (Private)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field049": {
+			"type": "String",
+			"length": 3,
+			"description": "Transaction Currency Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field050": {
+			"type": "String",
+			"length": 3,
+			"description": "Settlement Currency Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field051": {
+			"type": "String",
+			"length": 3,
+			"description": "Cardholder Billing Currency Code",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field052": {
+			"type": "String",
+			"length": 8,
+			"description": "PIN Data",
+			"enc": "hexEncoder",
+			"prefix": "Hex.fixed"
+		},
+		"Field053": {
+			"type": "String",
+			"length": 16,
+			"description": "Security Related Control Information",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		},
+		"Field054": {
+			"type": "String",
+			"length": 120,
+			"description": "Additional Amounts",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field055": {
+			"type": "String",
+			"length": 999,
+			"description": "ICC Data – EMV Having Multiple Tags",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field056": {
+			"type": "String",
+			"length": 999,
+			"description": "Reserved (ISO)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field057": {
+			"type": "String",
+			"length": 999,
+			"description": "Reserved (National)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field058": {
+			"type": "String",
+			"length": 999,
+			"description": "Reserved (National)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field059": {
+			"type": "String",
+			"length": 999,
+			"description": "Reserved (National)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field060": {
+			"type": "String",
+			"length": 999,
+			"description": "Reserved (National)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field061": {
+			"type": "String",
+			"length": 999,
+			"description": "Reserved (Private)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field062": {
+			"type": "String",
+			"length": 999,
+			"description": "Reserved (Private)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field063": {
+			"type": "String",
+			"length": 999,
+			"description": "Reserved (Private)",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.LLL"
+		},
+		"Field064": {
+			"type": "String",
+			"length": 8,
+			"description": "Message Authentication Code (MAC)",
+			"enc": "hexEncoder",
+			"prefix": "Hex.fixed"
+		},
+		"Field090": {
+			"type": "String",
+			"length": 42,
+			"description": "Original Data Elements",
+			"enc": "asciiEncoder",
+			"prefix": "ASCII.fixed"
+		}
+	}
+}

@@ -1,0 +1,23 @@
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/moov-io/iso8583 v0.4.11
+## explicit
+github.com/moov-io/iso8583
+github.com/moov-io/iso8583/cmd/iso8583/describe
+github.com/moov-io/iso8583/encoding
+github.com/moov-io/iso8583/field
+github.com/moov-io/iso8583/padding
+github.com/moov-io/iso8583/prefix
+github.com/moov-io/iso8583/specs
+github.com/moov-io/iso8583/utils
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/stretchr/testify v1.7.0
+## explicit
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
+# github.com/yerden/go-util v1.1.4
+## explicit
+github.com/yerden/go-util/bcd
+# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+gopkg.in/yaml.v3
