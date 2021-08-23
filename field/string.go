@@ -59,6 +59,7 @@ func (f *String) Pack() ([]byte, error) {
 	}
 
 	valueLen := len(packed)
+
 	if f.spec.CountT == "1" {
 		valueLen = len(data)
 	}
