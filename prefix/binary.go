@@ -52,8 +52,7 @@ func (p *binaryVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 		return nil, fmt.Errorf("number of digits in length: %d exceeds: %d", dataLen, p.Digits)
 	}
 
-	strLen := fmt.Sprintf("%0*d", p.Digits, dataLen)
-	res, err := encoding.Binary.Encode([]byte(strLen))
+	res, err := encoding.Binary.Encode([]byte{byte(dataLen)})
 	if err != nil {
 		return nil, err
 	}
