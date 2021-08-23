@@ -16,7 +16,7 @@ var (
 		Description: "Test Spec",
 		Pref:        prefix.ASCII.Fixed,
 		Pad:         padding.None,
-		Fields: map[string]Field{
+		Subfields: map[string]Field{
 			"1": NewString(&Spec{
 				Length:      2,
 				Description: "String Field",
@@ -46,7 +46,7 @@ var (
                         Enc:         encoding.ASCII,
                         Pad:         padding.Left('0'),
                 },
-		Fields: map[string]Field{
+		Subfields: map[string]Field{
 			"1": NewString(&Spec{
 				Length:      2,
 				Description: "String Field",
@@ -74,7 +74,7 @@ var (
                                         Enc:         encoding.ASCII,
                                         Pad:         padding.Left('0'),
                                 },
-				Fields: map[string]Field{
+				Subfields: map[string]Field{
 					"1": NewString(&Spec{
 						Length:      2,
 						Description: "String Field",
@@ -144,7 +144,7 @@ func TestCompositePacking(t *testing.T) {
 			// This will throw an error when encoding the field's length.
 			Length: 4,
 			Pref:   prefix.ASCII.Fixed,
-			Fields: map[string]Field{
+			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
@@ -226,7 +226,7 @@ func TestCompositePacking(t *testing.T) {
 		spec := &Spec{
 			Length: 4,
 			Pref:   prefix.ASCII.L,
-			Fields: map[string]Field{
+			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
@@ -263,7 +263,7 @@ func TestCompositePacking(t *testing.T) {
 			// This will throw an error when encoding the field's length.
 			Length: 4,
 			Pref:   prefix.ASCII.Fixed,
-			Fields: map[string]Field{
+			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
@@ -324,7 +324,7 @@ func TestCompositePackingWithID(t *testing.T) {
                                 Enc:         encoding.ASCII,
                                 Pad:         padding.Left('0'),
                         },
-			Fields: map[string]Field{
+			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
 					Enc:    encoding.ASCII,
@@ -501,7 +501,7 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 			spec: &Spec{
 				Length: 6,
 				Pref:   prefix.ASCII.Fixed,
-				Fields: map[string]Field{},
+				Subfields: map[string]Field{},
 			},
 		},
 		{
@@ -509,7 +509,7 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 			spec: &Spec{
 				Length: 6,
 				Pref:   prefix.ASCII.Fixed,
-				Fields: map[string]Field{},
+				Subfields: map[string]Field{},
 			},
 		},
 		{
@@ -518,7 +518,7 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 				Length: 6,
 				Pref:   prefix.ASCII.Fixed,
 				Pad:    padding.None,
-				Fields: map[string]Field{},
+				Subfields: map[string]Field{},
 			},
 		},
 	}
@@ -549,7 +549,7 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 				Length: 6,
 				Pref:   prefix.ASCII.Fixed,
 				Pad:    padding.Left('0'),
-				Fields: map[string]Field{},
+				Subfields: map[string]Field{},
 			},
 		},
 		{
@@ -559,7 +559,7 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 				Length:   6,
                                 Enc: encoding.ASCII,
 				Pref:     prefix.ASCII.Fixed,
-				Fields:   map[string]Field{},
+				Subfields:   map[string]Field{},
 			},
 		},
 		{
@@ -568,7 +568,7 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 			spec: &Spec{
 				Length:   6,
 				Pref:     prefix.ASCII.Fixed,
-				Fields:   map[string]Field{},
+				Subfields:   map[string]Field{},
                                 Tag: &TagSpec{
                                         Length:    2,
                                         Pad:         padding.Left('0'),

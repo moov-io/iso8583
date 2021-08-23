@@ -11,6 +11,9 @@ var Hex Encoder = &hexEncoder{}
 
 type hexEncoder struct{}
 
+// Encode converts ASCII Hex-digits into a byte slice
+// e.g. []byte("AABBCC") would be converted into
+// []byte{0xAA, 0xBB, 0xCC}
 func (e hexEncoder) Encode(data []byte) ([]byte, error) {
 	out := make([]byte, hex.EncodedLen(len(data)))
 	hex.Encode(out, data)

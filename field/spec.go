@@ -8,31 +8,6 @@ import (
 	"github.com/moov-io/iso8583/prefix"
 )
 
-// Spec defines the structure of a field.
-type Spec struct {
-	// Length defines the maximum length of field (bytes, characters or
-	// digits), for both fixed and variable lengths.
-	Length int
-        // Tag sets the tag specification. Only applicable to composite field
-        // types.
-	Tag *TagSpec
-	// Description of what data the field holds.
-	Description string
-        // Enc defines the encoder used to marshal and unmarshal the field.
-        // Only applicable to primitive field types e.g. numerics, strings,
-        // binary etc
-	Enc encoding.Encoder
-        // Pref defines the prefixer of the field used to encode and decode the
-        // length of the field. Only applicable to primitive field types e.g.
-        // numerics, strings, binary etc
-	Pref prefix.Prefixer
-	// Pad sets the padding direction and type of the field.
-	Pad padding.Padder
-        // Fields defines the subfields held within the field. Only applicable
-        // to composite field types.
-	Fields map[string]Field
-}
-
 // TagSpec is used to define the format of field tags (sometimes defined as field IDs).
 // This is most commonly used by composite field types such as TLVs, subfields
 // and subelements. TagSpecs need not be defined for primitive field types
@@ -53,6 +28,31 @@ type TagSpec struct {
 	Pad padding.Padder
 }
 
+// Spec defines the structure of a field.
+type Spec struct {
+	// Length defines the maximum length of field (bytes, characters or
+	// digits), for both fixed and variable lengths.
+	Length int
+        // Tag sets the tag specification. Only applicable to composite field
+        // types.
+	Tag *TagSpec
+	// Description of what data the field holds.
+	Description string
+        // Enc defines the encoder used to marshal and unmarshal the field.
+        // Only applicable to primitive field types e.g. numerics, strings,
+        // binary etc
+	Enc encoding.Encoder
+        // Pref defines the prefixer of the field used to encode and decode the
+        // length of the field. Only applicable to primitive field types e.g.
+        // numerics, strings, binary etc
+	Pref prefix.Prefixer
+	// Pad sets the padding direction and type of the field.
+	Pad padding.Padder
+        // Subfields defines the subfields held within the field. Only
+        // applicable to composite field types.
+	Subfields map[string]Field
+}
+
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {
 	return &Spec{
 		Length:      length,
@@ -62,19 +62,19 @@ func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer
 	}
 }
 
-// Creates a map with new instances of Fields (Field interface)
+// CreateSubfields creates a map with new instances of Fields (Field interface)
 // based on the field type in Spec.
-func (s *Spec) CreateMessageFields() map[string]Field {
+func (s *Spec) CreateSubfields() map[string]Field {
 	fields := map[string]Field{}
 
-	for k, specField := range s.Fields {
-		fields[k] = createMessageField(specField)
+        for k, specField := range s.Subfields {
+		fields[k] = createSubfield(specField)
 	}
 
 	return fields
 }
 
-func createMessageField(specField Field) Field {
+func createSubfield(specField Field) Field {
 	fieldType := reflect.TypeOf(specField).Elem()
 
 	// create new field and convert it to Field interface
