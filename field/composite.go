@@ -133,11 +133,10 @@ func (f *Composite) Pack() ([]byte, error) {
 // subfields. An offset (unit depends on encoding and prefix values) is
 // returned on success. A non-nil error is returned on failure.
 func (f *Composite) Unpack(data []byte) (int, error) {
-	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
+        dataLen, offset, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %v", err)
 	}
-	offset := f.spec.Pref.Length()
 
 	// data is stripped of the prefix before it is provided to unpack().
 	// Therefore, it is unaware of when to stop parsing unless we bound the

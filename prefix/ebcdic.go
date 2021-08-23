@@ -38,30 +38,27 @@ func (p *ebcdicVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	return res, nil
 }
 
-func (p *ebcdicVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
-	if len(data) < p.Length() {
-		return 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", p.Length(), len(data))
+func (p *ebcdicVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
+        length := p.Digits
+        if len(data) < length {
+                return 0, 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", length, len(data))
 	}
 
-	bDigits, _, err := encoding.EBCDIC.Decode(data[:p.Length()], p.Digits)
+	bDigits, _, err := encoding.EBCDIC.Decode(data[:length], p.Digits)
 	if err != nil {
-		return 0, err
+                return 0, 0, err
 	}
 
 	dataLen, err := strconv.Atoi(string(bDigits))
 	if err != nil {
-		return 0, err
+                return 0, 0, err
 	}
 
 	if dataLen > maxLen {
-		return 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
+                return 0, 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
 	}
 
-	return dataLen, nil
-}
-
-func (p *ebcdicVarPrefixer) Length() int {
-	return p.Digits
+        return dataLen, length, nil
 }
 
 func (p *ebcdicVarPrefixer) Inspect() string {
@@ -80,12 +77,8 @@ func (p *ebcdicFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) 
 }
 
 // Returns number of characters that should be decoded
-func (p *ebcdicFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, error) {
-	return fixLen, nil
-}
-
-func (p *ebcdicFixedPrefixer) Length() int {
-	return 0
+func (p *ebcdicFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, int, error) {
+        return fixLen, 0, nil
 }
 
 func (p *ebcdicFixedPrefixer) Inspect() string {

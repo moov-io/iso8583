@@ -19,7 +19,7 @@ func TestEBCDICVarPrefixer_EncodeLengthMaxLengthValidation(t *testing.T) {
 }
 
 func TestEBCDICVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
-	_, err := EBCDIC.LLL.DecodeLength(20, []byte{0x22})
+        _, _, err := EBCDIC.LLL.DecodeLength(20, []byte{0x22})
 
 	require.Contains(t, err.Error(), "length mismatch: want to read 3 bytes, get only 1")
 }
@@ -27,16 +27,17 @@ func TestEBCDICVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
 func TestEBCDICVarPrefixer_LHelpers(t *testing.T) {
 	tests := []struct {
 		pref   Prefixer
+                bytesRead int
 		maxLen int
 		in     int
 		out    []byte
 	}{
-		{EBCDIC.L, 5, 3, []byte{0xf3}},
-		{EBCDIC.LL, 20, 2, []byte{0xf0, 0xf2}},
-		{EBCDIC.LL, 20, 12, []byte{0xf1, 0xf2}},
-		{EBCDIC.LLL, 340, 2, []byte{0xf0, 0xf0, 0xf2}},
-		{EBCDIC.LLL, 340, 200, []byte{0xf2, 0xf0, 0xf0}},
-		{EBCDIC.LLLL, 9999, 1234, []byte{0xf1, 0xf2, 0xf3, 0xf4}},
+		{EBCDIC.L, 1, 5, 3, []byte{0xf3}},
+		{EBCDIC.LL, 2, 20, 2, []byte{0xf0, 0xf2}},
+		{EBCDIC.LL, 2, 20, 12, []byte{0xf1, 0xf2}},
+		{EBCDIC.LLL, 3, 340, 2, []byte{0xf0, 0xf0, 0xf2}},
+		{EBCDIC.LLL, 3, 340, 200, []byte{0xf2, 0xf0, 0xf0}},
+                {EBCDIC.LLLL, 4, 9999, 1234, []byte{0xf1, 0xf2, 0xf3, 0xf4}},
 	}
 
 	// test encoding
@@ -51,9 +52,10 @@ func TestEBCDICVarPrefixer_LHelpers(t *testing.T) {
 	// test decoding
 	for _, tt := range tests {
 		t.Run(tt.pref.Inspect()+"_DecodeLength", func(t *testing.T) {
-			got, err := tt.pref.DecodeLength(tt.maxLen, tt.out)
+			got, read, err := tt.pref.DecodeLength(tt.maxLen, tt.out)
 			require.NoError(t, err)
 			require.Equal(t, tt.in, got)
+                        require.Equal(t, tt.bytesRead, read)
 		})
 	}
 }
@@ -70,10 +72,11 @@ func TestEBCDICFixedPrefixer(t *testing.T) {
 
 	// Fixed prefixer returns configured len
 	// rather than read it from data
-	dataLen, err := pref.DecodeLength(8, []byte("1234"))
+	dataLen, read, err := pref.DecodeLength(8, []byte("1234"))
 
 	require.NoError(t, err)
 	require.Equal(t, 8, dataLen)
+        require.Equal(t, 0, read)
 }
 
 func TestEBCDICFixedPrefixer_EncodeLengthValidation(t *testing.T) {
