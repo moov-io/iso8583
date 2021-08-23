@@ -58,7 +58,12 @@ func (f *String) Pack() ([]byte, error) {
 		return nil, fmt.Errorf("failed to encode content: %v", err)
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
+	valueLen := len(packed)
+	if f.spec.CountT == "1" {
+		valueLen = len(data)
+	}
+
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, valueLen)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %v", err)
 	}

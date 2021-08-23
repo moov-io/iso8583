@@ -17,6 +17,7 @@ type Spec struct {
 	Pref        prefix.Prefixer
 	Pad         padding.Padder
 	Fields      map[int]Field
+	CountT      string
 }
 
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {
