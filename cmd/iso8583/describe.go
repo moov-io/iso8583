@@ -5,9 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/moov-io/iso8583"
-	"github.com/moov-io/iso8583/cmd/iso8583/describe"
-	"github.com/moov-io/iso8583/specs"
+	"github.com/franizus/iso8583"
+	"github.com/franizus/iso8583/cmd/iso8583/describe"
+	"github.com/franizus/iso8583/specs"
 )
 
 var availableSpecs = map[string]*iso8583.MessageSpec{

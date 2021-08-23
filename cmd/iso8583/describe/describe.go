@@ -8,8 +8,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/moov-io/iso8583"
-	"github.com/moov-io/iso8583/field"
+	"github.com/franizus/iso8583"
+	"github.com/franizus/iso8583/field"
 )
 
 var defaultSpecName = "ISO 8583"

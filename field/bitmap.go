@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/moov-io/iso8583/utils"
+	"github.com/franizus/iso8583/utils"
 )
 
 const minBitmapLength = 8 // 64 bit, 8 bytes, or 16 hex digits

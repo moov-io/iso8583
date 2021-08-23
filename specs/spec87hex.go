@@ -1,11 +1,11 @@
 package specs
 
 import (
-	"github.com/moov-io/iso8583"
-	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/field"
-	"github.com/moov-io/iso8583/padding"
-	"github.com/moov-io/iso8583/prefix"
+	"github.com/franizus/iso8583"
+	"github.com/franizus/iso8583/encoding"
+	"github.com/franizus/iso8583/field"
+	"github.com/franizus/iso8583/padding"
+	"github.com/franizus/iso8583/prefix"
 )
 
 var Spec87Hex *iso8583.MessageSpec = &iso8583.MessageSpec{

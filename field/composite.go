@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/moov-io/iso8583/padding"
+	"github.com/franizus/iso8583/padding"
 )
 
 var _ Field = (*Composite)(nil)

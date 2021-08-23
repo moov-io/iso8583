@@ -12,7 +12,7 @@ builds:
       - darwin
     main: ./cmd/iso8583
     ldflags:
-      - -X github.com/moov-io/iso8583.Version={{.Version}}
+      - -X github.com/franizus/iso8583.Version={{.Version}}
 archives:
   - format: binary
     files:

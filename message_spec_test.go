@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/field"
-	"github.com/moov-io/iso8583/prefix"
+	"github.com/franizus/iso8583/encoding"
+	"github.com/franizus/iso8583/field"
+	"github.com/franizus/iso8583/prefix"
 	"github.com/stretchr/testify/require"
 )
 

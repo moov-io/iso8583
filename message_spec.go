@@ -3,7 +3,7 @@ package iso8583
 import (
 	"reflect"
 
-	"github.com/moov-io/iso8583/field"
+	"github.com/franizus/iso8583/field"
 )
 
 type MessageSpec struct {

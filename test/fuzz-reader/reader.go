@@ -20,7 +20,7 @@ package fuzzreader
 import (
 	"fmt"
 
-	"github.com/moov-io/iso8583"
+	"github.com/franizus/iso8583"
 )
 
 // Return codes (from go-fuzz docs)

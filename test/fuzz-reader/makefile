@@ -3,7 +3,7 @@
 fuzz: fuzz-build fuzz-run
 
 fuzz-build:
-	CGO_ENABLED=1 GO111MODULE=off go-fuzz-build github.com/moov-io/iso8583/test/fuzz-reader
+	CGO_ENABLED=1 GO111MODULE=off go-fuzz-build github.com/franizus/iso8583/test/fuzz-reader
 
 fuzz-run:
 	CGO_ENABLED=1 GO111MODULE=off go-fuzz -bin=./fuzzreader-fuzz.zip -workdir=$(shell pwd)

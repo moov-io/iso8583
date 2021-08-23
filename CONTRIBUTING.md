@@ -29,13 +29,13 @@ We recommend using additional git remote's for pushing/pulling code. Go cares ab
 To pull our source code run:
 
 ```
-$ go get github.com/moov-io/iso8583
+$ go get github.com/franizus/iso8583
 ```
 
 Then, add your (or another user's) fork.
 
 ```
-$ cd $GOPATH/src/github.com/moov-io/iso8583
+$ cd $GOPATH/src/github.com/franizus/iso8583
 
 $ git remote add $user git@github.com:$user/iso8583.git
 

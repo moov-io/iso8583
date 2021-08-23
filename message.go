@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/moov-io/iso8583/field"
+	"github.com/franizus/iso8583/field"
 )
 
 type Message struct {

@@ -3,9 +3,9 @@ package field
 import (
 	"reflect"
 
-	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/padding"
-	"github.com/moov-io/iso8583/prefix"
+	"github.com/franizus/iso8583/encoding"
+	"github.com/franizus/iso8583/padding"
+	"github.com/franizus/iso8583/prefix"
 )
 
 type Spec struct {

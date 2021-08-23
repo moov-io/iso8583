@@ -14,7 +14,7 @@ check:
 ifeq ($(OS),Windows_NT)
 	@echo "Skipping checks on Windows, currently unsupported."
 else
-	@wget -O lint-project.sh https://raw.githubusercontent.com/moov-io/infra/master/go/lint-project.sh
+	@wget -O lint-project.sh https://raw.githubusercontent.com/franizus/infra/master/go/lint-project.sh
 	@chmod +x ./lint-project.sh
 	./lint-project.sh
 endif
@@ -27,7 +27,7 @@ docker-fuzz:
 
 build:
 	@mkdir -p ./bin/
-	go build -ldflags "-X github.com/moov-io/iso8583.Version=${VERSION}" -o bin/iso8583 github.com/moov-io/iso8583/cmd/iso8583
+	go build -ldflags "-X github.com/franizus/iso8583.Version=${VERSION}" -o bin/iso8583 github.com/franizus/iso8583/cmd/iso8583
 
 release-push:
 	docker push moov/iso8583fuzz:$(VERSION)

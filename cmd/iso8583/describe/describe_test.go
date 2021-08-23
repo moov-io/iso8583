@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/moov-io/iso8583"
-	"github.com/moov-io/iso8583/specs"
+	"github.com/franizus/iso8583"
+	"github.com/franizus/iso8583/specs"
 	"github.com/stretchr/testify/require"
 )
 

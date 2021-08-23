@@ -1,10 +1,10 @@
 package iso8583
 
 import (
-	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/field"
-	"github.com/moov-io/iso8583/padding"
-	"github.com/moov-io/iso8583/prefix"
+	"github.com/franizus/iso8583/encoding"
+	"github.com/franizus/iso8583/field"
+	"github.com/franizus/iso8583/padding"
+	"github.com/franizus/iso8583/prefix"
 )
 
 // keep it here for a little while for compatibility
