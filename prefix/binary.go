@@ -65,15 +65,12 @@ func (p *binaryVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
 		return 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", p.Length(), len(data))
 	}
 
-	bDigits, _, err := encoding.Binary.Decode(data[:p.Length()], p.Digits)
+	bDigits, _, err := encoding.Binary.Decode(data[:p.Length()], p.Length())
 	if err != nil {
 		return 0, err
 	}
 
-	dataLen, err := strconv.Atoi(string(bDigits))
-	if err != nil {
-		return 0, err
-	}
+	dataLen := int(bDigits[0])
 
 	if dataLen > maxLen {
 		return 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
@@ -83,7 +80,7 @@ func (p *binaryVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
 }
 
 func (p *binaryVarPrefixer) Length() int {
-	return p.Digits
+	return 1
 }
 
 func (p *binaryVarPrefixer) Inspect() string {
