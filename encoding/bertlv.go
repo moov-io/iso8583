@@ -2,6 +2,7 @@ package encoding
 
 import (
         "bytes"
+        "encoding/hex"
 	"fmt"
 	"math/bits"
 )
@@ -14,7 +15,7 @@ type berTLVEncoderTag struct{}
 // Encode converts ASCII Hex-digits into a byte slice e.g. []byte("AABBCC")
 // would be converted into []byte{0xAA, 0xBB, 0xCC}
 func (berTLVEncoderTag) Encode(data []byte) ([]byte, error) {
-        out, _, err := Hex.Decode(data, len(data))
+        out, _, err := Hex.Decode(data, hex.DecodedLen(len(data)))
         return out, err
 }
 
@@ -27,7 +28,8 @@ func (berTLVEncoderTag) Encode(data []byte) ([]byte, error) {
 //    most significant bit is unset.
 //
 // On success, the ASCII representation of the Tag as well are returned along
-// with the number of bytes read.
+// with the number of bytes read e.g. []byte{0x5F, 0x2A} would be converted to
+// []byte("5F2A")
 func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
         r := bytes.NewReader(data)
 
@@ -37,9 +39,9 @@ func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
 	}
         tagLen := 1
 
-        shouldReadSubsequentByte := true
-	if firstByte >= 0b00011111 {
-                shouldReadSubsequentByte = false
+        shouldReadSubsequentByte := false
+        if bits.TrailingZeros8(^firstByte) >= 5 {
+                shouldReadSubsequentByte = true
 	}
 
 	for shouldReadSubsequentByte {

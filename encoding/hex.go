@@ -7,7 +7,7 @@ import (
 )
 
 // ASCII HEX encoder
-var Hex Encoder = &hexEncoder{}
+var Hex = &hexEncoder{}
 
 type hexEncoder struct{}
 
