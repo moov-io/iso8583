@@ -192,36 +192,41 @@ func (f *Composite) MarshalJSON() ([]byte, error) {
 func (f *Composite) pack() ([]byte, error) {
 	packed := []byte{}
 
-	//creation of the bitmap in subfield 0
-	f.fieldsMap = map[int]struct{}{}
-	f.Bitmap().Reset()
+	if f.spec.HasBitmap {
+		//if the compound field has a bitmap then create the bitmap in subfield 0
+		f.fieldsMap = map[int]struct{}{}
+		f.Bitmap().Reset()
 
-	//get active ids from composite field
-	ids, err := f.setPackableDataFields() // TODO Obtiene ids activos
-	if err != nil {
-		return nil, fmt.Errorf("failed to pack message: %w", err)
-	}
-
-	for _, id := range ids {
-		// indexes 0 are for sub_bitmap
-		if id < 1 {
-			continue
+		//get active ids from composite field
+		ids, err := f.setPackableDataFields() // TODO Obtiene ids activos
+		if err != nil {
+			return nil, fmt.Errorf("failed to pack message: %w", err)
 		}
-		f.Bitmap().Set(id)
+
+		for _, id := range ids {
+			// indexes 0 are for sub_bitmap
+			if id < 1 {
+				continue
+			}
+			f.Bitmap().Set(id)
+		}
 	}
 
 	for _, id := range f.orderedSpecFieldIDs {
 		specField := f.idToFieldMap[id]
 
-		//id 0 is reserved for the composite field bitmap
-		if id == 0 {
-			packedBytes, err := specField.Pack()
-			if err != nil {
-				return nil, fmt.Errorf("failed to pack subfield %d: %v", id, err)
+
+		if f.spec.HasBitmap {
+			//if the compound field has a bitmap then id 0 is reserved for the composite field bitmap
+			if id == 0 {
+				packedBytes, err := specField.Pack()
+				if err != nil {
+					return nil, fmt.Errorf("failed to pack subfield %d: %v", id, err)
+				}
+				packedBytes = packedBytes[:specField.Spec().Length] //obtaining the number of bits based on the configured size
+				packed = append(packed, packedBytes...)
+				continue
 			}
-			packedBytes = packedBytes[:specField.Spec().Length] //obtaining the number of bits based on the configured size
-			packed = append(packed, packedBytes...)
-			continue
 		}
 
 		if f.data != nil {

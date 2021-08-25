@@ -18,6 +18,7 @@ type Spec struct {
 	Pad         padding.Padder
 	Fields      map[int]Field
 	CountT      string
+	HasBitmap   bool
 }
 
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {
