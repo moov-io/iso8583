@@ -55,6 +55,7 @@ type Composite struct {
 
 	fieldsMap map[int]struct{}
 	data      *reflect.Value
+	bitmap    *Bitmap //bitmap of the composite field
 }
 
 // NewComposite creates a new instance of the *Composite struct,
@@ -190,8 +191,38 @@ func (f *Composite) MarshalJSON() ([]byte, error) {
 
 func (f *Composite) pack() ([]byte, error) {
 	packed := []byte{}
+
+	//creation of the bitmap in subfield 0
+	f.fieldsMap = map[int]struct{}{}
+	f.Bitmap().Reset()
+
+	//get active ids from composite field
+	ids, err := f.setPackableDataFields() // TODO Obtiene ids activos
+	if err != nil {
+		return nil, fmt.Errorf("failed to pack message: %w", err)
+	}
+
+	for _, id := range ids {
+		// indexes 0 are for sub_bitmap
+		if id < 1 {
+			continue
+		}
+		f.Bitmap().Set(id)
+	}
+
 	for _, id := range f.orderedSpecFieldIDs {
 		specField := f.idToFieldMap[id]
+
+		//id 0 is reserved for the composite field bitmap
+		if id == 0 {
+			packedBytes, err := specField.Pack()
+			if err != nil {
+				return nil, fmt.Errorf("failed to pack subfield %d: %v", id, err)
+			}
+			packedBytes = packedBytes[:specField.Spec().Length] //obtaining the number of bits based on the configured size
+			packed = append(packed, packedBytes...)
+			continue
+		}
 
 		if f.data != nil {
 			fieldName := fmt.Sprintf("F%d", id)
@@ -325,4 +356,59 @@ func orderedKeys(kvs map[int]Field) []int {
 func idToBytes(length int, id int) []byte {
 	idFmt := fmt.Sprintf("%%0%dd", length)
 	return []byte(fmt.Sprintf(idFmt, id))
+}
+
+func (f *Composite) Bitmap() *Bitmap {
+	if f.bitmap != nil {
+		return f.bitmap
+	}
+
+	f.bitmap = f.idToFieldMap[0].(*Bitmap)
+	f.bitmap.Reset()
+	f.fieldsMap[0] = struct{}{}
+
+	return f.bitmap
+}
+
+func (f *Composite) setPackableDataFields() ([]int, error) {
+	// Index 0 represent bitmap.
+	// These fields are assumed to be always populated.
+	populatedFieldIDs := []int{0}
+
+	for id, field := range f.idToFieldMap {
+		//represent the bitmap
+		if id == 0 {
+			continue
+		}
+
+		// These fields are set using the typed API
+		if f.data != nil {
+			dataField := f.dataFieldValue(id)
+			// no non-nil data field was found with this name
+			if dataField == (reflect.Value{}) || dataField.IsNil() {
+				continue
+			}
+			if err := field.SetData(dataField.Interface()); err != nil {
+				return nil, fmt.Errorf("failed to set data for field %d: %w", id, err)
+			}
+
+			// mark field as set
+			f.fieldsMap[id] = struct{}{}
+		}
+
+		// These fields are set using the untyped API
+		_, ok := f.fieldsMap[id]
+		// We don't wish set the MTI again, hence we ignore the 0
+		// index
+		if (ok || f.data != nil) && id != 0 {
+			populatedFieldIDs = append(populatedFieldIDs, id)
+		}
+	}
+	sort.Ints(populatedFieldIDs)
+
+	return populatedFieldIDs, nil
+}
+
+func (f *Composite) dataFieldValue(id int) reflect.Value {
+	return f.data.FieldByName(fmt.Sprintf("F%d", id))
 }
