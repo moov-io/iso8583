@@ -46,7 +46,7 @@ func (p *asciiVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, erro
 		return 0, 0, fmt.Errorf("data length: %d is larger than maximum %d", dataLen, maxLen)
 	}
 
-        return dataLen, p.Digits, nil
+	return dataLen, p.Digits, nil
 }
 
 func (p *asciiVarPrefixer) Inspect() string {

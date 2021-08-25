@@ -222,11 +222,11 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-        fieldMap := m.GetFields()
-        strFieldMap := map[string]field.Field{}
-        for k, v := range fieldMap {
-                strFieldMap[fmt.Sprint(k)] = v
-        }
+	fieldMap := m.GetFields()
+	strFieldMap := map[string]field.Field{}
+	for k, v := range fieldMap {
+		strFieldMap[fmt.Sprint(k)] = v
+	}
 
 	// get only fields that were set
 	return json.Marshal(field.OrderedMap(strFieldMap))

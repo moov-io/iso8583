@@ -5,8 +5,8 @@ type Prefixer interface {
 	EncodeLength(maxLen, length int) ([]byte, error)
 
 	// Returns the size of the field (number of characters, HEX-digits, bytes)
-        // as well as the number of bytes read to decode the length
-        DecodeLength(maxLen int, data []byte) (length int, read int, err error)
+	// as well as the number of bytes read to decode the length
+	DecodeLength(maxLen int, data []byte) (length int, read int, err error)
 
 	// Returns human readable information about length prefixer. Returned value
 	// is used to create prefixer when we build spec from a JSON spec.

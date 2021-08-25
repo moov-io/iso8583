@@ -62,7 +62,7 @@ func (e asciiToHexEncoder) Encode(data []byte) ([]byte, error) {
 	return out, nil
 }
 
-// Decode converts bytes into their ASCII representation. 
+// Decode converts bytes into their ASCII representation.
 // Length is number of ASCII characters (two ASCII characters is one HEX digit)
 // On success, the ASCII representation bytes are returned e.g. []byte{0x5F,
 // 0x2A} would be converted to []byte("5F2A")
@@ -72,7 +72,7 @@ func (e asciiToHexEncoder) Decode(data []byte, length int) ([]byte, int, error) 
 	}
 
 	out := make([]byte, hex.EncodedLen(length))
-        hex.Encode(out, data[:length])
+	hex.Encode(out, data[:length])
 
 	return []byte(strings.ToUpper(string(out))), length, nil
 }

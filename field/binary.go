@@ -67,7 +67,7 @@ func (f *Binary) Pack() ([]byte, error) {
 }
 
 func (f *Binary) Unpack(data []byte) (int, error) {
-        dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
+	dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %v", err)
 	}

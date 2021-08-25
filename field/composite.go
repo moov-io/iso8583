@@ -23,7 +23,7 @@ var _ Field = (*Composite)(nil)
 // Where the subfield structure is assumed to be as follows:
 // - Subfield Tag (if Composite.Spec().Tag.Length > 0)
 // - Subfield Length (if variable)
-// - Subfield Data (or Value in the case of TLVs) 
+// - Subfield Data (or Value in the case of TLVs)
 //
 // Composite behaves in two modes depending on whether subfield Tags need to be
 // explicitly handled or not. This is configured by setting Spec.Tag.Length.
@@ -42,9 +42,9 @@ var _ Field = (*Composite)(nil)
 // handle non-present subfields either.
 //
 // Tag.Pad should be used to set the padding direction and type of the Tag in
-// situations when tags hold leading characters e.g. '003'. Both the data struct 
+// situations when tags hold leading characters e.g. '003'. Both the data struct
 // and the Spec.Subfields map may then omit those padded characters in their
-// respective definitions.  
+// respective definitions.
 //
 // For the sake of determinism, packing of subfields is executed in order of Tag
 // regardless of the value of Spec.Tag.Length.
@@ -52,7 +52,7 @@ type Composite struct {
 	spec *Spec
 
 	orderedSpecFieldTags []string
-	tagToSubfieldMap        map[string]Field
+	tagToSubfieldMap     map[string]Field
 
 	data *reflect.Value
 }
@@ -81,7 +81,7 @@ func (f *Composite) SetSpec(spec *Spec) {
 		panic(err)
 	}
 	f.spec = spec
-        f.tagToSubfieldMap = spec.CreateSubfields()
+	f.tagToSubfieldMap = spec.CreateSubfields()
 	f.orderedSpecFieldTags = orderedKeys(f.tagToSubfieldMap)
 }
 
@@ -133,7 +133,7 @@ func (f *Composite) Pack() ([]byte, error) {
 // subfields. An offset (unit depends on encoding and prefix values) is
 // returned on success. A non-nil error is returned on failure.
 func (f *Composite) Unpack(data []byte) (int, error) {
-        dataLen, offset, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
+	dataLen, offset, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
@@ -205,12 +205,12 @@ func (f *Composite) pack() ([]byte, error) {
 			}
 		}
 
-                if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
-                        tagBytes := []byte(tag)
-                        if f.spec.Tag.Pad != nil {
-                                tagBytes = f.spec.Tag.Pad.Pad(tagBytes, f.spec.Tag.Length)
-                        }
-                        tagBytes, err := f.spec.Tag.Enc.Encode(tagBytes)
+		if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
+			tagBytes := []byte(tag)
+			if f.spec.Tag.Pad != nil {
+				tagBytes = f.spec.Tag.Pad.Pad(tagBytes, f.spec.Tag.Length)
+			}
+			tagBytes, err := f.spec.Tag.Enc.Encode(tagBytes)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert subfield Tag \"%v\" to int", tagBytes)
 			}
@@ -227,7 +227,7 @@ func (f *Composite) pack() ([]byte, error) {
 }
 
 func (f *Composite) unpack(data []byte) (int, error) {
-        if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
+	if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
 		return f.unpackSubfieldsByTag(data)
 	}
 	return f.unpackSubfields(data)
@@ -252,14 +252,14 @@ func (f *Composite) unpackSubfields(data []byte) (int, error) {
 func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 	offset := 0
 	for offset < len(data) {
-                tagBytes, read, err := f.spec.Tag.Enc.Decode(data[offset:], f.spec.Tag.Length)
+		tagBytes, read, err := f.spec.Tag.Enc.Decode(data[offset:], f.spec.Tag.Length)
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield Tag: %w", err)
 		}
-                if f.spec.Tag.Pad != nil {
-                        tagBytes = f.spec.Tag.Pad.Unpad(tagBytes)
-                }
-		tag := fmt.Sprintf("%s", tagBytes)
+		if f.spec.Tag.Pad != nil {
+			tagBytes = f.spec.Tag.Pad.Unpad(tagBytes)
+		}
+		tag := string(tagBytes)
 		specField, ok := f.tagToSubfieldMap[tag]
 		if !ok {
 			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
@@ -304,13 +304,13 @@ func (f *Composite) setSubfieldData(tag string, specField Field) error {
 
 func validateCompositeSpec(spec *Spec) error {
 	if spec.Pad != nil && spec.Pad != padding.None {
-                return fmt.Errorf("Composite spec only supports nil or None spec padding values")
+		return fmt.Errorf("Composite spec only supports nil or None spec padding values")
 	}
-        if spec.Enc != nil {
-                return fmt.Errorf("Composite spec only supports a nil Enc value")
-        }
-        if spec.Tag != nil && spec.Tag.Enc == nil && spec.Tag.Length > 0 {
-                return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
+	if spec.Enc != nil {
+		return fmt.Errorf("Composite spec only supports a nil Enc value")
+	}
+	if spec.Tag != nil && spec.Tag.Enc == nil && spec.Tag.Length > 0 {
+		return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
 	}
 	return nil
 }

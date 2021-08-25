@@ -31,7 +31,7 @@ func TestAsciiVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
 		Digits: 3,
 	}
 
-        _, _, err := pref.DecodeLength(20, []byte("22"))
+	_, _, err := pref.DecodeLength(20, []byte("22"))
 
 	require.Contains(t, err.Error(), "not enought data length: 2 to read: 3 byte digits")
 }
@@ -39,7 +39,7 @@ func TestAsciiVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
 func TestAsciiVarPrefixer_LHelpers(t *testing.T) {
 	tests := []struct {
 		pref   Prefixer
-                digits int
+		digits int
 		maxLen int
 		in     int
 		out    []byte
@@ -49,7 +49,7 @@ func TestAsciiVarPrefixer_LHelpers(t *testing.T) {
 		{ASCII.LL, 2, 20, 12, []byte("12")},
 		{ASCII.LLL, 3, 340, 2, []byte("002")},
 		{ASCII.LLL, 3, 340, 200, []byte("200")},
-                {ASCII.LLLL, 4, 9999, 1234, []byte("1234")},
+		{ASCII.LLLL, 4, 9999, 1234, []byte("1234")},
 	}
 
 	// test encoding
@@ -64,10 +64,10 @@ func TestAsciiVarPrefixer_LHelpers(t *testing.T) {
 	// test decoding
 	for _, tt := range tests {
 		t.Run(tt.pref.Inspect()+"_DecodeLength", func(t *testing.T) {
-                        got, read, err := tt.pref.DecodeLength(tt.maxLen, tt.out)
+			got, read, err := tt.pref.DecodeLength(tt.maxLen, tt.out)
 			require.NoError(t, err)
 			require.Equal(t, tt.in, got)
-                        require.Equal(t, tt.digits, read)
+			require.Equal(t, tt.digits, read)
 		})
 	}
 }
@@ -84,11 +84,11 @@ func TestAsciiFixedPrefixer(t *testing.T) {
 
 	// Fixed prefixer returns configured len
 	// rather than read it from data
-        dataLen, read, err := pref.DecodeLength(8, []byte("data"))
+	dataLen, read, err := pref.DecodeLength(8, []byte("data"))
 
 	require.NoError(t, err)
 	require.Equal(t, 8, dataLen)
-        require.Equal(t, 0, read)
+	require.Equal(t, 0, read)
 }
 
 func TestAsciiFixedPrefixer_EncodeLengthValidation(t *testing.T) {

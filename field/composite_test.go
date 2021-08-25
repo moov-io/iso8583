@@ -41,11 +41,11 @@ var (
 		Length:      30,
 		Description: "Test Spec",
 		Pref:        prefix.ASCII.LL,
-                Tag: &TagSpec{
-                        Length:    2,
-                        Enc:         encoding.ASCII,
-                        Pad:         padding.Left('0'),
-                },
+		Tag: &TagSpec{
+			Length: 2,
+			Enc:    encoding.ASCII,
+			Pad:    padding.Left('0'),
+		},
 		Subfields: map[string]Field{
 			"1": NewString(&Spec{
 				Length:      2,
@@ -69,11 +69,11 @@ var (
 				Length:      6,
 				Description: "Sub-Composite Field",
 				Pref:        prefix.ASCII.LL,
-                                Tag: &TagSpec{
-                                        Length:    2,
-                                        Enc:         encoding.ASCII,
-                                        Pad:         padding.Left('0'),
-                                },
+				Tag: &TagSpec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pad:    padding.Left('0'),
+				},
 				Subfields: map[string]Field{
 					"1": NewString(&Spec{
 						Length:      2,
@@ -87,25 +87,25 @@ var (
 	}
 
 	tlvTestSpec = &Spec{
-                Length:      999,
-                Description: "ICC Data – EMV Having Multiple Tags",
-                Pref:        prefix.ASCII.LLL,
-                Tag: &TagSpec{
-                        Enc: encoding.BerTLVTag,
-                },
-                Subfields: map[string]Field{
-                        "9A": NewString(&Spec{
-                                Description: "Transaction Date",
-                                Enc:         encoding.ASCIIToHex,
-                                Pref:        prefix.BerTLV,
-                        }),
-                        "9F02": NewString(&Spec{
-                                Description: "Amount, Authorised (Numeric)",
-                                Enc:         encoding.ASCIIToHex,
-                                Pref:        prefix.BerTLV,
-                        }),
-                },
-        }
+		Length:      999,
+		Description: "ICC Data – EMV Having Multiple Tags",
+		Pref:        prefix.ASCII.LLL,
+		Tag: &TagSpec{
+			Enc: encoding.BerTLVTag,
+		},
+		Subfields: map[string]Field{
+			"9A": NewString(&Spec{
+				Description: "Transaction Date",
+				Enc:         encoding.ASCIIToHex,
+				Pref:        prefix.BerTLV,
+			}),
+			"9F02": NewString(&Spec{
+				Description: "Amount, Authorized (Numeric)",
+				Enc:         encoding.ASCIIToHex,
+				Pref:        prefix.BerTLV,
+			}),
+		},
+	}
 )
 
 type CompsiteTestData struct {
@@ -120,7 +120,7 @@ type SubCompositeData struct {
 }
 
 type TLVTestData struct {
-	F9A *String
+	F9A   *String
 	F9F02 *String
 }
 
@@ -132,12 +132,11 @@ func TestComposite_SetData(t *testing.T) {
 	})
 }
 
-
 func TestTLVPacking(t *testing.T) {
 	t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
 		data := &TLVTestData{
-                        F9A: NewStringValue("210720"),
-                        F9F02: NewStringValue("000000000501"),
+			F9A:   NewStringValue("210720"),
+			F9F02: NewStringValue("000000000501"),
 		}
 
 		composite := NewComposite(tlvTestSpec)
@@ -147,15 +146,15 @@ func TestTLVPacking(t *testing.T) {
 		packed, err := composite.Pack()
 		require.NoError(t, err)
 
-                // TLV Length: 0x30, 0x31, 0x34 (014)
-                //
-                // Tag: 0x9a (9A)
-                // Length: 0x03 (3 bytes)
-                // Value: 0x21, 0x07, 0x20 (210720)
-                //
-                // Tag: 0x9f, 0x02 (9F02)
-                // Length: 0x06 (6 bytes)
-                // Value: 0x00, 0x00, 0x00, 0x00, 0x05, 0x01 (000000000501)
+		// TLV Length: 0x30, 0x31, 0x34 (014)
+		//
+		// Tag: 0x9a (9A)
+		// Length: 0x03 (3 bytes)
+		// Value: 0x21, 0x07, 0x20 (210720)
+		//
+		// Tag: 0x9f, 0x02 (9F02)
+		// Length: 0x06 (6 bytes)
+		// Value: 0x00, 0x00, 0x00, 0x00, 0x05, 0x01 (000000000501)
 		require.Equal(t, []byte{0x30, 0x31, 0x34, 0x9a, 0x3, 0x21, 0x7, 0x20, 0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1}, packed)
 	})
 
@@ -386,13 +385,13 @@ func TestCompositePackingWithID(t *testing.T) {
 		// Base field length < summation of (lengths of subfields + IDs).
 		// This will throw an error when encoding the field's length.
 		invalidSpec := &Spec{
-			Length:   6,
-			Pref:     prefix.ASCII.Fixed,
-                        Tag: &TagSpec{
-                                Length:    2,
-                                Enc:         encoding.ASCII,
-                                Pad:         padding.Left('0'),
-                        },
+			Length: 6,
+			Pref:   prefix.ASCII.Fixed,
+			Tag: &TagSpec{
+				Length: 2,
+				Enc:    encoding.ASCII,
+				Pad:    padding.Left('0'),
+			},
 			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
@@ -491,7 +490,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.EqualError(t, err, "failed to unpack subfield 11: field not defined in Spec")
 	})
 
-        t.Run("Unpack returns an error on if subfield not defined in spec", func(t *testing.T) {
+	t.Run("Unpack returns an error on if subfield not defined in spec", func(t *testing.T) {
 		data := &CompsiteTestData{}
 
 		composite := NewComposite(compositeTestSpecWithIDLength)
@@ -568,25 +567,25 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 		{
 			desc: "accepts nil Enc value",
 			spec: &Spec{
-				Length: 6,
-				Pref:   prefix.ASCII.Fixed,
+				Length:    6,
+				Pref:      prefix.ASCII.Fixed,
 				Subfields: map[string]Field{},
 			},
 		},
 		{
 			desc: "accepts nil Pad value",
 			spec: &Spec{
-				Length: 6,
-				Pref:   prefix.ASCII.Fixed,
+				Length:    6,
+				Pref:      prefix.ASCII.Fixed,
 				Subfields: map[string]Field{},
 			},
 		},
 		{
 			desc: "accepts None Pad value",
 			spec: &Spec{
-				Length: 6,
-				Pref:   prefix.ASCII.Fixed,
-				Pad:    padding.None,
+				Length:    6,
+				Pref:      prefix.ASCII.Fixed,
+				Pad:       padding.None,
 				Subfields: map[string]Field{},
 			},
 		},
@@ -615,9 +614,9 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 			desc: "panics on non-None / non-nil Pad value being defined in spec",
 			err:  "Composite spec only supports nil or None spec padding values",
 			spec: &Spec{
-				Length: 6,
-				Pref:   prefix.ASCII.Fixed,
-				Pad:    padding.Left('0'),
+				Length:    6,
+				Pref:      prefix.ASCII.Fixed,
+				Pad:       padding.Left('0'),
 				Subfields: map[string]Field{},
 			},
 		},
@@ -625,23 +624,23 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 			desc: "panics on non-nil Enc value being defined in spec",
 			err:  "Composite spec only supports a nil Enc value",
 			spec: &Spec{
-				Length:   6,
-                                Enc: encoding.ASCII,
-				Pref:     prefix.ASCII.Fixed,
-				Subfields:   map[string]Field{},
+				Length:    6,
+				Enc:       encoding.ASCII,
+				Pref:      prefix.ASCII.Fixed,
+				Subfields: map[string]Field{},
 			},
 		},
 		{
 			desc: "panics on nil Enc value being defined in spec if IDLength > 0",
-                        err:  "Composite spec requires a Tag.Enc to be defined if Tag.Length > 0",
+			err:  "Composite spec requires a Tag.Enc to be defined if Tag.Length > 0",
 			spec: &Spec{
-				Length:   6,
-				Pref:     prefix.ASCII.Fixed,
-				Subfields:   map[string]Field{},
-                                Tag: &TagSpec{
-                                        Length:    2,
-                                        Pad:         padding.Left('0'),
-                                },
+				Length:    6,
+				Pref:      prefix.ASCII.Fixed,
+				Subfields: map[string]Field{},
+				Tag: &TagSpec{
+					Length: 2,
+					Pad:    padding.Left('0'),
+				},
 			},
 		},
 	}

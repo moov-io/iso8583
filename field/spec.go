@@ -33,23 +33,23 @@ type Spec struct {
 	// Length defines the maximum length of field (bytes, characters or
 	// digits), for both fixed and variable lengths.
 	Length int
-        // Tag sets the tag specification. Only applicable to composite field
-        // types.
+	// Tag sets the tag specification. Only applicable to composite field
+	// types.
 	Tag *TagSpec
 	// Description of what data the field holds.
 	Description string
-        // Enc defines the encoder used to marshal and unmarshal the field.
-        // Only applicable to primitive field types e.g. numerics, strings,
-        // binary etc
+	// Enc defines the encoder used to marshal and unmarshal the field.
+	// Only applicable to primitive field types e.g. numerics, strings,
+	// binary etc
 	Enc encoding.Encoder
-        // Pref defines the prefixer of the field used to encode and decode the
-        // length of the field. Only applicable to primitive field types e.g.
-        // numerics, strings, binary etc
+	// Pref defines the prefixer of the field used to encode and decode the
+	// length of the field. Only applicable to primitive field types e.g.
+	// numerics, strings, binary etc
 	Pref prefix.Prefixer
 	// Pad sets the padding direction and type of the field.
 	Pad padding.Padder
-        // Subfields defines the subfields held within the field. Only
-        // applicable to composite field types.
+	// Subfields defines the subfields held within the field. Only
+	// applicable to composite field types.
 	Subfields map[string]Field
 }
 
@@ -67,7 +67,7 @@ func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer
 func (s *Spec) CreateSubfields() map[string]Field {
 	fields := map[string]Field{}
 
-        for k, specField := range s.Subfields {
+	for k, specField := range s.Subfields {
 		fields[k] = createSubfield(specField)
 	}
 

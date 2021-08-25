@@ -40,26 +40,26 @@ func (p *bcdVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 }
 
 func (p *bcdVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
-        length := bcd.EncodedLen(p.Digits)
-        if len(data) < length {
-                return 0, 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", length, len(data))
+	length := bcd.EncodedLen(p.Digits)
+	if len(data) < length {
+		return 0, 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", length, len(data))
 	}
 
-        bDigits, _, err := encoding.BCD.Decode(data[:length], p.Digits)
+	bDigits, _, err := encoding.BCD.Decode(data[:length], p.Digits)
 	if err != nil {
-                return 0, 0, err
+		return 0, 0, err
 	}
 
 	dataLen, err := strconv.Atoi(string(bDigits))
 	if err != nil {
-                return 0, 0, err
+		return 0, 0, err
 	}
 
 	if dataLen > maxLen {
-                return 0, 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
+		return 0, 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
 	}
 
-        return dataLen, length, nil
+	return dataLen, length, nil
 }
 
 func (p *bcdVarPrefixer) Inspect() string {
@@ -79,7 +79,7 @@ func (p *bcdFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 
 // Returns number of characters that should be decoded
 func (p *bcdFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, int, error) {
-        return fixLen, 0, nil
+	return fixLen, 0, nil
 }
 
 func (p *bcdFixedPrefixer) Inspect() string {

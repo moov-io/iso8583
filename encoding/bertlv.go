@@ -1,7 +1,7 @@
 package encoding
 
 import (
-        "bytes"
+	"bytes"
 	"fmt"
 	"math/bits"
 )
@@ -14,8 +14,8 @@ type berTLVEncoderTag struct{}
 // Encode converts ASCII Hex-digits into a byte slice e.g. []byte("AABBCC")
 // would be converted into []byte{0xAA, 0xBB, 0xCC}
 func (berTLVEncoderTag) Encode(data []byte) ([]byte, error) {
-        out, err := ASCIIToHex.Encode(data)
-        return out, err
+	out, err := ASCIIToHex.Encode(data)
+	return out, err
 }
 
 // Decode converts hexadecimal TLV bytes into their ASCII representation according
@@ -30,35 +30,35 @@ func (berTLVEncoderTag) Encode(data []byte) ([]byte, error) {
 // with the number of bytes read e.g. []byte{0x5F, 0x2A} would be converted to
 // []byte("5F2A")
 func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
-        r := bytes.NewReader(data)
+	r := bytes.NewReader(data)
 
 	firstByte, err := r.ReadByte()
 	if err != nil {
-                return nil, 0, err
+		return nil, 0, err
 	}
-        tagLenBytes := 1
+	tagLenBytes := 1
 
-        shouldReadSubsequentByte := false
-        if bits.TrailingZeros8(^firstByte) >= 5 {
-                shouldReadSubsequentByte = true
+	shouldReadSubsequentByte := false
+	if bits.TrailingZeros8(^firstByte) >= 5 {
+		shouldReadSubsequentByte = true
 	}
 
 	for shouldReadSubsequentByte {
 		b, err := r.ReadByte()
 		if err != nil {
-                        return nil, tagLenBytes, fmt.Errorf("failed to decode TLV tag: %w", err)
+			return nil, tagLenBytes, fmt.Errorf("failed to decode TLV tag: %w", err)
 		}
 		tagLenBytes++
-                // We read subsequent bytes to extract the tag by checking if
-                // the the most significant bit is set.
-                if bits.LeadingZeros8(b) > 0 {
+		// We read subsequent bytes to extract the tag by checking if
+		// the the most significant bit is set.
+		if bits.LeadingZeros8(b) > 0 {
 			shouldReadSubsequentByte = false
 		}
 	}
 
-        out, read, err := ASCIIToHex.Decode(data[:tagLenBytes], tagLenBytes)
+	out, read, err := ASCIIToHex.Decode(data[:tagLenBytes], tagLenBytes)
 	if err != nil {
-                return nil, 0, err
+		return nil, 0, err
 	}
-        return out, read, nil
+	return out, read, nil
 }

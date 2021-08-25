@@ -74,7 +74,7 @@ func (f *Bitmap) Pack() ([]byte, error) {
 // if secondary bitmap presents (bit 1 is set) we return 16 bytes (or 32 for hex encoding)
 // and so on for maxBitmaps
 func (f *Bitmap) Unpack(data []byte) (int, error) {
-        minLen, _, err := f.spec.Pref.DecodeLength(minBitmapLength, data)
+	minLen, _, err := f.spec.Pref.DecodeLength(minBitmapLength, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %v", err)
 	}
