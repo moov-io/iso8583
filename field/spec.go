@@ -11,13 +11,14 @@ import (
 type Spec struct {
 	Length int
 	// Only applicable Composite and other bespoke field types.
-	IDLength    int
-	Description string
-	Enc         encoding.Encoder
-	Pref        prefix.Prefixer
-	Pad         padding.Padder
-	Fields      map[int]Field
-	CountT      string
+	IDLength     int
+	Description  string
+	Enc          encoding.Encoder
+	Pref         prefix.Prefixer
+	Pad          padding.Padder
+	Fields       map[int]Field
+	CountT       string
+	OmitIDLength bool
 }
 
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {

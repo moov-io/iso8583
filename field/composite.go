@@ -239,7 +239,7 @@ func (f *Composite) pack() ([]byte, error) {
 			}
 		}
 
-		if f.spec.IDLength > 0 {
+		if f.spec.IDLength > 0 && !specField.Spec().OmitIDLength {
 			idBytes, err := f.spec.Enc.Encode(idToBytes(f.spec.IDLength, id))
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert subfield ID \"%s\" to int", idBytes)
