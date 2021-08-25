@@ -2,7 +2,6 @@ package encoding
 
 import (
         "bytes"
-        "encoding/hex"
 	"fmt"
 	"math/bits"
 )
@@ -15,7 +14,7 @@ type berTLVEncoderTag struct{}
 // Encode converts ASCII Hex-digits into a byte slice e.g. []byte("AABBCC")
 // would be converted into []byte{0xAA, 0xBB, 0xCC}
 func (berTLVEncoderTag) Encode(data []byte) ([]byte, error) {
-        out, _, err := Hex.Decode(data, hex.DecodedLen(len(data)))
+        out, err := ASCIIToHex.Encode(data)
         return out, err
 }
 
@@ -37,7 +36,7 @@ func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
 	if err != nil {
                 return nil, 0, err
 	}
-        tagLen := 1
+        tagLenBytes := 1
 
         shouldReadSubsequentByte := false
         if bits.TrailingZeros8(^firstByte) >= 5 {
@@ -47,9 +46,9 @@ func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
 	for shouldReadSubsequentByte {
 		b, err := r.ReadByte()
 		if err != nil {
-                        return nil, tagLen, fmt.Errorf("failed to decode TLV tag: %w", err)
+                        return nil, tagLenBytes, fmt.Errorf("failed to decode TLV tag: %w", err)
 		}
-		tagLen++
+		tagLenBytes++
                 // We read subsequent bytes to extract the tag by checking if
                 // the the most significant bit is set.
                 if bits.LeadingZeros8(b) > 0 {
@@ -57,9 +56,9 @@ func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
 		}
 	}
 
-        out, err := Hex.Encode(data[:tagLen])
+        out, read, err := ASCIIToHex.Decode(data[:tagLenBytes], tagLenBytes)
 	if err != nil {
-                return nil, tagLen, err
+                return nil, 0, err
 	}
-        return out, tagLen, nil
+        return out, read, nil
 }

@@ -85,6 +85,27 @@ var (
 			}),
 		},
 	}
+
+	tlvTestSpec = &Spec{
+                Length:      999,
+                Description: "ICC Data – EMV Having Multiple Tags",
+                Pref:        prefix.ASCII.LLL,
+                Tag: &TagSpec{
+                        Enc: encoding.BerTLVTag,
+                },
+                Subfields: map[string]Field{
+                        "9A": NewString(&Spec{
+                                Description: "Transaction Date",
+                                Enc:         encoding.ASCIIToHex,
+                                Pref:        prefix.BerTLV,
+                        }),
+                        "9F02": NewString(&Spec{
+                                Description: "Amount, Authorised (Numeric)",
+                                Enc:         encoding.ASCIIToHex,
+                                Pref:        prefix.BerTLV,
+                        }),
+                },
+        }
 )
 
 type CompsiteTestData struct {
@@ -98,11 +119,59 @@ type SubCompositeData struct {
 	F1 *String
 }
 
+type TLVTestData struct {
+	F9A *String
+	F9F02 *String
+}
+
 func TestComposite_SetData(t *testing.T) {
 	t.Run("SetData returns an error on provision of primitive type data", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpec)
 		err := composite.SetData("primitive str")
 		require.EqualError(t, err, "failed to set data as struct is expected, got: string")
+	})
+}
+
+
+func TestTLVPacking(t *testing.T) {
+	t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
+		data := &TLVTestData{
+                        F9A: NewStringValue("210720"),
+                        F9F02: NewStringValue("000000000501"),
+		}
+
+		composite := NewComposite(tlvTestSpec)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+                // TLV Length: 0x30, 0x31, 0x34 (014)
+                //
+                // Tag: 0x9a (9A)
+                // Length: 0x03 (3 bytes)
+                // Value: 0x21, 0x07, 0x20 (210720)
+                //
+                // Tag: 0x9f, 0x02 (9F02)
+                // Length: 0x06 (6 bytes)
+                // Value: 0x00, 0x00, 0x00, 0x00, 0x05, 0x01 (000000000501)
+		require.Equal(t, []byte{0x30, 0x31, 0x34, 0x9a, 0x3, 0x21, 0x7, 0x20, 0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1}, packed)
+	})
+
+	t.Run("Unpack correctly deserialises bytes to the data struct", func(t *testing.T) {
+		data := &TLVTestData{}
+
+		composite := NewComposite(tlvTestSpec)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		read, err := composite.Unpack([]byte{0x30, 0x31, 0x34, 0x9a, 0x3, 0x21, 0x7, 0x20, 0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1})
+		require.NoError(t, err)
+		require.Equal(t, 17, read)
+
+		require.Equal(t, "210720", data.F9A.Value)
+		require.Equal(t, "000000000501", data.F9F02.Value)
 	})
 }
 

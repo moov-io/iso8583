@@ -21,7 +21,7 @@ func TestMessageSpec_CreateMessageFields(t *testing.T) {
 			}),
 			1: field.NewBitmap(&field.Spec{
 				Description: "Bitmap",
-				Enc:         encoding.Hex,
+				Enc:         encoding.HexToASCII,
 				Pref:        prefix.Hex.Fixed,
 			}),
 		},

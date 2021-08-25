@@ -17,6 +17,7 @@ func TestBerTLVTag(t *testing.T) {
                 {"CVM List (single byte tag)", 1, []byte{0x8E}, []byte("8E")},
                 {"Acquirer Identifier (two byte tag)", 2, []byte{0x5F, 0x2A}, []byte("5F2A")},
                 {"BIC (two byte tag)", 2, []byte{0x5F, 0x54}, []byte("5F54")},
+                {"Authorised Amount", 2, []byte{0x9F, 0x02}, []byte("9F02")},
                 {"ATC Register (two byte tag)", 2, []byte{0x9F, 0x13}, []byte("9F13")},
                 {"Imaginary three byte tag", 3, []byte{0x9F, 0xA8, 0x13}, []byte("9FA813")},
 	}

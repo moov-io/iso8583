@@ -123,7 +123,7 @@ func (f *Composite) Pack() ([]byte, error) {
 
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %v", err)
+		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
 
 	return append(packedLength, packed...), nil
@@ -135,7 +135,7 @@ func (f *Composite) Pack() ([]byte, error) {
 func (f *Composite) Unpack(data []byte) (int, error) {
         dataLen, offset, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %v", err)
+		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
 	// data is stripped of the prefix before it is provided to unpack().
@@ -205,7 +205,7 @@ func (f *Composite) pack() ([]byte, error) {
 			}
 		}
 
-                if f.spec.Tag != nil && f.spec.Tag.Length > 0 {
+                if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
                         tagBytes := []byte(tag)
                         if f.spec.Tag.Pad != nil {
                                 tagBytes = f.spec.Tag.Pad.Pad(tagBytes, f.spec.Tag.Length)
@@ -227,7 +227,7 @@ func (f *Composite) pack() ([]byte, error) {
 }
 
 func (f *Composite) unpack(data []byte) (int, error) {
-        if f.spec.Tag != nil && f.spec.Tag.Length > 0 {
+        if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
 		return f.unpackSubfieldsByTag(data)
 	}
 	return f.unpackSubfields(data)
@@ -259,7 +259,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
                 if f.spec.Tag.Pad != nil {
                         tagBytes = f.spec.Tag.Pad.Unpad(tagBytes)
                 }
-		tag := string(tagBytes)
+		tag := fmt.Sprintf("%s", tagBytes)
 		specField, ok := f.tagToSubfieldMap[tag]
 		if !ok {
 			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
@@ -272,7 +272,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 
 		read, err = specField.Unpack(data[offset:])
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %v: %v", tag, err)
+			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
 		offset += read
 	}
