@@ -19,7 +19,7 @@ type Spec struct {
 	Fields      map[int]Field
 	CountT      string
 	HasBitmap   bool
-	Tag 		string
+	HasTag      bool
 }
 
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {

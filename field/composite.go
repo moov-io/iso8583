@@ -124,22 +124,12 @@ func (f *Composite) Pack() ([]byte, error) {
 		return nil, err
 	}
 
-	var encodedTag []byte
-	if f.spec.Tag != "" {
-		encodedTag, err = f.spec.Enc.Encode([]byte(f.spec.Tag))
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %v", err)
 	}
 
-	result := append(packedLength, encodedTag...)
-	result = append(result, packed...)
-	return result, nil
+	return append(packedLength, packed...), nil
 }
 
 // Unpack takes in a byte array and serializes them into the receiver's
@@ -151,17 +141,12 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 		return 0, fmt.Errorf("failed to decode length: %v", err)
 	}
 
-	readTag, err := tagLength(f)
-	if err != nil {
-		return 0, err
-	}
-
 	offset := f.spec.Pref.Length()
 
 	// data is stripped of the prefix before it is provided to unpack().
 	// Therefore, it is unaware of when to stop parsing unless we bound the
 	// length of the slice by the data length.
-	read, err := f.unpack(data[offset+readTag : offset+readTag+dataLen])
+	read, err := f.unpack(data[offset : offset+dataLen])
 	if err != nil {
 		return 0, err
 	}
@@ -170,17 +155,6 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 	}
 
 	return offset + read, nil
-}
-
-func tagLength(f *Composite) (int, error) {
-	if f.spec.Tag != "" {
-		_, readTag, err := f.spec.Enc.Decode([]byte(f.spec.Tag), len(f.spec.Tag))
-		if err != nil {
-			return 0, fmt.Errorf("failed to decode Tag: %v", err)
-		}
-		return readTag, nil
-	}
-	return 0, nil
 }
 
 // SetBytes iterates over the receiver's subfields and unpacks them.
@@ -270,7 +244,7 @@ func (f *Composite) pack() ([]byte, error) {
 			}
 		}
 
-		if f.spec.IDLength > 0 {
+		if f.spec.IDLength > 0 && !(f.spec.HasTag && id == 0) {
 			idBytes, err := f.spec.Enc.Encode(idToBytes(f.spec.IDLength, id))
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert subfield ID \"%s\" to int", idBytes)
@@ -312,6 +286,20 @@ func (f *Composite) unpackFields(data []byte) (int, error) {
 
 func (f *Composite) unpackFieldsByID(data []byte) (int, error) {
 	offset := 0
+
+	if f.spec.HasTag {
+		firstFieldIndex := 0
+		specField := f.idToFieldMap[firstFieldIndex]
+		if err := f.setSubfieldData(firstFieldIndex, specField); err != nil {
+			return 0, err
+		}
+		read, err := specField.Unpack(data[offset:])
+		if err != nil {
+			return 0, fmt.Errorf("failed to unpack subfield %d: %v", firstFieldIndex, err)
+		}
+		offset += read
+	}
+
 	for offset < len(data) {
 		idBytes, read, err := f.spec.Enc.Decode(data[offset:], f.spec.IDLength)
 		if err != nil {
