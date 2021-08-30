@@ -26,6 +26,7 @@ _testmain.go
 .idea
 .vscode/
 
+/vendor/
 coverage.html
 cover.out
 coverage.txt
