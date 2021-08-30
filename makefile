@@ -50,8 +50,7 @@ docker-fuzz:
 	docker tag moov/iso8583fuzz:$(VERSION) moov/iso8583fuzz:latest
 
 docker-push:
-	docker push moov/iso8583:${VERSION}
-	docker push moov/iso8583:latest
+	docker push moov/iso8583fuzz:${VERSION}
 
 # Extra utilities not needed for building
 
