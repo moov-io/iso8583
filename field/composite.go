@@ -140,6 +140,7 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %v", err)
 	}
+
 	offset := f.spec.Pref.Length()
 
 	// data is stripped of the prefix before it is provided to unpack().
@@ -215,7 +216,6 @@ func (f *Composite) pack() ([]byte, error) {
 	for _, id := range f.orderedSpecFieldIDs {
 		specField := f.idToFieldMap[id]
 
-
 		if f.spec.HasBitmap {
 			//if the compound field has a bitmap then id 0 is reserved for the composite field bitmap
 			if id == 0 {
@@ -244,7 +244,7 @@ func (f *Composite) pack() ([]byte, error) {
 			}
 		}
 
-		if f.spec.IDLength > 0 && !specField.Spec().OmitIDLength {
+		if f.spec.IDLength > 0 && !(f.spec.HasTag && id == 0) {
 			idBytes, err := f.spec.Enc.Encode(idToBytes(f.spec.IDLength, id))
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert subfield ID \"%s\" to int", idBytes)
@@ -286,6 +286,20 @@ func (f *Composite) unpackFields(data []byte) (int, error) {
 
 func (f *Composite) unpackFieldsByID(data []byte) (int, error) {
 	offset := 0
+
+	if f.spec.HasTag {
+		firstFieldIndex := 0
+		specField := f.idToFieldMap[firstFieldIndex]
+		if err := f.setSubfieldData(firstFieldIndex, specField); err != nil {
+			return 0, err
+		}
+		read, err := specField.Unpack(data[offset:])
+		if err != nil {
+			return 0, fmt.Errorf("failed to unpack subfield %d: %v", firstFieldIndex, err)
+		}
+		offset += read
+	}
+
 	for offset < len(data) {
 		idBytes, read, err := f.spec.Enc.Decode(data[offset:], f.spec.IDLength)
 		if err != nil {
