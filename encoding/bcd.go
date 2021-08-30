@@ -2,7 +2,6 @@ package encoding
 
 import (
 	"github.com/franizus/go-util/bcd"
-	// "github.com/yerden/go-util/bcd"
 )
 
 var BCD Encoder = &bcdEncoder{}
@@ -14,7 +13,7 @@ func (e *bcdEncoder) Encode(src []byte) ([]byte, error) {
 		src = append([]byte("0"), src...)
 	}
 
-	enc := bcd.NewEncoder(bcd.Standard)
+	enc := bcd.NewEncoder(bcd.Visa)
 	dst := make([]byte, bcd.EncodedLen(len(src)))
 	n, err := enc.Encode(dst, src)
 	if err != nil {

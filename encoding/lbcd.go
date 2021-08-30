@@ -2,7 +2,6 @@ package encoding
 
 import (
 	"github.com/franizus/go-util/bcd"
-	// "github.com/yerden/go-util/bcd"
 )
 
 var LBCD Encoder = &lBCDEncoder{}
