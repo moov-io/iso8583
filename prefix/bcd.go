@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/franizus/go-util/bcd"
+	// "github.com/yerden/go-util/bcd"
 	"github.com/franizus/iso8583/encoding"
-	"github.com/yerden/go-util/bcd"
 )
 
 type bcdVarPrefixer struct {
