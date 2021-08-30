@@ -19,24 +19,25 @@ func TestBCDVarPrefixer_EncodeLengthMaxLengthValidation(t *testing.T) {
 }
 
 func TestBCDVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
-	_, err := BCD.LLL.DecodeLength(20, []byte{0x22})
+	_, _, err := BCD.LLL.DecodeLength(20, []byte{0x22})
 
 	require.Contains(t, err.Error(), "length mismatch: want to read 2 bytes, get only 1")
 }
 
 func TestBCDVarPrefixer_LHelpers(t *testing.T) {
 	tests := []struct {
-		pref   Prefixer
-		maxLen int
-		in     int
-		out    []byte
+		pref      Prefixer
+		bytesRead int
+		maxLen    int
+		in        int
+		out       []byte
 	}{
-		{BCD.L, 5, 3, []byte{0x03}},
-		{BCD.LL, 20, 2, []byte{0x02}},
-		{BCD.LL, 20, 12, []byte{0x12}},
-		{BCD.LLL, 340, 2, []byte{0x00, 0x02}},
-		{BCD.LLL, 340, 200, []byte{0x02, 0x00}},
-		{BCD.LLLL, 9999, 1234, []byte{0x12, 0x34}},
+		{BCD.L, 1, 5, 3, []byte{0x03}},
+		{BCD.LL, 1, 20, 2, []byte{0x02}},
+		{BCD.LL, 1, 20, 12, []byte{0x12}},
+		{BCD.LLL, 2, 340, 2, []byte{0x00, 0x02}},
+		{BCD.LLL, 2, 340, 200, []byte{0x02, 0x00}},
+		{BCD.LLLL, 2, 9999, 1234, []byte{0x12, 0x34}},
 	}
 
 	// test encoding
@@ -51,9 +52,10 @@ func TestBCDVarPrefixer_LHelpers(t *testing.T) {
 	// test decoding
 	for _, tt := range tests {
 		t.Run(tt.pref.Inspect()+"_DecodeLength", func(t *testing.T) {
-			got, err := tt.pref.DecodeLength(tt.maxLen, tt.out)
+			got, read, err := tt.pref.DecodeLength(tt.maxLen, tt.out)
 			require.NoError(t, err)
 			require.Equal(t, tt.in, got)
+			require.Equal(t, tt.bytesRead, read)
 		})
 	}
 }
@@ -70,10 +72,11 @@ func TestBCDFixedPrefixer(t *testing.T) {
 
 	// Fixed prefixer returns configured len
 	// rather than read it from data
-	dataLen, err := pref.DecodeLength(8, []byte("1234"))
+	dataLen, read, err := pref.DecodeLength(8, []byte("1234"))
 
 	require.NoError(t, err)
 	require.Equal(t, 8, dataLen)
+	require.Equal(t, 0, read)
 }
 
 func TestBCDFixedPrefixer_EncodeLengthValidation(t *testing.T) {

@@ -67,13 +67,12 @@ func (f *Binary) Pack() ([]byte, error) {
 }
 
 func (f *Binary) Unpack(data []byte) (int, error) {
-	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
+	dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %v", err)
 	}
 
-	start := f.spec.Pref.Length()
-	raw, read, err := f.spec.Enc.Decode(data[start:], dataLen)
+	raw, read, err := f.spec.Enc.Decode(data[prefBytes:], dataLen)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode content: %v", err)
 	}
@@ -88,7 +87,7 @@ func (f *Binary) Unpack(data []byte) (int, error) {
 		*(f.data) = *f
 	}
 
-	return read + f.spec.Pref.Length(), nil
+	return read + prefBytes, nil
 }
 
 func (f *Binary) SetData(data interface{}) error {

@@ -29,12 +29,8 @@ func (p *hexFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (p *hexFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, error) {
-	return fixLen, nil
-}
-
-func (p *hexFixedPrefixer) Length() int {
-	return 0
+func (p *hexFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, int, error) {
+	return fixLen, 0, nil
 }
 
 func (p *hexFixedPrefixer) Inspect() string {
@@ -55,7 +51,7 @@ func (p *hexVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	}
 
 	strLen := strconv.Itoa(dataLen)
-	res, err := encoding.Hex.Encode([]byte(strLen))
+	res, err := encoding.HexToASCII.Encode([]byte(strLen))
 	if err != nil {
 		return nil, err
 	}
@@ -63,30 +59,27 @@ func (p *hexVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	return res, nil
 }
 
-func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
-	if len(data) < p.Length() {
-		return 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", p.Length(), len(data))
+func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
+	length := hex.EncodedLen(p.Digits)
+	if len(data) < length {
+		return 0, 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", length, len(data))
 	}
 
-	bDigits, _, err := encoding.Hex.Decode(data[:p.Length()], p.Digits)
+	bDigits, _, err := encoding.HexToASCII.Decode(data[:length], p.Digits)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	dataLen, err := strconv.Atoi(string(bDigits))
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	if dataLen > maxLen {
-		return 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
+		return 0, 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
 	}
 
-	return dataLen, nil
-}
-
-func (p *hexVarPrefixer) Length() int {
-	return hex.EncodedLen(p.Digits)
+	return dataLen, length, nil
 }
 
 func (p *hexVarPrefixer) Inspect() string {

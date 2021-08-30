@@ -19,10 +19,11 @@ type fieldConstructorFunc func(spec *field.Spec) field.Field
 
 var (
 	fieldConstructor = map[string]fieldConstructorFunc{
-		"String":  func(spec *field.Spec) field.Field { return field.NewString(spec) },
-		"Numeric": func(spec *field.Spec) field.Field { return field.NewNumeric(spec) },
-		"Binary":  func(spec *field.Spec) field.Field { return field.NewBinary(spec) },
-		"Bitmap":  func(spec *field.Spec) field.Field { return field.NewBitmap(spec) },
+		"String":    func(spec *field.Spec) field.Field { return field.NewString(spec) },
+		"Numeric":   func(spec *field.Spec) field.Field { return field.NewNumeric(spec) },
+		"Binary":    func(spec *field.Spec) field.Field { return field.NewBinary(spec) },
+		"Bitmap":    func(spec *field.Spec) field.Field { return field.NewBitmap(spec) },
+		"Composite": func(spec *field.Spec) field.Field { return field.NewComposite(spec) },
 	}
 
 	prefixesExtToInt = map[string]prefix.Prefixer{
@@ -47,24 +48,28 @@ var (
 		"EBCDIC.LLL":   prefix.EBCDIC.LLL,
 		"EBCDIC.LLLL":  prefix.EBCDIC.LLLL,
 		"Binary.Fixed": prefix.Binary.Fixed,
+		"BerTLV":       prefix.BerTLV,
 	}
 
 	encodingsExtToInt = map[string]encoding.Encoder{
-		"ASCII":  encoding.ASCII,
-		"BCD":    encoding.BCD,
-		"EBCDIC": encoding.EBCDIC,
-		"Binary": encoding.Binary,
-		"Hex":    encoding.Hex,
-		"LBCD":   encoding.LBCD,
+		"ASCII":      encoding.ASCII,
+		"BCD":        encoding.BCD,
+		"EBCDIC":     encoding.EBCDIC,
+		"Binary":     encoding.Binary,
+		"HexToASCII": encoding.HexToASCII,
+		"ASCIIToHex": encoding.ASCIIToHex,
+		"LBCD":       encoding.LBCD,
+		"BerTLVTag":  encoding.BerTLVTag,
 	}
 
 	encodingsIntToExt = map[string]string{
-		"asciiEncoder":  "ASCII",
-		"bcdEncoder":    "BCD",
-		"ebcdicEncoder": "EBCDIC",
-		"binaryEncoder": "Binary",
-		"hexEncoder":    "Hex",
-		"lBCDEncoder":   "LBCD",
+		"asciiEncoder":      "ASCII",
+		"bcdEncoder":        "BCD",
+		"ebcdicEncoder":     "EBCDIC",
+		"binaryEncoder":     "Binary",
+		"hexToASCIIEncoder": "HexToASCII",
+		"asciiToHexEncoder": "ASCIIToHex",
+		"lBCDEncoder":       "LBCD",
 	}
 
 	paddersIntToExt = map[string]string{
@@ -100,7 +105,6 @@ type specDummy struct {
 type fieldDummy struct {
 	Type        string    `json:"type,omitempty" xml:"type,omitempty"`
 	Length      int       `json:"length,omitempty" xml:"length,omitempty"`
-	IDLength    int       `json:"id_length,omitempty" xml:"id_length,omitempty"`
 	Description string    `json:"description,omitempty" xml:"description,omitempty"`
 	Enc         string    `json:"enc,omitempty" xml:"enc,omitempty"`
 	Prefix      string    `json:"prefix,omitempty" xml:"prefix,omitempty"`
@@ -159,7 +163,6 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 
 		spec.Fields[index] = constructor(&field.Spec{
 			Length:      dummyField.Length,
-			IDLength:    dummyField.IDLength,
 			Description: dummyField.Description,
 			Enc:         enc,
 			Pref:        pref,
@@ -187,7 +190,6 @@ func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]
 		spec := origField.Spec()
 
 		dummyField.Length = spec.Length
-		dummyField.IDLength = spec.IDLength
 		dummyField.Description = spec.Description
 
 		if spec.Enc == nil {

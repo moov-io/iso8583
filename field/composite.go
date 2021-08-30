@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strconv"
 
 	"github.com/moov-io/iso8583/padding"
 )
 
 var _ Field = (*Composite)(nil)
 
-// Composite is a wrapper object designed to hold ISO8583 subfields and
-// subelements.  Because Composite handles both of these usecases generically,
+// Composite is a wrapper object designed to hold ISO8583 TLVs, subfields and
+// subelements. Because Composite handles both of these usecases generically,
 // we refer to them collectively as 'subfields' throughout the receiver's
 // documentation and error messages.
 //
@@ -22,48 +21,47 @@ var _ Field = (*Composite)(nil)
 // - []Subfield
 //
 // Where the subfield structure is assumed to be as follows:
-// - Subfield ID (if Composite.Spec().IDLength > 0)
+// - Subfield Tag (if Composite.Spec().Tag.Length > 0)
 // - Subfield Length (if variable)
-// - Subfield data
+// - Subfield Data (or Value in the case of TLVs)
 //
-// Composite behaves in two modes depending on whether subfield IDs need to be
-// explicitly handled or not. This is configured by setting Spec.IDLength.
+// Composite behaves in two modes depending on whether subfield Tags need to be
+// explicitly handled or not. This is configured by setting Spec.Tag.Length.
 //
-// When populated, Composite handles the packing and unpacking subfield IDs on
+// When populated, Composite handles the packing and unpacking subfield Tags on
 // their behalf. However, responsibility for packing and unpacking both the
 // length and data of subfields is delegated to the subfields themselves.
 // Therefore, their specs should be configured to handle such behavior.
 //
-// If Spec.IDLength > 0, Composite leverages Spec.Enc to unpack subfields
-// regardless of order based on their IDs. Similarly, it is also able to handle
-// non-present subfields by relying on the existence of their IDs.
+// If Spec.Tag.Length > 0, Composite leverages Spec.Tag.Enc to unpack subfields
+// regardless of order based on their Tags. Similarly, it is also able to handle
+// non-present subfields by relying on the existence of their Tags.
 //
-// If Spec.IDLength == 0, Composite only unpacks subfields ordered by ID. The absence
-// of IDs in the data means that the receiver is not able to handle non-present
-// subfields either.
+// If Spec.Tag.Length == 0, Composite only unpacks subfields ordered by Tag.
+// The absence of Tags in the payload means that the receiver is not able to
+// handle non-present subfields either.
 //
-// For the sake of determinism, packing of subfields is executed in order of ID
-// regardless of the value of Spec.IDLength.
+// Tag.Pad should be used to set the padding direction and type of the Tag in
+// situations when tags hold leading characters e.g. '003'. Both the data struct
+// and the Spec.Subfields map may then omit those padded characters in their
+// respective definitions.
 //
-// Padding is not supported by Composite. Responsibility for this is delegated
-// recursively to the subfields themselves.
+// For the sake of determinism, packing of subfields is executed in order of Tag
+// regardless of the value of Spec.Tag.Length.
 type Composite struct {
 	spec *Spec
 
-	orderedSpecFieldIDs []int
-	idToFieldMap        map[int]Field
+	orderedSpecFieldTags []string
+	tagToSubfieldMap     map[string]Field
 
-	fieldsMap map[int]struct{}
-	data      *reflect.Value
+	data *reflect.Value
 }
 
 // NewComposite creates a new instance of the *Composite struct,
 // validates and sets its Spec before returning it.
 // Refer to SetSpec() for more information on Spec validation.
 func NewComposite(spec *Spec) *Composite {
-	f := &Composite{
-		fieldsMap: map[int]struct{}{},
-	}
+	f := &Composite{}
 	f.SetSpec(spec)
 	return f
 }
@@ -73,18 +71,18 @@ func (f *Composite) Spec() *Spec {
 	return f.spec
 }
 
-// SetSpec validates the spec and creates new instances of Fields defined
+// SetSpec validates the spec and creates new instances of Subfields defined
 // in the specification.
-// NOTE: Composite does not support padding. Therefore, users should
-// only pass None or nil values for ths type. Passing any other value will
-// result in a panic.
+// NOTE: Composite does not support padding on the base spec. Therefore, users
+// should only pass None or nil values for ths type. Passing any other value
+// will result in a panic.
 func (f *Composite) SetSpec(spec *Spec) {
 	if err := validateCompositeSpec(spec); err != nil {
 		panic(err)
 	}
 	f.spec = spec
-	f.idToFieldMap = spec.CreateMessageFields()
-	f.orderedSpecFieldIDs = orderedKeys(f.idToFieldMap)
+	f.tagToSubfieldMap = spec.CreateSubfields()
+	f.orderedSpecFieldTags = orderedKeys(f.tagToSubfieldMap)
 }
 
 // SetData traverses through fields provided in the data parameter matches them
@@ -125,7 +123,7 @@ func (f *Composite) Pack() ([]byte, error) {
 
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %v", err)
+		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
 
 	return append(packedLength, packed...), nil
@@ -135,11 +133,10 @@ func (f *Composite) Pack() ([]byte, error) {
 // subfields. An offset (unit depends on encoding and prefix values) is
 // returned on success. A non-nil error is returned on failure.
 func (f *Composite) Unpack(data []byte) (int, error) {
-	dataLen, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
+	dataLen, offset, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %v", err)
+		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
-	offset := f.spec.Pref.Length()
 
 	// data is stripped of the prefix before it is provided to unpack().
 	// Therefore, it is unaware of when to stop parsing unless we bound the
@@ -184,17 +181,17 @@ func (f *Composite) String() (string, error) {
 
 // MarshalJSON implements the encoding/json.Marshaler interface.
 func (f *Composite) MarshalJSON() ([]byte, error) {
-	jsonData := OrderedMap(f.idToFieldMap)
+	jsonData := OrderedMap(f.tagToSubfieldMap)
 	return json.Marshal(jsonData)
 }
 
 func (f *Composite) pack() ([]byte, error) {
 	packed := []byte{}
-	for _, id := range f.orderedSpecFieldIDs {
-		specField := f.idToFieldMap[id]
+	for _, tag := range f.orderedSpecFieldTags {
+		specField := f.tagToSubfieldMap[tag]
 
 		if f.data != nil {
-			fieldName := fmt.Sprintf("F%d", id)
+			fieldName := fmt.Sprintf("F%v", tag)
 			// get the struct field
 			dataField := f.data.FieldByName(fieldName)
 
@@ -204,21 +201,25 @@ func (f *Composite) pack() ([]byte, error) {
 			}
 
 			if err := specField.SetData(dataField.Interface()); err != nil {
-				return nil, fmt.Errorf("failed to set data for field %d: %w", id, err)
+				return nil, fmt.Errorf("failed to set data for field %v: %w", tag, err)
 			}
 		}
 
-		if f.spec.IDLength > 0 {
-			idBytes, err := f.spec.Enc.Encode(idToBytes(f.spec.IDLength, id))
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert subfield ID \"%s\" to int", idBytes)
+		if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
+			tagBytes := []byte(tag)
+			if f.spec.Tag.Pad != nil {
+				tagBytes = f.spec.Tag.Pad.Pad(tagBytes, f.spec.Tag.Length)
 			}
-			packed = append(packed, idBytes...)
+			tagBytes, err := f.spec.Tag.Enc.Encode(tagBytes)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert subfield Tag \"%v\" to int", tagBytes)
+			}
+			packed = append(packed, tagBytes...)
 		}
 
 		packedBytes, err := specField.Pack()
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack subfield %d: %v", id, err)
+			return nil, fmt.Errorf("failed to pack subfield %v: %v", tag, err)
 		}
 		packed = append(packed, packedBytes...)
 	}
@@ -226,66 +227,64 @@ func (f *Composite) pack() ([]byte, error) {
 }
 
 func (f *Composite) unpack(data []byte) (int, error) {
-	if f.spec.IDLength > 0 {
-		return f.unpackFieldsByID(data)
+	if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
+		return f.unpackSubfieldsByTag(data)
 	}
-	return f.unpackFields(data)
+	return f.unpackSubfields(data)
 }
 
-func (f *Composite) unpackFields(data []byte) (int, error) {
+func (f *Composite) unpackSubfields(data []byte) (int, error) {
 	offset := 0
-	for _, id := range f.orderedSpecFieldIDs {
-		specField := f.idToFieldMap[id]
-		if err := f.setSubfieldData(id, specField); err != nil {
+	for _, tag := range f.orderedSpecFieldTags {
+		specField := f.tagToSubfieldMap[tag]
+		if err := f.setSubfieldData(tag, specField); err != nil {
 			return 0, err
 		}
 		read, err := specField.Unpack(data[offset:])
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %d: %v", id, err)
+			return 0, fmt.Errorf("failed to unpack subfield %v: %v", tag, err)
 		}
 		offset += read
 	}
 	return offset, nil
 }
 
-func (f *Composite) unpackFieldsByID(data []byte) (int, error) {
+func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 	offset := 0
 	for offset < len(data) {
-		idBytes, read, err := f.spec.Enc.Decode(data[offset:], f.spec.IDLength)
+		tagBytes, read, err := f.spec.Tag.Enc.Decode(data[offset:], f.spec.Tag.Length)
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield ID: %w", err)
+			return 0, fmt.Errorf("failed to unpack subfield Tag: %w", err)
 		}
-
-		id, err := strconv.Atoi(string(idBytes))
-		if err != nil {
-			return 0, fmt.Errorf("failed to convert subfield ID \"%s\" to int", string(idBytes))
+		if f.spec.Tag.Pad != nil {
+			tagBytes = f.spec.Tag.Pad.Unpad(tagBytes)
 		}
-
-		specField, ok := f.idToFieldMap[id]
+		tag := string(tagBytes)
+		specField, ok := f.tagToSubfieldMap[tag]
 		if !ok {
-			return 0, fmt.Errorf("failed to unpack subfield %d: field not defined in Spec", id)
+			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
 		}
 		offset += read
 
-		if err := f.setSubfieldData(id, specField); err != nil {
+		if err := f.setSubfieldData(tag, specField); err != nil {
 			return 0, err
 		}
 
 		read, err = specField.Unpack(data[offset:])
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %d: %v", id, err)
+			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
 		offset += read
 	}
 	return offset, nil
 }
 
-func (f *Composite) setSubfieldData(id int, specField Field) error {
+func (f *Composite) setSubfieldData(tag string, specField Field) error {
 	if f.data == nil {
 		return nil
 	}
 
-	fieldName := fmt.Sprintf("F%d", id)
+	fieldName := fmt.Sprintf("F%v", tag)
 
 	// get the struct field
 	dataField := f.data.FieldByName(fieldName)
@@ -296,7 +295,7 @@ func (f *Composite) setSubfieldData(id int, specField Field) error {
 			dataField.Set(reflect.New(dataField.Type().Elem()))
 		}
 		if err := specField.SetData(dataField.Interface()); err != nil {
-			return fmt.Errorf("failed to set data for field %d: %w", id, err)
+			return fmt.Errorf("failed to set data for field %v: %w", tag, err)
 		}
 	}
 
@@ -305,24 +304,22 @@ func (f *Composite) setSubfieldData(id int, specField Field) error {
 
 func validateCompositeSpec(spec *Spec) error {
 	if spec.Pad != nil && spec.Pad != padding.None {
-		return fmt.Errorf("Composite spec only supports nil or None padding values")
+		return fmt.Errorf("Composite spec only supports nil or None spec padding values")
 	}
-	if spec.Enc == nil && spec.IDLength > 0 {
-		return fmt.Errorf("Composite spec requires an Enc to be defined if IDLength > 0")
+	if spec.Enc != nil {
+		return fmt.Errorf("Composite spec only supports a nil Enc value")
+	}
+	if spec.Tag != nil && spec.Tag.Enc == nil && spec.Tag.Length > 0 {
+		return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
 	}
 	return nil
 }
 
-func orderedKeys(kvs map[int]Field) []int {
-	keys := make([]int, 0)
+func orderedKeys(kvs map[string]Field) []string {
+	keys := make([]string, 0)
 	for k := range kvs {
 		keys = append(keys, k)
 	}
-	sort.Ints(keys)
+	sort.Strings(keys)
 	return keys
-}
-
-func idToBytes(length int, id int) []byte {
-	idFmt := fmt.Sprintf("%%0%dd", length)
-	return []byte(fmt.Sprintf(idFmt, id))
 }

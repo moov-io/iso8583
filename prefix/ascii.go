@@ -32,25 +32,21 @@ func (p *asciiVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	return []byte(res), nil
 }
 
-func (p *asciiVarPrefixer) DecodeLength(maxLen int, data []byte) (int, error) {
+func (p *asciiVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	if len(data) < p.Digits {
-		return 0, fmt.Errorf("not enought data length: %d to read: %d byte digits", len(data), p.Digits)
+		return 0, 0, fmt.Errorf("not enought data length: %d to read: %d byte digits", len(data), p.Digits)
 	}
 
 	dataLen, err := strconv.Atoi(string(data[:p.Digits]))
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	if dataLen > maxLen {
-		return 0, fmt.Errorf("data length: %d is larger than maximum %d", dataLen, maxLen)
+		return 0, 0, fmt.Errorf("data length: %d is larger than maximum %d", dataLen, maxLen)
 	}
 
-	return dataLen, nil
-}
-
-func (p *asciiVarPrefixer) Length() int {
-	return p.Digits
+	return dataLen, p.Digits, nil
 }
 
 func (p *asciiVarPrefixer) Inspect() string {
@@ -68,12 +64,8 @@ func (p *asciiFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (p *asciiFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, error) {
-	return fixLen, nil
-}
-
-func (p *asciiFixedPrefixer) Length() int {
-	return 0
+func (p *asciiFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, int, error) {
+	return fixLen, 0, nil
 }
 
 func (p *asciiFixedPrefixer) Inspect() string {

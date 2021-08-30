@@ -19,12 +19,8 @@ func (p *binaryFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) 
 	return []byte{}, nil
 }
 
-func (p *binaryFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, error) {
-	return fixLen, nil
-}
-
-func (p *binaryFixedPrefixer) Length() int {
-	return 0
+func (p *binaryFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, int, error) {
+	return fixLen, 0, nil
 }
 
 func (p *binaryFixedPrefixer) Inspect() string {

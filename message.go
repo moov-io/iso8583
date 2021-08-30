@@ -222,10 +222,14 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	// get only filds that were set
-	jsonData := field.OrderedMap(m.GetFields())
+	fieldMap := m.GetFields()
+	strFieldMap := map[string]field.Field{}
+	for k, v := range fieldMap {
+		strFieldMap[fmt.Sprint(k)] = v
+	}
 
-	return json.Marshal(jsonData)
+	// get only fields that were set
+	return json.Marshal(field.OrderedMap(strFieldMap))
 }
 
 func (m *Message) setPackableDataFields() ([]int, error) {
