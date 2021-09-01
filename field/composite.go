@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"sort"
 
 	"github.com/moov-io/iso8583/padding"
+	"github.com/moov-io/iso8583/sort"
 )
 
 var _ Field = (*Composite)(nil)
@@ -14,14 +14,15 @@ var _ Field = (*Composite)(nil)
 // Composite is a wrapper object designed to hold ISO8583 TLVs, subfields and
 // subelements. Because Composite handles both of these usecases generically,
 // we refer to them collectively as 'subfields' throughout the receiver's
-// documentation and error messages.
+// documentation and error messages. These subfields are defined using the 
+// 'Subfields' field on the field.Spec struct.
 //
 // Composite handles aggregate fields of the following format:
 // - Length (if variable)
 // - []Subfield
 //
 // Where the subfield structure is assumed to be as follows:
-// - Subfield Tag (if Composite.Spec().Tag.Length > 0)
+// - Subfield Tag (if Composite.Spec().Tag.Enc != nil)
 // - Subfield Length (if variable)
 // - Subfield Data (or Value in the case of TLVs)
 //
@@ -33,13 +34,14 @@ var _ Field = (*Composite)(nil)
 // length and data of subfields is delegated to the subfields themselves.
 // Therefore, their specs should be configured to handle such behavior.
 //
-// If Spec.Tag.Length > 0, Composite leverages Spec.Tag.Enc to unpack subfields
+// If Spec.Tag.Length != nil, Composite leverages Spec.Tag.Enc to unpack subfields
 // regardless of order based on their Tags. Similarly, it is also able to handle
 // non-present subfields by relying on the existence of their Tags.
 //
-// If Spec.Tag.Length == 0, Composite only unpacks subfields ordered by Tag.
-// The absence of Tags in the payload means that the receiver is not able to
-// handle non-present subfields either.
+// If Spec.Tag.Length == nil, Composite only unpacks subfields ordered by Tag.
+// This order is determined by calling Spec.Tag.Sort on a slice of all subfield
+// keys defined in the spec. The absence of Tags in the payload means that the
+// receiver is not able to handle non-present subfields either.
 //
 // Tag.Pad should be used to set the padding direction and type of the Tag in
 // situations when tags hold leading characters e.g. '003'. Both the data struct
@@ -47,7 +49,7 @@ var _ Field = (*Composite)(nil)
 // respective definitions.
 //
 // For the sake of determinism, packing of subfields is executed in order of Tag
-// regardless of the value of Spec.Tag.Length.
+// (using Spec.Tag.Sort) regardless of the value of Spec.Tag.Length.
 type Composite struct {
 	spec *Spec
 
@@ -82,7 +84,7 @@ func (f *Composite) SetSpec(spec *Spec) {
 	}
 	f.spec = spec
 	f.tagToSubfieldMap = spec.CreateSubfields()
-	f.orderedSpecFieldTags = orderedKeys(f.tagToSubfieldMap)
+	f.orderedSpecFieldTags = orderedKeys(f.tagToSubfieldMap, spec.Tag.Sort)
 }
 
 // SetData traverses through fields provided in the data parameter matches them
@@ -303,6 +305,9 @@ func (f *Composite) setSubfieldData(tag string, specField Field) error {
 }
 
 func validateCompositeSpec(spec *Spec) error {
+	if spec.Tag == nil || spec.Tag.Sort == nil {
+		return fmt.Errorf("Composite spec requires a Tag.Sort function to be defined")
+	}
 	if spec.Pad != nil && spec.Pad != padding.None {
 		return fmt.Errorf("Composite spec only supports nil or None spec padding values")
 	}
@@ -312,14 +317,17 @@ func validateCompositeSpec(spec *Spec) error {
 	if spec.Tag != nil && spec.Tag.Enc == nil && spec.Tag.Length > 0 {
 		return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
 	}
+        if spec.Tag.Sort == nil {
+                return fmt.Errorf("Composite spec requires a Tag.Sort function to be defined")
+        }
 	return nil
 }
 
-func orderedKeys(kvs map[string]Field) []string {
+func orderedKeys(kvs map[string]Field, sorter sort.Strings) []string {
 	keys := make([]string, 0)
 	for k := range kvs {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+        sorter(keys)
 	return keys
 }
