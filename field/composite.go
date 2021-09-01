@@ -14,7 +14,7 @@ var _ Field = (*Composite)(nil)
 // Composite is a wrapper object designed to hold ISO8583 TLVs, subfields and
 // subelements. Because Composite handles both of these usecases generically,
 // we refer to them collectively as 'subfields' throughout the receiver's
-// documentation and error messages. These subfields are defined using the 
+// documentation and error messages. These subfields are defined using the
 // 'Subfields' field on the field.Spec struct.
 //
 // Composite handles aggregate fields of the following format:
@@ -317,9 +317,9 @@ func validateCompositeSpec(spec *Spec) error {
 	if spec.Tag != nil && spec.Tag.Enc == nil && spec.Tag.Length > 0 {
 		return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
 	}
-        if spec.Tag.Sort == nil {
-                return fmt.Errorf("Composite spec requires a Tag.Sort function to be defined")
-        }
+	if spec.Tag.Sort == nil {
+		return fmt.Errorf("Composite spec requires a Tag.Sort function to be defined")
+	}
 	return nil
 }
 
@@ -328,6 +328,6 @@ func orderedKeys(kvs map[string]Field, sorter sort.Strings) []string {
 	for k := range kvs {
 		keys = append(keys, k)
 	}
-        sorter(keys)
+	sorter(keys)
 	return keys
 }

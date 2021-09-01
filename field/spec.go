@@ -27,10 +27,10 @@ type TagSpec struct {
 	// This is most commonly used for composite field types
 	// whose tags hold leading 0s e.g. '003' would be unpadded to '3'.
 	Pad padding.Padder
-        // Sort defines the order in which Tags defined within the subfields
-        // spec must be packed. This ordering may also be used for unpacking 
-        // if Spec.Tag.Enc == nil.
-        Sort sort.Strings
+	// Sort defines the order in which Tags defined within the subfields
+	// spec must be packed. This ordering may also be used for unpacking
+	// if Spec.Tag.Enc == nil.
+	Sort sort.Strings
 }
 
 // Spec defines the structure of a field.

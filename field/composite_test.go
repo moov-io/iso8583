@@ -17,9 +17,9 @@ var (
 		Description: "Test Spec",
 		Pref:        prefix.ASCII.Fixed,
 		Pad:         padding.None,
-                Tag: &TagSpec{
-                        Sort: sort.StringsByInt,
-                },
+		Tag: &TagSpec{
+			Sort: sort.StringsByInt,
+		},
 		Subfields: map[string]Field{
 			"1": NewString(&Spec{
 				Length:      2,
@@ -49,7 +49,7 @@ var (
 			Length: 2,
 			Enc:    encoding.ASCII,
 			Pad:    padding.Left('0'),
-                        Sort: sort.StringsByInt,
+			Sort:   sort.StringsByInt,
 		},
 		Subfields: map[string]Field{
 			"1": NewString(&Spec{
@@ -78,7 +78,7 @@ var (
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pad:    padding.Left('0'),
-                                        Sort: sort.StringsByInt,
+					Sort:   sort.StringsByInt,
 				},
 				Subfields: map[string]Field{
 					"1": NewString(&Spec{
@@ -97,8 +97,8 @@ var (
 		Description: "ICC Data – EMV Having Multiple Tags",
 		Pref:        prefix.ASCII.LLL,
 		Tag: &TagSpec{
-			Enc: encoding.BerTLVTag,
-                        Sort: sort.StringsByHex,
+			Enc:  encoding.BerTLVTag,
+			Sort: sort.StringsByHex,
 		},
 		Subfields: map[string]Field{
 			"9A": NewString(&Spec{
@@ -116,9 +116,9 @@ var (
 )
 
 type CompsiteTestData struct {
-	F1 *String
-	F2 *String
-	F3 *Numeric
+	F1  *String
+	F2  *String
+	F3  *Numeric
 	F11 *SubCompositeData
 }
 
@@ -219,9 +219,9 @@ func TestCompositePacking(t *testing.T) {
 			// This will throw an error when encoding the field's length.
 			Length: 4,
 			Pref:   prefix.ASCII.Fixed,
-                        Tag: &TagSpec{
-                                Sort: sort.StringsByInt,
-                        },
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
 			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
@@ -304,9 +304,9 @@ func TestCompositePacking(t *testing.T) {
 		spec := &Spec{
 			Length: 4,
 			Pref:   prefix.ASCII.L,
-                        Tag: &TagSpec{
-                                Sort: sort.StringsByInt,
-                        },
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
 			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
@@ -344,9 +344,9 @@ func TestCompositePacking(t *testing.T) {
 			// This will throw an error when encoding the field's length.
 			Length: 4,
 			Pref:   prefix.ASCII.Fixed,
-                        Tag: &TagSpec{
-                                Sort: sort.StringsByInt,
-                        },
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
 			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
@@ -407,7 +407,7 @@ func TestCompositePackingWithID(t *testing.T) {
 				Length: 2,
 				Enc:    encoding.ASCII,
 				Pad:    padding.Left('0'),
-                                Sort: sort.StringsByInt,
+				Sort:   sort.StringsByInt,
 			},
 			Subfields: map[string]Field{
 				"1": NewString(&Spec{
@@ -584,34 +584,34 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 		{
 			desc: "accepts nil Enc value",
 			spec: &Spec{
-				Length:    6,
-				Pref:      prefix.ASCII.Fixed,
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
 				Tag: &TagSpec{
-                                        Sort: sort.StringsByInt,
-                                },
+					Sort: sort.StringsByInt,
+				},
 				Subfields: map[string]Field{},
 			},
 		},
 		{
 			desc: "accepts nil Pad value",
 			spec: &Spec{
-				Length:    6,
-				Pref:      prefix.ASCII.Fixed,
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
 				Tag: &TagSpec{
-                                        Sort: sort.StringsByInt,
-                                },
+					Sort: sort.StringsByInt,
+				},
 				Subfields: map[string]Field{},
 			},
 		},
 		{
 			desc: "accepts None Pad value",
 			spec: &Spec{
-				Length:    6,
-				Pref:      prefix.ASCII.Fixed,
-				Pad:       padding.None,
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
+				Pad:    padding.None,
 				Tag: &TagSpec{
-                                        Sort: sort.StringsByInt,
-                                },
+					Sort: sort.StringsByInt,
+				},
 				Subfields: map[string]Field{},
 			},
 		},
@@ -654,7 +654,7 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 				Pref:      prefix.ASCII.Fixed,
 				Pad:       padding.Left('0'),
 				Subfields: map[string]Field{},
-				Tag: &TagSpec{},
+				Tag:       &TagSpec{},
 			},
 		},
 		{
@@ -666,8 +666,8 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 				Pad:       padding.Left('0'),
 				Subfields: map[string]Field{},
 				Tag: &TagSpec{
-                                        Sort: sort.StringsByInt,
-                                },
+					Sort: sort.StringsByInt,
+				},
 			},
 		},
 		{
@@ -679,8 +679,8 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 				Pref:      prefix.ASCII.Fixed,
 				Subfields: map[string]Field{},
 				Tag: &TagSpec{
-                                        Sort: sort.StringsByInt,
-                                },
+					Sort: sort.StringsByInt,
+				},
 			},
 		},
 		{
@@ -693,8 +693,8 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 				Tag: &TagSpec{
 					Length: 2,
 					Pad:    padding.Left('0'),
-                                        Sort: sort.StringsByInt,
-                                },
+					Sort:   sort.StringsByInt,
+				},
 			},
 		},
 	}
