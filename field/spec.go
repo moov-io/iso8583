@@ -30,7 +30,7 @@ type TagSpec struct {
 	// Sort defines the order in which Tags defined within the subfields
 	// spec must be packed. This ordering may also be used for unpacking
 	// if Spec.Tag.Enc == nil.
-	Sort sort.Strings
+	Sort sort.StringSlice
 }
 
 // Spec defines the structure of a field.

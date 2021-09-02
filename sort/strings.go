@@ -11,7 +11,10 @@ import (
 
 // Strings is a function type used to sort a slice of strings in increasing
 // order. Any errors which arise from sorting the slice will raise a panic.
-type Strings func(x []string)
+type StringSlice func(x []string)
+
+// Strings sorts a slice of strings in increasing order.
+var Strings = sort.Strings
 
 // StringsByInt sorts a slice of strings according to their integer value.
 // This function panics in the event that an element in the slice cannot be

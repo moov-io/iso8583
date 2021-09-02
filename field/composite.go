@@ -323,7 +323,7 @@ func validateCompositeSpec(spec *Spec) error {
 	return nil
 }
 
-func orderedKeys(kvs map[string]Field, sorter sort.Strings) []string {
+func orderedKeys(kvs map[string]Field, sorter sort.StringSlice) []string {
 	keys := make([]string, 0)
 	for k := range kvs {
 		keys = append(keys, k)

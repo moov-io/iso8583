@@ -153,8 +153,8 @@ type SubCompositeData struct {
 }
 
 type CompositeTestDataWithoutTagPadding struct {
-	F01  *String
-	F02  *String
+	F01 *String
+	F02 *String
 }
 
 type TLVTestData struct {

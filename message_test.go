@@ -369,7 +369,7 @@ func TestPackUnpack(t *testing.T) {
 				Description: "ICC Data – EMV Having Multiple Tags",
 				Pref:        prefix.ASCII.LLL,
 				Tag: &field.TagSpec{
-					Enc: encoding.BerTLVTag,
+					Enc:  encoding.BerTLVTag,
 					Sort: sort.StringsByHex,
 				},
 				Subfields: map[string]field.Field{
