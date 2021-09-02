@@ -7,6 +7,7 @@ import (
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
+	"github.com/moov-io/iso8583/sort"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,6 +17,9 @@ var (
 		Description: "Test Spec",
 		Pref:        prefix.ASCII.Fixed,
 		Pad:         padding.None,
+		Tag: &TagSpec{
+			Sort: sort.StringsByInt,
+		},
 		Subfields: map[string]Field{
 			"1": NewString(&Spec{
 				Length:      2,
@@ -37,7 +41,8 @@ var (
 			}),
 		},
 	}
-	compositeTestSpecWithIDLength = &Spec{
+
+	compositeTestSpecWithTagPadding = &Spec{
 		Length:      30,
 		Description: "Test Spec",
 		Pref:        prefix.ASCII.LL,
@@ -45,6 +50,7 @@ var (
 			Length: 2,
 			Enc:    encoding.ASCII,
 			Pad:    padding.Left('0'),
+			Sort:   sort.StringsByInt,
 		},
 		Subfields: map[string]Field{
 			"1": NewString(&Spec{
@@ -65,7 +71,7 @@ var (
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
-			"4": NewComposite(&Spec{
+			"11": NewComposite(&Spec{
 				Length:      6,
 				Description: "Sub-Composite Field",
 				Pref:        prefix.ASCII.LL,
@@ -73,6 +79,7 @@ var (
 					Length: 2,
 					Enc:    encoding.ASCII,
 					Pad:    padding.Left('0'),
+					Sort:   sort.StringsByInt,
 				},
 				Subfields: map[string]Field{
 					"1": NewString(&Spec{
@@ -86,12 +93,38 @@ var (
 		},
 	}
 
+	compositeTestSpecWithoutTagPadding = &Spec{
+		Length:      30,
+		Description: "Test Spec",
+		Pref:        prefix.ASCII.LL,
+		Tag: &TagSpec{
+			Length: 2,
+			Enc:    encoding.ASCII,
+			Sort:   sort.StringsByInt,
+		},
+		Subfields: map[string]Field{
+			"01": NewString(&Spec{
+				Length:      2,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"02": NewString(&Spec{
+				Length:      2,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+		},
+	}
+
 	tlvTestSpec = &Spec{
 		Length:      999,
 		Description: "ICC Data – EMV Having Multiple Tags",
 		Pref:        prefix.ASCII.LLL,
 		Tag: &TagSpec{
-			Enc: encoding.BerTLVTag,
+			Enc:  encoding.BerTLVTag,
+			Sort: sort.StringsByHex,
 		},
 		Subfields: map[string]Field{
 			"9A": NewString(&Spec{
@@ -108,15 +141,20 @@ var (
 	}
 )
 
-type CompsiteTestData struct {
-	F1 *String
-	F2 *String
-	F3 *Numeric
-	F4 *SubCompositeData
+type CompositeTestData struct {
+	F1  *String
+	F2  *String
+	F3  *Numeric
+	F11 *SubCompositeData
 }
 
 type SubCompositeData struct {
 	F1 *String
+}
+
+type CompositeTestDataWithoutTagPadding struct {
+	F01 *String
+	F02 *String
 }
 
 type TLVTestData struct {
@@ -190,7 +228,7 @@ func TestCompositePacking(t *testing.T) {
 	})
 
 	t.Run("Pack returns error on failure of subfield packing", func(t *testing.T) {
-		data := &CompsiteTestData{
+		data := &CompositeTestData{
 			// This subfield will return an error on F1.Pack() as its length
 			// exceeds the max length defined in the spec.
 			F1: NewStringValue("ABCD"),
@@ -212,6 +250,9 @@ func TestCompositePacking(t *testing.T) {
 			// This will throw an error when encoding the field's length.
 			Length: 4,
 			Pref:   prefix.ASCII.Fixed,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
 			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
@@ -230,7 +271,7 @@ func TestCompositePacking(t *testing.T) {
 				}),
 			},
 		}
-		data := &CompsiteTestData{
+		data := &CompositeTestData{
 			F1: NewStringValue("AB"),
 			F2: NewStringValue("CD"),
 			F3: NewNumericValue(12),
@@ -244,8 +285,8 @@ func TestCompositePacking(t *testing.T) {
 		require.EqualError(t, err, "failed to encode length: field length: 6 should be fixed: 4")
 	})
 
-	t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
-		data := &CompsiteTestData{
+	t.Run("Pack correctly serializes data with padded tags to bytes", func(t *testing.T) {
+		data := &CompositeTestData{
 			F1: NewStringValue("AB"),
 			F2: NewStringValue("CD"),
 			F3: NewNumericValue(12),
@@ -277,7 +318,7 @@ func TestCompositePacking(t *testing.T) {
 	})
 
 	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
-		data := &CompsiteTestData{}
+		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpec)
 		err := composite.SetData(data)
@@ -294,6 +335,9 @@ func TestCompositePacking(t *testing.T) {
 		spec := &Spec{
 			Length: 4,
 			Pref:   prefix.ASCII.L,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
 			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
@@ -312,7 +356,7 @@ func TestCompositePacking(t *testing.T) {
 				}),
 			},
 		}
-		data := &CompsiteTestData{}
+		data := &CompositeTestData{}
 
 		composite := NewComposite(spec)
 		err := composite.SetData(data)
@@ -331,6 +375,9 @@ func TestCompositePacking(t *testing.T) {
 			// This will throw an error when encoding the field's length.
 			Length: 4,
 			Pref:   prefix.ASCII.Fixed,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
 			Subfields: map[string]Field{
 				"1": NewString(&Spec{
 					Length: 2,
@@ -349,7 +396,7 @@ func TestCompositePacking(t *testing.T) {
 				}),
 			},
 		}
-		data := &CompsiteTestData{}
+		data := &CompositeTestData{}
 
 		composite := NewComposite(invalidSpec)
 		err := composite.SetData(data)
@@ -363,7 +410,7 @@ func TestCompositePacking(t *testing.T) {
 	})
 
 	t.Run("Unpack correctly deserialises bytes to the data struct", func(t *testing.T) {
-		data := &CompsiteTestData{}
+		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpec)
 		err := composite.SetData(data)
@@ -376,11 +423,11 @@ func TestCompositePacking(t *testing.T) {
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
 		require.Equal(t, 12, data.F3.Value)
-		require.Nil(t, data.F4)
+		require.Nil(t, data.F11)
 	})
 }
 
-func TestCompositePackingWithID(t *testing.T) {
+func TestCompositePackingWithTags(t *testing.T) {
 	t.Run("Pack returns error on failure to encode length", func(t *testing.T) {
 		// Base field length < summation of (lengths of subfields + IDs).
 		// This will throw an error when encoding the field's length.
@@ -391,6 +438,7 @@ func TestCompositePackingWithID(t *testing.T) {
 				Length: 2,
 				Enc:    encoding.ASCII,
 				Pad:    padding.Left('0'),
+				Sort:   sort.StringsByInt,
 			},
 			Subfields: map[string]Field{
 				"1": NewString(&Spec{
@@ -410,7 +458,7 @@ func TestCompositePackingWithID(t *testing.T) {
 				}),
 			},
 		}
-		data := &CompsiteTestData{
+		data := &CompositeTestData{
 			F1: NewStringValue("AB"),
 			F2: NewStringValue("CD"),
 			F3: NewNumericValue(12),
@@ -427,32 +475,32 @@ func TestCompositePackingWithID(t *testing.T) {
 	})
 
 	t.Run("Pack correctly serializes fully populated data to bytes", func(t *testing.T) {
-		data := &CompsiteTestData{
+		data := &CompositeTestData{
 			F1: NewStringValue("AB"),
 			F2: NewStringValue("CD"),
 			F3: NewNumericValue(12),
-			F4: &SubCompositeData{
+			F11: &SubCompositeData{
 				F1: NewStringValue("YZ"),
 			},
 		}
 
-		composite := NewComposite(compositeTestSpecWithIDLength)
+		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
 		require.NoError(t, err)
 
-		require.Equal(t, "280102AB0202CD03021204060102YZ", string(packed))
+		require.Equal(t, "280102AB0202CD03021211060102YZ", string(packed))
 	})
 
 	t.Run("Pack correctly serializes partially populated data to bytes", func(t *testing.T) {
-		data := &CompsiteTestData{
+		data := &CompositeTestData{
 			F1: NewStringValue("AB"),
 			F3: NewNumericValue(12),
 		}
 
-		composite := NewComposite(compositeTestSpecWithIDLength)
+		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
@@ -463,10 +511,26 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.Equal(t, "120102AB030212", string(packed))
 	})
 
-	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
-		data := &CompsiteTestData{}
+	t.Run("Pack correctly serializes fully populated unpadded tag data to bytes", func(t *testing.T) {
+		data := &CompositeTestDataWithoutTagPadding{
+			F01: NewStringValue("AB"),
+			F02: NewStringValue("CD"),
+		}
 
-		composite := NewComposite(compositeTestSpecWithIDLength)
+		composite := NewComposite(compositeTestSpecWithoutTagPadding)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		require.Equal(t, "120102AB0202CD", string(packed))
+	})
+
+	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
+		data := &CompositeTestData{}
+
+		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
@@ -478,22 +542,22 @@ func TestCompositePackingWithID(t *testing.T) {
 	})
 
 	t.Run("Unpack returns an error on data having subfield ID not in spec", func(t *testing.T) {
-		data := &CompsiteTestData{}
+		data := &CompositeTestData{}
 
-		composite := NewComposite(compositeTestSpecWithIDLength)
+		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		// Index 2-3 should have '01' rather than '11'.
-		read, err := composite.Unpack([]byte("181102AB0202CD030212"))
+		// Index 2-3 should have '01' rather than '12'.
+		read, err := composite.Unpack([]byte("181202AB0202CD030212"))
 		require.Equal(t, 0, read)
-		require.EqualError(t, err, "failed to unpack subfield 11: field not defined in Spec")
+		require.EqualError(t, err, "failed to unpack subfield 12: field not defined in Spec")
 	})
 
 	t.Run("Unpack returns an error on if subfield not defined in spec", func(t *testing.T) {
-		data := &CompsiteTestData{}
+		data := &CompositeTestData{}
 
-		composite := NewComposite(compositeTestSpecWithIDLength)
+		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
@@ -504,13 +568,13 @@ func TestCompositePackingWithID(t *testing.T) {
 	})
 
 	t.Run("Unpack correctly deserialises out of order composite subfields to the data struct", func(t *testing.T) {
-		data := &CompsiteTestData{}
+		data := &CompositeTestData{}
 
-		composite := NewComposite(compositeTestSpecWithIDLength)
+		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		read, err := composite.Unpack([]byte("280202CD0302120102AB04060102YZ"))
+		read, err := composite.Unpack([]byte("280202CD0302120102AB11060102YZ"))
 
 		require.NoError(t, err)
 		require.Equal(t, 30, read)
@@ -518,13 +582,29 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
 		require.Equal(t, 12, data.F3.Value)
-		require.Equal(t, "YZ", data.F4.F1.Value)
+		require.Equal(t, "YZ", data.F11.F1.Value)
+	})
+
+	t.Run("Unpack correctly deserialises out of order composite subfields to the unpadded data struct", func(t *testing.T) {
+		data := &CompositeTestDataWithoutTagPadding{}
+
+		composite := NewComposite(compositeTestSpecWithoutTagPadding)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		read, err := composite.Unpack([]byte("120202CD0102AB"))
+
+		require.NoError(t, err)
+		require.Equal(t, 14, read)
+
+		require.Equal(t, "AB", data.F01.Value)
+		require.Equal(t, "CD", data.F02.Value)
 	})
 
 	t.Run("Unpack correctly deserialises partial subfields to the data struct", func(t *testing.T) {
-		data := &CompsiteTestData{}
+		data := &CompositeTestData{}
 
-		composite := NewComposite(compositeTestSpecWithIDLength)
+		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
@@ -539,15 +619,15 @@ func TestCompositePackingWithID(t *testing.T) {
 	})
 
 	t.Run("Unpack correctly ignores excess bytes in excess of the length described by the prefix", func(t *testing.T) {
-		data := &CompsiteTestData{}
+		data := &CompositeTestData{}
 
-		composite := NewComposite(compositeTestSpecWithIDLength)
+		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		// "04060102YZ" falls outside of the bounds of the 18 byte limit imposed
-		// by the prefix. Therefore, F4 must be nil.
-		read, err := composite.Unpack([]byte("180202CD0302120102AB04060102YZ"))
+		// "11060102YZ" falls outside of the bounds of the 18 byte limit imposed
+		// by the prefix. Therefore, F11 must be nil.
+		read, err := composite.Unpack([]byte("180202CD0302120102AB11060102YZ"))
 
 		require.NoError(t, err)
 		require.Equal(t, 20, read)
@@ -555,7 +635,7 @@ func TestCompositePackingWithID(t *testing.T) {
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
 		require.Equal(t, 12, data.F3.Value)
-		require.Nil(t, data.F4)
+		require.Nil(t, data.F11)
 	})
 }
 
@@ -567,25 +647,34 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 		{
 			desc: "accepts nil Enc value",
 			spec: &Spec{
-				Length:    6,
-				Pref:      prefix.ASCII.Fixed,
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
+				Tag: &TagSpec{
+					Sort: sort.StringsByInt,
+				},
 				Subfields: map[string]Field{},
 			},
 		},
 		{
 			desc: "accepts nil Pad value",
 			spec: &Spec{
-				Length:    6,
-				Pref:      prefix.ASCII.Fixed,
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
+				Tag: &TagSpec{
+					Sort: sort.StringsByInt,
+				},
 				Subfields: map[string]Field{},
 			},
 		},
 		{
 			desc: "accepts None Pad value",
 			spec: &Spec{
-				Length:    6,
-				Pref:      prefix.ASCII.Fixed,
-				Pad:       padding.None,
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
+				Pad:    padding.None,
+				Tag: &TagSpec{
+					Sort: sort.StringsByInt,
+				},
 				Subfields: map[string]Field{},
 			},
 		},
@@ -611,6 +700,27 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 		spec *Spec
 	}{
 		{
+			desc: "panics on nil Tag being defined in spec",
+			err:  "Composite spec requires a Tag.Sort function to be defined",
+			spec: &Spec{
+				Length:    6,
+				Pref:      prefix.ASCII.Fixed,
+				Pad:       padding.Left('0'),
+				Subfields: map[string]Field{},
+			},
+		},
+		{
+			desc: "panics on nil Tag.Sort being defined in spec",
+			err:  "Composite spec requires a Tag.Sort function to be defined",
+			spec: &Spec{
+				Length:    6,
+				Pref:      prefix.ASCII.Fixed,
+				Pad:       padding.Left('0'),
+				Subfields: map[string]Field{},
+				Tag:       &TagSpec{},
+			},
+		},
+		{
 			desc: "panics on non-None / non-nil Pad value being defined in spec",
 			err:  "Composite spec only supports nil or None spec padding values",
 			spec: &Spec{
@@ -618,6 +728,9 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 				Pref:      prefix.ASCII.Fixed,
 				Pad:       padding.Left('0'),
 				Subfields: map[string]Field{},
+				Tag: &TagSpec{
+					Sort: sort.StringsByInt,
+				},
 			},
 		},
 		{
@@ -628,10 +741,13 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 				Enc:       encoding.ASCII,
 				Pref:      prefix.ASCII.Fixed,
 				Subfields: map[string]Field{},
+				Tag: &TagSpec{
+					Sort: sort.StringsByInt,
+				},
 			},
 		},
 		{
-			desc: "panics on nil Enc value being defined in spec if IDLength > 0",
+			desc: "panics on nil Enc value being defined in spec if Tag.Length > 0",
 			err:  "Composite spec requires a Tag.Enc to be defined if Tag.Length > 0",
 			spec: &Spec{
 				Length:    6,
@@ -640,6 +756,7 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 				Tag: &TagSpec{
 					Length: 2,
 					Pad:    padding.Left('0'),
+					Sort:   sort.StringsByInt,
 				},
 			},
 		},

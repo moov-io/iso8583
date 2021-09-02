@@ -8,6 +8,7 @@ import (
 	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
+	"github.com/moov-io/iso8583/sort"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,6 +37,9 @@ func TestMessage(t *testing.T) {
 				Length:      6,
 				Description: "Processing Code",
 				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
 				Subfields: map[string]field.Field{
 					"1": field.NewString(&field.Spec{
 						Length:      2,
@@ -204,6 +208,9 @@ func TestPackUnpack(t *testing.T) {
 				Length:      6,
 				Description: "Processing Code",
 				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
 				Subfields: map[string]field.Field{
 					"1": field.NewString(&field.Spec{
 						Length:      2,
@@ -362,7 +369,8 @@ func TestPackUnpack(t *testing.T) {
 				Description: "ICC Data – EMV Having Multiple Tags",
 				Pref:        prefix.ASCII.LLL,
 				Tag: &field.TagSpec{
-					Enc: encoding.BerTLVTag,
+					Enc:  encoding.BerTLVTag,
+					Sort: sort.StringsByHex,
 				},
 				Subfields: map[string]field.Field{
 					"9A": field.NewString(&field.Spec{
@@ -548,6 +556,9 @@ func TestMessageJSON(t *testing.T) {
 				Length:      6,
 				Description: "Processing Code",
 				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
 				Subfields: map[string]field.Field{
 					"1": field.NewString(&field.Spec{
 						Length:      2,
