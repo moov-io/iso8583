@@ -33,7 +33,7 @@ func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 	// how many bytes we will read
 	read := bcd.EncodedLen(decodedLen)
 
-	dec := bcd.NewDecoder(bcd.Standard)
+	dec := bcd.NewDecoder(bcd.Visa)
 	dst := make([]byte, decodedLen)
 	_, err := dec.Decode(dst, src)
 	if err != nil {
