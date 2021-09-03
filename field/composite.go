@@ -270,16 +270,50 @@ func (f *Composite) unpack(data []byte) (int, error) {
 
 func (f *Composite) unpackFields(data []byte) (int, error) {
 	offset := 0
-	for _, id := range f.orderedSpecFieldIDs {
-		specField := f.idToFieldMap[id]
-		if err := f.setSubfieldData(id, specField); err != nil {
-			return 0, err
-		}
-		read, err := specField.Unpack(data[offset:])
+	numberBytesMissing := 0
+
+	if f.spec.HasBitmap {
+		f.fieldsMap = map[int]struct{}{}
+		f.Bitmap().Reset()
+
+		data, numberBytesMissing = fillBitmap(data, f.bitmap, f.idToFieldMap[0].Spec().Length)
+
+		read, err := f.idToFieldMap[0].Unpack(data[offset:])
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %d: %v", id, err)
+			return 0, fmt.Errorf("failed to unpack subbitmap: %v", err)
 		}
+
 		offset += read
+	}
+
+	for _, id := range f.orderedSpecFieldIDs {
+		if f.spec.HasBitmap {
+			if id > 0 && f.Bitmap().IsSet(id) {
+				specField := f.idToFieldMap[id]
+				if err := f.setSubfieldData(id, specField); err != nil {
+					return 0, err
+				}
+				read, err := specField.Unpack(data[offset:])
+				if err != nil {
+					return 0, fmt.Errorf("failed to unpack subfield %d: %v", id, err)
+				}
+				offset += read
+			}
+		} else {
+			specField := f.idToFieldMap[id]
+			if err := f.setSubfieldData(id, specField); err != nil {
+				return 0, err
+			}
+			read, err := specField.Unpack(data[offset:])
+			if err != nil {
+				return 0, fmt.Errorf("failed to unpack subfield %d: %v", id, err)
+			}
+			offset += read
+		}
+	}
+
+	if f.spec.HasBitmap {
+		offset -= numberBytesMissing
 	}
 	return offset, nil
 }
@@ -430,4 +464,31 @@ func (f *Composite) setPackableDataFields() ([]int, error) {
 
 func (f *Composite) dataFieldValue(id int) reflect.Value {
 	return f.data.FieldByName(fmt.Sprintf("F%d", id))
+}
+
+func fillBitmap(data []byte, bitmap *Bitmap, length int) ([]byte, int) {
+	// TODO Ver comportamiento con diferentes tamaños de bitmap, ejemplo 63 (3) y 126 (8)
+	// TODO Ver si el numberBytesMissing deberia cambiar su forma de calcularlo
+	fmt.Println("\nFill Bitmap")
+	bitmapBytes, _ := bitmap.Bytes()
+	numberBytesMissing := 16 - length
+	fmt.Println("Size bitmap: ", len(bitmapBytes))
+	fmt.Println("Size: ", length)
+	//length := 3
+	//data = []byte{128,0,0,0,2}
+	fmt.Println(data[:length])
+	fmt.Println(data[length:])
+	fillList := []byte{}
+	for i := 0; i < numberBytesMissing; i++ {
+		fillList = append(fillList, 0)
+	}
+	fmt.Println(fillList)
+
+	list := []byte{}
+	list = append(list, data[:length]...)
+	list = append(list, fillList...)
+	list = append(list, data[length:]...)
+	fmt.Println(list)
+	fmt.Println("\nEnd Fill Bitmap")
+	return list, numberBytesMissing
 }
