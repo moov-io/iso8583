@@ -276,7 +276,7 @@ func (f *Composite) unpackFields(data []byte) (int, error) {
 		f.fieldsMap = map[int]struct{}{}
 		f.Bitmap().Reset()
 
-		data, numberBytesMissing = fillBitmap(data, f.bitmap, f.idToFieldMap[0].Spec().Length)
+		data, numberBytesMissing = fillBitmap(data, f.idToFieldMap[0].Spec().Length)
 
 		read, err := f.idToFieldMap[0].Unpack(data[offset:])
 		if err != nil {
@@ -466,29 +466,19 @@ func (f *Composite) dataFieldValue(id int) reflect.Value {
 	return f.data.FieldByName(fmt.Sprintf("F%d", id))
 }
 
-func fillBitmap(data []byte, bitmap *Bitmap, length int) ([]byte, int) {
-	// TODO Ver comportamiento con diferentes tamaños de bitmap, ejemplo 63 (3) y 126 (8)
-	// TODO Ver si el numberBytesMissing deberia cambiar su forma de calcularlo
-	fmt.Println("\nFill Bitmap")
-	bitmapBytes, _ := bitmap.Bytes()
-	numberBytesMissing := 16 - length
-	fmt.Println("Size bitmap: ", len(bitmapBytes))
-	fmt.Println("Size: ", length)
-	//length := 3
-	//data = []byte{128,0,0,0,2}
-	fmt.Println(data[:length])
-	fmt.Println(data[length:])
-	fillList := []byte{}
-	for i := 0; i < numberBytesMissing; i++ {
-		fillList = append(fillList, 0)
-	}
-	fmt.Println(fillList)
-
-	list := []byte{}
+func fillBitmap(data []byte, length int) ([]byte, int) {
+	//get the size of bytes it needs to adapt to the behavior of the library in the bitmap unpack
+	maxBytes := (length/8)*8 + 8*2
+	//calculates the bytes missing from our data
+	numberBytesMissing := maxBytes - length
+	//create a slice byte with the number of elements missing from our data
+	fillList := make([]byte, numberBytesMissing)
+	//join our bitmap data with the missing data byte array and with the rest of the field data
+	var list []byte
 	list = append(list, data[:length]...)
 	list = append(list, fillList...)
 	list = append(list, data[length:]...)
-	fmt.Println(list)
-	fmt.Println("\nEnd Fill Bitmap")
+
+	//returns the adjusted byte array and the number of bytes that were added
 	return list, numberBytesMissing
 }
