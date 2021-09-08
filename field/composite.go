@@ -279,6 +279,7 @@ func (f *Composite) unpackFields(data []byte) (int, error) {
 		data, numberBytesMissing = fillBitmap(data, f.idToFieldMap[0].Spec().Length)
 
 		read, err := f.idToFieldMap[0].Unpack(data[offset:])
+		read = numberBytesMissing + f.idToFieldMap[0].Spec().Length
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subbitmap: %v", err)
 		}
