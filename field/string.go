@@ -79,6 +79,9 @@ func (f *String) Unpack(data []byte) (int, error) {
 	}
 
 	start := f.spec.Pref.Length()
+	if f.Spec().CountT == "2" {
+		dataLen = dataLen * 2
+	}
 	raw, read, err := f.spec.Enc.Decode(data[start:], dataLen)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode content: %v", err)
