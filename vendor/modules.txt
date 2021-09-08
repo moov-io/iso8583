@@ -1,6 +1,6 @@
 # github.com/davecgh/go-spew v1.1.0
 github.com/davecgh/go-spew/spew
-# github.com/franizus/go-util v1.2.0
+# github.com/franizus/go-util v1.2.1
 ## explicit
 github.com/franizus/go-util/bcd
 # github.com/pmezard/go-difflib v1.0.0
