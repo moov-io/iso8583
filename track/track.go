@@ -48,7 +48,7 @@ type GeneralCard struct {
 	ExpirationDate *ExpiryDate `json:"expiration_date"`
 
 	// Available for Track 1, Track 2
-	ServiceCode string `json:"expiration_date"`
+	ServiceCode string `json:"service_code"`
 
 	// Available for Track 1, Track 2, Track 3
 	//  If track 3, the field describe security data + additional data

@@ -95,7 +95,7 @@ func (gen *internalGenerator) String() string {
 
 // Create a new generator for each expression in regexps.
 func newGenerators(regexps []*syntax.Regexp, args *GeneratorArgs) ([]*internalGenerator, error) {
-	generators := make([]*internalGenerator, len(regexps), len(regexps))
+	generators := make([]*internalGenerator, len(regexps))
 	var err error
 
 	// create a generator for each alternate pattern

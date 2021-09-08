@@ -87,5 +87,5 @@ func (h *Second) Read(raw []byte) (*GeneralCard, error) {
 		}
 	}
 
-	return &card, nil
+	return &card, err
 }
