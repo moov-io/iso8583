@@ -63,7 +63,7 @@ func TestTrack(t *testing.T) {
 			require.Equal(t, sample.DiscretionaryData, tracker.DiscretionaryData)
 			if len(sample.ExpirationDate) > 0 {
 				require.NotNil(t, tracker.ExpirationDate)
-				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format("0601"))
+				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
 			}
 		}
 	})
@@ -101,7 +101,7 @@ func TestTrack(t *testing.T) {
 		require.Equal(t, sample.DiscretionaryData, tracker.DiscretionaryData)
 		if len(sample.ExpirationDate) > 0 {
 			require.NotNil(t, tracker.ExpirationDate)
-			require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format("0601"))
+			require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
 		}
 	})
 
@@ -146,7 +146,7 @@ func TestTrack(t *testing.T) {
 			require.Equal(t, sample.DiscretionaryData, tracker.DiscretionaryData)
 			if len(sample.ExpirationDate) > 0 {
 				require.NotNil(t, tracker.ExpirationDate)
-				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format("0601"))
+				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
 			}
 		}
 	})
@@ -191,7 +191,7 @@ func TestTrack(t *testing.T) {
 			require.Equal(t, sample.DiscretionaryData, tracker.DiscretionaryData)
 			if len(sample.ExpirationDate) > 0 {
 				require.NotNil(t, tracker.ExpirationDate)
-				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format("0601"))
+				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
 			}
 		}
 	})

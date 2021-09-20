@@ -59,7 +59,7 @@ const (
 )
 
 var (
-	expiryDateRegex    = regexp.MustCompile(`^([0-9]{2})\/?(0[1-9]|1[0-2])$`) //YYMM
+	expiryDateFormat   = "0601"
 	trackFirstRegex    = regexp.MustCompile(`^([A-Z]{1})([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)$`)
 	trackSecondRegex   = regexp.MustCompile(`^([0-9]{1,19})\=([0-9]{4}|\=)([0-9]{3}|\=)([^\?]+)$`)
 	trackThirdRegex    = regexp.MustCompile(`^([0-9]{2})([0-9]{1,19})\=([^\?]+)$`)
@@ -250,7 +250,7 @@ func (f *Track) parseForVersionFirst(b []byte) error {
 		case 3: // Name (NM)
 			f.Name = value
 		case 4: // Expiration Date (ED)
-			expiredTime, timeErr := time.Parse("0601", value)
+			expiredTime, timeErr := time.Parse(expiryDateFormat, value)
 			if timeErr == nil {
 				f.ExpirationDate = &expiredTime
 			}
@@ -276,7 +276,7 @@ func (f *Track) parseForVersionSecond(b []byte) error {
 		case 1: // Payment card number (PAN)
 			f.PrimaryAccountNumber = value
 		case 2: // Expiration Date (ED)
-			expiredTime, timeErr := time.Parse("0601", value)
+			expiredTime, timeErr := time.Parse(expiryDateFormat, value)
 			if timeErr == nil {
 				f.ExpirationDate = &expiredTime
 			}
@@ -334,7 +334,7 @@ func (f *Track) serialize() ([]byte, error) {
 				}
 			case 3:
 				if f.ExpirationDate != nil {
-					raw = f.ExpirationDate.Format("0601")
+					raw = f.ExpirationDate.Format(expiryDateFormat)
 				}
 			case 4:
 				raw = f.ServiceCode
@@ -356,7 +356,7 @@ func (f *Track) serialize() ([]byte, error) {
 				raw = f.PrimaryAccountNumber
 			case 1:
 				if f.ExpirationDate != nil {
-					raw = f.ExpirationDate.Format("0601")
+					raw = f.ExpirationDate.Format(expiryDateFormat)
 				}
 			case 2:
 				raw = f.ServiceCode
