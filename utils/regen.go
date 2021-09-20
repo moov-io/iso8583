@@ -1,4 +1,6 @@
-package track
+package utils
+
+// https://github.com/zach-klippenstein/goregen // Apache-2.0 License
 
 import (
 	"bytes"
@@ -8,10 +10,6 @@ import (
 )
 
 type CaptureGroupHandler func(index int, name string, group *syntax.Regexp, generator Generator, args *GeneratorArgs) string
-
-type generatorFactory func(regexp *syntax.Regexp, args *GeneratorArgs) (*internalGenerator, error)
-
-var generatorFactories map[syntax.Op]generatorFactory
 
 type GeneratorArgs struct {
 	Flags               syntax.Flags
@@ -57,27 +55,34 @@ func NewGenerator(pattern string, inputArgs *GeneratorArgs) (generator Generator
 	return gen, nil
 }
 
-func init() {
-	generatorFactories = map[syntax.Op]generatorFactory{
-		syntax.OpLiteral:        opCopyMatch,
-		syntax.OpAnyCharNotNL:   opCopyMatch,
-		syntax.OpAnyChar:        opCopyMatch,
-		syntax.OpQuest:          opCopyMatch,
-		syntax.OpStar:           opCopyMatch,
-		syntax.OpPlus:           opCopyMatch,
-		syntax.OpRepeat:         opCopyMatch,
-		syntax.OpCharClass:      opCopyMatch,
-		syntax.OpConcat:         opConcat,
-		syntax.OpCapture:        opCapture,
-		syntax.OpEmptyMatch:     noop,
-		syntax.OpAlternate:      noop,
-		syntax.OpBeginLine:      noop,
-		syntax.OpEndLine:        noop,
-		syntax.OpBeginText:      noop,
-		syntax.OpEndText:        noop,
-		syntax.OpWordBoundary:   noop,
-		syntax.OpNoWordBoundary: noop,
+type generatorFactoryFunc func(regexp *syntax.Regexp, args *GeneratorArgs) (*internalGenerator, error)
+
+var generatorFactories map[syntax.Op]generatorFactoryFunc
+
+func getGeneratorFactoryFunc(op syntax.Op) (generatorFactoryFunc, bool) {
+	if generatorFactories == nil {
+		generatorFactories = map[syntax.Op]generatorFactoryFunc{
+			syntax.OpLiteral:        opCopyMatch,
+			syntax.OpAnyCharNotNL:   opCopyMatch,
+			syntax.OpAnyChar:        opCopyMatch,
+			syntax.OpQuest:          opCopyMatch,
+			syntax.OpStar:           opCopyMatch,
+			syntax.OpPlus:           opCopyMatch,
+			syntax.OpRepeat:         opCopyMatch,
+			syntax.OpCharClass:      opCopyMatch,
+			syntax.OpConcat:         opConcat,
+			syntax.OpCapture:        opCapture,
+			syntax.OpEmptyMatch:     noop,
+			syntax.OpAlternate:      noop,
+			syntax.OpBeginLine:      noop,
+			syntax.OpEndLine:        noop,
+			syntax.OpBeginText:      noop,
+			syntax.OpEndText:        noop,
+			syntax.OpWordBoundary:   noop,
+			syntax.OpNoWordBoundary: noop,
+		}
 	}
+	return generatorFactories[op], true
 }
 
 type internalGenerator struct {
@@ -113,7 +118,7 @@ func newGenerators(regexps []*syntax.Regexp, args *GeneratorArgs) ([]*internalGe
 func newGenerator(regexp *syntax.Regexp, args *GeneratorArgs) (generator *internalGenerator, err error) {
 	simplified := regexp.Simplify()
 
-	factory, ok := generatorFactories[simplified.Op]
+	factory, ok := getGeneratorFactoryFunc(simplified.Op)
 	if ok {
 		return factory(simplified, args)
 	}
