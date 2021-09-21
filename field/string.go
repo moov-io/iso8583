@@ -6,6 +6,8 @@ import (
 )
 
 var _ Field = (*String)(nil)
+var _ json.Marshaler = (*String)(nil)
+var _ json.Unmarshaler = (*String)(nil)
 
 type String struct {
 	Value string `json:"value"`
@@ -109,4 +111,8 @@ func (f *String) SetData(data interface{}) error {
 
 func (f *String) MarshalJSON() ([]byte, error) {
 	return json.Marshal(f.Value)
+}
+
+func (f *String) UnmarshalJSON(b []byte) error {
+	return f.SetBytes(b)
 }

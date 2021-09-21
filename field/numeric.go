@@ -7,6 +7,8 @@ import (
 )
 
 var _ Field = (*Numeric)(nil)
+var _ json.Marshaler = (*Numeric)(nil)
+var _ json.Unmarshaler = (*Numeric)(nil)
 
 type Numeric struct {
 	Value int `json:"value"`
@@ -125,4 +127,8 @@ func (f *Numeric) SetData(data interface{}) error {
 
 func (f *Numeric) MarshalJSON() ([]byte, error) {
 	return json.Marshal(f.Value)
+}
+
+func (f *Numeric) UnmarshalJSON(b []byte) error {
+	return f.SetBytes(b)
 }

@@ -114,7 +114,5 @@ func (f *Binary) MarshalJSON() ([]byte, error) {
 }
 
 func (f *Binary) UnmarshalJSON(b []byte) error {
-    var data map[string]json.RawMessage
-    json.Unmarshal(b, &data)
-    return nil
+	return f.SetBytes(b)
 }

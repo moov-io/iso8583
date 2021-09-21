@@ -13,6 +13,8 @@ const minBitmapLength = 8 // 64 bit, 8 bytes, or 16 hex digits
 const maxBitmaps = 3
 
 var _ Field = (*Bitmap)(nil)
+var _ json.Marshaler = (*Bitmap)(nil)
+var _ json.Unmarshaler = (*Bitmap)(nil)
 
 type Bitmap struct {
 	spec   *Spec
@@ -185,4 +187,9 @@ func (f *Bitmap) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("failed to retrieve bytes: %v", err)
 	}
 	return json.Marshal(strings.ToUpper(hex.EncodeToString(data)))
+}
+
+// Takes in a HEX based string
+func (f *Bitmap) UnmarshalJSON(b []byte) error {
+	return f.SetBytes(b)
 }
