@@ -6,6 +6,8 @@ import (
 )
 
 var _ Field = (*Binary)(nil)
+var _ json.Marshaler = (*Binary)(nil)
+var _ json.Unmarshaler = (*Binary)(nil)
 
 type Binary struct {
 	Value []byte `json:"value"`
@@ -109,4 +111,10 @@ func (f *Binary) SetData(data interface{}) error {
 
 func (f *Binary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(f.Value)
+}
+
+func (f *Binary) UnmarshalJSON(b []byte) error {
+    var data map[string]json.RawMessage
+    json.Unmarshal(b, &data)
+    return nil
 }
