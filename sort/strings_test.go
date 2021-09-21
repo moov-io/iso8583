@@ -14,12 +14,12 @@ func TestSortStrings(t *testing.T) {
 
 func TestSortStringsByInt(t *testing.T) {
 	x := []string{"11", "5", "1"}
-	StringsByInt(x)
+	StringsByInt.Sort(x)
 	require.Equal(t, []string{"1", "5", "11"}, x)
 }
 
 func TestSortStringsByHex(t *testing.T) {
 	x := []string{"B0", "10", "ABCD"}
-	StringsByHex(x)
+	StringsByHex.Sort(x)
 	require.Equal(t, []string{"10", "B0", "ABCD"}, x)
 }
