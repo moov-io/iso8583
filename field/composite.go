@@ -201,6 +201,9 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 		if !ok {
 			return fmt.Errorf("failed to unmarshal subfield %v: received subfield not defined in spec", tag)
 		}
+		if err := f.setSubfieldData(tag, subfield); err != nil {
+			return err
+		}
 		if err := json.Unmarshal(rawMsg, subfield); err != nil {
 			return fmt.Errorf("failed to unmarshal subfield %v: %w", tag, err)
 		}

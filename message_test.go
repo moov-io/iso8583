@@ -659,19 +659,32 @@ func TestMessageJSON(t *testing.T) {
 
 		err = json.Unmarshal([]byte(input), message)
 		require.NoError(t, err)
-		require.Equal(t, want, data)
+		require.Equal(t, want.F0.Value, data.F0.Value)
+		require.Equal(t, want.F2.Value, data.F2.Value)
+		require.Equal(t, want.F3.F1.Value, data.F3.F1.Value)
+		require.Equal(t, want.F3.F2.Value, data.F3.F2.Value)
+		require.Equal(t, want.F3.F3.Value, data.F3.F3.Value)
+		require.Equal(t, want.F4.Value, data.F4.Value)
 	})
 
-	// t.Run("Test JSON encoding untyped", func(t *testing.T) {
-	// 	message := NewMessage(spec)
-	// 	message.MTI("0100")
-	// 	message.Field(2, "4242424242424242")
-	// 	message.Field(4, "100")
+	t.Run("Test JSON encoding untyped", func(t *testing.T) {
+		message := NewMessage(spec)
 
-	// 	want := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
+		input := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
 
-	// 	got, err := json.Marshal(message)
-	// 	require.NoError(t, err)
-	// 	require.Equal(t, want, string(got))
-	// })
+		err := json.Unmarshal([]byte(input), message)
+		require.NoError(t, err)
+
+		mti, err := message.GetMTI()
+		require.NoError(t, err)
+		require.Equal(t, "0100", mti)
+
+		f2, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", f2)
+
+		f4, err := message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", f4)
+	})
 }

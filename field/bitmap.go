@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -192,5 +193,9 @@ func (f *Bitmap) MarshalJSON() ([]byte, error) {
 
 // Takes in a HEX based string
 func (f *Bitmap) UnmarshalJSON(b []byte) error {
-	return f.SetBytes(b)
+	unqouted, err := strconv.Unquote(string(b))
+	if err != nil {
+		return fmt.Errorf("failed to unquote input: %w", err)
+	}
+	return f.SetBytes([]byte(unqouted))
 }

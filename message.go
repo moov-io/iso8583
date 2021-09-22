@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 
 	"github.com/moov-io/iso8583/field"
 )
@@ -156,7 +157,7 @@ func (m *Message) Pack() ([]byte, error) {
 		}
 		packedField, err := field.Pack()
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack field %d (%s): %v", i, field.Spec().Description, err)
+			return nil, fmt.Errorf("failed to pack field %d (%s): %w", i, field.Spec().Description, err)
 		}
 		packed = append(packed, packedField...)
 	}
@@ -178,7 +179,7 @@ func (m *Message) Unpack(src []byte) error {
 	}
 	read, err := m.fields[0].Unpack(src)
 	if err != nil {
-		return fmt.Errorf("failed to unpack MTI: %v", err)
+		return fmt.Errorf("failed to unpack MTI: %w", err)
 	}
 
 	off = read
@@ -186,7 +187,7 @@ func (m *Message) Unpack(src []byte) error {
 	// unpack Bitmap
 	read, err = m.fields[1].Unpack(src[off:])
 	if err != nil {
-		return fmt.Errorf("failed to unpack bitmapt: %v", err)
+		return fmt.Errorf("failed to unpack bitmap: %w", err)
 	}
 
 	off += read
@@ -207,7 +208,7 @@ func (m *Message) Unpack(src []byte) error {
 			m.fieldsMap[i] = struct{}{}
 			read, err = fl.Unpack(src[off:])
 			if err != nil {
-				return fmt.Errorf("failed to unpack field %d (%s): %v", i, fl.Spec().Description, err)
+				return fmt.Errorf("failed to unpack field %d (%s): %w", i, fl.Spec().Description, err)
 			}
 
 			off += read
@@ -239,18 +240,25 @@ func (m *Message) UnmarshalJSON(b []byte) error {
     var data map[string]json.RawMessage
     json.Unmarshal(b, &data)
 
-	// get all fields (set or unset)
-	strFieldMap := map[string]field.Field{}
-	for k, v := range m.fields {
-		strFieldMap[fmt.Sprint(k)] = v
-	}
-
 	for id, rawMsg := range data {
-		subfield, ok := strFieldMap[id]
-		if !ok {
-			return fmt.Errorf("failed to unmarshal field %v: received field not defined in spec", id)
+		i, err := strconv.Atoi(id)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal field %v: could not convert to int", i)
 		}
-		if err := json.Unmarshal(rawMsg, subfield); err != nil {
+
+		field, ok := m.fields[i]
+		if !ok {
+			return fmt.Errorf("failed to unmarshal field %d: no specification found", i)
+		}
+
+		if m.dataValue != nil {
+			if err := m.setUnpackableDataField(i); err != nil {
+				return err
+			}
+		}
+
+		m.fieldsMap[i] = struct{}{}
+		if err := json.Unmarshal(rawMsg, field); err != nil {
 			return fmt.Errorf("failed to unmarshal field %v: %w", id, err)
 		}
 	}

@@ -130,5 +130,9 @@ func (f *Numeric) MarshalJSON() ([]byte, error) {
 }
 
 func (f *Numeric) UnmarshalJSON(b []byte) error {
-	return f.SetBytes(b)
+	unqouted, err := strconv.Unquote(string(b))
+	if err != nil {
+		return fmt.Errorf("failed to unquote input: %w", err)
+	}
+	return f.SetBytes([]byte(unqouted))
 }
