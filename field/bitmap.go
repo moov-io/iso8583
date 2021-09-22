@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/moov-io/iso8583/utils"
 )

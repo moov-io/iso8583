@@ -57,7 +57,7 @@ func TestBinaryField(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, in, packed)
 	})
-	
+
 	t.Run("SetBytes sets data to the data field", func(t *testing.T) {
 		bin := NewBinary(spec)
 		data := &Binary{}

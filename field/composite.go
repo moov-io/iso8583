@@ -193,8 +193,8 @@ func (f *Composite) MarshalJSON() ([]byte, error) {
 // An error is thrown if the JSON consists of a subfield that has not
 // been defined in the spec.
 func (f *Composite) UnmarshalJSON(b []byte) error {
-    var data map[string]json.RawMessage
-    json.Unmarshal(b, &data)
+	var data map[string]json.RawMessage
+	json.Unmarshal(b, &data)
 
 	for tag, rawMsg := range data {
 		subfield, ok := f.tagToSubfieldMap[tag]
@@ -209,7 +209,7 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 		}
 	}
 
-    return nil
+	return nil
 }
 
 func (f *Composite) pack() ([]byte, error) {

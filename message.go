@@ -237,8 +237,8 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 }
 
 func (m *Message) UnmarshalJSON(b []byte) error {
-    var data map[string]json.RawMessage
-    json.Unmarshal(b, &data)
+	var data map[string]json.RawMessage
+	json.Unmarshal(b, &data)
 
 	for id, rawMsg := range data {
 		i, err := strconv.Atoi(id)
@@ -263,7 +263,7 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 		}
 	}
 
-    return nil
+	return nil
 }
 
 func (m *Message) setPackableDataFields() ([]int, error) {
