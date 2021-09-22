@@ -425,6 +425,22 @@ func TestCompositePacking(t *testing.T) {
 		require.Equal(t, 12, data.F3.Value)
 		require.Nil(t, data.F11)
 	})
+
+	t.Run("SetBytes correctly deserialises bytes to the data struct", func(t *testing.T) {
+		data := &CompositeTestData{}
+
+		composite := NewComposite(compositeTestSpec)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		err = composite.SetBytes([]byte("ABCD12"))
+		require.NoError(t, err)
+
+		require.Equal(t, "AB", data.F1.Value)
+		require.Equal(t, "CD", data.F2.Value)
+		require.Equal(t, 12, data.F3.Value)
+		require.Nil(t, data.F11)
+	})
 }
 
 func TestCompositePackingWithTags(t *testing.T) {

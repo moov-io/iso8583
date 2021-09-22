@@ -240,4 +240,18 @@ func TestBitmap_SetData(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, packed, 16) // 16 bytes is 8 bytes (one bitmap) encoded in hex
 	})
+
+	t.Run("SetBytes sets data to the data field", func(t *testing.T) {
+		bitmap := NewBitmap(spec)
+
+		data := &Bitmap{}
+		bitmap.SetData(data)
+
+		err := bitmap.SetBytes([]byte("a"))
+		require.NoError(t, err)
+		b, err := data.Bytes()
+		require.NoError(t, err)
+		require.Equal(t, []byte("a"), b)
+	})
+
 }

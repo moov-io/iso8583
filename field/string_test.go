@@ -49,4 +49,11 @@ func TestStringField(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
 	require.Equal(t, "olleh", data.Value)
+
+	str = NewString(spec)
+	data = &String{}
+	str.SetData(data)
+	err = str.SetBytes([]byte("hello"))
+	require.NoError(t, err)
+	require.Equal(t, "hello", data.Value)
 }
