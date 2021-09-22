@@ -9,6 +9,9 @@ import (
 	"github.com/moov-io/iso8583/field"
 )
 
+var _ json.Marshaler = (*Message)(nil)
+var _ json.Unmarshaler = (*Message)(nil)
+
 type Message struct {
 	spec      *MessageSpec
 	data      interface{}
@@ -230,6 +233,29 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 
 	// get only fields that were set
 	return json.Marshal(field.OrderedMap(strFieldMap))
+}
+
+func (m *Message) UnmarshalJSON(b []byte) error {
+    var data map[string]json.RawMessage
+    json.Unmarshal(b, &data)
+
+	// get all fields (set or unset)
+	strFieldMap := map[string]field.Field{}
+	for k, v := range m.fields {
+		strFieldMap[fmt.Sprint(k)] = v
+	}
+
+	for id, rawMsg := range data {
+		subfield, ok := strFieldMap[id]
+		if !ok {
+			return fmt.Errorf("failed to unmarshal field %v: received field not defined in spec", id)
+		}
+		if err := json.Unmarshal(rawMsg, subfield); err != nil {
+			return fmt.Errorf("failed to unmarshal field %v: %w", id, err)
+		}
+	}
+
+    return nil
 }
 
 func (m *Message) setPackableDataFields() ([]int, error) {

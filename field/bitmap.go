@@ -39,6 +39,9 @@ func (f *Bitmap) SetSpec(spec *Spec) {
 
 func (f *Bitmap) SetBytes(b []byte) error {
 	f.bitmap = utils.NewBitmapFromData(b)
+	if f.data != nil {
+		*(f.data) = *f
+	}
 	return nil
 }
 
@@ -101,10 +104,8 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 		}
 	}
 
-	f.bitmap = utils.NewBitmapFromData(rawBitmap)
-
-	if f.data != nil {
-		*(f.data) = *f
+	if err := f.SetBytes(rawBitmap); err != nil {
+		return 0, fmt.Errorf("failed to set bytes: %w", err)
 	}
 
 	return read, nil
