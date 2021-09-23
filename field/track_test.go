@@ -1,10 +1,11 @@
 package field
 
 import (
+	"testing"
+
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 type TestSample struct {
@@ -45,7 +46,7 @@ func TestTrack(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}
-			tracker, err := NewTrack(spec, VersionFirst)
+			tracker, err := NewTrack(spec, Track1)
 			require.NoError(t, err)
 
 			tracker.FixedLength = true
@@ -74,7 +75,7 @@ func TestTrack(t *testing.T) {
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
 		}
-		tracker, err := NewTrack(spec, VersionFirst)
+		tracker, err := NewTrack(spec, Track1)
 		require.NoError(t, err)
 
 		sample := TestSample{
@@ -129,7 +130,7 @@ func TestTrack(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}
-			tracker, err := NewTrack(spec, VersionSecond)
+			tracker, err := NewTrack(spec, Track2)
 			require.NoError(t, err)
 
 			err = tracker.SetBytes([]byte(sample.Raw))
@@ -174,7 +175,7 @@ func TestTrack(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}
-			tracker, err := NewTrack(spec, VersionThird)
+			tracker, err := NewTrack(spec, Track3)
 			require.NoError(t, err)
 
 			err = tracker.SetBytes([]byte(sample.Raw))
@@ -194,5 +195,17 @@ func TestTrack(t *testing.T) {
 				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
 			}
 		}
+	})
+
+	t.Run("Track value", func(t *testing.T) {
+
+		raw := `B4242424242424242^SMITH JOHN Q^11052011000000000000`
+		tracker, err := NewTrackValue([]byte(raw), Track1, false)
+		require.NoError(t, err)
+
+		buf, err := tracker.Bytes()
+		require.NoError(t, err)
+
+		require.Equal(t, raw, string(buf))
 	})
 }

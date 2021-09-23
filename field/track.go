@@ -4,11 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"regexp/syntax"
 	"strings"
 	"time"
-
-	"github.com/moov-io/iso8583/utils"
 )
 
 var _ Field = (*Track)(nil)
@@ -20,8 +17,8 @@ type Track struct {
 	// Available for Track 1
 	FixedLength bool `xml:"-" json:"-"`
 
-	// Available versions 1,2,3
-	Version TrackVersion `xml:"Version,omitempty" json:"version,omitempty"`
+	// Available track number: 1,2,3
+	Number TrackNumber `xml:"number,omitempty" json:"number,omitempty"`
 
 	// Available for Track 1, Track 3
 	FormatCode string `xml:"FormatCode,omitempty" json:"format_code,omitempty"`
@@ -43,49 +40,51 @@ type Track struct {
 	DiscretionaryData string `xml:"DiscretionaryData,omitempty" json:"discretionary_data,omitempty"`
 }
 
-type TrackVersion int
+type TrackNumber int
 
-func (v TrackVersion) Valid() bool {
-	if v == VersionFirst || v == VersionSecond || v == VersionThird {
+func (v TrackNumber) Valid() bool {
+	if v == Track1 || v == Track2 || v == Track3 {
 		return true
 	}
 	return false
 }
 
 const (
-	VersionFirst  = 1
-	VersionSecond = 2
-	VersionThird  = 3
+	Track1 TrackNumber = 1
+	Track2 TrackNumber = 2
+	Track3 TrackNumber = 3
+
+	expiryDateFormat = "0601"
+
+	track1Format = `%s%s^%s^%s%s%s`
+	track2Format = `%s=%s%s%s`
+	track3Format = `%s%s=%s`
 )
 
 var (
-	expiryDateFormat   = "0601"
-	trackFirstRegex    = regexp.MustCompile(`^([A-Z]{1})([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)$`)
-	trackSecondRegex   = regexp.MustCompile(`^([0-9]{1,19})\=([0-9]{4}|\=)([0-9]{3}|\=)([^\?]+)$`)
-	trackThirdRegex    = regexp.MustCompile(`^([0-9]{2})([0-9]{1,19})\=([^\?]+)$`)
-	trackFirstPattern  = `^([A-Z]{1})([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)$`
-	trackSecondPattern = `^([0-9]{1,19})\=([0-9]{4}|\=)([0-9]{3}|\=)([^\?]+)$`
-	trackThirdPattern  = `^([0-9]{2})([0-9]{1,19})\=([^\?]+)$`
+	track1Regex = regexp.MustCompile(`^([A-Z]{1})([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)$`)
+	track2Regex = regexp.MustCompile(`^([0-9]{1,19})\=([0-9]{4}|\=)([0-9]{3}|\=)([^\?]+)$`)
+	track3Regex = regexp.MustCompile(`^([0-9]{2})([0-9]{1,19})\=([^\?]+)$`)
 )
 
-func NewTrack(spec *Spec, version TrackVersion) (*Track, error) {
-	if !version.Valid() {
-		return nil, errors.New("invalid track version")
+func NewTrack(spec *Spec, number TrackNumber) (*Track, error) {
+	if !number.Valid() {
+		return nil, errors.New("invalid track number")
 	}
 	return &Track{
-		spec:    spec,
-		Version: version,
+		spec:   spec,
+		Number: number,
 	}, nil
 }
 
-func NewTrack1Value(val []byte, version TrackVersion, isFixed bool) (*Track, error) {
-	if !version.Valid() {
-		return nil, errors.New("invalid track version")
+func NewTrackValue(val []byte, number TrackNumber, fixedLength bool) (*Track, error) {
+	if !number.Valid() {
+		return nil, errors.New("invalid track number")
 	}
 
 	track := &Track{
-		Version:     VersionFirst,
-		FixedLength: isFixed,
+		Number:      number,
+		FixedLength: fixedLength,
 	}
 	err := track.parse(val)
 	if err != nil {
@@ -178,43 +177,24 @@ func (f *Track) SetData(data interface{}) error {
 
 	track, ok := data.(*Track)
 	if !ok {
-		return fmt.Errorf("data does not match required *Numeric type")
+		return fmt.Errorf("data does not match required *Track type")
+	}
+
+	if !track.Number.Valid() {
+		return fmt.Errorf("contains invalid track number")
 	}
 
 	f.data = track
-	if track.Version == VersionFirst || track.Version == VersionSecond || track.Version == VersionThird {
-		f.FixedLength = track.FixedLength
-		f.Version = track.Version
-		f.FormatCode = track.FormatCode
-		f.PrimaryAccountNumber = track.PrimaryAccountNumber
-		f.Name = track.Name
-		f.ExpirationDate = track.ExpirationDate
-		f.ServiceCode = track.ServiceCode
-		f.DiscretionaryData = track.DiscretionaryData
-	}
+	f.FixedLength = track.FixedLength
+	f.Number = track.Number
+	f.FormatCode = track.FormatCode
+	f.PrimaryAccountNumber = track.PrimaryAccountNumber
+	f.Name = track.Name
+	f.ExpirationDate = track.ExpirationDate
+	f.ServiceCode = track.ServiceCode
+	f.DiscretionaryData = track.DiscretionaryData
+
 	return nil
-}
-
-var cardTypes = map[string]string{
-	"Visa":             `^4[0-9]{12}(?:[0-9]{3})?$`,
-	"MasterCard":       `^5[1-5][0-9]{14}$`,
-	"American Express": `^3[47][0-9]{13}$`,
-	"Diners Club":      `^3(?:0[0-5]|[68][0-9])[0-9]{11}$`,
-	"Discover":         `^6(?:011|5[0-9]{2})[0-9]{12}$`,
-	"JCB":              `^(?:2131|1800|35\d{3})\d{11}$`,
-}
-
-func (f *Track) GetCardType() string {
-	for key, pattern := range cardTypes {
-		r, err := regexp.Compile(pattern)
-		if err != nil {
-			continue
-		}
-		if !r.MatchString(f.PrimaryAccountNumber) {
-			return key
-		}
-	}
-	return "Unknown"
 }
 
 func (f *Track) parse(raw []byte) error {
@@ -222,20 +202,20 @@ func (f *Track) parse(raw []byte) error {
 		return errors.New("invalid track data")
 	}
 
-	switch f.Version {
-	case VersionFirst:
-		return f.parseForVersionFirst(raw)
-	case VersionSecond:
-		return f.parseForVersionSecond(raw)
-	case VersionThird:
-		return f.parseForVersionThird(raw)
+	switch f.Number {
+	case Track1:
+		return f.parseForTrack1(raw)
+	case Track2:
+		return f.parseForTrack2(raw)
+	case Track3:
+		return f.parseForTrack3(raw)
 	}
 
-	return errors.New("invalid track version")
+	return errors.New("invalid track number")
 }
 
-func (f *Track) parseForVersionFirst(b []byte) error {
-	matches := trackFirstRegex.FindStringSubmatch(string(b))
+func (f *Track) parseForTrack1(b []byte) error {
+	matches := track1Regex.FindStringSubmatch(string(b))
 	for index, val := range matches {
 		value := strings.TrimSpace(val)
 		if len(value) == 0 || value == "^" {
@@ -251,9 +231,10 @@ func (f *Track) parseForVersionFirst(b []byte) error {
 			f.Name = value
 		case 4: // Expiration Date (ED)
 			expiredTime, timeErr := time.Parse(expiryDateFormat, value)
-			if timeErr == nil {
-				f.ExpirationDate = &expiredTime
+			if timeErr != nil {
+				return errors.New("invalid expired time")
 			}
+			f.ExpirationDate = &expiredTime
 		case 5: // Service Code (SC)
 			f.ServiceCode = value
 		case 6: // Discretionary data (DD)
@@ -264,8 +245,8 @@ func (f *Track) parseForVersionFirst(b []byte) error {
 	return nil
 }
 
-func (f *Track) parseForVersionSecond(b []byte) error {
-	matches := trackSecondRegex.FindStringSubmatch(string(b))
+func (f *Track) parseForTrack2(b []byte) error {
+	matches := track2Regex.FindStringSubmatch(string(b))
 	for index, val := range matches {
 		value := strings.TrimSpace(val)
 		if len(value) == 0 || value == "=" {
@@ -277,9 +258,10 @@ func (f *Track) parseForVersionSecond(b []byte) error {
 			f.PrimaryAccountNumber = value
 		case 2: // Expiration Date (ED)
 			expiredTime, timeErr := time.Parse(expiryDateFormat, value)
-			if timeErr == nil {
-				f.ExpirationDate = &expiredTime
+			if timeErr != nil {
+				return errors.New("invalid expired time")
 			}
+			f.ExpirationDate = &expiredTime
 		case 3: // Service Code (SC)
 			f.ServiceCode = value
 		case 4: // Discretionary data (DD)
@@ -290,8 +272,8 @@ func (f *Track) parseForVersionSecond(b []byte) error {
 	return nil
 }
 
-func (f *Track) parseForVersionThird(b []byte) error {
-	matches := trackThirdRegex.FindStringSubmatch(string(b))
+func (f *Track) parseForTrack3(b []byte) error {
+	matches := track3Regex.FindStringSubmatch(string(b))
 	for index, val := range matches {
 		value := strings.TrimSpace(val)
 		if len(value) == 0 || value == "=" {
@@ -299,7 +281,7 @@ func (f *Track) parseForVersionThird(b []byte) error {
 		}
 
 		switch index {
-		case 1: // Payment card number (PAN)
+		case 1: // Format Code
 			f.FormatCode = value
 		case 2: // Payment card number (PAN)
 			f.PrimaryAccountNumber = value
@@ -313,92 +295,38 @@ func (f *Track) parseForVersionThird(b []byte) error {
 
 func (f *Track) serialize() ([]byte, error) {
 
-	var pattern string
-	var handler func(index int, name string, group *syntax.Regexp, generator utils.Generator, args *utils.GeneratorArgs) string
+	var raw string
 
-	switch f.Version {
-	case VersionFirst:
-		pattern = trackFirstPattern
-		handler = func(index int, name string, group *syntax.Regexp, generator utils.Generator, args *utils.GeneratorArgs) string {
-			var raw string
-			switch index {
-			case 0:
-				raw = f.FormatCode
-			case 1:
-				raw = f.PrimaryAccountNumber
-			case 2:
-				if len(f.Name) > 0 && f.FixedLength {
-					raw = fmt.Sprintf("%-26.26s", f.Name)
-				} else {
-					raw = f.Name
-				}
-			case 3:
-				if f.ExpirationDate != nil {
-					raw = f.ExpirationDate.Format(expiryDateFormat)
-				}
-			case 4:
-				raw = f.ServiceCode
-			case 5:
-				raw = f.DiscretionaryData
-			}
-
-			if len(raw) == 0 {
-				return `^`
-			}
-			return raw
+	switch f.Number {
+	case Track1:
+		name := f.Name
+		if len(f.Name) > 1 && f.FixedLength {
+			name = fmt.Sprintf("%-26.26s", f.Name)
 		}
-	case VersionSecond:
-		pattern = trackSecondPattern
-		handler = func(index int, name string, group *syntax.Regexp, generator utils.Generator, args *utils.GeneratorArgs) string {
-			var raw string
-			switch index {
-			case 0:
-				raw = f.PrimaryAccountNumber
-			case 1:
-				if f.ExpirationDate != nil {
-					raw = f.ExpirationDate.Format(expiryDateFormat)
-				}
-			case 2:
-				raw = f.ServiceCode
-			case 3:
-				raw = f.DiscretionaryData
-			}
-
-			if len(raw) == 0 {
-				return `=`
-			}
-			return raw
+		expired := "^"
+		if f.ExpirationDate != nil {
+			expired = f.ExpirationDate.Format(expiryDateFormat)
 		}
-	case VersionThird:
-		pattern = trackThirdPattern
-		handler = func(index int, name string, group *syntax.Regexp, generator utils.Generator, args *utils.GeneratorArgs) string {
-			var raw string
-			switch index {
-			case 0:
-				raw = f.FormatCode
-			case 1:
-				raw = f.PrimaryAccountNumber
-			case 2:
-				raw = f.DiscretionaryData
-			}
-
-			if len(raw) == 0 {
-				return `=`
-			}
-			return raw
+		code := "^"
+		if len(f.ServiceCode) > 0 {
+			code = f.ServiceCode
 		}
+		raw = fmt.Sprintf(track1Format, f.FormatCode, f.PrimaryAccountNumber, name, expired, code, f.DiscretionaryData)
+	case Track2:
+		expired := "^"
+		if f.ExpirationDate != nil {
+			expired = f.ExpirationDate.Format(expiryDateFormat)
+		}
+		code := "^"
+		if len(f.ServiceCode) > 0 {
+			code = f.ServiceCode
+		}
+		raw = fmt.Sprintf(track2Format, f.PrimaryAccountNumber, expired, code, f.DiscretionaryData)
+	case Track3:
+		raw = fmt.Sprintf(track3Format, f.FormatCode, f.PrimaryAccountNumber, f.DiscretionaryData)
+	default:
+		return nil, errors.New("unsupported track number")
 	}
 
-	generator, _ := utils.NewGenerator(pattern, &utils.GeneratorArgs{
-		Flags:               syntax.Perl,
-		CaptureGroupHandler: handler,
-	})
-
-	rawTrack := generator.Generate()
-	if matched, _ := regexp.MatchString(pattern, rawTrack); !matched {
-		fmt.Println(rawTrack)
-		return nil, errors.New("unable to create valid track data")
-	}
-
-	return []byte(rawTrack), nil
+	return []byte(raw), nil
 }
