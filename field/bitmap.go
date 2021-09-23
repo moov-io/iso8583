@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/moov-io/iso8583/utils"
@@ -13,6 +14,8 @@ const minBitmapLength = 8 // 64 bit, 8 bytes, or 16 hex digits
 const maxBitmaps = 3
 
 var _ Field = (*Bitmap)(nil)
+var _ json.Marshaler = (*Bitmap)(nil)
+var _ json.Unmarshaler = (*Bitmap)(nil)
 
 type Bitmap struct {
 	spec   *Spec
@@ -37,6 +40,9 @@ func (f *Bitmap) SetSpec(spec *Spec) {
 
 func (f *Bitmap) SetBytes(b []byte) error {
 	f.bitmap = utils.NewBitmapFromData(b)
+	if f.data != nil {
+		*(f.data) = *f
+	}
 	return nil
 }
 
@@ -99,10 +105,8 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 		}
 	}
 
-	f.bitmap = utils.NewBitmapFromData(rawBitmap)
-
-	if f.data != nil {
-		*(f.data) = *f
+	if err := f.SetBytes(rawBitmap); err != nil {
+		return 0, fmt.Errorf("failed to set bytes: %w", err)
 	}
 
 	return read, nil
@@ -185,4 +189,13 @@ func (f *Bitmap) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("failed to retrieve bytes: %v", err)
 	}
 	return json.Marshal(strings.ToUpper(hex.EncodeToString(data)))
+}
+
+// Takes in a HEX based string
+func (f *Bitmap) UnmarshalJSON(b []byte) error {
+	unqouted, err := strconv.Unquote(string(b))
+	if err != nil {
+		return fmt.Errorf("failed to unquote input: %w", err)
+	}
+	return f.SetBytes([]byte(unqouted))
 }

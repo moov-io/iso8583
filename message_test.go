@@ -597,15 +597,16 @@ func TestMessageJSON(t *testing.T) {
 	}
 
 	type TestISOData struct {
+		F0 *field.String
 		F2 *field.String
 		F3 *TestISOF3Data
 		F4 *field.String
 	}
 
-	t.Run("Test JSON encoding", func(t *testing.T) {
+	t.Run("Test JSON encoding typed", func(t *testing.T) {
 		message := NewMessage(spec)
-		message.MTI("0100")
 		err := message.SetData(&TestISOData{
+			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
 			F3: &TestISOF3Data{
 				F1: field.NewStringValue("12"),
@@ -634,5 +635,56 @@ func TestMessageJSON(t *testing.T) {
 		got, err := json.Marshal(message)
 		require.NoError(t, err)
 		require.Equal(t, want, string(got))
+	})
+
+	t.Run("Test JSON decoding typed", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		input := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
+
+		data := &TestISOData{}
+		err := message.SetData(data)
+		require.NoError(t, err)
+
+		want := &TestISOData{
+			F0: field.NewStringValue("0100"),
+			F2: field.NewStringValue("4242424242424242"),
+			F3: &TestISOF3Data{
+				F1: field.NewStringValue("12"),
+				F2: field.NewStringValue("34"),
+				F3: field.NewStringValue("56"),
+			},
+			F4: field.NewStringValue("100"),
+		}
+
+		err = json.Unmarshal([]byte(input), message)
+		require.NoError(t, err)
+		require.Equal(t, want.F0.Value, data.F0.Value)
+		require.Equal(t, want.F2.Value, data.F2.Value)
+		require.Equal(t, want.F3.F1.Value, data.F3.F1.Value)
+		require.Equal(t, want.F3.F2.Value, data.F3.F2.Value)
+		require.Equal(t, want.F3.F3.Value, data.F3.F3.Value)
+		require.Equal(t, want.F4.Value, data.F4.Value)
+	})
+
+	t.Run("Test JSON encoding untyped", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		input := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
+
+		err := json.Unmarshal([]byte(input), message)
+		require.NoError(t, err)
+
+		mti, err := message.GetMTI()
+		require.NoError(t, err)
+		require.Equal(t, "0100", mti)
+
+		f2, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", f2)
+
+		f4, err := message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", f4)
 	})
 }

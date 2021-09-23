@@ -3,9 +3,12 @@ package field
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 var _ Field = (*Binary)(nil)
+var _ json.Marshaler = (*Binary)(nil)
+var _ json.Unmarshaler = (*Binary)(nil)
 
 type Binary struct {
 	Value []byte `json:"value"`
@@ -35,6 +38,9 @@ func (f *Binary) SetSpec(spec *Spec) {
 
 func (f *Binary) SetBytes(b []byte) error {
 	f.Value = b
+	if f.data != nil {
+		*(f.data) = *f
+	}
 	return nil
 }
 
@@ -55,12 +61,12 @@ func (f *Binary) Pack() ([]byte, error) {
 
 	packed, err := f.spec.Enc.Encode(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %v", err)
+		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %v", err)
+		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
 
 	return append(packedLength, packed...), nil
@@ -69,22 +75,20 @@ func (f *Binary) Pack() ([]byte, error) {
 func (f *Binary) Unpack(data []byte) (int, error) {
 	dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %v", err)
+		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
 	raw, read, err := f.spec.Enc.Decode(data[prefBytes:], dataLen)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode content: %v", err)
+		return 0, fmt.Errorf("failed to decode content: %w", err)
 	}
 
 	if f.spec.Pad != nil {
 		raw = f.spec.Pad.Unpad(raw)
 	}
 
-	f.Value = raw
-
-	if f.data != nil {
-		*(f.data) = *f
+	if err := f.SetBytes(raw); err != nil {
+		return 0, fmt.Errorf("failed to set bytes: %w", err)
 	}
 
 	return read + prefBytes, nil
@@ -109,4 +113,12 @@ func (f *Binary) SetData(data interface{}) error {
 
 func (f *Binary) MarshalJSON() ([]byte, error) {
 	return json.Marshal(f.Value)
+}
+
+func (f *Binary) UnmarshalJSON(b []byte) error {
+	unqouted, err := strconv.Unquote(string(b))
+	if err != nil {
+		return fmt.Errorf("failed to unquote input: %w", err)
+	}
+	return f.SetBytes([]byte(unqouted))
 }

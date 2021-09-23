@@ -48,8 +48,7 @@ type Spec struct {
 	// binary etc
 	Enc encoding.Encoder
 	// Pref defines the prefixer of the field used to encode and decode the
-	// length of the field. Only applicable to primitive field types e.g.
-	// numerics, strings, binary etc
+	// length of the field.
 	Pref prefix.Prefixer
 	// Pad sets the padding direction and type of the field.
 	Pad padding.Padder

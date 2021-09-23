@@ -10,6 +10,8 @@ import (
 )
 
 var _ Field = (*Composite)(nil)
+var _ json.Marshaler = (*Composite)(nil)
+var _ json.Unmarshaler = (*Composite)(nil)
 
 // Composite is a wrapper object designed to hold ISO8583 TLVs, subfields and
 // subelements. Because Composite handles both of these usecases generically,
@@ -185,6 +187,29 @@ func (f *Composite) String() (string, error) {
 func (f *Composite) MarshalJSON() ([]byte, error) {
 	jsonData := OrderedMap(f.tagToSubfieldMap)
 	return json.Marshal(jsonData)
+}
+
+// UnmarshalJSON implements the encoding/json.Unmarshaler interface.
+// An error is thrown if the JSON consists of a subfield that has not
+// been defined in the spec.
+func (f *Composite) UnmarshalJSON(b []byte) error {
+	var data map[string]json.RawMessage
+	json.Unmarshal(b, &data)
+
+	for tag, rawMsg := range data {
+		subfield, ok := f.tagToSubfieldMap[tag]
+		if !ok {
+			return fmt.Errorf("failed to unmarshal subfield %v: received subfield not defined in spec", tag)
+		}
+		if err := f.setSubfieldData(tag, subfield); err != nil {
+			return err
+		}
+		if err := json.Unmarshal(rawMsg, subfield); err != nil {
+			return fmt.Errorf("failed to unmarshal subfield %v: %w", tag, err)
+		}
+	}
+
+	return nil
 }
 
 func (f *Composite) pack() ([]byte, error) {
