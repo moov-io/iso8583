@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sort"
+	"strconv"
+
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	moovsort "github.com/moov-io/iso8583/sort"
-	"reflect"
-	"sort"
-	"strconv"
 )
 
 type FieldConstructorFunc func(spec *field.Spec) field.Field
