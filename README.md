@@ -254,6 +254,34 @@ it will produce following JSON:
 }
 ```
 
+Also, you can unmarshal JSON into `iso8583.Message` object using the untyped API as such:
+
+```go
+input := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
+
+message := NewMessage(spec)
+if err := json.Unmarshal([]byte(input), message); err != nil {
+    // handle err
+}
+```
+
+Similarly, the typed API may be used as such:
+
+```go
+input := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
+
+message := NewMessage(spec)
+data := &TestISOData{}
+if err := message.SetData(data); err != nil {
+    // handle error
+}
+if err = json.Unmarshal([]byte(input), message); err != nil {
+    // handle err
+}
+
+fmt.Printf("Field F2: %v", data.F2.Value) // This will print "4242424242424242"
+```
+
 ### Network Header
 
 All messages between the client/server (ISO host and endpoint) have a message
