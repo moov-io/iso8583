@@ -115,8 +115,8 @@ type fieldDummy struct {
 	Enc         string                `json:"enc,omitempty" xml:"enc,omitempty"`
 	Prefix      string                `json:"prefix,omitempty" xml:"prefix,omitempty"`
 	Padding     *paddingDummy         `json:"padding,omitempty" xml:"padding,omitempty"`
-	Tag         *tagDummy             `json:"tag,omitempty"`
-	Subfields   map[string]*fieldDummy `json:"subfields,omitempty"`
+	Tag         *tagDummy             `json:"tag,omitempty" xml:"tag,omitempty"`
+	Subfields   map[string]*fieldDummy `json:"subfields,omitempty" xml:"subfields:omitempty"`
 }
 
 type paddingDummy struct {
