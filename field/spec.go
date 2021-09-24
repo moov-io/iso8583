@@ -6,6 +6,7 @@ import (
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
+	"github.com/moov-io/iso8583/sort"
 )
 
 // TagSpec is used to define the format of field tags (sometimes defined as field IDs).
@@ -29,12 +30,7 @@ type TagSpec struct {
 	// Sort defines the order in which Tags defined within the subfields
 	// spec must be packed. This ordering may also be used for unpacking
 	// if Spec.Tag.Enc == nil.
-	Sort TagSort
-}
-
-type TagSort interface {
-	Sort([]string)
-	Inspect() string
+	Sort sort.StringSlice
 }
 
 // Spec defines the structure of a field.

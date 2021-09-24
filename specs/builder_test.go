@@ -2,7 +2,6 @@ package specs
 
 import (
 	"io/ioutil"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +22,7 @@ func TestBuilder(t *testing.T) {
 	asciiSpec, err := Builder.ImportJSON(asciiJson)
 	require.NoError(t, err)
 
-	require.Equal(t, true, reflect.DeepEqual(Spec87ASCII, asciiSpec))
+	require.Exactly(t, Spec87ASCII, asciiSpec)
 
 	hexJson, err := Builder.ExportJSON(Spec87Hex)
 	require.NoError(t, err)
@@ -103,6 +102,15 @@ func TestSpecWithCompositeFields(t *testing.T) {
 	require.NoError(t, err)
 	importedSpec, err := Builder.ImportJSON(specJSON)
 	require.NoError(t, err)
-	require.Exactly(t, testSpec, importedSpec)
+	reexportedJSON, err := Builder.ExportJSON(testSpec)
+	require.NoError(t, err)
+	require.Equal(t, specJSON, reexportedJSON)
 
+	// We can't compare sort functions for equality, so nil them out to check the rest
+	testSpec.Fields[1].Spec().Tag.Sort = nil
+	importedSpec.Fields[1].Spec().Tag.Sort = nil
+	testSpec.Fields[1].Spec().Subfields["1"].Spec().Tag.Sort = nil
+	importedSpec.Fields[1].Spec().Subfields["1"].Spec().Tag.Sort = nil
+
+	require.Exactly(t, testSpec, importedSpec)
 }

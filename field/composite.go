@@ -84,7 +84,7 @@ func (f *Composite) SetSpec(spec *Spec) {
 	}
 	f.spec = spec
 	f.tagToSubfieldMap = spec.CreateSubfields()
-	f.orderedSpecFieldTags = orderedKeys(f.tagToSubfieldMap, spec.Tag.Sort.Sort)
+	f.orderedSpecFieldTags = orderedKeys(f.tagToSubfieldMap, spec.Tag.Sort)
 }
 
 // SetData traverses through fields provided in the data parameter matches them

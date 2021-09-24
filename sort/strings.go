@@ -19,10 +19,7 @@ var Strings = sort.Strings
 // StringsByInt sorts a slice of strings according to their integer value.
 // This function panics in the event that an element in the slice cannot be
 // converted to an integer
-var StringsByInt = StringsByIntType{}
-type StringsByIntType struct{}
-
-func (StringsByIntType) Sort(x []string) {
+func StringsByInt(x []string) {
 	sort.Slice(x, func(i, j int) bool {
 		valI, err := strconv.Atoi(x[i])
 		if err != nil {
@@ -35,18 +32,12 @@ func (StringsByIntType) Sort(x []string) {
 		return valI < valJ
 	})
 }
-func (StringsByIntType) Inspect() string {
-	return "StringsByInt"
-}
 
 // StringsByHex sorts a slice of strings according to their big-endian Hex value.
 // This function panics in the event that an element in the slice cannot be
 // converted to a Hex slice. Each string representation of a hex value must be
 // of even length.
-var StringsByHex = StringsByHexType{}
-type StringsByHexType struct{}
-
-func (StringsByHexType) Sort(x []string) {
+func StringsByHex(x []string) {
 	sort.Slice(x, func(i, j int) bool {
 		valI, err := encoding.ASCIIToHex.Encode([]byte(x[i]))
 		if err != nil {
@@ -58,7 +49,4 @@ func (StringsByHexType) Sort(x []string) {
 		}
 		return new(big.Int).SetBytes(valI).Int64() < new(big.Int).SetBytes(valJ).Int64()
 	})
-}
-func (StringsByHexType) Inspect() string {
-	return "StringsByHex"
 }

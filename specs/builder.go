@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"path"
 	"reflect"
+	"runtime"
 	"sort"
 	"strconv"
 
@@ -88,7 +90,7 @@ var (
 		"None": func(pad string) padding.Padder { return padding.None },
 	}
 
-	SortExpToInt = map[string]field.TagSort{
+	SortExtToInt = map[string]moovsort.StringSlice{
 		"StringsByInt": moovsort.StringsByInt,
 		"StringsByHex": moovsort.StringsByHex,
 	}
@@ -176,7 +178,7 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 				fieldSpec.Tag.Pad = padderConstructor(dummyField.Tag.Padding.Pad)
 			}
 		}
-		fieldSpec.Tag.Sort = SortExpToInt[dummyField.Tag.Sort]
+		fieldSpec.Tag.Sort = SortExtToInt[dummyField.Tag.Sort]
 	}
 	return fieldSpec, nil
 }
@@ -291,7 +293,7 @@ func exportTag(tag *field.TagSpec) (*tagDummy, error) {
 		}
 	}
 	if tag.Sort != nil {
-		dummy.Sort = tag.Sort.Inspect()
+		dummy.Sort = getFunctionName(tag.Sort)
 	}
 	return dummy, nil
 
@@ -381,4 +383,9 @@ func (om orderedFieldMap) MarshalJSON() ([]byte, error) {
 	buf.Write([]byte{'}'})
 
 	return buf.Bytes(), nil
+}
+
+func getFunctionName(foo interface{}) string {
+	funcPath := runtime.FuncForPC(reflect.ValueOf(foo).Pointer()).Name()
+	return path.Ext(funcPath)[1:]
 }
