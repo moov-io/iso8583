@@ -106,18 +106,18 @@ type MessageSpecBuilder interface {
 type messageSpecBuilder struct{}
 
 type specDummy struct {
-	Name   string                `json:"name,omitempty" xml:"name,omitempty"`
+	Name   string          `json:"name,omitempty" xml:"name,omitempty"`
 	Fields orderedFieldMap `json:"fields,omitempty" xml:"fields,omitempty"`
 }
 
 type fieldDummy struct {
-	Type        string                `json:"type,omitempty" xml:"type,omitempty"`
-	Length      int                   `json:"length,omitempty" xml:"length,omitempty"`
-	Description string                `json:"description,omitempty" xml:"description,omitempty"`
-	Enc         string                `json:"enc,omitempty" xml:"enc,omitempty"`
-	Prefix      string                `json:"prefix,omitempty" xml:"prefix,omitempty"`
-	Padding     *paddingDummy         `json:"padding,omitempty" xml:"padding,omitempty"`
-	Tag         *tagDummy             `json:"tag,omitempty" xml:"tag,omitempty"`
+	Type        string                 `json:"type,omitempty" xml:"type,omitempty"`
+	Length      int                    `json:"length,omitempty" xml:"length,omitempty"`
+	Description string                 `json:"description,omitempty" xml:"description,omitempty"`
+	Enc         string                 `json:"enc,omitempty" xml:"enc,omitempty"`
+	Prefix      string                 `json:"prefix,omitempty" xml:"prefix,omitempty"`
+	Padding     *paddingDummy          `json:"padding,omitempty" xml:"padding,omitempty"`
+	Tag         *tagDummy              `json:"tag,omitempty" xml:"tag,omitempty"`
 	Subfields   map[string]*fieldDummy `json:"subfields,omitempty" xml:"subfields:omitempty"`
 }
 
@@ -222,8 +222,8 @@ func exportField(internalField field.Field) (*fieldDummy, error) {
 	spec := internalField.Spec()
 	fieldType := reflect.TypeOf(internalField).Elem().Name()
 	dummyField := &fieldDummy{
-		Type: fieldType,
-		Length: spec.Length,
+		Type:        fieldType,
+		Length:      spec.Length,
 		Description: spec.Description,
 	}
 
@@ -255,9 +255,9 @@ func exportField(internalField field.Field) (*fieldDummy, error) {
 
 	} else {
 		dummyField.Subfields = map[string]*fieldDummy{}
-		for index, origField := range spec.Subfields{
+		for index, origField := range spec.Subfields {
 			f, err := exportField(origField)
-			if err != nil{
+			if err != nil {
 				return nil, err
 			}
 			dummyField.Subfields[index] = f
@@ -328,9 +328,9 @@ func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]
 		Fields: map[string]*fieldDummy{},
 	}
 
-	for index, origField := range origSpec.Fields{
+	for index, origField := range origSpec.Fields {
 		f, err := exportField(origField)
-		if err != nil{
+		if err != nil {
 			return nil, fmt.Errorf("failed to export field: %d. %w", index, err)
 		}
 		dummy.Fields[strconv.Itoa(index)] = f
@@ -341,7 +341,7 @@ func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]
 	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "\t")
 
-	if err := enc.Encode(dummy); err != nil{
+	if err := enc.Encode(dummy); err != nil {
 		return nil, fmt.Errorf("unable to export message spec:  %w", err)
 	}
 
