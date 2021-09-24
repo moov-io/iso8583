@@ -169,6 +169,7 @@ func (m *Message) Unpack(src []byte) error {
 	var off int
 
 	m.fieldsMap = map[int]struct{}{}
+	// This method implicitly also sets m.fieldsMap[1]
 	m.Bitmap().Reset()
 
 	// unpack MTI
@@ -181,6 +182,7 @@ func (m *Message) Unpack(src []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to unpack MTI: %w", err)
 	}
+	m.fieldsMap[0] = struct{}{}
 
 	off = read
 
