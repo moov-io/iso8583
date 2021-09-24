@@ -23,7 +23,7 @@ func NewTrack3(spec *field.Spec) (*Track3, error) {
 	}, nil
 }
 
-func NewTrack3Value(val []byte, fixedLength bool) (*Track3, error) {
+func NewTrack3Value(val []byte) (*Track3, error) {
 	track := &Track3{}
 	err := track.parse(val)
 	if err != nil {
@@ -126,7 +126,7 @@ func (f *Track3) SetData(data interface{}) error {
 }
 
 func (f *Track3) parse(raw []byte) error {
-	if raw == nil {
+	if raw == nil || !track3Regex.Match(raw) {
 		return errors.New("invalid track data")
 	}
 

@@ -49,6 +49,7 @@ func TestTrack(t *testing.T) {
 			}
 			tracker, err := NewTrack1(spec)
 			require.NoError(t, err)
+			require.NotNil(t, tracker.Spec())
 
 			tracker.FixedLength = true
 			err = tracker.SetBytes([]byte(sample.Raw))
@@ -67,6 +68,13 @@ func TestTrack(t *testing.T) {
 				require.NotNil(t, tracker.ExpirationDate)
 				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
 			}
+
+			packBuf, err := tracker.Pack()
+			require.NoError(t, err)
+			require.NotEqual(t, sample.Raw, string(packBuf))
+
+			_, err = tracker.Unpack(packBuf)
+			require.NoError(t, err)
 		}
 	})
 	t.Run("Track 1 data with unfixed name length", func(t *testing.T) {
@@ -78,6 +86,7 @@ func TestTrack(t *testing.T) {
 		}
 		tracker, err := NewTrack1(spec)
 		require.NoError(t, err)
+		require.NotNil(t, tracker.Spec())
 
 		sample := TestSample{
 			Raw:                  `B4242424242424242^SMITH JOHN Q^11052011000000000000`,
@@ -96,6 +105,10 @@ func TestTrack(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, sample.Raw, string(buf))
 
+		str, err := tracker.String()
+		require.NoError(t, err)
+		require.Equal(t, sample.Raw, str)
+
 		require.Equal(t, sample.FormatCode, tracker.FormatCode)
 		require.Equal(t, sample.PrimaryAccountNumber, tracker.PrimaryAccountNumber)
 		require.Equal(t, sample.ServiceCode, tracker.ServiceCode)
@@ -105,6 +118,13 @@ func TestTrack(t *testing.T) {
 			require.NotNil(t, tracker.ExpirationDate)
 			require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
 		}
+
+		packBuf, err := tracker.Pack()
+		require.NoError(t, err)
+		require.NotEqual(t, sample.Raw, string(packBuf))
+
+		_, err = tracker.Unpack(packBuf)
+		require.NoError(t, err)
 	})
 
 	t.Run("Track 2 data", func(t *testing.T) {
@@ -133,6 +153,7 @@ func TestTrack(t *testing.T) {
 			}
 			tracker, err := NewTrack2(spec)
 			require.NoError(t, err)
+			require.NotNil(t, tracker.Spec())
 
 			err = tracker.SetBytes([]byte(sample.Raw))
 			require.NoError(t, err)
@@ -141,6 +162,10 @@ func TestTrack(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, sample.Raw, string(buf))
 
+			str, err := tracker.String()
+			require.NoError(t, err)
+			require.Equal(t, sample.Raw, str)
+
 			require.Equal(t, sample.PrimaryAccountNumber, tracker.PrimaryAccountNumber)
 			require.Equal(t, sample.ServiceCode, tracker.ServiceCode)
 			require.Equal(t, sample.DiscretionaryData, tracker.DiscretionaryData)
@@ -148,6 +173,13 @@ func TestTrack(t *testing.T) {
 				require.NotNil(t, tracker.ExpirationDate)
 				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
 			}
+
+			packBuf, err := tracker.Pack()
+			require.NoError(t, err)
+			require.NotEqual(t, sample.Raw, string(packBuf))
+
+			_, err = tracker.Unpack(packBuf)
+			require.NoError(t, err)
 		}
 	})
 
@@ -172,10 +204,11 @@ func TestTrack(t *testing.T) {
 				Length:      104,
 				Description: "Track 3 Data",
 				Enc:         encoding.ASCII,
-				Pref:        prefix.ASCII.LL,
+				Pref:        prefix.ASCII.LLL,
 			}
 			tracker, err := NewTrack3(spec)
 			require.NoError(t, err)
+			require.NotNil(t, tracker.Spec())
 
 			err = tracker.SetBytes([]byte(sample.Raw))
 			require.NoError(t, err)
@@ -184,13 +217,24 @@ func TestTrack(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, sample.Raw, string(buf))
 
+			str, err := tracker.String()
+			require.NoError(t, err)
+			require.Equal(t, sample.Raw, str)
+
 			require.Equal(t, sample.FormatCode, tracker.FormatCode)
 			require.Equal(t, sample.PrimaryAccountNumber, tracker.PrimaryAccountNumber)
 			require.Equal(t, sample.DiscretionaryData, tracker.DiscretionaryData)
+
+			packBuf, err := tracker.Pack()
+			require.NoError(t, err)
+			require.NotEqual(t, sample.Raw, string(packBuf))
+
+			_, err = tracker.Unpack(packBuf)
+			require.NoError(t, err)
 		}
 	})
 
-	t.Run("Track value", func(t *testing.T) {
+	t.Run("Track1 value", func(t *testing.T) {
 
 		raw := `B4242424242424242^SMITH JOHN Q^11052011000000000000`
 		tracker, err := NewTrack1Value([]byte(raw), false)
@@ -200,5 +244,56 @@ func TestTrack(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, raw, string(buf))
+
+		_, err = NewTrack2Value([]byte(raw))
+		require.Error(t, err)
+
+		err = tracker.SetData(&Track1{})
+		require.NoError(t, err)
+
+		err = tracker.SetData(&Track3{})
+		require.Error(t, err)
+	})
+
+	t.Run("Track2 value", func(t *testing.T) {
+
+		raw := `1234567890123445=99011200XXXX00000000`
+		tracker, err := NewTrack2Value([]byte(raw))
+		require.NoError(t, err)
+
+		buf, err := tracker.Bytes()
+		require.NoError(t, err)
+
+		require.Equal(t, raw, string(buf))
+
+		_, err = NewTrack1Value([]byte(raw), false)
+		require.Error(t, err)
+
+		err = tracker.SetData(&Track2{})
+		require.NoError(t, err)
+
+		err = tracker.SetData(&Track3{})
+		require.Error(t, err)
+	})
+
+	t.Run("Track3 value", func(t *testing.T) {
+
+		raw := `011234567890123445=000978100000000****8330*0000920000099010=************************==1=0000000*00000000`
+		tracker, err := NewTrack3Value([]byte(raw))
+		require.NoError(t, err)
+
+		buf, err := tracker.Bytes()
+		require.NoError(t, err)
+
+		require.Equal(t, raw, string(buf))
+
+		_, err = NewTrack1Value([]byte(raw), false)
+		require.Error(t, err)
+
+		err = tracker.SetData(&Track3{})
+		require.NoError(t, err)
+
+		err = tracker.SetData(&Track2{})
+		require.Error(t, err)
 	})
 }

@@ -148,7 +148,7 @@ func (f *Track1) SetData(data interface{}) error {
 }
 
 func (f *Track1) parse(raw []byte) error {
-	if raw == nil {
+	if raw == nil || !track1Regex.Match(raw) {
 		return errors.New("invalid track data")
 	}
 
