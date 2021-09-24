@@ -637,6 +637,46 @@ func TestMessageJSON(t *testing.T) {
 		require.Equal(t, want, string(got))
 	})
 
+	t.Run("Test JSON encoding of unpacked fields typed", func(t *testing.T) {
+		type TestISOF3Data struct {
+			F1 *field.String
+			F2 *field.String
+			F3 *field.String
+		}
+
+		type ISO87Data struct {
+			F0 *field.String
+			F2 *field.String
+			F3 *TestISOF3Data
+			F4 *field.String
+		}
+
+		want := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
+
+		message := NewMessage(spec)
+		message.SetData(&ISO87Data{})
+
+		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
+		require.NoError(t, message.Unpack([]byte(rawMsg)))
+		got, err := json.Marshal(message)
+		require.NoError(t, err)
+
+		require.Equal(t, want, string(got))
+	})
+
+	t.Run("Test JSON encoding of unpacked fields untyped", func(t *testing.T) {
+		want := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
+
+		message := NewMessage(spec)
+
+		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
+		require.NoError(t, message.Unpack([]byte(rawMsg)))
+		got, err := json.Marshal(message)
+		require.NoError(t, err)
+
+		require.Equal(t, want, string(got))
+	})
+
 	t.Run("Test JSON decoding typed", func(t *testing.T) {
 		message := NewMessage(spec)
 
@@ -667,7 +707,7 @@ func TestMessageJSON(t *testing.T) {
 		require.Equal(t, want.F4.Value, data.F4.Value)
 	})
 
-	t.Run("Test JSON encoding untyped", func(t *testing.T) {
+	t.Run("Test JSON decoding untyped", func(t *testing.T) {
 		message := NewMessage(spec)
 
 		input := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
@@ -687,4 +727,5 @@ func TestMessageJSON(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "100", f4)
 	})
+
 }

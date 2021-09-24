@@ -169,7 +169,7 @@ func (m *Message) Unpack(src []byte) error {
 	var off int
 
 	m.fieldsMap = map[int]struct{}{}
-	// This method implicitly also sets m.fieldsMap[1] 
+	// This method implicitly also sets m.fieldsMap[1]
 	m.Bitmap().Reset()
 
 	// unpack MTI
