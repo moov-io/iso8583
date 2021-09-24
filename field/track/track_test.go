@@ -1,6 +1,7 @@
-package field
+package track
 
 import (
+	"github.com/moov-io/iso8583/field"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -40,13 +41,13 @@ func TestTrack(t *testing.T) {
 			},
 		}
 		for _, sample := range samples {
-			spec := &Spec{
+			spec := &field.Spec{
 				Length:      76,
 				Description: "Track 1 Data",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}
-			tracker, err := NewTrack(spec, Track1)
+			tracker, err := NewTrack1(spec)
 			require.NoError(t, err)
 
 			tracker.FixedLength = true
@@ -69,13 +70,13 @@ func TestTrack(t *testing.T) {
 		}
 	})
 	t.Run("Track 1 data with unfixed name length", func(t *testing.T) {
-		spec := &Spec{
+		spec := &field.Spec{
 			Length:      76,
 			Description: "Track 1 Data",
 			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.LL,
 		}
-		tracker, err := NewTrack(spec, Track1)
+		tracker, err := NewTrack1(spec)
 		require.NoError(t, err)
 
 		sample := TestSample{
@@ -124,13 +125,13 @@ func TestTrack(t *testing.T) {
 			},
 		}
 		for _, sample := range samples {
-			spec := &Spec{
+			spec := &field.Spec{
 				Length:      37,
 				Description: "Track 2 Data",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}
-			tracker, err := NewTrack(spec, Track2)
+			tracker, err := NewTrack2(spec)
 			require.NoError(t, err)
 
 			err = tracker.SetBytes([]byte(sample.Raw))
@@ -140,10 +141,8 @@ func TestTrack(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, sample.Raw, string(buf))
 
-			require.Equal(t, sample.FormatCode, tracker.FormatCode)
 			require.Equal(t, sample.PrimaryAccountNumber, tracker.PrimaryAccountNumber)
 			require.Equal(t, sample.ServiceCode, tracker.ServiceCode)
-			require.Equal(t, sample.Name, tracker.Name)
 			require.Equal(t, sample.DiscretionaryData, tracker.DiscretionaryData)
 			if len(sample.ExpirationDate) > 0 {
 				require.NotNil(t, tracker.ExpirationDate)
@@ -169,13 +168,13 @@ func TestTrack(t *testing.T) {
 			},
 		}
 		for _, sample := range samples {
-			spec := &Spec{
+			spec := &field.Spec{
 				Length:      104,
 				Description: "Track 3 Data",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}
-			tracker, err := NewTrack(spec, Track3)
+			tracker, err := NewTrack3(spec)
 			require.NoError(t, err)
 
 			err = tracker.SetBytes([]byte(sample.Raw))
@@ -187,20 +186,14 @@ func TestTrack(t *testing.T) {
 
 			require.Equal(t, sample.FormatCode, tracker.FormatCode)
 			require.Equal(t, sample.PrimaryAccountNumber, tracker.PrimaryAccountNumber)
-			require.Equal(t, sample.ServiceCode, tracker.ServiceCode)
-			require.Equal(t, sample.Name, tracker.Name)
 			require.Equal(t, sample.DiscretionaryData, tracker.DiscretionaryData)
-			if len(sample.ExpirationDate) > 0 {
-				require.NotNil(t, tracker.ExpirationDate)
-				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
-			}
 		}
 	})
 
 	t.Run("Track value", func(t *testing.T) {
 
 		raw := `B4242424242424242^SMITH JOHN Q^11052011000000000000`
-		tracker, err := NewTrackValue([]byte(raw), Track1, false)
+		tracker, err := NewTrack1Value([]byte(raw), false)
 		require.NoError(t, err)
 
 		buf, err := tracker.Bytes()
