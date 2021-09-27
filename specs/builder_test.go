@@ -30,7 +30,7 @@ func TestBuilder(t *testing.T) {
 	hexSpec, err := Builder.ImportJSON(hexJson)
 	require.NoError(t, err)
 
-	require.Exactly(t,Spec87Hex.Name, hexSpec.Name)
+	require.Exactly(t, Spec87Hex.Name, hexSpec.Name)
 
 }
 
@@ -44,7 +44,7 @@ func TestExampleJSONSpec(t *testing.T) {
 }
 
 func TestSpecWithCompositeFields(t *testing.T) {
-	 testSpec := &iso8583.MessageSpec{
+	testSpec := &iso8583.MessageSpec{
 		Name: "ISO 8583 v1987 ASCII",
 		Fields: map[int]field.Field{
 			1: field.NewComposite(&field.Spec{
@@ -96,7 +96,7 @@ func TestSpecWithCompositeFields(t *testing.T) {
 				Pad:         padding.Left('0'),
 			}),
 		},
-	 }
+	}
 
 	specJSON, err := Builder.ExportJSON(testSpec)
 	require.NoError(t, err)
