@@ -26,14 +26,10 @@ type Track1 struct {
 const (
 	expiryDateFormat = "0601"
 	track1Format     = `%s%s^%s^%s%s%s`
-	track2Format     = `%s=%s%s%s`
-	track3Format     = `%s%s=%s`
 )
 
 var (
 	track1Regex = regexp.MustCompile(`^([A-Z]{1})([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)$`)
-	track2Regex = regexp.MustCompile(`^([0-9]{1,19})\=([0-9]{4}|\=)([0-9]{3}|\=)([^\?]+)$`)
-	track3Regex = regexp.MustCompile(`^([0-9]{2})([0-9]{1,19})\=([^\?]+)$`)
 )
 
 func NewTrack1(spec *field.Spec) (*Track1, error) {

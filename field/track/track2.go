@@ -3,6 +3,7 @@ package track
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -18,6 +19,14 @@ type Track2 struct {
 	ServiceCode          string      `xml:"ServiceCode,omitempty" json:"service_code,omitempty"`
 	DiscretionaryData    string      `xml:"DiscretionaryData,omitempty" json:"discretionary_data,omitempty"`
 }
+
+const (
+	track2Format = `%s=%s%s%s`
+)
+
+var (
+	track2Regex = regexp.MustCompile(`^([0-9]{1,19})\=([0-9]{4}|\=)([0-9]{3}|\=)([^\?]+)$`)
+)
 
 func NewTrack2(spec *field.Spec) (*Track2, error) {
 	return &Track2{

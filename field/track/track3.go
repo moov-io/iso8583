@@ -3,6 +3,7 @@ package track
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/moov-io/iso8583/field"
@@ -16,6 +17,14 @@ type Track3 struct {
 	PrimaryAccountNumber string      `json:"primary_account_number,omitempty"`
 	DiscretionaryData    string      `json:"discretionary_data,omitempty"`
 }
+
+const (
+	track3Format = `%s%s=%s`
+)
+
+var (
+	track3Regex = regexp.MustCompile(`^([0-9]{2})([0-9]{1,19})\=([^\?]+)$`)
+)
 
 func NewTrack3(spec *field.Spec) (*Track3, error) {
 	return &Track3{
