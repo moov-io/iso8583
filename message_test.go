@@ -3,9 +3,11 @@ package iso8583
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
+	"github.com/moov-io/iso8583/field/track"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
@@ -587,6 +589,12 @@ func TestMessageJSON(t *testing.T) {
 				Pref:        prefix.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			}),
+			45: track.NewTrack1(&field.Spec{
+				Length:      76,
+				Description: "Track 1 Data",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
 		},
 	}
 
@@ -597,15 +605,19 @@ func TestMessageJSON(t *testing.T) {
 	}
 
 	type TestISOData struct {
-		F0 *field.String
-		F2 *field.String
-		F3 *TestISOF3Data
-		F4 *field.String
+		F0  *field.String
+		F2  *field.String
+		F3  *TestISOF3Data
+		F4  *field.String
+		F45 *track.Track1
 	}
 
 	t.Run("Test JSON encoding typed", func(t *testing.T) {
+		expDate, err := time.Parse("0601", "9901")
+		require.NoError(t, err)
+
 		message := NewMessage(spec)
-		err := message.SetData(&TestISOData{
+		err = message.SetData(&TestISOData{
 			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
 			F3: &TestISOF3Data{
@@ -614,10 +626,19 @@ func TestMessageJSON(t *testing.T) {
 				F3: field.NewStringValue("56"),
 			},
 			F4: field.NewStringValue("100"),
+			F45: &track.Track1{
+				FixedLength:          true,
+				FormatCode:           "B",
+				PrimaryAccountNumber: "1234567890123445",
+				ServiceCode:          "120",
+				DiscretionaryData:    "0000000000000**XXX******",
+				ExpirationDate:       &expDate,
+				Name:                 "PADILLA/L.",
+			},
 		})
 		require.NoError(t, err)
 
-		want := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
+		want := `{"0":"0100","1":"700000000008000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100","45":{"fixed_length":true,"format_code":"B","primary_account_number":"1234567890123445","name":"PADILLA/L.","expiration_date":"1999-01-01T00:00:00Z","service_code":"120","discretionary_data":"0000000000000**XXX******"}}`
 
 		got, err := json.Marshal(message)
 		require.NoError(t, err)
