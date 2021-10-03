@@ -436,11 +436,6 @@ func TestCompositePacking(t *testing.T) {
 		err = composite.SetBytes([]byte("ABCD12"))
 		require.NoError(t, err)
 
-		t.Logf("length of composite subfields: %v\n\n\n\n", len(composite.orderedSpecFieldTags))
-
-		str, _ := composite.tagToSubfieldMap["1"].String()
-		t.Logf("message value: %s\n\n\n\n", str)
-
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
 		require.Equal(t, 12, data.F3.Value)
