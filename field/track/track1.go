@@ -13,15 +13,15 @@ import (
 var _ field.Field = (*Track1)(nil)
 
 type Track1 struct {
-	spec                 *field.Spec `json:"-"`
-	FixedLength          bool        `json:"fixed_length,omitempty"`
-	FormatCode           string      `json:"format_code,omitempty"`
-	PrimaryAccountNumber string      `json:"primary_account_number,omitempty"`
-	Name                 string      `json:"name,omitempty"`
-	ExpirationDate       *time.Time  `json:"expiration_date,omitempty"`
-	ServiceCode          string      `json:"service_code,omitempty"`
-	DiscretionaryData    string      `json:"discretionary_data,omitempty"`
+	FixedLength          bool       `json:"fixed_length,omitempty"`
+	FormatCode           string     `json:"format_code,omitempty"`
+	PrimaryAccountNumber string     `json:"primary_account_number,omitempty"`
+	Name                 string     `json:"name,omitempty"`
+	ExpirationDate       *time.Time `json:"expiration_date,omitempty"`
+	ServiceCode          string     `json:"service_code,omitempty"`
+	DiscretionaryData    string     `json:"discretionary_data,omitempty"`
 
+	spec *field.Spec
 	data *Track1
 }
 
@@ -46,7 +46,7 @@ func NewTrack1Value(val []byte, fixedLength bool) (*Track1, error) {
 	}
 
 	// we should not parse anything here
-	err := track.parse(val)
+	err := track.unpack(val)
 	if err != nil {
 		return nil, errors.New("invalid track data")
 	}
@@ -63,15 +63,15 @@ func (f *Track1) SetSpec(spec *field.Spec) {
 }
 
 func (f *Track1) SetBytes(b []byte) error {
-	return f.parse(b)
+	return f.unpack(b)
 }
 
 func (f *Track1) Bytes() ([]byte, error) {
-	return f.serialize()
+	return f.pack()
 }
 
 func (f *Track1) String() (string, error) {
-	b, err := f.serialize()
+	b, err := f.pack()
 	if err != nil {
 		return "", fmt.Errorf("failed to encode string: %v", err)
 	}
@@ -79,7 +79,7 @@ func (f *Track1) String() (string, error) {
 }
 
 func (f *Track1) Pack() ([]byte, error) {
-	data, err := f.serialize()
+	data, err := f.pack()
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (f *Track1) Unpack(data []byte) (int, error) {
 	}
 
 	if len(raw) > 0 {
-		err = f.parse(raw)
+		err = f.unpack(raw)
 		if err != nil {
 			return 0, err
 		}
@@ -150,7 +150,7 @@ func (f *Track1) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *Track1) parse(raw []byte) error {
+func (f *Track1) unpack(raw []byte) error {
 	if raw == nil || !track1Regex.Match(raw) {
 		return errors.New("invalid track data")
 	}
@@ -189,8 +189,7 @@ func (f *Track1) parse(raw []byte) error {
 	return nil
 }
 
-func (f *Track1) serialize() ([]byte, error) {
-
+func (f *Track1) pack() ([]byte, error) {
 	name := f.Name
 	if len(f.Name) > 1 && f.FixedLength {
 		// limit Name to 26 runes and padd with spaces on the right

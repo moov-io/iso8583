@@ -18,8 +18,7 @@ type Track2 struct {
 	ServiceCode          string     `xml:"ServiceCode,omitempty" json:"service_code,omitempty"`
 	DiscretionaryData    string     `xml:"DiscretionaryData,omitempty" json:"discretionary_data,omitempty"`
 
-	// TODO private fields are not serialized
-	spec *field.Spec `xml:"-" json:"-"`
+	spec *field.Spec
 	data *Track2
 }
 
@@ -39,7 +38,7 @@ func NewTrack2(spec *field.Spec) *Track2 {
 
 func NewTrack2Value(val []byte) (*Track2, error) {
 	track := &Track2{}
-	err := track.parse(val)
+	err := track.unpack(val)
 	if err != nil {
 		return nil, errors.New("invalid track data")
 	}
@@ -55,15 +54,15 @@ func (f *Track2) SetSpec(spec *field.Spec) {
 }
 
 func (f *Track2) SetBytes(b []byte) error {
-	return f.parse(b)
+	return f.unpack(b)
 }
 
 func (f *Track2) Bytes() ([]byte, error) {
-	return f.serialize()
+	return f.pack()
 }
 
 func (f *Track2) String() (string, error) {
-	b, err := f.serialize()
+	b, err := f.pack()
 	if err != nil {
 		return "", fmt.Errorf("failed to encode string: %v", err)
 	}
@@ -71,7 +70,7 @@ func (f *Track2) String() (string, error) {
 }
 
 func (f *Track2) Pack() ([]byte, error) {
-	data, err := f.serialize()
+	data, err := f.pack()
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +109,7 @@ func (f *Track2) Unpack(data []byte) (int, error) {
 	}
 
 	if len(raw) > 0 {
-		err = f.parse(raw)
+		err = f.unpack(raw)
 		if err != nil {
 			return 0, err
 		}
@@ -138,7 +137,7 @@ func (f *Track2) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *Track2) parse(raw []byte) error {
+func (f *Track2) unpack(raw []byte) error {
 	if raw == nil || !track2Regex.Match(raw) {
 		return errors.New("invalid track data")
 	}
@@ -173,8 +172,7 @@ func (f *Track2) parse(raw []byte) error {
 	return nil
 }
 
-func (f *Track2) serialize() ([]byte, error) {
-
+func (f *Track2) pack() ([]byte, error) {
 	expired := "^"
 	if f.ExpirationDate != nil {
 		expired = f.ExpirationDate.Format(expiryDateFormat)

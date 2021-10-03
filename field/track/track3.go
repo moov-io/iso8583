@@ -16,8 +16,7 @@ type Track3 struct {
 	PrimaryAccountNumber string `json:"primary_account_number,omitempty"`
 	DiscretionaryData    string `json:"discretionary_data,omitempty"`
 
-	// TODO private fields are not serialized
-	spec *field.Spec `json:"-"`
+	spec *field.Spec
 	data *Track3
 }
 
@@ -37,7 +36,7 @@ func NewTrack3(spec *field.Spec) *Track3 {
 
 func NewTrack3Value(val []byte) (*Track3, error) {
 	track := &Track3{}
-	err := track.parse(val)
+	err := track.unpack(val)
 	if err != nil {
 		return nil, errors.New("invalid track data")
 	}
@@ -53,18 +52,18 @@ func (f *Track3) SetSpec(spec *field.Spec) {
 }
 
 func (f *Track3) SetBytes(b []byte) error {
-	if err := f.parse(b); err != nil {
+	if err := f.unpack(b); err != nil {
 		return nil
 	}
 	return nil
 }
 
 func (f *Track3) Bytes() ([]byte, error) {
-	return f.serialize()
+	return f.pack()
 }
 
 func (f *Track3) String() (string, error) {
-	b, err := f.serialize()
+	b, err := f.pack()
 	if err != nil {
 		return "", fmt.Errorf("failed to encode string: %v", err)
 	}
@@ -72,7 +71,7 @@ func (f *Track3) String() (string, error) {
 }
 
 func (f *Track3) Pack() ([]byte, error) {
-	data, err := f.serialize()
+	data, err := f.pack()
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +110,7 @@ func (f *Track3) Unpack(data []byte) (int, error) {
 	}
 
 	if len(raw) > 0 {
-		err = f.parse(raw)
+		err = f.unpack(raw)
 		if err != nil {
 			return 0, err
 		}
@@ -139,7 +138,7 @@ func (f *Track3) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *Track3) parse(raw []byte) error {
+func (f *Track3) unpack(raw []byte) error {
 	if raw == nil || !track3Regex.Match(raw) {
 		return errors.New("invalid track data")
 	}
@@ -168,7 +167,7 @@ func (f *Track3) parse(raw []byte) error {
 	return nil
 }
 
-func (f *Track3) serialize() ([]byte, error) {
+func (f *Track3) pack() ([]byte, error) {
 	raw := fmt.Sprintf(track3Format, f.FormatCode, f.PrimaryAccountNumber, f.DiscretionaryData)
 	return []byte(raw), nil
 }
