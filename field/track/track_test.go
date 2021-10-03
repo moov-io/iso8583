@@ -29,6 +29,13 @@ var (
 		Enc:         encoding.ASCII,
 		Pref:        prefix.ASCII.LL,
 	}
+
+	track2Spec = &field.Spec{
+		Length:      37,
+		Description: "Track 2 Data",
+		Enc:         encoding.ASCII,
+		Pref:        prefix.ASCII.LL,
+	}
 )
 
 func TestTrack(t *testing.T) {
@@ -177,11 +184,10 @@ func TestTrack(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}
-			tracker, err := NewTrack2(spec)
-			require.NoError(t, err)
+			tracker := NewTrack2(spec)
 			require.NotNil(t, tracker.Spec())
 
-			err = tracker.SetBytes([]byte(sample.Raw))
+			err := tracker.SetBytes([]byte(sample.Raw))
 			require.NoError(t, err)
 
 			buf, err := tracker.Bytes()
@@ -406,5 +412,85 @@ func TestTrack1TypedAPI(t *testing.T) {
 		require.Equal(t, "0000000000000**XXX******", data.DiscretionaryData)
 		require.Equal(t, expDate, *data.ExpirationDate)
 		require.Equal(t, "PADILLA/L.", data.Name)
+	})
+}
+
+func TestTrack2TypedAPI(t *testing.T) {
+	var (
+		raw           = []byte("4000340000000506=2512111123400001230")
+		rawWithPrefix = []byte("364000340000000506=2512111123400001230")
+	)
+	t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
+		track := NewTrack2(track2Spec)
+		err := track.SetData(field.NewStringValue("hello"))
+		require.EqualError(t, err, "data does not match required *Track type")
+	})
+
+	t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
+		expDate, err := time.Parse("0601", "2512")
+		require.NoError(t, err)
+
+		data := &Track2{
+			PrimaryAccountNumber: `4000340000000506`,
+			ServiceCode:          `111`,
+			DiscretionaryData:    `123400001230`,
+			ExpirationDate:       &expDate,
+		}
+
+		track := NewTrack2(track2Spec)
+		err = track.SetData(data)
+		require.NoError(t, err)
+
+		// test assigned fields
+		require.Equal(t, "4000340000000506", track.PrimaryAccountNumber)
+		require.Equal(t, "111", track.ServiceCode)
+		require.Equal(t, "123400001230", track.DiscretionaryData)
+		require.Equal(t, expDate, *track.ExpirationDate)
+
+		packed, err := track.Pack()
+		require.NoError(t, err)
+		require.Equal(t, rawWithPrefix, packed)
+	})
+
+	t.Run("Unpack correctly deserializes bytes with length prefix to the data struct", func(t *testing.T) {
+		expDate, err := time.Parse("0601", "2512")
+		require.NoError(t, err)
+
+		data := &Track2{}
+
+		track := NewTrack2(track2Spec)
+		err = track.SetData(data)
+		require.NoError(t, err)
+
+		// bytes with LL prefix 36
+		_, err = track.Unpack(rawWithPrefix)
+		require.NoError(t, err)
+
+		// test assigned fields
+		require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
+		require.Equal(t, "111", data.ServiceCode)
+		require.Equal(t, "123400001230", data.DiscretionaryData)
+		require.Equal(t, expDate, *data.ExpirationDate)
+	})
+
+	t.Run("SetBytes correctly deserializes and assigns data", func(t *testing.T) {
+		expDate, err := time.Parse("0601", "2512")
+		require.NoError(t, err)
+
+		data := &Track2{}
+
+		track := NewTrack2(track2Spec)
+		err = track.SetData(data)
+		require.NoError(t, err)
+
+		// bytes without LL prefix
+		err = track.SetBytes(raw)
+		require.NoError(t, err)
+
+		// test assigned fields
+		require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
+		require.Equal(t, "111", data.ServiceCode)
+		require.Equal(t, "123400001230", data.DiscretionaryData)
+		require.Equal(t, expDate, *data.ExpirationDate)
 	})
 }

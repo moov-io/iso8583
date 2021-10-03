@@ -18,6 +18,8 @@ type Track2 struct {
 	ExpirationDate       *time.Time  `xml:"ExpirationDate,omitempty" json:"expiration_date,omitempty"`
 	ServiceCode          string      `xml:"ServiceCode,omitempty" json:"service_code,omitempty"`
 	DiscretionaryData    string      `xml:"DiscretionaryData,omitempty" json:"discretionary_data,omitempty"`
+
+	data *Track2
 }
 
 const (
@@ -28,10 +30,10 @@ var (
 	track2Regex = regexp.MustCompile(`^([0-9]{1,19})\=([0-9]{4}|\=)([0-9]{3}|\=)([^\?]+)$`)
 )
 
-func NewTrack2(spec *field.Spec) (*Track2, error) {
+func NewTrack2(spec *field.Spec) *Track2 {
 	return &Track2{
 		spec: spec,
-	}, nil
+	}
 }
 
 func NewTrack2Value(val []byte) (*Track2, error) {
@@ -130,6 +132,8 @@ func (f *Track2) SetData(data interface{}) error {
 	f.ServiceCode = track.ServiceCode
 	f.DiscretionaryData = track.DiscretionaryData
 
+	f.data = track
+
 	return nil
 }
 
@@ -159,6 +163,10 @@ func (f *Track2) parse(raw []byte) error {
 		case 4: // Discretionary data (DD)
 			f.DiscretionaryData = value
 		}
+	}
+
+	if f.data != nil {
+		*(f.data) = *f
 	}
 
 	return nil
