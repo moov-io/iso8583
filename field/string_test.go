@@ -57,3 +57,17 @@ func TestStringField(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "hello", data.Value)
 }
+
+func TestStringJSONUnmarshal(t *testing.T) {
+	input := []byte(`"4000"`)
+
+	str := NewString(&Spec{
+		Length:      4,
+		Description: "Field",
+		Enc:         encoding.ASCII,
+		Pref:        prefix.ASCII.Fixed,
+	})
+
+	require.NoError(t, str.UnmarshalJSON(input))
+	require.Equal(t, "4000", str.Value)
+}

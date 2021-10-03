@@ -72,13 +72,13 @@ func (s *Spec) CreateSubfields() map[string]Field {
 	fields := map[string]Field{}
 
 	for k, specField := range s.Subfields {
-		fields[k] = createSubfield(specField)
+		fields[k] = CreateSubfield(specField)
 	}
 
 	return fields
 }
 
-func createSubfield(specField Field) Field {
+func CreateSubfield(specField Field) Field {
 	fieldType := reflect.TypeOf(specField).Elem()
 
 	// create new field and convert it to Field interface

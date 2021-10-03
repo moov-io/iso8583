@@ -680,11 +680,10 @@ func TestMessageJSON(t *testing.T) {
 	t.Run("Test JSON decoding typed", func(t *testing.T) {
 		message := NewMessage(spec)
 
-		input := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
+		input := []byte(`{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`)
 
 		data := &TestISOData{}
-		err := message.SetData(data)
-		require.NoError(t, err)
+		require.NoError(t, message.SetData(data))
 
 		want := &TestISOData{
 			F0: field.NewStringValue("0100"),
@@ -697,8 +696,7 @@ func TestMessageJSON(t *testing.T) {
 			F4: field.NewStringValue("100"),
 		}
 
-		err = json.Unmarshal([]byte(input), message)
-		require.NoError(t, err)
+		require.NoError(t, json.Unmarshal(input, message))
 		require.Equal(t, want.F0.Value, data.F0.Value)
 		require.Equal(t, want.F2.Value, data.F2.Value)
 		require.Equal(t, want.F3.F1.Value, data.F3.F1.Value)

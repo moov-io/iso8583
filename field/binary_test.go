@@ -80,4 +80,17 @@ func TestBinaryField(t *testing.T) {
 		require.Equal(t, len(in), n)
 		require.Equal(t, in, data.Value)
 	})
+
+	t.Run("UnmarshalJSON unquotes input before handling it", func(t *testing.T) {
+		input := []byte(`"500000000000000000000000000000000000000000000000"`)
+
+		bin := NewBinary(spec)
+
+		require.NoError(t, bin.UnmarshalJSON(input))
+
+		str, err := bin.String()
+		require.NoError(t, err)
+
+		require.Equal(t, "500000000000000000000000000000000000000000000000", str)
+	})
 }

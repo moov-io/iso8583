@@ -120,3 +120,18 @@ func TestNumericSetBytesSetsDataOntoDataStruct(t *testing.T) {
 
 	require.Equal(t, 9, data.Value)
 }
+
+func TestNumericJSONUnmarshal(t *testing.T) {
+	input := []byte(`4000`)
+
+	numeric := NewNumeric(&Spec{
+		Length:      4,
+		Description: "Field",
+		Enc:         encoding.ASCII,
+		Pref:        prefix.ASCII.Fixed,
+	})
+
+	require.NoError(t, numeric.UnmarshalJSON(input))
+
+	require.Equal(t, 4000, numeric.Value)
+}
