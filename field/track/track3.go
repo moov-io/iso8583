@@ -12,10 +12,13 @@ import (
 var _ field.Field = (*Track3)(nil)
 
 type Track3 struct {
-	spec                 *field.Spec `json:"-"`
-	FormatCode           string      `json:"format_code,omitempty"`
-	PrimaryAccountNumber string      `json:"primary_account_number,omitempty"`
-	DiscretionaryData    string      `json:"discretionary_data,omitempty"`
+	FormatCode           string `json:"format_code,omitempty"`
+	PrimaryAccountNumber string `json:"primary_account_number,omitempty"`
+	DiscretionaryData    string `json:"discretionary_data,omitempty"`
+
+	// TODO private fields are not serialized
+	spec *field.Spec `json:"-"`
+	data *Track3
 }
 
 const (
@@ -26,10 +29,10 @@ var (
 	track3Regex = regexp.MustCompile(`^([0-9]{2})([0-9]{1,19})\=([^\?]+)$`)
 )
 
-func NewTrack3(spec *field.Spec) (*Track3, error) {
+func NewTrack3(spec *field.Spec) *Track3 {
 	return &Track3{
 		spec: spec,
-	}, nil
+	}
 }
 
 func NewTrack3Value(val []byte) (*Track3, error) {
@@ -131,6 +134,8 @@ func (f *Track3) SetData(data interface{}) error {
 	f.PrimaryAccountNumber = track.PrimaryAccountNumber
 	f.DiscretionaryData = track.DiscretionaryData
 
+	f.data = track
+
 	return nil
 }
 
@@ -154,6 +159,10 @@ func (f *Track3) parse(raw []byte) error {
 		case 3: // Security Data + Additional Data
 			f.DiscretionaryData = value
 		}
+	}
+
+	if f.data != nil {
+		*(f.data) = *f
 	}
 
 	return nil

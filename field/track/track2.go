@@ -13,12 +13,13 @@ import (
 var _ field.Field = (*Track2)(nil)
 
 type Track2 struct {
-	spec                 *field.Spec `xml:"-" json:"-"`
-	PrimaryAccountNumber string      `xml:"PrimaryAccountNumber,omitempty" json:"primary_account_number,omitempty"`
-	ExpirationDate       *time.Time  `xml:"ExpirationDate,omitempty" json:"expiration_date,omitempty"`
-	ServiceCode          string      `xml:"ServiceCode,omitempty" json:"service_code,omitempty"`
-	DiscretionaryData    string      `xml:"DiscretionaryData,omitempty" json:"discretionary_data,omitempty"`
+	PrimaryAccountNumber string     `xml:"PrimaryAccountNumber,omitempty" json:"primary_account_number,omitempty"`
+	ExpirationDate       *time.Time `xml:"ExpirationDate,omitempty" json:"expiration_date,omitempty"`
+	ServiceCode          string     `xml:"ServiceCode,omitempty" json:"service_code,omitempty"`
+	DiscretionaryData    string     `xml:"DiscretionaryData,omitempty" json:"discretionary_data,omitempty"`
 
+	// TODO private fields are not serialized
+	spec *field.Spec `xml:"-" json:"-"`
 	data *Track2
 }
 
