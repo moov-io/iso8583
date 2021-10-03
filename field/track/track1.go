@@ -21,6 +21,8 @@ type Track1 struct {
 	ExpirationDate       *time.Time  `json:"expiration_date,omitempty"`
 	ServiceCode          string      `json:"service_code,omitempty"`
 	DiscretionaryData    string      `json:"discretionary_data,omitempty"`
+
+	data *Track1
 }
 
 const (
@@ -32,20 +34,23 @@ var (
 	track1Regex = regexp.MustCompile(`^([A-Z]{1})([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)$`)
 )
 
-func NewTrack1(spec *field.Spec) (*Track1, error) {
+func NewTrack1(spec *field.Spec) *Track1 {
 	return &Track1{
 		spec: spec,
-	}, nil
+	}
 }
 
 func NewTrack1Value(val []byte, fixedLength bool) (*Track1, error) {
 	track := &Track1{
 		FixedLength: fixedLength,
 	}
+
+	// we should not parse anything here
 	err := track.parse(val)
 	if err != nil {
 		return nil, errors.New("invalid track data")
 	}
+
 	return track, nil
 }
 
@@ -140,6 +145,8 @@ func (f *Track1) SetData(data interface{}) error {
 	f.ServiceCode = track.ServiceCode
 	f.DiscretionaryData = track.DiscretionaryData
 
+	f.data = track
+
 	return nil
 }
 
@@ -175,6 +182,10 @@ func (f *Track1) parse(raw []byte) error {
 		}
 	}
 
+	if f.data != nil {
+		*(f.data) = *f
+	}
+
 	return nil
 }
 
@@ -182,6 +193,7 @@ func (f *Track1) serialize() ([]byte, error) {
 
 	name := f.Name
 	if len(f.Name) > 1 && f.FixedLength {
+		// limit Name to 26 runes and padd with spaces on the right
 		name = fmt.Sprintf("%-26.26s", f.Name)
 	}
 	expired := "^"
