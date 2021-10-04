@@ -1,4 +1,4 @@
-package track
+package field
 
 import (
 	"errors"
@@ -6,57 +6,51 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/moov-io/iso8583/field"
 )
 
-var _ field.Field = (*Track1)(nil)
+var _ Field = (*Track2)(nil)
 
-type Track1 struct {
-	FixedLength          bool       `json:"fixed_length,omitempty"`
-	FormatCode           string     `json:"format_code,omitempty"`
-	PrimaryAccountNumber string     `json:"primary_account_number,omitempty"`
-	Name                 string     `json:"name,omitempty"`
-	ExpirationDate       *time.Time `json:"expiration_date,omitempty"`
-	ServiceCode          string     `json:"service_code,omitempty"`
-	DiscretionaryData    string     `json:"discretionary_data,omitempty"`
+type Track2 struct {
+	PrimaryAccountNumber string     `xml:"PrimaryAccountNumber,omitempty" json:"primary_account_number,omitempty"`
+	ExpirationDate       *time.Time `xml:"ExpirationDate,omitempty" json:"expiration_date,omitempty"`
+	ServiceCode          string     `xml:"ServiceCode,omitempty" json:"service_code,omitempty"`
+	DiscretionaryData    string     `xml:"DiscretionaryData,omitempty" json:"discretionary_data,omitempty"`
 
-	spec *field.Spec
-	data *Track1
+	spec *Spec
+	data *Track2
 }
 
 const (
-	expiryDateFormat = "0601"
-	track1Format     = `%s%s^%s^%s%s%s`
+	track2Format = `%s=%s%s%s`
 )
 
 var (
-	track1Regex = regexp.MustCompile(`^([A-Z]{1})([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)$`)
+	track2Regex = regexp.MustCompile(`^([0-9]{1,19})\=([0-9]{4}|\=)([0-9]{3}|\=)([^\?]+)$`)
 )
 
-func NewTrack1(spec *field.Spec) *Track1 {
-	return &Track1{
+func NewTrack2(spec *Spec) *Track2 {
+	return &Track2{
 		spec: spec,
 	}
 }
 
-func (f *Track1) Spec() *field.Spec {
+func (f *Track2) Spec() *Spec {
 	return f.spec
 }
 
-func (f *Track1) SetSpec(spec *field.Spec) {
+func (f *Track2) SetSpec(spec *Spec) {
 	f.spec = spec
 }
 
-func (f *Track1) SetBytes(b []byte) error {
+func (f *Track2) SetBytes(b []byte) error {
 	return f.unpack(b)
 }
 
-func (f *Track1) Bytes() ([]byte, error) {
+func (f *Track2) Bytes() ([]byte, error) {
 	return f.pack()
 }
 
-func (f *Track1) String() (string, error) {
+func (f *Track2) String() (string, error) {
 	b, err := f.pack()
 	if err != nil {
 		return "", fmt.Errorf("failed to encode string: %v", err)
@@ -64,7 +58,7 @@ func (f *Track1) String() (string, error) {
 	return string(b), nil
 }
 
-func (f *Track1) Pack() ([]byte, error) {
+func (f *Track2) Pack() ([]byte, error) {
 	data, err := f.pack()
 	if err != nil {
 		return nil, err
@@ -88,7 +82,7 @@ func (f *Track1) Pack() ([]byte, error) {
 }
 
 // returns number of bytes was read
-func (f *Track1) Unpack(data []byte) (int, error) {
+func (f *Track2) Unpack(data []byte) (int, error) {
 	dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %v", err)
@@ -109,24 +103,20 @@ func (f *Track1) Unpack(data []byte) (int, error) {
 			return 0, err
 		}
 	}
-
 	return read + prefBytes, nil
 }
 
-func (f *Track1) SetData(data interface{}) error {
+func (f *Track2) SetData(data interface{}) error {
 	if data == nil {
 		return nil
 	}
 
-	track, ok := data.(*Track1)
+	track, ok := data.(*Track2)
 	if !ok {
 		return fmt.Errorf("data does not match required *Track type")
 	}
 
-	f.FixedLength = track.FixedLength
-	f.FormatCode = track.FormatCode
 	f.PrimaryAccountNumber = track.PrimaryAccountNumber
-	f.Name = track.Name
 	f.ExpirationDate = track.ExpirationDate
 	f.ServiceCode = track.ServiceCode
 	f.DiscretionaryData = track.DiscretionaryData
@@ -136,34 +126,30 @@ func (f *Track1) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *Track1) unpack(raw []byte) error {
-	if raw == nil || !track1Regex.Match(raw) {
+func (f *Track2) unpack(raw []byte) error {
+	if raw == nil || !track2Regex.Match(raw) {
 		return errors.New("invalid track data")
 	}
 
-	matches := track1Regex.FindStringSubmatch(string(raw))
+	matches := track2Regex.FindStringSubmatch(string(raw))
 	for index, val := range matches {
 		value := strings.TrimSpace(val)
-		if len(value) == 0 || value == "^" {
+		if len(value) == 0 || value == "=" {
 			continue
 		}
 
 		switch index {
-		case 1: // Format Code
-			f.FormatCode = value
-		case 2: // Payment card number (PAN)
+		case 1: // Payment card number (PAN)
 			f.PrimaryAccountNumber = value
-		case 3: // Name (NM)
-			f.Name = value
-		case 4: // Expiration Date (ED)
+		case 2: // Expiration Date (ED)
 			expiredTime, timeErr := time.Parse(expiryDateFormat, value)
 			if timeErr != nil {
 				return errors.New("invalid expired time")
 			}
 			f.ExpirationDate = &expiredTime
-		case 5: // Service Code (SC)
+		case 3: // Service Code (SC)
 			f.ServiceCode = value
-		case 6: // Discretionary data (DD)
+		case 4: // Discretionary data (DD)
 			f.DiscretionaryData = value
 		}
 	}
@@ -175,12 +161,7 @@ func (f *Track1) unpack(raw []byte) error {
 	return nil
 }
 
-func (f *Track1) pack() ([]byte, error) {
-	name := f.Name
-	if len(f.Name) > 1 && f.FixedLength {
-		// limit Name to 26 runes and padd with spaces on the right
-		name = fmt.Sprintf("%-26.26s", f.Name)
-	}
+func (f *Track2) pack() ([]byte, error) {
 	expired := "^"
 	if f.ExpirationDate != nil {
 		expired = f.ExpirationDate.Format(expiryDateFormat)
@@ -190,6 +171,6 @@ func (f *Track1) pack() ([]byte, error) {
 		code = f.ServiceCode
 	}
 
-	raw := fmt.Sprintf(track1Format, f.FormatCode, f.PrimaryAccountNumber, name, expired, code, f.DiscretionaryData)
+	raw := fmt.Sprintf(track2Format, f.PrimaryAccountNumber, expired, code, f.DiscretionaryData)
 	return []byte(raw), nil
 }

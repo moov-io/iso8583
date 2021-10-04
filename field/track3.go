@@ -1,22 +1,20 @@
-package track
+package field
 
 import (
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
-
-	"github.com/moov-io/iso8583/field"
 )
 
-var _ field.Field = (*Track3)(nil)
+var _ Field = (*Track3)(nil)
 
 type Track3 struct {
 	FormatCode           string `json:"format_code,omitempty"`
 	PrimaryAccountNumber string `json:"primary_account_number,omitempty"`
 	DiscretionaryData    string `json:"discretionary_data,omitempty"`
 
-	spec *field.Spec
+	spec *Spec
 	data *Track3
 }
 
@@ -28,17 +26,17 @@ var (
 	track3Regex = regexp.MustCompile(`^([0-9]{2})([0-9]{1,19})\=([^\?]+)$`)
 )
 
-func NewTrack3(spec *field.Spec) *Track3 {
+func NewTrack3(spec *Spec) *Track3 {
 	return &Track3{
 		spec: spec,
 	}
 }
 
-func (f *Track3) Spec() *field.Spec {
+func (f *Track3) Spec() *Spec {
 	return f.spec
 }
 
-func (f *Track3) SetSpec(spec *field.Spec) {
+func (f *Track3) SetSpec(spec *Spec) {
 	f.spec = spec
 }
 

@@ -1,4 +1,4 @@
-package track
+package field
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/stretchr/testify/require"
 )
@@ -23,21 +22,21 @@ type TestSample struct {
 }
 
 var (
-	track1Spec = &field.Spec{
+	track1Spec = &Spec{
 		Length:      76,
 		Description: "Track 1 Data",
 		Enc:         encoding.ASCII,
 		Pref:        prefix.ASCII.LL,
 	}
 
-	track2Spec = &field.Spec{
+	track2Spec = &Spec{
 		Length:      37,
 		Description: "Track 2 Data",
 		Enc:         encoding.ASCII,
 		Pref:        prefix.ASCII.LL,
 	}
 
-	track3Spec = &field.Spec{
+	track3Spec = &Spec{
 		Length:      104,
 		Description: "Track 3 Data",
 		Enc:         encoding.ASCII,
@@ -93,7 +92,7 @@ func TestTrack1(t *testing.T) {
 
 		for id, sample := range samples {
 			t.Run(fmt.Sprintf("sample %d", id), func(t *testing.T) {
-				spec := &field.Spec{
+				spec := &Spec{
 					Length:      76,
 					Description: "Track 1 Data",
 					Enc:         encoding.ASCII,
@@ -138,7 +137,7 @@ func TestTrack1(t *testing.T) {
 
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack1(track1Spec)
-			err := track.SetData(field.NewStringValue("hello"))
+			err := track.SetData(NewStringValue("hello"))
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 
@@ -238,7 +237,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 			},
 		}
 		for _, sample := range samples {
-			spec := &field.Spec{
+			spec := &Spec{
 				Length:      37,
 				Description: "Track 2 Data",
 				Enc:         encoding.ASCII,
@@ -282,7 +281,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 		)
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack2(track2Spec)
-			err := track.SetData(field.NewStringValue("hello"))
+			err := track.SetData(NewStringValue("hello"))
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 
@@ -371,7 +370,7 @@ func TestTrack3TypedAPI(t *testing.T) {
 			},
 		}
 		for _, sample := range samples {
-			spec := &field.Spec{
+			spec := &Spec{
 				Length:      104,
 				Description: "Track 3 Data",
 				Enc:         encoding.ASCII,
@@ -411,7 +410,7 @@ func TestTrack3TypedAPI(t *testing.T) {
 		)
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack3(track3Spec)
-			err := track.SetData(field.NewStringValue("hello"))
+			err := track.SetData(NewStringValue("hello"))
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 

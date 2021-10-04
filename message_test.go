@@ -7,7 +7,6 @@ import (
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
-	"github.com/moov-io/iso8583/field/track"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
@@ -589,7 +588,7 @@ func TestMessageJSON(t *testing.T) {
 				Pref:        prefix.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			}),
-			45: track.NewTrack1(&field.Spec{
+			45: field.NewTrack1(&field.Spec{
 				Length:      76,
 				Description: "Track 1 Data",
 				Enc:         encoding.ASCII,
@@ -609,7 +608,7 @@ func TestMessageJSON(t *testing.T) {
 		F2  *field.String
 		F3  *TestISOF3Data
 		F4  *field.String
-		F45 *track.Track1
+		F45 *field.Track1
 	}
 
 	t.Run("Test JSON encoding typed", func(t *testing.T) {
@@ -626,7 +625,7 @@ func TestMessageJSON(t *testing.T) {
 				F3: field.NewStringValue("56"),
 			},
 			F4: field.NewStringValue("100"),
-			F45: &track.Track1{
+			F45: &field.Track1{
 				FixedLength:          true,
 				FormatCode:           "B",
 				PrimaryAccountNumber: "1234567890123445",
