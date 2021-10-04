@@ -40,20 +40,6 @@ func NewTrack1(spec *field.Spec) *Track1 {
 	}
 }
 
-func NewTrack1Value(val []byte, fixedLength bool) (*Track1, error) {
-	track := &Track1{
-		FixedLength: fixedLength,
-	}
-
-	// we should not parse anything here
-	err := track.unpack(val)
-	if err != nil {
-		return nil, errors.New("invalid track data")
-	}
-
-	return track, nil
-}
-
 func (f *Track1) Spec() *field.Spec {
 	return f.spec
 }

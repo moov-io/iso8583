@@ -36,15 +36,6 @@ func NewTrack2(spec *field.Spec) *Track2 {
 	}
 }
 
-func NewTrack2Value(val []byte) (*Track2, error) {
-	track := &Track2{}
-	err := track.unpack(val)
-	if err != nil {
-		return nil, errors.New("invalid track data")
-	}
-	return track, nil
-}
-
 func (f *Track2) Spec() *field.Spec {
 	return f.spec
 }
