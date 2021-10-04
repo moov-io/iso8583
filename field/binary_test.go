@@ -94,11 +94,7 @@ func TestBinaryField(t *testing.T) {
 	})
 
 	t.Run("MarshalJSON returns string hex repr of binary field", func(t *testing.T) {
-		bin := NewBinary(spec)
-
-		err := bin.SetBytes([]byte{0xAB})
-		require.NoError(t, err)
-
+		bin := NewBinaryValue([]byte{0xAB})
 		marshalledJSON, err := bin.MarshalJSON()
 		require.NoError(t, err)
 		require.Equal(t, `"AB"`, string(marshalledJSON))

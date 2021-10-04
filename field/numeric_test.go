@@ -122,17 +122,9 @@ func TestNumericSetBytesSetsDataOntoDataStruct(t *testing.T) {
 }
 
 func TestNumericJSONMarshal(t *testing.T) {
-	numeric := NewNumeric(&Spec{
-		Length:      1,
-		Description: "Field",
-		Enc:         encoding.ASCII,
-		Pref:        prefix.ASCII.Fixed,
-	})
-	require.NoError(t, numeric.SetBytes([]byte("1")))
-
+	numeric := NewNumericValue(1)
 	marshalledJSON, err := numeric.MarshalJSON()
 	require.NoError(t, err)
-
 	require.Equal(t, "1", string(marshalledJSON))
 }
 
