@@ -129,12 +129,12 @@ var (
 		Subfields: map[string]Field{
 			"9A": NewString(&Spec{
 				Description: "Transaction Date",
-				Enc:         encoding.ASCIIToHex,
+				Enc:         encoding.ASCIIHexToBytes,
 				Pref:        prefix.BerTLV,
 			}),
 			"9F02": NewString(&Spec{
 				Description: "Amount, Authorized (Numeric)",
-				Enc:         encoding.ASCIIToHex,
+				Enc:         encoding.ASCIIHexToBytes,
 				Pref:        prefix.BerTLV,
 			}),
 		},

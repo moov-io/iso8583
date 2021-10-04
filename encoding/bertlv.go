@@ -14,7 +14,7 @@ type berTLVEncoderTag struct{}
 // Encode converts ASCII Hex-digits into a byte slice e.g. []byte("AABBCC")
 // would be converted into []byte{0xAA, 0xBB, 0xCC}
 func (berTLVEncoderTag) Encode(data []byte) ([]byte, error) {
-	out, err := ASCIIToHex.Encode(data)
+	out, err := ASCIIHexToBytes.Encode(data)
 	return out, err
 }
 
@@ -56,7 +56,7 @@ func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
 		}
 	}
 
-	out, read, err := ASCIIToHex.Decode(data[:tagLenBytes], tagLenBytes)
+	out, read, err := ASCIIHexToBytes.Decode(data[:tagLenBytes], tagLenBytes)
 	if err != nil {
 		return nil, 0, err
 	}

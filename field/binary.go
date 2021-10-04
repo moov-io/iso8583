@@ -113,11 +113,7 @@ func (f *Binary) SetData(data interface{}) error {
 }
 
 func (f *Binary) MarshalJSON() ([]byte, error) {
-	str, err := f.String()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(str)
+	return json.Marshal(f.Value)
 }
 
 func (f *Binary) UnmarshalJSON(b []byte) error {
@@ -127,7 +123,7 @@ func (f *Binary) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("failed to JSON unmarshal bytes to string: %v", err)
 	}
 
-	hex, err := encoding.ASCIIToHex.Encode([]byte(v))
+	hex, err := encoding.ASCIIHexToBytes.Encode([]byte(v))
 	if err != nil {
 		return fmt.Errorf("failed to convert ASCII Hex string to bytes")
 	}

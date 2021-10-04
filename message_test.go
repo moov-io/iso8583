@@ -25,7 +25,7 @@ func TestMessage(t *testing.T) {
 			}),
 			1: field.NewBitmap(&field.Spec{
 				Description: "Bitmap",
-				Enc:         encoding.HexToASCII,
+				Enc:         encoding.BytesToASCIIHex,
 				Pref:        prefix.Hex.Fixed,
 			}),
 			2: field.NewString(&field.Spec{
@@ -544,7 +544,7 @@ func TestMessageJSON(t *testing.T) {
 			}),
 			1: field.NewBitmap(&field.Spec{
 				Description: "Bitmap",
-				Enc:         encoding.HexToASCII,
+				Enc:         encoding.BytesToASCIIHex,
 				Pref:        prefix.Hex.Fixed,
 			}),
 			2: field.NewString(&field.Spec{

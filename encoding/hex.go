@@ -7,7 +7,7 @@ import (
 )
 
 // HEX to ASCII encoder
-var HexToASCII = &hexToASCIIEncoder{}
+var BytesToASCIIHex = &hexToASCIIEncoder{}
 
 type hexToASCIIEncoder struct{}
 
@@ -45,7 +45,7 @@ func (e hexToASCIIEncoder) Decode(data []byte, length int) ([]byte, int, error) 
 }
 
 // ASCII To HEX encoder
-var ASCIIToHex = &asciiToHexEncoder{}
+var ASCIIHexToBytes = &asciiToHexEncoder{}
 
 type asciiToHexEncoder struct{}
 

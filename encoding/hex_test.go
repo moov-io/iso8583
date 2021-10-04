@@ -7,7 +7,7 @@ import (
 )
 
 func TestHexToASCIIEncoder(t *testing.T) {
-	enc := HexToASCII
+	enc := BytesToASCIIHex
 
 	got, read, err := enc.Decode([]byte("aabbcc"), 3)
 	require.NoError(t, err)
@@ -20,7 +20,7 @@ func TestHexToASCIIEncoder(t *testing.T) {
 }
 
 func TestASCIIToHexEncoder(t *testing.T) {
-	enc := ASCIIToHex
+	enc := ASCIIHexToBytes
 
 	got, read, err := enc.Decode([]byte{0xAA, 0xBB, 0xCC}, 3)
 	require.NoError(t, err)
