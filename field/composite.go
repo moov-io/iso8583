@@ -185,7 +185,7 @@ func (f *Composite) String() (string, error) {
 
 // MarshalJSON implements the encoding/json.Marshaler interface.
 func (f *Composite) MarshalJSON() ([]byte, error) {
-	// We pack the field to populate f.tagToSubfieldMap 
+	// We pack the field to populate f.tagToSubfieldMap
 	if _, err := f.Pack(); err != nil {
 		return nil, err
 	}

@@ -830,8 +830,7 @@ func TestCompositeJSONConversion(t *testing.T) {
 
 	t.Run("MarshalJSON untyped", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetBytes([]byte("0102AB03021211060102YZ"))
-		require.NoError(t, composite.SetBytes([]byte("")))
+		require.NoError(t, composite.SetBytes([]byte("0102AB03021211060102YZ")))
 
 		actual, err := composite.MarshalJSON()
 		require.NoError(t, err)
@@ -843,12 +842,12 @@ func TestCompositeJSONConversion(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
-		require.NoError(t, err)
+		require.NoError(t, composite.SetData(data))
 
 		require.NoError(t, composite.UnmarshalJSON([]byte(json)))
 
 		s, err := composite.String()
+		require.NoError(t, err)
 		require.Equal(t, "0102AB03021211060102YZ", s)
 	})
 }

@@ -11,7 +11,7 @@ const maxBitmaps = 3
 
 var _ Field = (*Bitmap)(nil)
 
-// NOTE: Bitmap does not support JSON marshalling or unmarshalling
+// NOTE: Bitmap does not support JSON encoding or decoding.
 type Bitmap struct {
 	spec   *Spec
 	bitmap *utils.Bitmap

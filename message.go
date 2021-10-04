@@ -14,7 +14,7 @@ var _ json.Marshaler = (*Message)(nil)
 var _ json.Unmarshaler = (*Message)(nil)
 
 const (
-	mtiIdx = 0
+	mtiIdx    = 0
 	bitmapIdx = 1
 )
 
