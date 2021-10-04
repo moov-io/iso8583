@@ -12,7 +12,7 @@ func TestHexBitmap(t *testing.T) {
 	t.Run("Read only first bitmap", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
 
@@ -28,7 +28,7 @@ func TestHexBitmap(t *testing.T) {
 	t.Run("Read two bitmaps", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
 
@@ -45,7 +45,7 @@ func TestHexBitmap(t *testing.T) {
 	t.Run("Read three bitmaps", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
 
@@ -62,7 +62,7 @@ func TestHexBitmap(t *testing.T) {
 	t.Run("When not enough data to unpack", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
 
@@ -75,7 +75,7 @@ func TestHexBitmap(t *testing.T) {
 	t.Run("When bit for secondary bitmap is set but not enough data to read", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
 
@@ -89,7 +89,7 @@ func TestHexBitmap(t *testing.T) {
 	t.Run("With primary bitmap only it returns signle bitmap length", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
 
@@ -104,7 +104,7 @@ func TestHexBitmap(t *testing.T) {
 	t.Run("With secondary bitmap it returns length of two bitmaps", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
 
@@ -120,7 +120,7 @@ func TestHexBitmap(t *testing.T) {
 	t.Run("With third bitmap it returns length of three bitmaps", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
 			Description: "Bitmap",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
 
@@ -188,7 +188,7 @@ func TestBinaryBitmap(t *testing.T) {
 func TestBitmap_SetData(t *testing.T) {
 	spec := &Spec{
 		Description: "Bitmap",
-		Enc:         encoding.HexToASCII,
+		Enc:         encoding.BytesToASCIIHex,
 		Pref:        prefix.Hex.Fixed,
 	}
 	bitmapBytes := []byte("004000000000000000000000000000000000000000000000")
@@ -253,5 +253,4 @@ func TestBitmap_SetData(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, []byte("a"), b)
 	})
-
 }

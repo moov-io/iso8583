@@ -25,7 +25,7 @@ func TestMessage(t *testing.T) {
 			}),
 			1: field.NewBitmap(&field.Spec{
 				Description: "Bitmap",
-				Enc:         encoding.HexToASCII,
+				Enc:         encoding.BytesToASCIIHex,
 				Pref:        prefix.Hex.Fixed,
 			}),
 			2: field.NewString(&field.Spec{
@@ -544,7 +544,7 @@ func TestMessageJSON(t *testing.T) {
 			}),
 			1: field.NewBitmap(&field.Spec{
 				Description: "Bitmap",
-				Enc:         encoding.HexToASCII,
+				Enc:         encoding.BytesToASCIIHex,
 				Pref:        prefix.Hex.Fixed,
 			}),
 			2: field.NewString(&field.Spec{
@@ -637,7 +637,7 @@ func TestMessageJSON(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		want := `{"0":"0100","1":"700000000008000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100","45":{"fixed_length":true,"format_code":"B","primary_account_number":"1234567890123445","name":"PADILLA/L.","expiration_date":"1999-01-01T00:00:00Z","service_code":"120","discretionary_data":"0000000000000**XXX******"}}`
+		want := `{"0":"0100","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100","45":{"fixed_length":true,"format_code":"B","primary_account_number":"1234567890123445","name":"PADILLA/L.","expiration_date":"1999-01-01T00:00:00Z","service_code":"120","discretionary_data":"0000000000000**XXX******"}}`
 
 		got, err := json.Marshal(message)
 		require.NoError(t, err)
@@ -650,7 +650,7 @@ func TestMessageJSON(t *testing.T) {
 		message.Field(2, "4242424242424242")
 		message.Field(4, "100")
 
-		want := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
+		want := `{"0":"0100","2":"4242424242424242","4":"100"}`
 
 		got, err := json.Marshal(message)
 		require.NoError(t, err)
@@ -671,7 +671,7 @@ func TestMessageJSON(t *testing.T) {
 			F4 *field.String
 		}
 
-		want := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
+		want := `{"0":"0100","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
 
 		message := NewMessage(spec)
 		message.SetData(&ISO87Data{})
@@ -685,7 +685,7 @@ func TestMessageJSON(t *testing.T) {
 	})
 
 	t.Run("Test JSON encoding of unpacked fields untyped", func(t *testing.T) {
-		want := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
+		want := `{"0":"0100","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
 
 		message := NewMessage(spec)
 
@@ -700,11 +700,10 @@ func TestMessageJSON(t *testing.T) {
 	t.Run("Test JSON decoding typed", func(t *testing.T) {
 		message := NewMessage(spec)
 
-		input := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
+		input := []byte(`{"0":"0100","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`)
 
 		data := &TestISOData{}
-		err := message.SetData(data)
-		require.NoError(t, err)
+		require.NoError(t, message.SetData(data))
 
 		want := &TestISOData{
 			F0: field.NewStringValue("0100"),
@@ -717,8 +716,7 @@ func TestMessageJSON(t *testing.T) {
 			F4: field.NewStringValue("100"),
 		}
 
-		err = json.Unmarshal([]byte(input), message)
-		require.NoError(t, err)
+		require.NoError(t, json.Unmarshal(input, message))
 		require.Equal(t, want.F0.Value, data.F0.Value)
 		require.Equal(t, want.F2.Value, data.F2.Value)
 		require.Equal(t, want.F3.F1.Value, data.F3.F1.Value)
@@ -730,7 +728,7 @@ func TestMessageJSON(t *testing.T) {
 	t.Run("Test JSON decoding untyped", func(t *testing.T) {
 		message := NewMessage(spec)
 
-		input := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
+		input := `{"0":"0100","2":"4242424242424242","4":"100"}`
 
 		err := json.Unmarshal([]byte(input), message)
 		require.NoError(t, err)

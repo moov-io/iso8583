@@ -66,19 +66,9 @@ func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer
 	}
 }
 
-// CreateSubfields creates a map with new instances of Fields (Field interface)
-// based on the field type in Spec.
-func (s *Spec) CreateSubfields() map[string]Field {
-	fields := map[string]Field{}
-
-	for k, specField := range s.Subfields {
-		fields[k] = createSubfield(specField)
-	}
-
-	return fields
-}
-
-func createSubfield(specField Field) Field {
+// CreateSubfield creates a new instance of a field based on the input
+// provided.
+func CreateSubfield(specField Field) Field {
 	fieldType := reflect.TypeOf(specField).Elem()
 
 	// create new field and convert it to Field interface
