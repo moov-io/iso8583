@@ -13,6 +13,11 @@ import (
 var _ json.Marshaler = (*Message)(nil)
 var _ json.Unmarshaler = (*Message)(nil)
 
+const (
+	mtiIdx = 0
+	bitmapIdx = 1
+)
+
 type Message struct {
 	spec      *MessageSpec
 	data      interface{}
@@ -65,16 +70,16 @@ func (m *Message) Bitmap() *field.Bitmap {
 		return m.bitmap
 	}
 
-	m.bitmap = m.fields[1].(*field.Bitmap)
+	m.bitmap = m.fields[bitmapIdx].(*field.Bitmap)
 	m.bitmap.Reset()
-	m.fieldsMap[1] = struct{}{}
+	m.fieldsMap[bitmapIdx] = struct{}{}
 
 	return m.bitmap
 }
 
 func (m *Message) MTI(val string) {
-	m.fieldsMap[0] = struct{}{}
-	m.fields[0].SetBytes([]byte(val))
+	m.fieldsMap[mtiIdx] = struct{}{}
+	m.fields[mtiIdx].SetBytes([]byte(val))
 }
 
 func (m *Message) GetSpec() *MessageSpec {
@@ -99,7 +104,7 @@ func (m *Message) BinaryField(id int, val []byte) error {
 
 func (m *Message) GetMTI() (string, error) {
 	// check index
-	return m.fields[0].String()
+	return m.fields[mtiIdx].String()
 }
 
 func (m *Message) GetString(id int) (string, error) {
@@ -169,7 +174,7 @@ func (m *Message) Unpack(src []byte) error {
 	var off int
 
 	m.fieldsMap = map[int]struct{}{}
-	// This method implicitly also sets m.fieldsMap[1]
+	// This method implicitly also sets m.fieldsMap[bitmapIdx]
 	m.Bitmap().Reset()
 
 	// unpack MTI
@@ -178,16 +183,16 @@ func (m *Message) Unpack(src []byte) error {
 			return err
 		}
 	}
-	read, err := m.fields[0].Unpack(src)
+	read, err := m.fields[mtiIdx].Unpack(src)
 	if err != nil {
 		return fmt.Errorf("failed to unpack MTI: %w", err)
 	}
-	m.fieldsMap[0] = struct{}{}
+	m.fieldsMap[mtiIdx] = struct{}{}
 
 	off = read
 
 	// unpack Bitmap
-	read, err = m.fields[1].Unpack(src[off:])
+	read, err = m.fields[bitmapIdx].Unpack(src[off:])
 	if err != nil {
 		return fmt.Errorf("failed to unpack bitmap: %w", err)
 	}
@@ -231,6 +236,12 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 	fieldMap := m.GetFields()
 	strFieldMap := map[string]field.Field{}
 	for k, v := range fieldMap {
+		// we don't wish to populate the bitmap in the final
+		// JSON since it is dynamically generated when packing
+		// and unpacking anyways.
+		if k == bitmapIdx {
+			continue
+		}
 		strFieldMap[fmt.Sprint(k)] = v
 	}
 

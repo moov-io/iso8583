@@ -71,3 +71,19 @@ func TestStringJSONUnmarshal(t *testing.T) {
 	require.NoError(t, str.UnmarshalJSON(input))
 	require.Equal(t, "4000", str.Value)
 }
+
+func TestStringJSONMarshal(t *testing.T) {
+	str := NewString(&Spec{
+		Length:      4,
+		Description: "Field",
+		Enc:         encoding.ASCII,
+		Pref:        prefix.ASCII.Fixed,
+	})
+
+	require.NoError(t, str.SetBytes([]byte("1000")))
+
+	marshalledJSON, err := str.MarshalJSON()
+	require.NoError(t, err)
+
+	require.Equal(t, `"1000"`, string(marshalledJSON))
+}

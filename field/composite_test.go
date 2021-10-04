@@ -791,3 +791,64 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 		})
 	}
 }
+
+func TestCompositeJSONConversion(t *testing.T) {
+	json := `{"1":"AB","3":12,"11":{"1":"YZ"}}`
+
+	t.Run("MarshalJSON typed", func(t *testing.T) {
+		data := &CompositeTestData{
+			F1: NewStringValue("AB"),
+			F3: NewNumericValue(12),
+			F11: &SubCompositeData{
+				F1: NewStringValue("YZ"),
+			},
+		}
+
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		require.NoError(t, composite.SetData(data))
+
+		actual, err := composite.MarshalJSON()
+		require.NoError(t, err)
+
+		require.JSONEq(t, json, string(actual))
+	})
+
+	t.Run("UnmarshalJSON typed", func(t *testing.T) {
+		data := &CompositeTestData{}
+
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		require.NoError(t, composite.UnmarshalJSON([]byte(json)))
+
+		require.Equal(t, "AB", data.F1.Value)
+		require.Nil(t, data.F2)
+		require.Equal(t, 12, data.F3.Value)
+		require.Equal(t, "YZ", data.F11.F1.Value)
+	})
+
+	t.Run("MarshalJSON untyped", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.SetBytes([]byte("0102AB03021211060102YZ"))
+		require.NoError(t, composite.SetBytes([]byte("")))
+
+		actual, err := composite.MarshalJSON()
+		require.NoError(t, err)
+
+		require.JSONEq(t, json, string(actual))
+	})
+
+	t.Run("UnmarshalJSON untyped", func(t *testing.T) {
+		data := &CompositeTestData{}
+
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		require.NoError(t, composite.UnmarshalJSON([]byte(json)))
+
+		s, err := composite.String()
+		require.Equal(t, "0102AB03021211060102YZ", s)
+	})
+}
