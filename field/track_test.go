@@ -219,55 +219,53 @@ func TestTrack1(t *testing.T) {
 }
 
 func TestTrack2TypedAPI(t *testing.T) {
+	var (
+		raw                        = []byte("4000340000000506=2512111123400001230")
+		rawWithDSeparator          = []byte("4000340000000506D2512111123400001230")
+		rawWithPrefix              = []byte("364000340000000506=2512111123400001230")
+		rawWithPrefixAndDSeparator = []byte("364000340000000506D2512111123400001230")
+	)
 	t.Run("Track 2 untyped", func(t *testing.T) {
-		samples := []TestSample{
+		testCases := []struct {
+			Bytes     []byte
+			Separator string
+			Packed    []byte
+		}{
 			{
-				Raw:                  `4000340000000506=2512111123400001230`,
-				PrimaryAccountNumber: `4000340000000506`,
-				ServiceCode:          `111`,
-				DiscretionaryData:    `123400001230`,
-				ExpirationDate:       `2512`,
+				Bytes:     raw,
+				Separator: "=",
+				Packed:    rawWithPrefix,
 			},
 			{
-				Raw:                  `1234567890123445=99011200XXXX00000000`,
-				PrimaryAccountNumber: `1234567890123445`,
-				ServiceCode:          `120`,
-				DiscretionaryData:    `0XXXX00000000`,
-				ExpirationDate:       `9901`,
+				Bytes:     rawWithDSeparator,
+				Separator: "D",
+				Packed:    rawWithPrefixAndDSeparator,
 			},
 		}
-		for _, sample := range samples {
-			spec := &Spec{
-				Length:      37,
-				Description: "Track 2 Data",
-				Enc:         encoding.ASCII,
-				Pref:        prefix.ASCII.LL,
-			}
-			tracker := NewTrack2(spec)
+		for _, tc := range testCases {
+			tracker := NewTrack2(track2Spec)
 			require.NotNil(t, tracker.Spec())
 
-			err := tracker.SetBytes([]byte(sample.Raw))
+			err := tracker.SetBytes(tc.Bytes)
 			require.NoError(t, err)
 
 			buf, err := tracker.Bytes()
 			require.NoError(t, err)
-			require.Equal(t, sample.Raw, string(buf))
+			require.Equal(t, tc.Bytes, buf)
 
 			str, err := tracker.String()
 			require.NoError(t, err)
-			require.Equal(t, sample.Raw, str)
+			require.Equal(t, string(tc.Bytes), str)
 
-			require.Equal(t, sample.PrimaryAccountNumber, tracker.PrimaryAccountNumber)
-			require.Equal(t, sample.ServiceCode, tracker.ServiceCode)
-			require.Equal(t, sample.DiscretionaryData, tracker.DiscretionaryData)
-			if len(sample.ExpirationDate) > 0 {
-				require.NotNil(t, tracker.ExpirationDate)
-				require.Equal(t, sample.ExpirationDate, tracker.ExpirationDate.Format(expiryDateFormat))
-			}
+			require.Equal(t, "4000340000000506", tracker.PrimaryAccountNumber)
+			require.Equal(t, tc.Separator, tracker.Separator)
+			require.Equal(t, "111", tracker.ServiceCode)
+			require.Equal(t, "123400001230", tracker.DiscretionaryData)
+			require.Equal(t, "2512", tracker.ExpirationDate.Format(expiryDateFormat))
 
 			packBuf, err := tracker.Pack()
 			require.NoError(t, err)
-			require.NotEqual(t, sample.Raw, string(packBuf))
+			require.Equal(t, tc.Packed, packBuf)
 
 			_, err = tracker.Unpack(packBuf)
 			require.NoError(t, err)
@@ -275,10 +273,6 @@ func TestTrack2TypedAPI(t *testing.T) {
 	})
 
 	t.Run("Track 2 typed", func(t *testing.T) {
-		var (
-			raw           = []byte("4000340000000506=2512111123400001230")
-			rawWithPrefix = []byte("364000340000000506=2512111123400001230")
-		)
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack2(track2Spec)
 			err := track.SetData(NewStringValue("hello"))
@@ -286,69 +280,121 @@ func TestTrack2TypedAPI(t *testing.T) {
 		})
 
 		t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
-			expDate, err := time.Parse("0601", "2512")
-			require.NoError(t, err)
-
-			data := &Track2{
-				PrimaryAccountNumber: `4000340000000506`,
-				ServiceCode:          `111`,
-				DiscretionaryData:    `123400001230`,
-				ExpirationDate:       &expDate,
+			testCases := []struct {
+				Separator    string
+				ExpectedPack []byte
+			}{
+				{
+					Separator:    "=",
+					ExpectedPack: rawWithPrefix,
+				},
+				{
+					Separator:    "D",
+					ExpectedPack: rawWithPrefixAndDSeparator,
+				},
 			}
 
-			track := NewTrack2(track2Spec)
-			err = track.SetData(data)
-			require.NoError(t, err)
+			for _, tc := range testCases {
+				expDate, err := time.Parse("0601", "2512")
+				require.NoError(t, err)
 
-			// test assigned fields
-			require.Equal(t, "4000340000000506", track.PrimaryAccountNumber)
-			require.Equal(t, "111", track.ServiceCode)
-			require.Equal(t, "123400001230", track.DiscretionaryData)
-			require.Equal(t, expDate, *track.ExpirationDate)
+				data := &Track2{
+					PrimaryAccountNumber: `4000340000000506`,
+					Separator:            tc.Separator,
+					ServiceCode:          `111`,
+					DiscretionaryData:    `123400001230`,
+					ExpirationDate:       &expDate,
+				}
 
-			packed, err := track.Pack()
-			require.NoError(t, err)
-			require.Equal(t, rawWithPrefix, packed)
+				track := NewTrack2(track2Spec)
+				err = track.SetData(data)
+				require.NoError(t, err)
+
+				// test assigned fields
+				require.Equal(t, "4000340000000506", track.PrimaryAccountNumber)
+				require.Equal(t, tc.Separator, track.Separator)
+				require.Equal(t, "111", track.ServiceCode)
+				require.Equal(t, "123400001230", track.DiscretionaryData)
+				require.Equal(t, expDate, *track.ExpirationDate)
+
+				packed, err := track.Pack()
+				require.NoError(t, err)
+				require.Equal(t, tc.ExpectedPack, packed)
+			}
 		})
 
 		t.Run("Unpack correctly deserializes bytes with length prefix to the data struct", func(t *testing.T) {
-			expDate, err := time.Parse("0601", "2512")
-			require.NoError(t, err)
+			testCases := []struct {
+				Separator string
+				Bytes     []byte
+			}{
+				{
+					Separator: "=",
+					Bytes:     rawWithPrefix,
+				},
+				{
+					Separator: "D",
+					Bytes:     rawWithPrefixAndDSeparator,
+				},
+			}
 
-			data := &Track2{}
+			for _, tc := range testCases {
+				expDate, err := time.Parse("0601", "2512")
+				require.NoError(t, err)
 
-			track := NewTrack2(track2Spec)
-			err = track.SetData(data)
-			require.NoError(t, err)
+				data := &Track2{}
 
-			_, err = track.Unpack(rawWithPrefix)
-			require.NoError(t, err)
+				track := NewTrack2(track2Spec)
+				err = track.SetData(data)
+				require.NoError(t, err)
 
-			// test assigned fields
-			require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
-			require.Equal(t, "111", data.ServiceCode)
-			require.Equal(t, "123400001230", data.DiscretionaryData)
-			require.Equal(t, expDate, *data.ExpirationDate)
+				_, err = track.Unpack(tc.Bytes)
+				require.NoError(t, err)
+
+				// test assigned fields
+				require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
+				require.Equal(t, tc.Separator, data.Separator)
+				require.Equal(t, "111", data.ServiceCode)
+				require.Equal(t, "123400001230", data.DiscretionaryData)
+				require.Equal(t, expDate, *data.ExpirationDate)
+			}
 		})
 
 		t.Run("SetBytes correctly deserializes and assigns data", func(t *testing.T) {
-			expDate, err := time.Parse("0601", "2512")
-			require.NoError(t, err)
+			testCases := []struct {
+				Separator string
+				TrackData []byte
+			}{
+				{
+					Separator: "=",
+					TrackData: raw,
+				},
+				{
+					Separator: "D",
+					TrackData: rawWithDSeparator,
+				},
+			}
 
-			data := &Track2{}
+			for _, tc := range testCases {
+				expDate, err := time.Parse("0601", "2512")
+				require.NoError(t, err)
 
-			track := NewTrack2(track2Spec)
-			err = track.SetData(data)
-			require.NoError(t, err)
+				data := &Track2{}
 
-			err = track.SetBytes(raw)
-			require.NoError(t, err)
+				track := NewTrack2(track2Spec)
+				err = track.SetData(data)
+				require.NoError(t, err)
 
-			// test assigned fields
-			require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
-			require.Equal(t, "111", data.ServiceCode)
-			require.Equal(t, "123400001230", data.DiscretionaryData)
-			require.Equal(t, expDate, *data.ExpirationDate)
+				err = track.SetBytes(tc.TrackData)
+				require.NoError(t, err)
+
+				// test assigned fields
+				require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
+				require.Equal(t, tc.Separator, data.Separator)
+				require.Equal(t, "111", data.ServiceCode)
+				require.Equal(t, "123400001230", data.DiscretionaryData)
+				require.Equal(t, expDate, *data.ExpirationDate)
+			}
 		})
 	})
 }
