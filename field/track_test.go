@@ -292,6 +292,10 @@ func TestTrack2TypedAPI(t *testing.T) {
 					Separator:    "D",
 					ExpectedPack: rawWithPrefixAndDSeparator,
 				},
+				{
+					Separator:    "",
+					ExpectedPack: rawWithPrefix,
+				},
 			}
 
 			for _, tc := range testCases {
