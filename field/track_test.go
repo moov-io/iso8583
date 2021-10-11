@@ -36,14 +36,6 @@ var (
 		Pref:        prefix.ASCII.LL,
 	}
 
-	track2SpecWithDSeparator = &Spec{
-		Length:      37,
-		Description: "Track 2 Data",
-		Enc:         encoding.ASCII,
-		Pref:        prefix.ASCII.LL,
-		Separator:   "D",
-	}
-
 	track3Spec = &Spec{
 		Length:      104,
 		Description: "Track 3 Data",
@@ -235,38 +227,23 @@ func TestTrack2TypedAPI(t *testing.T) {
 	)
 	t.Run("Track 2 untyped", func(t *testing.T) {
 		testCases := []struct {
-			Spec                        *Spec
-			Bytes                       []byte
-			ExpectedPackedWithoutPrefix []byte
-			ExpectedPacked              []byte
+			Bytes     []byte
+			Separator string
+			Packed    []byte
 		}{
 			{
-				Spec:                        track2Spec,
-				Bytes:                       raw,
-				ExpectedPackedWithoutPrefix: raw,
-				ExpectedPacked:              rawWithPrefix,
+				Bytes:     raw,
+				Separator: "=",
+				Packed:    rawWithPrefix,
 			},
 			{
-				Spec:                        track2Spec,
-				Bytes:                       rawWithDSeparator,
-				ExpectedPackedWithoutPrefix: raw,
-				ExpectedPacked:              rawWithPrefix,
-			},
-			{
-				Spec:                        track2SpecWithDSeparator,
-				Bytes:                       raw,
-				ExpectedPackedWithoutPrefix: rawWithDSeparator,
-				ExpectedPacked:              rawWithPrefixAndDSeparator,
-			},
-			{
-				Spec:                        track2SpecWithDSeparator,
-				Bytes:                       rawWithDSeparator,
-				ExpectedPackedWithoutPrefix: rawWithDSeparator,
-				ExpectedPacked:              rawWithPrefixAndDSeparator,
+				Bytes:     rawWithDSeparator,
+				Separator: "D",
+				Packed:    rawWithPrefixAndDSeparator,
 			},
 		}
 		for _, tc := range testCases {
-			tracker := NewTrack2(tc.Spec)
+			tracker := NewTrack2(track2Spec)
 			require.NotNil(t, tracker.Spec())
 
 			err := tracker.SetBytes(tc.Bytes)
@@ -274,20 +251,21 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 			buf, err := tracker.Bytes()
 			require.NoError(t, err)
-			require.Equal(t, tc.ExpectedPackedWithoutPrefix, buf)
+			require.Equal(t, tc.Bytes, buf)
 
 			str, err := tracker.String()
 			require.NoError(t, err)
-			require.Equal(t, string(tc.ExpectedPackedWithoutPrefix), str)
+			require.Equal(t, string(tc.Bytes), str)
 
 			require.Equal(t, "4000340000000506", tracker.PrimaryAccountNumber)
+			require.Equal(t, tc.Separator, tracker.Separator)
 			require.Equal(t, "111", tracker.ServiceCode)
 			require.Equal(t, "123400001230", tracker.DiscretionaryData)
 			require.Equal(t, "2512", tracker.ExpirationDate.Format(expiryDateFormat))
 
 			packBuf, err := tracker.Pack()
 			require.NoError(t, err)
-			require.Equal(t, tc.ExpectedPacked, packBuf)
+			require.Equal(t, tc.Packed, packBuf)
 
 			_, err = tracker.Unpack(packBuf)
 			require.NoError(t, err)
@@ -303,15 +281,15 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 		t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
 			testCases := []struct {
-				Spec         *Spec
+				Separator    string
 				ExpectedPack []byte
 			}{
 				{
-					Spec:         track2Spec,
+					Separator:    "=",
 					ExpectedPack: rawWithPrefix,
 				},
 				{
-					Spec:         track2SpecWithDSeparator,
+					Separator:    "D",
 					ExpectedPack: rawWithPrefixAndDSeparator,
 				},
 			}
@@ -322,17 +300,19 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 				data := &Track2{
 					PrimaryAccountNumber: `4000340000000506`,
+					Separator:            tc.Separator,
 					ServiceCode:          `111`,
 					DiscretionaryData:    `123400001230`,
 					ExpirationDate:       &expDate,
 				}
 
-				track := NewTrack2(tc.Spec)
+				track := NewTrack2(track2Spec)
 				err = track.SetData(data)
 				require.NoError(t, err)
 
 				// test assigned fields
 				require.Equal(t, "4000340000000506", track.PrimaryAccountNumber)
+				require.Equal(t, tc.Separator, track.Separator)
 				require.Equal(t, "111", track.ServiceCode)
 				require.Equal(t, "123400001230", track.DiscretionaryData)
 				require.Equal(t, expDate, *track.ExpirationDate)
@@ -345,16 +325,16 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 		t.Run("Unpack correctly deserializes bytes with length prefix to the data struct", func(t *testing.T) {
 			testCases := []struct {
-				Spec  *Spec
-				Bytes []byte
+				Separator string
+				Bytes     []byte
 			}{
 				{
-					Spec:  track2Spec,
-					Bytes: rawWithPrefix,
+					Separator: "=",
+					Bytes:     rawWithPrefix,
 				},
 				{
-					Spec:  track2SpecWithDSeparator,
-					Bytes: rawWithPrefixAndDSeparator,
+					Separator: "D",
+					Bytes:     rawWithPrefixAndDSeparator,
 				},
 			}
 
@@ -364,7 +344,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 				data := &Track2{}
 
-				track := NewTrack2(tc.Spec)
+				track := NewTrack2(track2Spec)
 				err = track.SetData(data)
 				require.NoError(t, err)
 
@@ -373,6 +353,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 				// test assigned fields
 				require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
+				require.Equal(t, tc.Separator, data.Separator)
 				require.Equal(t, "111", data.ServiceCode)
 				require.Equal(t, "123400001230", data.DiscretionaryData)
 				require.Equal(t, expDate, *data.ExpirationDate)
@@ -381,23 +362,15 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 		t.Run("SetBytes correctly deserializes and assigns data", func(t *testing.T) {
 			testCases := []struct {
-				Spec      *Spec
+				Separator string
 				TrackData []byte
 			}{
 				{
-					Spec:      track2Spec,
+					Separator: "=",
 					TrackData: raw,
 				},
 				{
-					Spec:      track2Spec,
-					TrackData: rawWithDSeparator,
-				},
-				{
-					Spec:      track2SpecWithDSeparator,
-					TrackData: raw,
-				},
-				{
-					Spec:      track2SpecWithDSeparator,
+					Separator: "D",
 					TrackData: rawWithDSeparator,
 				},
 			}
@@ -408,7 +381,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 				data := &Track2{}
 
-				track := NewTrack2(tc.Spec)
+				track := NewTrack2(track2Spec)
 				err = track.SetData(data)
 				require.NoError(t, err)
 
@@ -417,6 +390,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 				// test assigned fields
 				require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
+				require.Equal(t, tc.Separator, data.Separator)
 				require.Equal(t, "111", data.ServiceCode)
 				require.Equal(t, "123400001230", data.DiscretionaryData)
 				require.Equal(t, expDate, *data.ExpirationDate)

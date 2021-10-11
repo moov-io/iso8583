@@ -12,6 +12,7 @@ var _ Field = (*Track2)(nil)
 
 type Track2 struct {
 	PrimaryAccountNumber string     `xml:"PrimaryAccountNumber,omitempty" json:"primary_account_number,omitempty"`
+	Separator            string     `xml:"Separator,omitempty" json:"separator,omitempty"`
 	ExpirationDate       *time.Time `xml:"ExpirationDate,omitempty" json:"expiration_date,omitempty"`
 	ServiceCode          string     `xml:"ServiceCode,omitempty" json:"service_code,omitempty"`
 	DiscretionaryData    string     `xml:"DiscretionaryData,omitempty" json:"discretionary_data,omitempty"`
@@ -25,7 +26,7 @@ const (
 )
 
 var (
-	track2Regex = regexp.MustCompile(`^([0-9]{1,19})(?:=|D)([0-9]{4})([0-9]{3})([^?]+)$`)
+	track2Regex = regexp.MustCompile(`^([0-9]{1,19})(=|D)([0-9]{4})([0-9]{3})([^?]+)$`)
 )
 
 func NewTrack2(spec *Spec) *Track2 {
@@ -117,6 +118,7 @@ func (f *Track2) SetData(data interface{}) error {
 	}
 
 	f.PrimaryAccountNumber = track.PrimaryAccountNumber
+	f.Separator = track.Separator
 	f.ExpirationDate = track.ExpirationDate
 	f.ServiceCode = track.ServiceCode
 	f.DiscretionaryData = track.DiscretionaryData
@@ -141,15 +143,17 @@ func (f *Track2) unpack(raw []byte) error {
 		switch index {
 		case 1: // Payment card number (PAN)
 			f.PrimaryAccountNumber = value
-		case 2: // Expiration Date (ED)
+		case 2: // Separator
+			f.Separator = value
+		case 3: // Expiration Date (ED)
 			expiredTime, timeErr := time.Parse(expiryDateFormat, value)
 			if timeErr != nil {
 				return errors.New("invalid expired time")
 			}
 			f.ExpirationDate = &expiredTime
-		case 3: // Service Code (SC)
+		case 4: // Service Code (SC)
 			f.ServiceCode = value
-		case 4: // Discretionary data (DD)
+		case 5: // Discretionary data (DD)
 			f.DiscretionaryData = value
 		}
 	}
@@ -171,10 +175,6 @@ func (f *Track2) pack() ([]byte, error) {
 		code = f.ServiceCode
 	}
 
-	separator := "="
-	if f.spec.Separator != "" {
-		separator = f.spec.Separator
-	}
-	raw := fmt.Sprintf(track2Format, f.PrimaryAccountNumber, separator, expired, code, f.DiscretionaryData)
+	raw := fmt.Sprintf(track2Format, f.PrimaryAccountNumber, f.Separator, expired, code, f.DiscretionaryData)
 	return []byte(raw), nil
 }

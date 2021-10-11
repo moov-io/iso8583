@@ -52,9 +52,6 @@ type Spec struct {
 	Pref prefix.Prefixer
 	// Pad sets the padding direction and type of the field.
 	Pad padding.Padder
-	// Separator defines the character used to encode the separator. Only
-	// applicable to the Track 2 field type.
-	Separator string
 	// Subfields defines the subfields held within the field. Only
 	// applicable to composite field types.
 	Subfields map[string]Field
