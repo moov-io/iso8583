@@ -21,11 +21,11 @@ type Track2 struct {
 }
 
 const (
-	track2Format = `%s=%s%s%s`
+	track2Format = `%s%s%s%s%s`
 )
 
 var (
-	track2Regex = regexp.MustCompile(`^([0-9]{1,19})\=([0-9]{4}|\=)([0-9]{3}|\=)([^\?]+)$`)
+	track2Regex = regexp.MustCompile(`^([0-9]{1,19})(?:=|D)([0-9]{4})([0-9]{3})([^?]+)$`)
 )
 
 func NewTrack2(spec *Spec) *Track2 {
@@ -134,7 +134,7 @@ func (f *Track2) unpack(raw []byte) error {
 	matches := track2Regex.FindStringSubmatch(string(raw))
 	for index, val := range matches {
 		value := strings.TrimSpace(val)
-		if len(value) == 0 || value == "=" {
+		if len(value) == 0 {
 			continue
 		}
 
@@ -171,6 +171,10 @@ func (f *Track2) pack() ([]byte, error) {
 		code = f.ServiceCode
 	}
 
-	raw := fmt.Sprintf(track2Format, f.PrimaryAccountNumber, expired, code, f.DiscretionaryData)
+	separator := "="
+	if f.spec.Separator != "" {
+		separator = f.spec.Separator
+	}
+	raw := fmt.Sprintf(track2Format, f.PrimaryAccountNumber, separator, expired, code, f.DiscretionaryData)
 	return []byte(raw), nil
 }
