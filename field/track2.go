@@ -23,6 +23,8 @@ type Track2 struct {
 
 const (
 	track2Format = `%s%s%s%s%s`
+
+	defaultSeparator = "="
 )
 
 var (
@@ -174,7 +176,7 @@ func (f *Track2) pack() ([]byte, error) {
 	if len(f.ServiceCode) > 0 {
 		code = f.ServiceCode
 	}
-	separator := "="
+	separator := defaultSeparator
 	if f.Separator != "" {
 		separator = f.Separator
 	}
