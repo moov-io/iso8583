@@ -125,6 +125,10 @@ func (f *Composite) Pack() ([]byte, error) {
 		return nil, err
 	}
 
+	if len(packed) == 0 {
+		return []byte{}, nil
+	}
+
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)

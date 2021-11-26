@@ -543,6 +543,80 @@ func TestCompositePackingWithTags(t *testing.T) {
 		require.Equal(t, "120102AB0202CD", string(packed))
 	})
 
+	t.Run("Pack correctly ignores excess subfields in excess of the length described by the prefix", func(t *testing.T) {
+		type ExcessSubfieldsTestData struct {
+			F1 *String
+			F2 *Numeric
+			F3 *String
+			F4 *String
+			F5 *String
+		}
+
+		excessSubfieldsSpec := &Spec{
+			Length:      5,
+			Description: "POS Data",
+			Pref:        prefix.EBCDIC1047.LL,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
+			Subfields: map[string]Field{
+				"1": NewString(&Spec{
+					Length:      1,
+					Description: "POS Terminal Attendance",
+					Enc:         encoding.EBCDIC1047,
+					Pref:        prefix.EBCDIC1047.Fixed,
+				}),
+				"2": NewNumeric(&Spec{
+					Length:      1,
+					Description: "Reserved for Future Use",
+					Enc:         encoding.EBCDIC1047,
+					Pref:        prefix.EBCDIC1047.Fixed,
+				}),
+				"3": NewString(&Spec{
+					Length:      1,
+					Description: "POS Terminal Location",
+					Enc:         encoding.EBCDIC1047,
+					Pref:        prefix.EBCDIC1047.Fixed,
+				}),
+				"4": NewString(&Spec{
+					Length:      1,
+					Description: "POS Cardholder Presence",
+					Enc:         encoding.EBCDIC1047,
+					Pref:        prefix.EBCDIC1047.Fixed,
+				}),
+				"5": NewString(&Spec{
+					Length:      1,
+					Description: "POS Card Presence",
+					Enc:         encoding.EBCDIC1047,
+					Pref:        prefix.EBCDIC1047.Fixed,
+				}),
+			},
+		}
+
+		data := &ExcessSubfieldsTestData{}
+
+		composite := NewComposite(excessSubfieldsSpec)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		// Subfield 4 & 5 falls outside of the bounds of the 3 byte limit imposed
+		// by the prefix. Therefore, they won't be included in the packed bytes.
+
+		packed := []byte{
+			0xF0, 0xF3,
+			0xF1, 0xF0, 0xF2,
+		}
+
+		read, err := composite.Unpack(packed)
+
+		require.NoError(t, err)
+		require.Equal(t, 5, read)
+
+		packedBytes, err := composite.Pack()
+		require.NoError(t, err)
+		require.Equal(t, packedBytes, packed)
+	})
+
 	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
 		data := &CompositeTestData{}
 
