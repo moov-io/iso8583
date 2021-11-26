@@ -344,3 +344,20 @@ func (m *Message) setUnpackableDataField(id int) error {
 func (m *Message) dataFieldValue(id int) reflect.Value {
 	return m.dataValue.FieldByName(fmt.Sprintf("F%d", id))
 }
+
+func (m *Message) Clone() (*Message, error) {
+	newMessage := NewMessage(m.GetSpec())
+	newMessage.SetData(reflect.New(m.dataValue.Elem().Type()))
+
+	bytes, err := m.Pack()
+	if err != nil {
+		return nil, err
+	}
+
+	err = newMessage.Unpack(bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return newMessage, nil
+}
