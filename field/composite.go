@@ -146,8 +146,6 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
-	fmt.Printf("dataLen: %v\n, ", dataLen)
-
 	hasPrefix := false
 	if offset != 0 {
 		hasPrefix = true
