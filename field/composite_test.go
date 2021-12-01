@@ -545,17 +545,26 @@ func TestCompositePackingWithTags(t *testing.T) {
 
 	t.Run("Pack correctly ignores excess subfields in excess of the length described by the prefix", func(t *testing.T) {
 		type ExcessSubfieldsTestData struct {
-			F1 *String
-			F2 *Numeric
-			F3 *String
-			F4 *String
-			F5 *String
+			F1  *String
+			F2  *Numeric
+			F3  *String
+			F4  *String
+			F5  *String
+			F6  *String
+			F7  *String
+			F8  *String
+			F9  *Numeric
+			F10 *String
+			F11 *String
+			F12 *String
+			F13 *String
+			F14 *String
 		}
 
 		excessSubfieldsSpec := &Spec{
-			Length:      5,
+			Length:      26,
 			Description: "POS Data",
-			Pref:        prefix.EBCDIC1047.LL,
+			Pref:        prefix.ASCII.LLL,
 			Tag: &TagSpec{
 				Sort: sort.StringsByInt,
 			},
@@ -563,32 +572,87 @@ func TestCompositePackingWithTags(t *testing.T) {
 				"1": NewString(&Spec{
 					Length:      1,
 					Description: "POS Terminal Attendance",
-					Enc:         encoding.EBCDIC1047,
-					Pref:        prefix.EBCDIC1047.Fixed,
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
 				}),
 				"2": NewNumeric(&Spec{
 					Length:      1,
 					Description: "Reserved for Future Use",
-					Enc:         encoding.EBCDIC1047,
-					Pref:        prefix.EBCDIC1047.Fixed,
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
 				}),
 				"3": NewString(&Spec{
 					Length:      1,
 					Description: "POS Terminal Location",
-					Enc:         encoding.EBCDIC1047,
-					Pref:        prefix.EBCDIC1047.Fixed,
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
 				}),
 				"4": NewString(&Spec{
 					Length:      1,
 					Description: "POS Cardholder Presence",
-					Enc:         encoding.EBCDIC1047,
-					Pref:        prefix.EBCDIC1047.Fixed,
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
 				}),
 				"5": NewString(&Spec{
 					Length:      1,
 					Description: "POS Card Presence",
-					Enc:         encoding.EBCDIC1047,
-					Pref:        prefix.EBCDIC1047.Fixed,
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"6": NewString(&Spec{
+					Length:      1,
+					Description: "POS Card Capture Capabilities",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"7": NewString(&Spec{
+					Length:      1,
+					Description: "POS Transaction Status",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"8": NewString(&Spec{
+					Length:      1,
+					Description: "POS Transaction Security",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"9": NewNumeric(&Spec{
+					Length:      1,
+					Description: "Reserved for Future Use",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+					Pad:         padding.Left('0'),
+				}),
+				"10": NewString(&Spec{
+					Length:      1,
+					Description: "Cardholder-Activated Terminal Level",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"11": NewString(&Spec{
+					Length:      1,
+					Description: "POS Card Data Terminal Input Capability Indicator",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"12": NewString(&Spec{
+					Length:      2,
+					Description: "POS Authorization Life Cycle",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"13": NewString(&Spec{
+					Length:      3,
+					Description: "POS Country Code",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"14": NewString(&Spec{
+					Length:      10,
+					Description: "POS Postal Code",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
 				}),
 			},
 		}
@@ -599,18 +663,16 @@ func TestCompositePackingWithTags(t *testing.T) {
 		err := composite.SetData(data)
 		require.NoError(t, err)
 
-		// Subfield 4 & 5 falls outside of the bounds of the 3 byte limit imposed
-		// by the prefix. Therefore, they won't be included in the packed bytes.
+		// Subfield 12, 13 & 14 fall outside of the bounds of the
+		// 11 byte limit imposed by the prefix. [011 | 10000100012]
+		// Therefore, it won't be included in the packed bytes.
 
-		packed := []byte{
-			0xF0, 0xF3,
-			0xF1, 0xF0, 0xF2,
-		}
+		packed := []byte("01110000100012")
 
 		read, err := composite.Unpack(packed)
 
 		require.NoError(t, err)
-		require.Equal(t, 5, read)
+		require.Equal(t, 14, read)
 
 		packedBytes, err := composite.Pack()
 		require.NoError(t, err)
