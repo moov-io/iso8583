@@ -56,19 +56,19 @@ func DescribeWithSpecFile(paths []string, specFileName string) error {
 func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Message, error) {
 	fd, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("opening file %s: %v", path, err)
+		return nil, fmt.Errorf("opening file %s: %w", path, err)
 	}
 	defer fd.Close()
 
 	raw, err := ioutil.ReadAll(fd)
 	if err != nil {
-		return nil, fmt.Errorf("reading file %s: %v", path, err)
+		return nil, fmt.Errorf("reading file %s: %w", path, err)
 	}
 
 	message := iso8583.NewMessage(spec)
 	err = message.Unpack(raw)
 	if err != nil {
-		return message, fmt.Errorf("unpacking message: %v", err)
+		return message, fmt.Errorf("unpacking message: %w", err)
 	}
 
 	return message, nil
@@ -77,13 +77,13 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {
 	fd, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("opening file %s: %v", path, err)
+		return nil, fmt.Errorf("opening file %s: %w", path, err)
 	}
 	defer fd.Close()
 
 	raw, err := ioutil.ReadAll(fd)
 	if err != nil {
-		return nil, fmt.Errorf("reading file %s: %v", path, err)
+		return nil, fmt.Errorf("reading file %s: %w", path, err)
 	}
 
 	return specs.Builder.ImportJSON(raw)

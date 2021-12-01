@@ -246,7 +246,7 @@ func (f *Composite) pack() ([]byte, error) {
 
 		packedBytes, err := specField.Pack()
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack subfield %v: %v", tag, err)
+			return nil, fmt.Errorf("failed to pack subfield %v: %w", tag, err)
 		}
 		packed = append(packed, packedBytes...)
 	}
@@ -269,7 +269,7 @@ func (f *Composite) unpackSubfields(data []byte) (int, error) {
 		}
 		read, err := specField.Unpack(data[offset:])
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %v: %v", tag, err)
+			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
 		offset += read
 	}

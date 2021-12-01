@@ -33,7 +33,7 @@ func (h *ASCII4BytesHeader) ReadFrom(r io.Reader) (int, error) {
 	buf := make([]byte, 4)
 	read, err := io.ReadFull(r, buf)
 	if err != nil {
-		return 0, fmt.Errorf("reading header: %v", err)
+		return 0, fmt.Errorf("reading header: %w", err)
 	}
 
 	if read != 4 {
@@ -42,7 +42,7 @@ func (h *ASCII4BytesHeader) ReadFrom(r io.Reader) (int, error) {
 
 	l, err := strconv.Atoi(string(buf))
 	if err != nil {
-		return 0, fmt.Errorf("converting header to int: %v", err)
+		return 0, fmt.Errorf("converting header to int: %w", err)
 	}
 	h.Len = l
 
