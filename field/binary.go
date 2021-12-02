@@ -124,7 +124,7 @@ func (f *Binary) UnmarshalJSON(b []byte) error {
 	var v string
 	err := json.Unmarshal(b, &v)
 	if err != nil {
-		return fmt.Errorf("failed to JSON unmarshal bytes to string: %v", err)
+		return fmt.Errorf("failed to JSON unmarshal bytes to string: %w", err)
 	}
 
 	hex, err := encoding.ASCIIHexToBytes.Encode([]byte(v))
