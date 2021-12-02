@@ -1,11 +1,7 @@
 package field
 
 import (
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -14,9 +10,8 @@ const minBitmapLength = 8 // 64 bit, 8 bytes, or 16 hex digits
 const maxBitmaps = 3
 
 var _ Field = (*Bitmap)(nil)
-var _ json.Marshaler = (*Bitmap)(nil)
-var _ json.Unmarshaler = (*Bitmap)(nil)
 
+// NOTE: Bitmap does not support JSON encoding or decoding.
 type Bitmap struct {
 	spec   *Spec
 	bitmap *utils.Bitmap
@@ -180,22 +175,4 @@ func (f *Bitmap) setBitmapFields() bool {
 	}
 
 	return false
-}
-
-// Returns HEX encoded bitmap (if any)
-func (f *Bitmap) MarshalJSON() ([]byte, error) {
-	data, err := f.Bytes()
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve bytes: %w", err)
-	}
-	return json.Marshal(strings.ToUpper(hex.EncodeToString(data)))
-}
-
-// Takes in a HEX based string
-func (f *Bitmap) UnmarshalJSON(b []byte) error {
-	unqouted, err := strconv.Unquote(string(b))
-	if err != nil {
-		return fmt.Errorf("failed to unquote input: %w", err)
-	}
-	return f.SetBytes([]byte(unqouted))
 }

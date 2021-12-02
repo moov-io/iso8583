@@ -21,7 +21,7 @@ var Spec87ASCII *iso8583.MessageSpec = &iso8583.MessageSpec{
 		1: field.NewBitmap(&field.Spec{
 			Length:      16,
 			Description: "Bitmap",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		}),
 		2: field.NewString(&field.Spec{
@@ -331,7 +331,7 @@ var Spec87ASCII *iso8583.MessageSpec = &iso8583.MessageSpec{
 		52: field.NewString(&field.Spec{
 			Length:      8,
 			Description: "PIN Data",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		}),
 		53: field.NewString(&field.Spec{
@@ -403,7 +403,7 @@ var Spec87ASCII *iso8583.MessageSpec = &iso8583.MessageSpec{
 		64: field.NewString(&field.Spec{
 			Length:      8,
 			Description: "Message Authentication Code (MAC)",
-			Enc:         encoding.HexToASCII,
+			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		}),
 		90: field.NewString(&field.Spec{

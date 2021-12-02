@@ -59,8 +59,8 @@ var (
 		"BCD":        encoding.BCD,
 		"EBCDIC":     encoding.EBCDIC,
 		"Binary":     encoding.Binary,
-		"HexToASCII": encoding.HexToASCII,
-		"ASCIIToHex": encoding.ASCIIToHex,
+		"HexToASCII": encoding.BytesToASCIIHex,
+		"ASCIIToHex": encoding.ASCIIHexToBytes,
 		"LBCD":       encoding.LBCD,
 		"BerTLVTag":  encoding.BerTLVTag,
 	}

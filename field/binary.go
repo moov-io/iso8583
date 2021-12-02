@@ -3,7 +3,8 @@ package field
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
+
+	"github.com/moov-io/iso8583/encoding"
 )
 
 var _ Field = (*Binary)(nil)
@@ -112,13 +113,23 @@ func (f *Binary) SetData(data interface{}) error {
 }
 
 func (f *Binary) MarshalJSON() ([]byte, error) {
-	return json.Marshal(f.Value)
+	str, err := f.String()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(str)
 }
 
 func (f *Binary) UnmarshalJSON(b []byte) error {
-	unqouted, err := strconv.Unquote(string(b))
+	var v string
+	err := json.Unmarshal(b, &v)
 	if err != nil {
-		return fmt.Errorf("failed to unquote input: %w", err)
+		return fmt.Errorf("failed to JSON unmarshal bytes to string: %v", err)
 	}
-	return f.SetBytes([]byte(unqouted))
+
+	hex, err := encoding.ASCIIHexToBytes.Encode([]byte(v))
+	if err != nil {
+		return fmt.Errorf("failed to convert ASCII Hex string to bytes")
+	}
+	return f.SetBytes(hex)
 }

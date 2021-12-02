@@ -25,6 +25,18 @@ func TestBCD(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, []byte("230"), res)
 		require.Equal(t, 2, read)
+
+		res, read, err = BCD.Decode([]byte{0x21, 0x43, 0x55}, 4)
+
+		require.NoError(t, err)
+		require.Equal(t, []byte("2143"), res)
+		require.Equal(t, 2, read)
+
+		res, read, err = BCD.Decode([]byte{0x21, 0x43, 0xff}, 4)
+
+		require.NoError(t, err)
+		require.Equal(t, []byte("2143"), res)
+		require.Equal(t, 2, read)
 	})
 
 	t.Run("Encode", func(t *testing.T) {
