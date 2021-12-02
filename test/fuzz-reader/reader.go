@@ -40,7 +40,7 @@ func Fuzz(data []byte) int {
 
 	_, err = message.Pack()
 	if err != nil {
-		panic(fmt.Errorf("failed to pack unpacked message: %v", err))
+		panic(fmt.Errorf("failed to pack unpacked message: %w", err))
 	}
 
 	return 1

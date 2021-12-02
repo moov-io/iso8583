@@ -51,17 +51,17 @@ func (h *VMLH) WriteTo(w io.Writer) (int, error) {
 
 	err := binary.Write(&buf, binary.BigEndian, h.Len)
 	if err != nil {
-		return 0, fmt.Errorf("wrigint uint16 into writer: %v", err)
+		return 0, fmt.Errorf("wrigint uint16 into writer: %w", err)
 	}
 
 	_, err = buf.Write([]byte{0x00, 0x00})
 	if err != nil {
-		return 0, fmt.Errorf("writing reserved bytes: %v", err)
+		return 0, fmt.Errorf("writing reserved bytes: %w", err)
 	}
 
 	n, err := w.Write(buf.Bytes())
 	if err != nil {
-		return 0, fmt.Errorf("writing header: %v", err)
+		return 0, fmt.Errorf("writing header: %w", err)
 	}
 
 	return n, nil
@@ -73,13 +73,13 @@ func (h *VMLH) ReadFrom(r io.Reader) (int, error) {
 	// read full header
 	read, err := io.ReadFull(r, header)
 	if err != nil {
-		return 0, fmt.Errorf("reading 4 bytes from reader: %v", err)
+		return 0, fmt.Errorf("reading 4 bytes from reader: %w", err)
 	}
 
 	// read 2 bytes length
 	err = binary.Read(bytes.NewReader(header), binary.BigEndian, &h.Len)
 	if err != nil {
-		return 0, fmt.Errorf("reading uint16 length from reader: %v", err)
+		return 0, fmt.Errorf("reading uint16 length from reader: %w", err)
 	}
 
 	if h.Len > MaxMessageLength {
@@ -89,7 +89,7 @@ func (h *VMLH) ReadFrom(r io.Reader) (int, error) {
 	// read message format and platform
 	indicators, _, err := encoding.BCD.Decode(header[3:], 2)
 	if err != nil {
-		return 0, fmt.Errorf("decoding indicators: %v", err)
+		return 0, fmt.Errorf("decoding indicators: %w", err)
 	}
 
 	h.IsSessionControl = (indicators[0] == sessionControlIndicator)

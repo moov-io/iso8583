@@ -40,7 +40,7 @@ func (h *BCD2BytesHeader) ReadFrom(r io.Reader) (int, error) {
 	buf := make([]byte, 2)
 	read, err := io.ReadFull(r, buf)
 	if err != nil {
-		return 0, fmt.Errorf("reading header: %v", err)
+		return 0, fmt.Errorf("reading header: %w", err)
 	}
 
 	// decode 4 digits from the buf
@@ -51,7 +51,7 @@ func (h *BCD2BytesHeader) ReadFrom(r io.Reader) (int, error) {
 
 	dataLen, err := strconv.Atoi(string(bDigits))
 	if err != nil {
-		return 0, fmt.Errorf("converting string to int: %v", err)
+		return 0, fmt.Errorf("converting string to int: %w", err)
 	}
 
 	h.Len = dataLen

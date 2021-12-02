@@ -57,14 +57,14 @@ func (f *Bitmap) Pack() ([]byte, error) {
 	// here we have max possible bytes for the bitmap 8*maxBitmaps
 	data, err := f.Bytes()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve bytes: %v", err)
+		return nil, fmt.Errorf("failed to retrieve bytes: %w", err)
 	}
 
 	data = data[0 : 8*count]
 
 	packed, err := f.spec.Enc.Encode(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %v", err)
+		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
 	return packed, nil
@@ -77,7 +77,7 @@ func (f *Bitmap) Pack() ([]byte, error) {
 func (f *Bitmap) Unpack(data []byte) (int, error) {
 	minLen, _, err := f.spec.Pref.DecodeLength(minBitmapLength, data)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %v", err)
+		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
 	rawBitmap := make([]byte, 0)
@@ -87,7 +87,7 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 	for i := 0; i < maxBitmaps; i++ {
 		decoded, readDecoded, err := f.spec.Enc.Decode(data[read:], minLen)
 		if err != nil {
-			return 0, fmt.Errorf("failed to decode content for %d bitmap: %v", i+1, err)
+			return 0, fmt.Errorf("failed to decode content for %d bitmap: %w", i+1, err)
 		}
 		read += readDecoded
 

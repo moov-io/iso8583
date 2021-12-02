@@ -257,7 +257,7 @@ func (f *Composite) pack() ([]byte, error) {
 
 		packedBytes, err := field.Pack()
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack subfield %v: %v", tag, err)
+			return nil, fmt.Errorf("failed to pack subfield %v: %w", tag, err)
 		}
 		packed = append(packed, packedBytes...)
 	}

@@ -56,7 +56,7 @@ func (f *Track2) Bytes() ([]byte, error) {
 func (f *Track2) String() (string, error) {
 	b, err := f.pack()
 	if err != nil {
-		return "", fmt.Errorf("failed to encode string: %v", err)
+		return "", fmt.Errorf("failed to encode string: %w", err)
 	}
 	return string(b), nil
 }
@@ -73,12 +73,12 @@ func (f *Track2) Pack() ([]byte, error) {
 
 	packed, err := f.spec.Enc.Encode(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %v", err)
+		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %v", err)
+		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
 
 	return append(packedLength, packed...), nil
@@ -88,12 +88,12 @@ func (f *Track2) Pack() ([]byte, error) {
 func (f *Track2) Unpack(data []byte) (int, error) {
 	dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %v", err)
+		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
 	raw, read, err := f.spec.Enc.Decode(data[prefBytes:], dataLen)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode content: %v", err)
+		return 0, fmt.Errorf("failed to decode content: %w", err)
 	}
 
 	if f.spec.Pad != nil {

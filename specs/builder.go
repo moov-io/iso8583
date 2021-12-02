@@ -187,7 +187,7 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 	dummySpec := specDummy{}
 	err := json.Unmarshal(raw, &dummySpec)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshaling spec: %v", err)
+		return nil, fmt.Errorf("unmarshalling spec: %w", err)
 	}
 
 	if len(dummySpec.Fields) == 0 {
@@ -355,7 +355,7 @@ func (om orderedFieldMap) MarshalJSON() ([]byte, error) {
 	for k := range om {
 		index, err := strconv.Atoi(k)
 		if err != nil {
-			return nil, fmt.Errorf("convering field index into int: %v", err)
+			return nil, fmt.Errorf("converting field index into int: %w", err)
 		}
 		keys = append(keys, index)
 	}

@@ -133,7 +133,7 @@ func (f *Numeric) UnmarshalJSON(b []byte) error {
 	var v int
 	err := json.Unmarshal(b, &v)
 	if err != nil {
-		return fmt.Errorf("failed to JSON unmarshal bytes to int: %v", err)
+		return fmt.Errorf("failed to JSON unmarshal bytes to int: %w", err)
 	}
 	return f.SetBytes([]byte(fmt.Sprintf("%d", v)))
 }
