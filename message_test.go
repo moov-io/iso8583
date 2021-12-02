@@ -913,8 +913,7 @@ func TestMessageClone(t *testing.T) {
 				Enc:         encoding.LBCD,
 				Pad:         padding.Left('0'),
 			}),
-			// this one should be binary...
-			52: field.NewString(&field.Spec{
+			52: field.NewBinary(&field.Spec{
 				Length:      8,
 				Description: "Field 52",
 				Enc:         encoding.Binary,
@@ -990,7 +989,7 @@ func TestMessageClone(t *testing.T) {
 		F43  *field.String
 		F49  *field.Numeric
 		F50  *field.Numeric
-		F52  *field.String
+		F52  *field.Binary
 		F53  *field.Numeric
 		F55  *TestISOF55Data
 		F120 *field.String
@@ -1021,7 +1020,7 @@ func TestMessageClone(t *testing.T) {
 		F43: field.NewStringValue("Test text"),
 		F49: field.NewNumericValue(643),
 		// F50 left nil to ensure that it has not been populated in the bitmap
-		F52: field.NewStringValue(string([]byte{1, 2, 3, 4, 5, 6, 7, 8})),
+		F52: field.NewBinaryValue([]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 		F53: field.NewNumericValue(1234000000000000),
 		F55: &TestISOF55Data{
 			F9A:   field.NewStringValue("210720"),
@@ -1029,8 +1028,7 @@ func TestMessageClone(t *testing.T) {
 		},
 		F120: field.NewStringValue("Another test text"),
 	}
-	err := message.SetData(data2)
-	require.NoError(t, err)
+	require.NoError(t, message.SetData(data2))
 
 	message.MTI("0100")
 
@@ -1044,13 +1042,20 @@ func TestMessageClone(t *testing.T) {
 
 	message2, err := message.Clone()
 	require.NoError(t, err)
-	require.Equal(t, spec, message2.spec)
-	require.Equal(t, data2, message2.data)
-	require.Equal(t, message.dataValue, message2.dataValue)
+
+	require.Equal(t, message.spec, message2.spec)
 	require.Equal(t, message.Bitmap(), message2.Bitmap())
 
-	messageData := message.data.(*TestISOData)
-	message2Data := message2.data.(*TestISOData)
+	mti, err := message.GetMTI()
+	require.NoError(t, err)
+
+	mti2, err := message2.GetMTI()
+	require.NoError(t, err)
+
+	require.Equal(t, mti, mti2)
+
+	messageData := message.Data().(*TestISOData)
+	message2Data := message2.Data().(*TestISOData)
 
 	require.Equal(t, messageData.F2.Value, message2Data.F2.Value)
 	require.Equal(t, messageData.F3.F1.Value, message2Data.F3.F1.Value)
@@ -1077,4 +1082,48 @@ func TestMessageClone(t *testing.T) {
 	require.Equal(t, messageData.F55.F9A.Value, message2Data.F55.F9A.Value)
 	require.Equal(t, messageData.F55.F9F02.Value, message2Data.F55.F9F02.Value)
 	require.Equal(t, messageData.F120.Value, message2Data.F120.Value)
+
+	data2.F2 = field.NewStringValue("1234567890123456789")
+	message.SetData(data2)
+
+	require.NotEqual(t, message.data.(*TestISOData).F2, message2.data.(*TestISOData).F2)
+
+	message3, err := message2.Clone()
+	require.NoError(t, err)
+
+	require.Equal(t, message2.spec, message3.spec)
+	require.Equal(t, message2.Bitmap(), message3.Bitmap())
+
+	mti3, err := message.GetMTI()
+	require.NoError(t, err)
+
+	require.Equal(t, mti2, mti3)
+
+	message3Data := message3.Data().(*TestISOData)
+
+	require.Equal(t, message2Data.F2.Value, message3Data.F2.Value)
+	require.Equal(t, message2Data.F3.F1.Value, message3Data.F3.F1.Value)
+	require.Equal(t, message2Data.F3.F2.Value, message3Data.F3.F2.Value)
+	require.Equal(t, message2Data.F3.F3.Value, message3Data.F3.F3.Value)
+	require.Equal(t, message2Data.F4.Value, message3Data.F4.Value)
+	require.Equal(t, message2Data.F7.Value, message3Data.F7.Value)
+	require.Equal(t, message2Data.F11.Value, message3Data.F11.Value)
+	require.Equal(t, message2Data.F12.Value, message3Data.F12.Value)
+	require.Equal(t, message2Data.F13.Value, message3Data.F13.Value)
+	require.Equal(t, message2Data.F14.Value, message3Data.F14.Value)
+	require.Equal(t, message2Data.F19.Value, message3Data.F19.Value)
+	require.Equal(t, message2Data.F22.Value, message3Data.F22.Value)
+	require.Equal(t, message2Data.F25.Value, message3Data.F25.Value)
+	require.Equal(t, message2Data.F32.Value, message3Data.F32.Value)
+	require.Equal(t, message2Data.F35.Value, message3Data.F35.Value)
+	require.Equal(t, message2Data.F37.Value, message3Data.F37.Value)
+	require.Equal(t, message2Data.F41.Value, message3Data.F41.Value)
+	require.Equal(t, message2Data.F42.Value, message3Data.F42.Value)
+	require.Equal(t, message2Data.F43.Value, message3Data.F43.Value)
+	require.Equal(t, message2Data.F49.Value, message3Data.F49.Value)
+	require.Equal(t, message2Data.F52.Value, message3Data.F52.Value)
+	require.Equal(t, message2Data.F53.Value, message3Data.F53.Value)
+	require.Equal(t, message2Data.F55.F9A.Value, message3Data.F55.F9A.Value)
+	require.Equal(t, message2Data.F55.F9F02.Value, message3Data.F55.F9F02.Value)
+	require.Equal(t, message2Data.F120.Value, message3Data.F120.Value)
 }
