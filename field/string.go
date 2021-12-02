@@ -3,7 +3,6 @@ package field
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 )
 
 var _ Field = (*String)(nil)
@@ -116,9 +115,10 @@ func (f *String) MarshalJSON() ([]byte, error) {
 }
 
 func (f *String) UnmarshalJSON(b []byte) error {
-	unqouted, err := strconv.Unquote(string(b))
+	var v string
+	err := json.Unmarshal(b, &v)
 	if err != nil {
-		return fmt.Errorf("failed to unquote input: %w", err)
+		return fmt.Errorf("failed to JSON unmarshal bytes to string: %v", err)
 	}
-	return f.SetBytes([]byte(unqouted))
+	return f.SetBytes([]byte(v))
 }

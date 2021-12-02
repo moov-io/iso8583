@@ -51,7 +51,7 @@ func (p *hexVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	}
 
 	strLen := strconv.Itoa(dataLen)
-	res, err := encoding.HexToASCII.Encode([]byte(strLen))
+	res, err := encoding.BytesToASCIIHex.Encode([]byte(strLen))
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error)
 		return 0, 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", length, len(data))
 	}
 
-	bDigits, _, err := encoding.HexToASCII.Decode(data[:length], p.Digits)
+	bDigits, _, err := encoding.BytesToASCIIHex.Decode(data[:length], p.Digits)
 	if err != nil {
 		return 0, 0, err
 	}
