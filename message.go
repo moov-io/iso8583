@@ -348,7 +348,7 @@ func (m *Message) dataFieldValue(id int) reflect.Value {
 }
 
 // Clone clones the message by creating a new message from the binary
-// represenation of the original message
+// representation of the original message
 func (m *Message) Clone() (*Message, error) {
 	newMessage := NewMessage(m.spec)
 
