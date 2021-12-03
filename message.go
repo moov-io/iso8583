@@ -251,7 +251,9 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 
 func (m *Message) UnmarshalJSON(b []byte) error {
 	var data map[string]json.RawMessage
-	json.Unmarshal(b, &data)
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
 
 	for id, rawMsg := range data {
 		i, err := strconv.Atoi(id)
@@ -343,4 +345,32 @@ func (m *Message) setUnpackableDataField(id int) error {
 
 func (m *Message) dataFieldValue(id int) reflect.Value {
 	return m.dataValue.FieldByName(fmt.Sprintf("F%d", id))
+}
+
+func (m *Message) Clone() (*Message, error) {
+	newMessage := NewMessage(m.spec)
+
+	bytes, err := m.Pack()
+	if err != nil {
+		return nil, err
+	}
+
+	dataStruct := reflect.New(m.dataValue.Type()).Interface()
+
+	newMessage.SetData(dataStruct)
+
+	mti, err := m.GetMTI()
+	if err != nil {
+		return nil, err
+	}
+
+	newMessage.MTI(mti)
+	newMessage.Unpack(bytes)
+
+	_, err = newMessage.Pack()
+	if err != nil {
+		return nil, err
+	}
+
+	return newMessage, nil
 }

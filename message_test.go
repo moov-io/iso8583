@@ -747,3 +747,383 @@ func TestMessageJSON(t *testing.T) {
 	})
 
 }
+
+func TestMessageClone(t *testing.T) {
+	spec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.Binary,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			3: field.NewComposite(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
+				Subfields: map[string]field.Field{
+					"1": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"2": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "From Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"3": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "To Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
+			}),
+			4: field.NewNumeric(&field.Spec{
+				Length:      12,
+				Description: "Field 4",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			7: field.NewNumeric(&field.Spec{
+				Length:      10,
+				Description: "Field 7",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			11: field.NewNumeric(&field.Spec{
+				Length:      6,
+				Description: "Field 11",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			12: field.NewNumeric(&field.Spec{
+				Length:      6,
+				Description: "Field 12",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			13: field.NewNumeric(&field.Spec{
+				Length:      4,
+				Description: "Field 13",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			14: field.NewNumeric(&field.Spec{
+				Length:      4,
+				Description: "Field 14",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			19: field.NewNumeric(&field.Spec{
+				Length:      3,
+				Description: "Field 19",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			22: field.NewNumeric(&field.Spec{
+				Length:      3,
+				Description: "Field 22",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			25: field.NewNumeric(&field.Spec{
+				Length:      2,
+				Description: "Field 25",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			32: field.NewNumeric(&field.Spec{
+				Length:      11,
+				Description: "Field 32",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			35: field.NewString(&field.Spec{
+				Length:      37,
+				Description: "Field 35",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			37: field.NewString(&field.Spec{
+				Length:      12,
+				Description: "Field 37",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			39: field.NewString(&field.Spec{
+				Length:      2,
+				Description: "Field 39",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			41: field.NewString(&field.Spec{
+				Length:      8,
+				Description: "Field 41",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			42: field.NewString(&field.Spec{
+				Length:      15,
+				Description: "Field 42",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			43: field.NewString(&field.Spec{
+				Length:      40,
+				Description: "Field 43",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left(' '),
+			}),
+			49: field.NewNumeric(&field.Spec{
+				Length:      3,
+				Description: "Field 49",
+				Enc:         encoding.LBCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			50: field.NewNumeric(&field.Spec{
+				Length:      3,
+				Description: "Field 50",
+				Enc:         encoding.LBCD,
+				Pad:         padding.Left('0'),
+			}),
+			52: field.NewBinary(&field.Spec{
+				Length:      8,
+				Description: "Field 52",
+				Enc:         encoding.Binary,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			53: field.NewNumeric(&field.Spec{
+				Length:      16,
+				Description: "Field 53",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left(' '),
+			}),
+			// TLV
+			55: field.NewComposite(&field.Spec{
+				Length:      999,
+				Description: "ICC Data – EMV Having Multiple Tags",
+				Pref:        prefix.ASCII.LLL,
+				Tag: &field.TagSpec{
+					Enc:  encoding.BerTLVTag,
+					Sort: sort.StringsByHex,
+				},
+				Subfields: map[string]field.Field{
+					"9A": field.NewString(&field.Spec{
+						Description: "Transaction Date",
+						Enc:         encoding.Binary,
+						Pref:        prefix.BerTLV,
+					}),
+					"9F02": field.NewString(&field.Spec{
+						Description: "Amount, Authorized (Numeric)",
+						Enc:         encoding.Binary,
+						Pref:        prefix.BerTLV,
+					}),
+				},
+			}),
+			120: field.NewString(&field.Spec{
+				Length:      999,
+				Description: "Field 120",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LLL,
+			}),
+		},
+	}
+
+	type TestISOF3Data struct {
+		F1 *field.String
+		F2 *field.String
+		F3 *field.String
+	}
+
+	type TestISOF55Data struct {
+		F9A   *field.String
+		F9F02 *field.String
+	}
+
+	type TestISOData struct {
+		F2   *field.String
+		F3   *TestISOF3Data
+		F4   *field.Numeric
+		F7   *field.Numeric
+		F11  *field.Numeric
+		F12  *field.Numeric
+		F13  *field.Numeric
+		F14  *field.Numeric
+		F19  *field.Numeric
+		F22  *field.Numeric
+		F25  *field.Numeric
+		F32  *field.Numeric
+		F35  *field.String
+		F37  *field.String
+		F39  *field.String
+		F41  *field.String
+		F42  *field.String
+		F43  *field.String
+		F49  *field.Numeric
+		F50  *field.Numeric
+		F52  *field.Binary
+		F53  *field.Numeric
+		F55  *TestISOF55Data
+		F120 *field.String
+	}
+
+	message := NewMessage(spec)
+	data2 := &TestISOData{
+		F2: field.NewStringValue("4276555555555555"),
+		F3: &TestISOF3Data{
+			F1: field.NewStringValue("00"),
+			F2: field.NewStringValue("00"),
+			F3: field.NewStringValue("00"),
+		},
+		F4:  field.NewNumericValue(77700),
+		F7:  field.NewNumericValue(701111844),
+		F11: field.NewNumericValue(123),
+		F12: field.NewNumericValue(131844),
+		F13: field.NewNumericValue(701),
+		F14: field.NewNumericValue(1902),
+		F19: field.NewNumericValue(643),
+		F22: field.NewNumericValue(901),
+		F25: field.NewNumericValue(2),
+		F32: field.NewNumericValue(123456),
+		F35: field.NewStringValue("4276555555555555=12345678901234567890"),
+		F37: field.NewStringValue("987654321001"),
+		F41: field.NewStringValue("00000321"),
+		F42: field.NewStringValue("120000000000034"),
+		F43: field.NewStringValue("Test text"),
+		F49: field.NewNumericValue(643),
+		// F50 left nil to ensure that it has not been populated in the bitmap
+		F52: field.NewBinaryValue([]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+		F53: field.NewNumericValue(1234000000000000),
+		F55: &TestISOF55Data{
+			F9A:   field.NewStringValue("210720"),
+			F9F02: field.NewStringValue("000000000501"),
+		},
+		F120: field.NewStringValue("Another test text"),
+	}
+	require.NoError(t, message.SetData(data2))
+
+	message.MTI("0100")
+
+	got, err := message.Pack()
+
+	want := []byte{0x30, 0x31, 0x30, 0x30, 0xf2, 0x3c, 0x24, 0x81, 0x28, 0xe0, 0x9a, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x31, 0x36, 0x34, 0x32, 0x37, 0x36, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x37, 0x37, 0x37, 0x30, 0x30, 0x30, 0x37, 0x30, 0x31, 0x31, 0x31, 0x31, 0x38, 0x34, 0x34, 0x30, 0x30, 0x30, 0x31, 0x32, 0x33, 0x31, 0x33, 0x31, 0x38, 0x34, 0x34, 0x30, 0x37, 0x30, 0x31, 0x31, 0x39, 0x30, 0x32, 0x6, 0x43, 0x39, 0x30, 0x31, 0x30, 0x32, 0x30, 0x36, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x33, 0x37, 0x34, 0x32, 0x37, 0x36, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x3d, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x39, 0x38, 0x37, 0x36, 0x35, 0x34, 0x33, 0x32, 0x31, 0x30, 0x30, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x33, 0x32, 0x31, 0x31, 0x32, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x33, 0x34, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x54, 0x65, 0x73, 0x74, 0x20, 0x74, 0x65, 0x78, 0x74, 0x64, 0x30, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x31, 0x32, 0x33, 0x34, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x32, 0x33, 0x9a, 0x6, 0x32, 0x31, 0x30, 0x37, 0x32, 0x30, 0x9f, 0x2, 0xc, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x35, 0x30, 0x31, 0x30, 0x31, 0x37, 0x41, 0x6e, 0x6f, 0x74, 0x68, 0x65, 0x72, 0x20, 0x74, 0x65, 0x73, 0x74, 0x20, 0x74, 0x65, 0x78, 0x74}
+
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, want, got)
+
+	message2, err := message.Clone()
+	require.NoError(t, err)
+
+	require.Equal(t, message.spec, message2.spec)
+	require.Equal(t, message.Bitmap(), message2.Bitmap())
+
+	mti, err := message.GetMTI()
+	require.NoError(t, err)
+
+	mti2, err := message2.GetMTI()
+	require.NoError(t, err)
+
+	require.Equal(t, mti, mti2)
+
+	messageData := message.Data().(*TestISOData)
+	message2Data := message2.Data().(*TestISOData)
+
+	require.Equal(t, messageData.F2.Value, message2Data.F2.Value)
+	require.Equal(t, messageData.F3.F1.Value, message2Data.F3.F1.Value)
+	require.Equal(t, messageData.F3.F2.Value, message2Data.F3.F2.Value)
+	require.Equal(t, messageData.F3.F3.Value, message2Data.F3.F3.Value)
+	require.Equal(t, messageData.F4.Value, message2Data.F4.Value)
+	require.Equal(t, messageData.F7.Value, message2Data.F7.Value)
+	require.Equal(t, messageData.F11.Value, message2Data.F11.Value)
+	require.Equal(t, messageData.F12.Value, message2Data.F12.Value)
+	require.Equal(t, messageData.F13.Value, message2Data.F13.Value)
+	require.Equal(t, messageData.F14.Value, message2Data.F14.Value)
+	require.Equal(t, messageData.F19.Value, message2Data.F19.Value)
+	require.Equal(t, messageData.F22.Value, message2Data.F22.Value)
+	require.Equal(t, messageData.F25.Value, message2Data.F25.Value)
+	require.Equal(t, messageData.F32.Value, message2Data.F32.Value)
+	require.Equal(t, messageData.F35.Value, message2Data.F35.Value)
+	require.Equal(t, messageData.F37.Value, message2Data.F37.Value)
+	require.Equal(t, messageData.F41.Value, message2Data.F41.Value)
+	require.Equal(t, messageData.F42.Value, message2Data.F42.Value)
+	require.Equal(t, messageData.F43.Value, message2Data.F43.Value)
+	require.Equal(t, messageData.F49.Value, message2Data.F49.Value)
+	require.Equal(t, messageData.F52.Value, message2Data.F52.Value)
+	require.Equal(t, messageData.F53.Value, message2Data.F53.Value)
+	require.Equal(t, messageData.F55.F9A.Value, message2Data.F55.F9A.Value)
+	require.Equal(t, messageData.F55.F9F02.Value, message2Data.F55.F9F02.Value)
+	require.Equal(t, messageData.F120.Value, message2Data.F120.Value)
+
+	data2.F2 = field.NewStringValue("1234567890123456789")
+	message.SetData(data2)
+
+	require.NotEqual(t, message.data.(*TestISOData).F2, message2.data.(*TestISOData).F2)
+
+	message3, err := message2.Clone()
+	require.NoError(t, err)
+
+	require.Equal(t, message2.spec, message3.spec)
+	require.Equal(t, message2.Bitmap(), message3.Bitmap())
+
+	mti3, err := message.GetMTI()
+	require.NoError(t, err)
+
+	require.Equal(t, mti2, mti3)
+
+	message3Data := message3.Data().(*TestISOData)
+
+	require.Equal(t, message2Data.F2.Value, message3Data.F2.Value)
+	require.Equal(t, message2Data.F3.F1.Value, message3Data.F3.F1.Value)
+	require.Equal(t, message2Data.F3.F2.Value, message3Data.F3.F2.Value)
+	require.Equal(t, message2Data.F3.F3.Value, message3Data.F3.F3.Value)
+	require.Equal(t, message2Data.F4.Value, message3Data.F4.Value)
+	require.Equal(t, message2Data.F7.Value, message3Data.F7.Value)
+	require.Equal(t, message2Data.F11.Value, message3Data.F11.Value)
+	require.Equal(t, message2Data.F12.Value, message3Data.F12.Value)
+	require.Equal(t, message2Data.F13.Value, message3Data.F13.Value)
+	require.Equal(t, message2Data.F14.Value, message3Data.F14.Value)
+	require.Equal(t, message2Data.F19.Value, message3Data.F19.Value)
+	require.Equal(t, message2Data.F22.Value, message3Data.F22.Value)
+	require.Equal(t, message2Data.F25.Value, message3Data.F25.Value)
+	require.Equal(t, message2Data.F32.Value, message3Data.F32.Value)
+	require.Equal(t, message2Data.F35.Value, message3Data.F35.Value)
+	require.Equal(t, message2Data.F37.Value, message3Data.F37.Value)
+	require.Equal(t, message2Data.F41.Value, message3Data.F41.Value)
+	require.Equal(t, message2Data.F42.Value, message3Data.F42.Value)
+	require.Equal(t, message2Data.F43.Value, message3Data.F43.Value)
+	require.Equal(t, message2Data.F49.Value, message3Data.F49.Value)
+	require.Equal(t, message2Data.F52.Value, message3Data.F52.Value)
+	require.Equal(t, message2Data.F53.Value, message3Data.F53.Value)
+	require.Equal(t, message2Data.F55.F9A.Value, message3Data.F55.F9A.Value)
+	require.Equal(t, message2Data.F55.F9F02.Value, message3Data.F55.F9F02.Value)
+	require.Equal(t, message2Data.F120.Value, message3Data.F120.Value)
+}
