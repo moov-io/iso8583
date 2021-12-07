@@ -19,8 +19,8 @@ const (
 	// IssuerResponseToAuthorizationAdvice is a confirmation of receipt of authorization advice
 	IssuerResponseToAuthorizationAdvice MesssageTypeIndicator = "0130"
 
-	// AuthorizationAcknowledgement indicates that an Authorization Response was received
-	AuthorizationAcknowledgement MesssageTypeIndicator = "0180"
+	// AuthorizationPositiveAcknowledgement indicates that an Authorization Response was received
+	AuthorizationPositiveAcknowledgement MesssageTypeIndicator = "0180"
 	
 	// AuthorizationNegativeAcknowledgement indicates that an Authorization Response or Reversal Response was late or invalid
 	AuthorizationNegativeAcknowledgement MesssageTypeIndicator = "0190"
@@ -49,7 +49,7 @@ const (
 	// AcquirerReversalRequest is used to reverse a transaction
 	AcquirerReversalRequest MesssageTypeIndicator = "0400"
 
-	// AcquirerReversalResponse describes the result of a reversal request
+	// AcquirerReversalResponse is a response to a reversal request
 	AcquirerReversalResponse MesssageTypeIndicator = "0410"
 	
 	// AcquirerReversalAdvice
