@@ -13,7 +13,7 @@ const (
 	// AuthorizationAdvice is when the point-of-sale device breaks down and you have to sign a voucher
 	AuthorizationAdvice MesssageTypeIndicator = "0120"
 
-	// AuthorizationAdviceRepeat used top repeat	If the advice times out
+	// AuthorizationAdviceRepeat used to repeat if the advice times out
 	AuthorizationAdviceRepeat MesssageTypeIndicator = "0121"
 
 	// IssuerResponseToAuthorizationAdvice is a confirmation of receipt of authorization advice
@@ -31,18 +31,21 @@ const (
 	// AcquirerFinancialAdviceRepeat is used if the advice times out
 	AcquirerFinancialAdviceRepeat MesssageTypeIndicator = "0221"
 
-	// IssuerResponseToFinancialAdvice	is a confirmation of receipt of financial advice
+	// IssuerResponseToFinancialAdvice is a confirmation of receipt of financial advice
 	IssuerResponseToFinancialAdvice MesssageTypeIndicator = "0230"
 
 	// BatchUpload is a file update/transfer advice
 	BatchUpload MesssageTypeIndicator = "0320"
 
-	// BatchUploadResponse	is a file update/transfer advice response
+	// BatchUploadResponse is a file update/transfer advice response
 	BatchUploadResponse MesssageTypeIndicator = "0330"
 
-	// AcquirerReversalRequest is used to reverses a transaction
+	// AcquirerReversalRequest is used to reverse a transaction
 	AcquirerReversalRequest MesssageTypeIndicator = "0400"
 
+	// AcquirerReversalResponse denotes the disposition of a reversal request
+	AcquirerReversalResponse MesssageTypeIndicator = "0410"
+	
 	// AcquirerReversalAdvice
 	AcquirerReversalAdvice MesssageTypeIndicator = "0420"
 
