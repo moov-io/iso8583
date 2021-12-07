@@ -49,7 +49,7 @@ const (
 	// AcquirerReversalRequest is used to reverse a transaction
 	AcquirerReversalRequest MesssageTypeIndicator = "0400"
 
-	// AcquirerReversalResponse denotes the disposition of a reversal request
+	// AcquirerReversalResponse describes the result of a reversal request
 	AcquirerReversalResponse MesssageTypeIndicator = "0410"
 	
 	// AcquirerReversalAdvice
@@ -61,6 +61,18 @@ const (
 	// BatchSettlementResponse is a card acceptor reconciliation request response
 	BatchSettlementResponse MesssageTypeIndicator = "0510"
 
+	// AdministrativeRequest is a message delivering administrative data, often free-form and potentially indicating a failure message
+	AdministrativeRequest MesssageTypeIndicator = "0600"
+	
+	// AdministrativeResponse is a response to an administrative request
+	AdministrativeResponse MesssageTypeIndicator = "0610"
+	
+	// AdministrativeAdvice is an administrative request with stronger delivery guarantees
+	AdministrativeAdvice MesssageTypeIndicator = "0620"
+	
+	// AdministrativeAdviceResponse is a response to an administrative advice
+	AdministrativeAdviceResponse MesssageTypeIndicator = "0630"
+	
 	// NetworkManagementRequest is used in hypercom terminals initialize request. Echo test, logon, logoff etc
 	NetworkManagementRequest MesssageTypeIndicator = "0800"
 
