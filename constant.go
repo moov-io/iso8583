@@ -19,6 +19,12 @@ const (
 	// IssuerResponseToAuthorizationAdvice is a confirmation of receipt of authorization advice
 	IssuerResponseToAuthorizationAdvice MesssageTypeIndicator = "0130"
 
+	// AuthorizationAcknowledgement indicates that an Authorization Response was received
+	AuthorizationAcknowledgement MesssageTypeIndicator = "0180"
+	
+	// AuthorizationNegativeAcknowledgement indicates that an Authorization Response or Reversal Response was late or invalid
+	AuthorizationNegativeAcknowledgement MesssageTypeIndicator = "0190"
+	
 	// AcquirerFinancialRequest is a request for funds, typically from an ATM or pinned point-of-sale device
 	AcquirerFinancialRequest MesssageTypeIndicator = "0200"
 
