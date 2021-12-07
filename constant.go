@@ -21,10 +21,10 @@ const (
 
 	// AuthorizationPositiveAcknowledgement indicates that an Authorization Response was received
 	AuthorizationPositiveAcknowledgement MesssageTypeIndicator = "0180"
-	
+
 	// AuthorizationNegativeAcknowledgement indicates that an Authorization Response or Reversal Response was late or invalid
 	AuthorizationNegativeAcknowledgement MesssageTypeIndicator = "0190"
-	
+
 	// AcquirerFinancialRequest is a request for funds, typically from an ATM or pinned point-of-sale device
 	AcquirerFinancialRequest MesssageTypeIndicator = "0200"
 
@@ -51,7 +51,7 @@ const (
 
 	// AcquirerReversalResponse is a response to a reversal request
 	AcquirerReversalResponse MesssageTypeIndicator = "0410"
-	
+
 	// AcquirerReversalAdvice
 	AcquirerReversalAdvice MesssageTypeIndicator = "0420"
 
@@ -63,16 +63,16 @@ const (
 
 	// AdministrativeRequest is a message delivering administrative data, often free-form and potentially indicating a failure message
 	AdministrativeRequest MesssageTypeIndicator = "0600"
-	
+
 	// AdministrativeResponse is a response to an administrative request
 	AdministrativeResponse MesssageTypeIndicator = "0610"
-	
+
 	// AdministrativeAdvice is an administrative request with stronger delivery guarantees
 	AdministrativeAdvice MesssageTypeIndicator = "0620"
-	
+
 	// AdministrativeAdviceResponse is a response to an administrative advice
 	AdministrativeAdviceResponse MesssageTypeIndicator = "0630"
-	
+
 	// NetworkManagementRequest is used in hypercom terminals initialize request. Echo test, logon, logoff etc
 	NetworkManagementRequest MesssageTypeIndicator = "0800"
 
