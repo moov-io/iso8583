@@ -76,14 +76,21 @@ var (
 	}
 
 	PaddersIntToExt = map[string]string{
-		"leftPadder": "Left",
-		"nonePadder": "None",
+		"leftPadder":  "Left",
+		"rightPadder": "Right",
+		"nonePadder":  "None",
 	}
 
 	PaddersExtToInt = map[string]func(pad string) padding.Padder{
 		"Left": func(pad string) padding.Padder {
 			if runes := []rune(pad); len(runes) == 1 {
 				return padding.Left(runes[0])
+			}
+			return nil
+		},
+		"Right": func(pad string) padding.Padder {
+			if runes := []rune(pad); len(runes) == 1 {
+				return padding.Right(runes[0])
 			}
 			return nil
 		},
