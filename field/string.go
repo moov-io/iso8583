@@ -2,6 +2,7 @@ package field
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -95,6 +96,21 @@ func (f *String) Unpack(data []byte) (int, error) {
 	}
 
 	return read + prefBytes, nil
+}
+
+func (f *String) GetData(data interface{}) error {
+	if data == nil {
+		return nil
+	}
+
+	str, ok := data.(*String)
+	if !ok {
+		return errors.New("data does not match required *String type")
+	}
+
+	str.Value = f.Value
+
+	return nil
 }
 
 func (f *String) SetData(data interface{}) error {

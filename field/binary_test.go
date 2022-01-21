@@ -68,6 +68,16 @@ func TestBinaryField(t *testing.T) {
 		require.Equal(t, in, packed)
 	})
 
+	t.Run("GetData gets data from the field", func(t *testing.T) {
+		bin := NewBinaryValue([]byte{1, 2, 3})
+		val := &Binary{}
+
+		err := bin.GetData(val)
+
+		require.NoError(t, err)
+		require.Equal(t, []byte{1, 2, 3}, val.Value)
+	})
+
 	t.Run("SetBytes sets data to the data field", func(t *testing.T) {
 		bin := NewBinary(spec)
 		data := &Binary{}

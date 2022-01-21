@@ -2,6 +2,7 @@ package field
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -99,19 +100,34 @@ func (f *Binary) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
+func (f *Binary) GetData(data interface{}) error {
+	if data == nil {
+		return nil
+	}
+
+	bin, ok := data.(*Binary)
+	if !ok {
+		return errors.New("data does not match required *Binary type")
+	}
+
+	bin.Value = f.Value
+
+	return nil
+}
+
 func (f *Binary) SetData(data interface{}) error {
 	if data == nil {
 		return nil
 	}
 
-	str, ok := data.(*Binary)
+	bin, ok := data.(*Binary)
 	if !ok {
 		return fmt.Errorf("data does not match required *Binary type")
 	}
 
-	f.data = str
-	if str.Value != nil {
-		f.Value = str.Value
+	f.data = bin
+	if bin.Value != nil {
+		f.Value = bin.Value
 	}
 	return nil
 }

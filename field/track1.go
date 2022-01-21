@@ -115,6 +115,27 @@ func (f *Track1) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
+func (f *Track1) GetData(data interface{}) error {
+	if data == nil {
+		return nil
+	}
+
+	track, ok := data.(*Track1)
+	if !ok {
+		return fmt.Errorf("data does not match required *Track1 type")
+	}
+
+	track.FixedLength = f.FixedLength
+	track.FormatCode = f.FormatCode
+	track.PrimaryAccountNumber = f.PrimaryAccountNumber
+	track.Name = f.Name
+	track.ExpirationDate = f.ExpirationDate
+	track.ServiceCode = f.ServiceCode
+	track.DiscretionaryData = f.DiscretionaryData
+
+	return nil
+}
+
 func (f *Track1) SetData(data interface{}) error {
 	if data == nil {
 		return nil

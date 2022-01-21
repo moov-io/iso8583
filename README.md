@@ -212,13 +212,13 @@ type ISO87Data struct {
 }
 
 message := NewMessage(spec)
-message.SetData(&ISO87Data{})
-
 // let's unpack binary message
 err := message.Unpack(rawMessage)
 
-// to get access to typed data we have to get Data from the message and convert it into our ISO87Data type
-data := message.Data().(*ISO87Data)
+// get typed data
+data := &ISO87Data{}
+err = message.GetData(data)
+// handle error
 
 // now you have typed values
 data.F2.Value // is a string "4242424242424242"
