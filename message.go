@@ -41,7 +41,7 @@ func NewMessage(spec *MessageSpec) *Message {
 	}
 }
 
-// This method will be deprecated in the next release
+// Deprecated. Use GetData instead.
 func (m *Message) Data() interface{} {
 	return m.data
 }
