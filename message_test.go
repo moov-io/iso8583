@@ -1,7 +1,9 @@
 package iso8583
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/franizus/iso8583/encoding"
@@ -490,6 +492,225 @@ func TestPackUnpack(t *testing.T) {
 	})
 }
 
+func TestPackUnpack_ThirdBitmap(t *testing.T) {
+	MessageSpecification := getTestSpec(t)
+
+	type F62 struct {
+		F2 *field.String
+	}
+
+	type F63 struct {
+		F1 *field.String
+		F2 *field.String
+	}
+
+	type IsoMessageData struct {
+		F0   *field.String
+		F2   *field.String
+		F3   *field.String
+		F4   *field.String
+		F7   *field.String
+		F11  *field.String
+		F12  *field.String
+		F13  *field.String
+		F14  *field.String
+		F18  *field.String
+		F19  *field.String
+		F22  *field.String
+		F23  *field.String
+		F25  *field.String
+		F32  *field.String
+		F35  *field.String
+		F37  *field.String
+		F41  *field.String
+		F42  *field.String
+		F43  *field.String
+		F48  *field.String
+		F49  *field.String
+		F55  *field.String
+		F60  *field.String
+		F62  *F62
+		F63  *F63
+		F104 *field.String
+		F135 *field.String
+	}
+
+	type DataF62 struct {
+		F2 string
+	}
+
+	type DataF63 struct {
+		F1 string
+		F2 string
+	}
+
+	type Data struct {
+		F2   string
+		F3   string
+		F4   string
+		F7   string
+		F11  string
+		F12  string
+		F13  string
+		F14  string
+		F18  string
+		F19  string
+		F22  string
+		F23  string
+		F25  string
+		F32  string
+		F35  string
+		F37  string
+		F41  string
+		F42  string
+		F43  string
+		F48  string
+		F49  string
+		F55  string
+		F60  string
+		F62  *DataF62
+		F63  *DataF63
+		F104 string
+		F135 string
+	}
+
+	data := &Data{
+		F2:  "4761340000000019",
+		F3:  "000000",
+		F4:  "1000",
+		F7:  "0119163908",
+		F11: "98",
+		F12: "113908",
+		F13: "0119",
+		F14: "2212",
+		F18: "5999",
+		F19: "0840",
+		F22: "0510",
+		F23: "001",
+		F25: "00",
+		F32: "12345678901",
+		F35: "4761340000000019=221212312345129",
+		F37: "201916000098",
+		F41: "3.3.1   ",
+		F42: "CARD ACCEPTOR  ",
+		F43: "ACQUIRER NAME            CITY NAME    US",
+		F48: "FIELD 48",
+		F49: "840",
+		F55: "0100569F3303204000950580000100009F37049BADBCAB9F100706010A03A000009F26080123456789ABCDEF9F360200FF820200009C01009F1A0208409A030101019F02060000000123005F2A0208409F0306000000000000",
+		F60: "05000010",
+		F62: &DataF62{F2: "00000000"},
+		F63: &DataF63{
+			F1: "0000",
+			F2: "0002",
+		},
+		F104: "6900030101F3",
+		F135: "1234567890",
+	}
+
+	t.Run("should pack message successfully", func(t *testing.T) {
+		msg := NewMessage(MessageSpecification)
+		msg.MTI("0100")
+
+		f55, _ := hex.DecodeString(data.F55)
+		f104, _ := hex.DecodeString(data.F104)
+		f135, _ := hex.DecodeString(data.F135)
+
+		msgData := &IsoMessageData{
+			F2:  field.NewStringValue(data.F2),
+			F3:  field.NewStringValue(data.F3),
+			F4:  field.NewStringValue(data.F4),
+			F7:  field.NewStringValue(data.F7),
+			F11: field.NewStringValue(data.F11),
+			F12: field.NewStringValue(data.F12),
+			F13: field.NewStringValue(data.F13),
+			F14: field.NewStringValue(data.F14),
+			F18: field.NewStringValue(data.F18),
+			F19: field.NewStringValue(data.F19),
+			F22: field.NewStringValue(data.F22),
+			F23: field.NewStringValue(data.F23),
+			F25: field.NewStringValue(data.F25),
+			F32: field.NewStringValue(data.F32),
+			F35: field.NewStringValue(data.F35),
+			F37: field.NewStringValue(data.F37),
+			F41: field.NewStringValue(data.F41),
+			F42: field.NewStringValue(data.F42),
+			F43: field.NewStringValue(data.F43),
+			F48: field.NewStringValue(data.F48),
+			F49: field.NewStringValue(data.F49),
+			F55: field.NewStringValue(string(f55)),
+			F60: field.NewStringValue(data.F60),
+			F62: &F62{
+				F2: field.NewStringValue(data.F62.F2),
+			},
+			F63: &F63{
+				F1: field.NewStringValue(data.F63.F1),
+				F2: field.NewStringValue(data.F63.F2),
+			},
+			F104: field.NewStringValue(string(f104)),
+			F135: field.NewStringValue(string(f135)),
+		}
+
+		msg.SetData(msgData)
+
+		got, err := msg.Pack()
+
+		want := "0100f23c668128e18216800000000100000002000000000000001047613400000000190000000000000010000119163908000098113908011922125999084005100001000b012345678901204761340000000019d221212312345129f2f0f1f9f1f6f0f0f0f0f9f8f34bf34bf1404040c3c1d9c440c1c3c3c5d7e3d6d94040c1c3d8e4c9d9c5d940d5c1d4c5404040404040404040404040c3c9e3e840d5c1d4c540404040e4e208c6c9c5d3c440f4f80840590100569f3303204000950580000100009f37049badbcab9f100706010a03a000009f26080123456789abcdef9f360200ff820200009c01009f1a0208409a030101019f02060000000123005f2a0208409f030600000000000004050000100c40000000000000000000000007c0000000000002066900030101f3051234567890"
+
+		require.NoError(t, err)
+		require.Equal(t, want, hex.EncodeToString(got))
+	})
+
+	t.Run("should unpack message successfully", func(t *testing.T) {
+		message := NewMessage(MessageSpecification)
+		msg := &IsoMessageData{}
+
+		isoFrame := "0100f23c668128e18216800000000100000002000000000000001047613400000000190000000000000010000119163908000098113908011922125999084005100001000b012345678901204761340000000019d221212312345129f2f0f1f9f1f6f0f0f0f0f9f8f34bf34bf1404040c3c1d9c440c1c3c3c5d7e3d6d94040c1c3d8e4c9d9c5d940d5c1d4c5404040404040404040404040c3c9e3e840d5c1d4c540404040e4e208c6c9c5d3c440f4f80840590100569f3303204000950580000100009f37049badbcab9f100706010a03a000009f26080123456789abcdef9f360200ff820200009c01009f1a0208409a030101019f02060000000123005f2a0208409f030600000000000004050000100c40000000000000000000000007c0000000000002066900030101f3051234567890"
+
+		msgBytes, err := hex.DecodeString(isoFrame)
+		require.NoError(t, err)
+
+		err = message.SetData(msg)
+		require.NoError(t, err)
+
+		err = message.Unpack(msgBytes)
+		require.NoError(t, err)
+
+		f55 := hex.EncodeToString([]byte(msg.F55.Value))
+		f104 := hex.EncodeToString([]byte(msg.F104.Value))
+		f135 := hex.EncodeToString([]byte(msg.F135.Value))
+
+		require.Equal(t, data.F2, msg.F2.Value)
+		require.Equal(t, data.F3, msg.F3.Value)
+		require.Equal(t, data.F4, msg.F4.Value)
+		require.Equal(t, data.F7, msg.F7.Value)
+		require.Equal(t, data.F11, msg.F11.Value)
+		require.Equal(t, data.F12, msg.F12.Value)
+		require.Equal(t, data.F13, msg.F13.Value)
+		require.Equal(t, data.F14, msg.F14.Value)
+		require.Equal(t, data.F18, msg.F18.Value)
+		require.Equal(t, data.F19, msg.F19.Value)
+		require.Equal(t, data.F22, msg.F22.Value)
+		require.Equal(t, data.F23, msg.F23.Value)
+		require.Equal(t, data.F25, msg.F25.Value)
+		require.Equal(t, data.F32, msg.F32.Value)
+		require.Equal(t, data.F35, msg.F35.Value)
+		require.Equal(t, data.F37, msg.F37.Value)
+		require.Equal(t, data.F41, msg.F41.Value)
+		require.Equal(t, data.F42, strings.ToUpper(msg.F42.Value))
+		require.Equal(t, data.F43, strings.ToUpper(msg.F43.Value))
+		require.Equal(t, data.F48, strings.ToUpper(msg.F48.Value))
+		require.Equal(t, data.F49, msg.F49.Value)
+		require.Equal(t, data.F55, strings.ToUpper(f55))
+		require.Equal(t, data.F60, msg.F60.Value)
+		require.Equal(t, data.F62.F2, msg.F62.F2.Value)
+		require.Equal(t, data.F63.F1, msg.F63.F1.Value)
+		require.Equal(t, data.F63.F2, msg.F63.F2.Value)
+		require.Equal(t, data.F104, strings.ToUpper(f104))
+		require.Equal(t, data.F135, f135)
+	})
+
+}
+
 func TestMessageJSON(t *testing.T) {
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
@@ -590,4 +811,264 @@ func TestMessageJSON(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, want, string(got))
 	})
+}
+
+func TestIsBitmapFlag(t *testing.T) {
+	t.Run("should return true because 1 is the first bit of the first bitmap", func(t *testing.T) {
+		got := IsBitmapFlag(1)
+		require.True(t, got)
+	})
+
+	t.Run("should return true because 65 is the first bit of the second bitmap", func(t *testing.T) {
+		got := IsBitmapFlag(65)
+		require.True(t, got)
+	})
+
+	t.Run("should return true because is 129 the first bit of the third bitmap", func(t *testing.T) {
+		got := IsBitmapFlag(129)
+		require.True(t, got)
+	})
+
+	t.Run("should return false because 7 is not the first bit of the bitmap", func(t *testing.T) {
+		got := IsBitmapFlag(7)
+		require.False(t, got)
+	})
+
+	t.Run("should return false because 69 is not the first bit of the bitmap", func(t *testing.T) {
+		got := IsBitmapFlag(69)
+		require.False(t, got)
+	})
+
+	t.Run("should return false because 135 is not the first bit of the bitmap", func(t *testing.T) {
+		got := IsBitmapFlag(135)
+		require.False(t, got)
+	})
+}
+
+func getTestSpec(t *testing.T) *MessageSpec {
+	t.Helper()
+	return &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.Binary,
+				Pref:        prefix.Binary.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.BCD,
+				Pref:        prefix.Binary.LL,
+				CountT:      "1",
+			}),
+			3: field.NewString(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			4: field.NewString(&field.Spec{
+				Length:      12,
+				Description: "Transaction Amount",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			7: field.NewString(&field.Spec{
+				Length:      10,
+				Description: "Transmission Date & Time",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			9: field.NewString(&field.Spec{
+				Length:      8,
+				Description: "Conversion Rate, Settlement",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			11: field.NewString(&field.Spec{
+				Length:      6,
+				Description: "Systems Trace Audit Number (STAN)",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			12: field.NewString(&field.Spec{
+				Length:      6,
+				Description: "Local Transaction Time",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			13: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Local Transaction Date",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			14: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Expiration Date",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			18: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Merchant Type",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			19: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Acquiring Institution Country Code",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			22: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Point of Service Entry Mode Code",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			23: field.NewString(&field.Spec{
+				Length:      3,
+				Description: "Card Sequence Number",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			25: field.NewString(&field.Spec{
+				Length:      2,
+				Description: "Point of Service Condition Code",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			32: field.NewString(&field.Spec{
+				Length:      11,
+				Description: "Acquiring Institutions ID Code",
+				Enc:         encoding.BCD,
+				Pref:        prefix.Binary.LL,
+				CountT:      "1",
+			}),
+			35: field.NewString(&field.Spec{
+				Length:      37,
+				Description: "Track 2 Data",
+				Enc:         encoding.BCD,
+				Pref:        prefix.Binary.LL,
+				CountT:      "1",
+			}),
+			37: field.NewString(&field.Spec{
+				Length:      12,
+				Description: "Retrieval Reference Number",
+				Enc:         encoding.EBCDIC,
+				Pref:        prefix.EBCDIC.Fixed,
+			}),
+			41: field.NewString(&field.Spec{
+				Length:      8,
+				Description: "Card Acceptor Terminal ID",
+				Enc:         encoding.EBCDIC,
+				Pref:        prefix.EBCDIC.Fixed,
+			}),
+			42: field.NewString(&field.Spec{
+				Length:      15,
+				Description: "Card Acceptor ID Code",
+				Enc:         encoding.EBCDIC,
+				Pref:        prefix.EBCDIC.Fixed,
+				Pad:         padding.Left(' '),
+			}),
+			43: field.NewString(&field.Spec{
+				Length:      40,
+				Description: "Card Acceptor Name/Location",
+				Enc:         encoding.EBCDIC,
+				Pref:        prefix.EBCDIC.Fixed,
+			}),
+			48: field.NewString(&field.Spec{
+				Length:      255,
+				Description: "Additional Data-Private",
+				Enc:         encoding.EBCDIC,
+				Pref:        prefix.Binary.LLL,
+			}),
+			49: field.NewString(&field.Spec{
+				Length:      3,
+				Description: "Transaction Currency Code",
+				Enc:         encoding.BCD,
+				Pref:        prefix.BCD.Fixed,
+			}),
+			55: field.NewString(&field.Spec{
+				Length:      510, // TODO fix on release
+				Description: "Integrated Circuit Card (ICC) Related Data",
+				Enc:         encoding.Binary,
+				Pref:        prefix.Binary.LLL,
+			}),
+			60: field.NewString(&field.Spec{
+				Length:      12,
+				Description: "Additional POS Information",
+				Enc:         encoding.BCD,
+				Pref:        prefix.Binary.LL,
+				CountT:      "2",
+			}),
+			62: field.NewComposite(&field.Spec{
+				Length:      256,
+				Description: "Custom Payment Service Fields (Bitmap Format)",
+				Pref:        prefix.Binary.LL,
+				HasBitmap:   true,
+				Fields: map[int]field.Field{
+					0: field.NewBitmap(&field.Spec{
+						Length:      8,
+						Description: "Bitmap 62",
+						Enc:         encoding.Binary,
+						Pref:        prefix.Binary.Fixed,
+					}),
+					2: field.NewString(&field.Spec{
+						Length:      8,
+						Description: "Transaction Identifier",
+						Enc:         encoding.BCD,
+						Pref:        prefix.BCD.Fixed,
+					}),
+				},
+			}),
+			63: field.NewComposite(&field.Spec{
+				Length:      256,
+				Description: "Reserved Private Field Bitmap",
+				Pref:        prefix.Binary.LL,
+				HasBitmap:   true,
+				Fields: map[int]field.Field{
+					0: field.NewBitmap(&field.Spec{
+						Length:      3,
+						Description: "Bitmap 63",
+						Enc:         encoding.Binary,
+						Pref:        prefix.Binary.Fixed,
+					}),
+					1: field.NewString(&field.Spec{
+						Length:      4,
+						Description: "Network ID",
+						Enc:         encoding.BCD,
+						Pref:        prefix.BCD.Fixed,
+					}),
+					2: field.NewString(&field.Spec{
+						Length:      4,
+						Description: "Time (Preauth Time Limit)",
+						Enc:         encoding.BCD,
+						Pref:        prefix.BCD.Fixed,
+					}),
+				},
+			}),
+			104: field.NewString(&field.Spec{
+				Length:      255,
+				Description: "Transaction Description & Transaction-Specific Data",
+				Enc:         encoding.Binary,
+				Pref:        prefix.Binary.LLL,
+			}),
+			135: field.NewString(&field.Spec{
+				Length:      30,
+				Description: "Issuer Discretionary Data",
+				Enc:         encoding.Binary,
+				Pref:        prefix.Binary.LLL,
+			}),
+		},
+	}
 }

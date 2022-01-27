@@ -9,6 +9,10 @@ import (
 	"github.com/franizus/iso8583/field"
 )
 
+const (
+	bitmapLength = 64
+)
+
 type Message struct {
 	spec      *MessageSpec
 	data      interface{}
@@ -189,7 +193,7 @@ func (m *Message) Unpack(src []byte) error {
 	off += read
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
-		if m.Bitmap().IsSet(i) {
+		if m.Bitmap().IsSet(i) && !IsBitmapFlag(i) {
 			fl, ok := m.fields[i]
 			if !ok {
 				return fmt.Errorf("failed to unpack field %d: no specification found", i)
@@ -292,4 +296,12 @@ func (m *Message) setUnpackableDataField(id int) error {
 
 func (m *Message) dataFieldValue(id int) reflect.Value {
 	return m.dataValue.FieldByName(fmt.Sprintf("F%d", id))
+}
+
+// IsBitmapFlag validate if field is a bitmap flag
+// The presence of the second bitmap is defined in the first bit of the first bitmap (bit 1).
+// The presence of the third bitmap is defined in the first bit of the second bitmap (bit 65).
+// The presence of the fourth bitmap is defined in the first bit of the third bitmap (bit 129).
+func IsBitmapFlag(i int) bool {
+	return (i % bitmapLength) == 1
 }
