@@ -108,7 +108,7 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 		dataFieldName := dataStruct.Type().Field(i).Name
 
 		// skip struct field if its name starts not from F
-		if dataFieldName[0:1] != "F" {
+		if len(dataFieldName) == 0 || dataFieldName[0:1] != "F" {
 			continue
 		}
 

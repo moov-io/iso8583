@@ -81,9 +81,6 @@ func TestDecode(t *testing.T) {
 			F2 *field.String
 			F3 *TestISOF3Data
 			F4 *field.String
-
-			// test should not fail if we have such field name
-			Name *field.String
 		}
 
 		message := NewMessage(spec)
@@ -115,5 +112,32 @@ func TestDecode(t *testing.T) {
 
 		err = Unmarshal(message, nil)
 		require.Error(t, err)
+	})
+
+	t.Run("Unmarshal should not panic when field names no not follow FNN pattern", func(t *testing.T) {
+		type TestISOF3Data struct {
+			A  string
+			F  string
+			F1 *field.String
+			F2 *field.String
+			F3 *field.String
+		}
+
+		type ISO87Data struct {
+			F0   *field.String
+			F2   *field.String
+			F3   *TestISOF3Data
+			F4   *field.String
+			Name *field.String
+		}
+		message := NewMessage(spec)
+
+		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
+		err := message.Unpack([]byte(rawMsg))
+
+		require.NoError(t, err)
+
+		err = Unmarshal(message, &ISO87Data{})
+		require.NoError(t, err)
 	})
 }
