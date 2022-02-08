@@ -1,11 +1,10 @@
 package iso8583
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
-
-	"github.com/pkg/errors"
 )
 
 // Unmarshal traverses the message fields recursively and for each field, sets
@@ -36,7 +35,7 @@ func Unmarshal(message *Message, v interface{}) error {
 		indexStr := dataFieldName[1:]
 		fieldIndex, err := strconv.Atoi(indexStr)
 		if err != nil {
-			return errors.Wrap(err, "converting field intex into int")
+			return fmt.Errorf("converting field intex into int: %w", err)
 		}
 
 		// we can get data only if field value is set

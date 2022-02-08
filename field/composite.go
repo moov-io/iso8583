@@ -2,12 +2,12 @@ package field
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/sort"
-	"github.com/pkg/errors"
 )
 
 var _ Field = (*Composite)(nil)
