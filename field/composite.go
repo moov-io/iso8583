@@ -90,8 +90,8 @@ func (f *Composite) SetSpec(spec *Spec) {
 	f.orderedSpecFieldTags = orderedKeys(spec.Subfields, spec.Tag.Sort)
 }
 
-func (f *Composite) GetData(data interface{}) error {
-	rv := reflect.ValueOf(data)
+func (f *Composite) UnmarshalValue(v interface{}) error {
+	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("data is not a pointer or nil")
 	}
@@ -124,7 +124,7 @@ func (f *Composite) GetData(data interface{}) error {
 			dataField.Set(reflect.New(dataField.Type().Elem()))
 		}
 
-		err := messageField.GetData(dataField.Interface())
+		err := messageField.UnmarshalValue(dataField.Interface())
 		if err != nil {
 			return fmt.Errorf("failed to get data from field %s: %w", tag, err)
 		}

@@ -170,8 +170,8 @@ func TestComposite_SetData(t *testing.T) {
 	})
 }
 
-func TestCompositeFieldGetData(t *testing.T) {
-	t.Run("GetData gets data for composite field", func(t *testing.T) {
+func TestCompositeFieldUnmarshalValue(t *testing.T) {
+	t.Run("UnmarshalValue gets data for composite field", func(t *testing.T) {
 		// first, we need to populate fields of composite field
 		// we will do it by packing the field
 		composite := NewComposite(tlvTestSpec)
@@ -185,7 +185,7 @@ func TestCompositeFieldGetData(t *testing.T) {
 		require.NoError(t, err)
 
 		data := &TLVTestData{}
-		err = composite.GetData(data)
+		err = composite.UnmarshalValue(data)
 		require.NoError(t, err)
 
 		require.Equal(t, "210720", data.F9A.Value)

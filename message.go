@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/moov-io/iso8583/field"
-	"github.com/pkg/errors"
 )
 
 var _ json.Marshaler = (*Message)(nil)
@@ -41,7 +40,7 @@ func NewMessage(spec *MessageSpec) *Message {
 	}
 }
 
-// Deprecated. Use GetData instead.
+// Deprecated. Use iso8583.Unmarshal instead.
 func (m *Message) Data() interface{} {
 	return m.data
 }
@@ -64,56 +63,6 @@ func (m *Message) SetData(data interface{}) error {
 	}
 
 	m.dataValue = &dataStruct
-	return nil
-}
-
-func (m *Message) GetData(data interface{}) error {
-	rv := reflect.ValueOf(data)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
-		return errors.New("data is not a pointer or nil")
-	}
-
-	// get the struct from the pointer
-	dataStruct := rv.Elem()
-
-	if dataStruct.Kind() != reflect.Struct {
-		return errors.New("data is not a struct")
-	}
-
-	// iterate over struct fields
-	for i := 0; i < dataStruct.NumField(); i++ {
-		dataFieldName := dataStruct.Type().Field(i).Name
-
-		fmt.Printf("dataFieldName = %+v\n", dataFieldName)
-
-		// skip struct field if its name starts not from F
-		if dataFieldName[0:1] != "F" {
-			continue
-		}
-
-		indexStr := dataFieldName[1:]
-		fieldIndex, err := strconv.Atoi(indexStr)
-		if err != nil {
-			return errors.Wrap(err, "converting field intex into int")
-		}
-
-		// we can get data only if field value is set
-		if _, ok := m.fieldsMap[fieldIndex]; !ok {
-			continue
-		}
-
-		dataField := dataStruct.Field(i)
-		if dataField.IsNil() {
-			dataField.Set(reflect.New(dataField.Type().Elem()))
-		}
-		messageField := m.GetField(fieldIndex)
-
-		err = messageField.GetData(dataField.Interface())
-		if err != nil {
-			return fmt.Errorf("failed to get data from field %d: %w", fieldIndex, err)
-		}
-	}
-
 	return nil
 }
 

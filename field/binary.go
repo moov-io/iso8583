@@ -100,12 +100,12 @@ func (f *Binary) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *Binary) GetData(data interface{}) error {
-	if data == nil {
+func (f *Binary) UnmarshalValue(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	bin, ok := data.(*Binary)
+	bin, ok := v.(*Binary)
 	if !ok {
 		return errors.New("data does not match required *Binary type")
 	}

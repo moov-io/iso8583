@@ -98,12 +98,12 @@ func (f *String) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *String) GetData(data interface{}) error {
-	if data == nil {
+func (f *String) UnmarshalValue(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	str, ok := data.(*String)
+	str, ok := v.(*String)
 	if !ok {
 		return errors.New("data does not match required *String type")
 	}

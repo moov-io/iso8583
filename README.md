@@ -217,7 +217,7 @@ err := message.Unpack(rawMessage)
 
 // get typed data
 data := &ISO87Data{}
-err = message.GetData(data)
+err = iso8583.Unmarshal(message, data)
 // handle error
 
 // now you have typed values

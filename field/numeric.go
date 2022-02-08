@@ -109,11 +109,11 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *Numeric) GetData(data interface{}) error {
-	if data == nil {
+func (f *Numeric) UnmarshalValue(v interface{}) error {
+	if v == nil {
 		return nil
 	}
-	num, ok := data.(*Numeric)
+	num, ok := v.(*Numeric)
 	if !ok {
 		return errors.New("data does not match required *Numeric type")
 	}

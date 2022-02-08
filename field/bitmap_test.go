@@ -185,20 +185,20 @@ func TestBinaryBitmap(t *testing.T) {
 	})
 }
 
-func TestBitmap_GetData(t *testing.T) {
+func TestBitmap_UnmarshalValue(t *testing.T) {
 	spec := &Spec{
 		Description: "Bitmap",
 		Enc:         encoding.BytesToASCIIHex,
 		Pref:        prefix.Hex.Fixed,
 	}
 
-	t.Run("GetData gets bitmap into data parameter", func(t *testing.T) {
+	t.Run("UnmarshalValue gets bitmap into data parameter", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 		bitmap.Set(10) // set bit
 
 		data := NewBitmap(nil)
 
-		err := bitmap.GetData(data)
+		err := bitmap.UnmarshalValue(data)
 
 		require.NoError(t, err)
 		require.True(t, data.IsSet(10))

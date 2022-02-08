@@ -106,42 +106,6 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, "100", s)
 	})
 
-	t.Run("Test get data after unpacking", func(t *testing.T) {
-		type TestISOF3Data struct {
-			F1 *field.String
-			F2 *field.String
-			F3 *field.String
-		}
-
-		type ISO87Data struct {
-			F0 *field.String
-			F2 *field.String
-			F3 *TestISOF3Data
-			F4 *field.String
-
-			// test should not fail if we have such field name
-			Name *field.String
-		}
-
-		message := NewMessage(spec)
-
-		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
-		err := message.Unpack([]byte(rawMsg))
-
-		require.NoError(t, err)
-
-		data := &ISO87Data{}
-		err = message.GetData(data)
-		require.NoError(t, err)
-
-		require.Equal(t, "0100", data.F0.Value)
-		require.Equal(t, "4242424242424242", data.F2.Value)
-		require.Equal(t, "12", data.F3.F1.Value)
-		require.Equal(t, "34", data.F3.F2.Value)
-		require.Equal(t, "56", data.F3.F3.Value)
-		require.Equal(t, "100", data.F4.Value)
-	})
-
 	t.Run("Test unpacking with typed fields", func(t *testing.T) {
 		type TestISOF3Data struct {
 			F1 *field.String

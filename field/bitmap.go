@@ -107,12 +107,12 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 	return read, nil
 }
 
-func (f *Bitmap) GetData(data interface{}) error {
-	if data == nil {
+func (f *Bitmap) UnmarshalValue(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	bmap, ok := data.(*Bitmap)
+	bmap, ok := v.(*Bitmap)
 	if !ok {
 		return fmt.Errorf("data does not match required *Bitmap type")
 	}

@@ -113,12 +113,12 @@ func (f *Track2) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *Track2) GetData(data interface{}) error {
-	if data == nil {
+func (f *Track2) UnmarshalValue(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	track, ok := data.(*Track2)
+	track, ok := v.(*Track2)
 	if !ok {
 		return fmt.Errorf("data does not match required *Track2 type")
 	}

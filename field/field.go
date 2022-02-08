@@ -26,8 +26,9 @@ type Field interface {
 	// SetData links provided data parameter with the field Value
 	SetData(data interface{}) error
 
-	// GetData gets field Value into provided data parameter
-	GetData(data interface{}) error
+	// UnmarshalValue sets field Value into provided v. If v is nil or not
+	// a pointer it returns error.
+	UnmarshalValue(v interface{}) error
 
 	// String returns a string representation of the field Value
 	String() (string, error)
