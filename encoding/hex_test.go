@@ -14,6 +14,10 @@ func TestHexToASCIIEncoder(t *testing.T) {
 	require.Equal(t, 6, read)
 	require.Equal(t, []byte{0xAA, 0xBB, 0xCC}, got)
 
+	_, _, err = enc.Decode(nil, 3)
+	require.Error(t, err)
+	require.EqualError(t, err, "not enough data to read")
+
 	got, err = enc.Encode([]byte{0xAA, 0xBB, 0xCC})
 	require.NoError(t, err)
 	require.Equal(t, []byte("AABBCC"), got)

@@ -33,7 +33,7 @@ func TestAsciiVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
 
 	_, _, err := pref.DecodeLength(20, []byte("22"))
 
-	require.Contains(t, err.Error(), "not enought data length: 2 to read: 3 byte digits")
+	require.Contains(t, err.Error(), "not enough data length: 2 to read: 3 byte digits")
 }
 
 func TestAsciiVarPrefixer_LHelpers(t *testing.T) {
