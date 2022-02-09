@@ -34,7 +34,7 @@ func (p *asciiVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 
 func (p *asciiVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	if len(data) < p.Digits {
-		return 0, 0, fmt.Errorf("not enought data length: %d to read: %d byte digits", len(data), p.Digits)
+		return 0, 0, fmt.Errorf("not enough data length: %d to read: %d byte digits", len(data), p.Digits)
 	}
 
 	dataLen, err := strconv.Atoi(string(data[:p.Digits]))

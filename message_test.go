@@ -531,6 +531,24 @@ func TestPackUnpack(t *testing.T) {
 		assert.Equal(t, "000000000501", data.F55.F9F02.Value)
 		assert.Equal(t, "Another test text", data.F120.Value)
 	})
+
+	t.Run("Unpack nil", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		err := message.Unpack(nil)
+
+		require.Error(t, err)
+	})
+
+	t.Run("Unpack short mti", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		rawMsg := []byte{0x30, 0x31}
+
+		err := message.Unpack([]byte(rawMsg))
+
+		require.Error(t, err)
+	})
 }
 
 func TestMessageJSON(t *testing.T) {

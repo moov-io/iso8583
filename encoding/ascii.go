@@ -1,6 +1,8 @@
 package encoding
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var ASCII Encoder = &asciiEncoder{}
 
@@ -20,6 +22,9 @@ func (e asciiEncoder) Encode(data []byte) ([]byte, error) {
 
 func (e asciiEncoder) Decode(data []byte, length int) ([]byte, int, error) {
 	// read only 'length' bytes (1 byte - 1 ASCII character)
+	if len(data) < length {
+		return nil, 0, fmt.Errorf("not enough data to decode. expected len %d, got %d", length, len(data))
+	}
 	data = data[:length]
 	var out []byte
 	for _, r := range data {

@@ -19,6 +19,14 @@ func TestLBCD(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, []byte("123"), res)
 		require.Equal(t, 2, read)
+
+		_, _, err = LBCD.Decode([]byte{0x12, 0x30}, 5)
+		require.Error(t, err)
+		require.EqualError(t, err, "not enough data to decode. expected len 3, got 2")
+
+		_, _, err = LBCD.Decode(nil, 5)
+		require.Error(t, err)
+		require.EqualError(t, err, "not enough data to decode. expected len 3, got 0")
 	})
 
 	t.Run("Encode", func(t *testing.T) {

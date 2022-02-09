@@ -18,6 +18,14 @@ func TestASCII(t *testing.T) {
 
 		_, _, err = enc.Decode([]byte("hello, 世界!"), 10)
 		require.Error(t, err)
+
+		_, _, err = enc.Decode([]byte("hello"), 6)
+		require.Error(t, err)
+		require.EqualError(t, err, "not enough data to decode. expected len 6, got 5")
+
+		_, _, err = enc.Decode(nil, 6)
+		require.Error(t, err)
+		require.EqualError(t, err, "not enough data to decode. expected len 6, got 0")
 	})
 
 	t.Run("Encode", func(t *testing.T) {

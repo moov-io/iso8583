@@ -429,7 +429,7 @@ func TestCompositePacking(t *testing.T) {
 		read, err := composite.Unpack([]byte("ABCD123"))
 		require.Equal(t, 0, read)
 		require.Error(t, err)
-		require.EqualError(t, err, "data length: 4 does not match aggregate data read from decoded subfields: 7")
+		require.EqualError(t, err, "failed to unpack subfield 3: failed to decode content: not enough data to decode. expected len 3, got 0")
 	})
 
 	t.Run("Unpack correctly deserialises bytes to the data struct", func(t *testing.T) {

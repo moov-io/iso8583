@@ -1,6 +1,8 @@
 package encoding
 
 import (
+	"fmt"
+
 	"github.com/yerden/go-util/bcd"
 )
 
@@ -33,6 +35,11 @@ func (e *lBCDEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 
 	dec := bcd.NewDecoder(bcd.Standard)
 	dst := make([]byte, decodedLen)
+
+	if len(src) < read {
+		return nil, 0, fmt.Errorf("not enough data to decode. expected len %d, got %d", read, len(src))
+	}
+
 	_, err := dec.Decode(dst, src)
 	if err != nil {
 		return nil, 0, err

@@ -1,5 +1,7 @@
 package encoding
 
+import "fmt"
+
 //Encoding map taken from
 //http://www.ibm.com/support/knowledgecenter/SSZJPZ_11.3.0/com.ibm.swg.im.iis.ds.parjob.adref.doc/topics/r_deeadvrf_EBCDIC_to_ASCII.html
 
@@ -86,6 +88,9 @@ func (e *ebcdicEncoder) Encode(src []byte) ([]byte, error) {
 }
 
 func (e *ebcdicEncoder) Decode(src []byte, length int) ([]byte, int, error) {
+	if len(src) < length {
+		return nil, 0, fmt.Errorf("not enough data to decode. expected len %d, got %d", length, len(src))
+	}
 	src = src[:length]
 	var dst []byte
 	for _, v := range src {
