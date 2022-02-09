@@ -170,6 +170,29 @@ func TestComposite_SetData(t *testing.T) {
 	})
 }
 
+func TestCompositeFieldUnmarshalValue(t *testing.T) {
+	t.Run("UnmarshalValue gets data for composite field", func(t *testing.T) {
+		// first, we need to populate fields of composite field
+		// we will do it by packing the field
+		composite := NewComposite(tlvTestSpec)
+		err := composite.SetData(&TLVTestData{
+			F9A:   NewStringValue("210720"),
+			F9F02: NewStringValue("000000000501"),
+		})
+		require.NoError(t, err)
+
+		_, err = composite.Pack()
+		require.NoError(t, err)
+
+		data := &TLVTestData{}
+		err = composite.UnmarshalValue(data)
+		require.NoError(t, err)
+
+		require.Equal(t, "210720", data.F9A.Value)
+		require.Equal(t, "000000000501", data.F9F02.Value)
+	})
+}
+
 func TestTLVPacking(t *testing.T) {
 	t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
 		data := &TLVTestData{

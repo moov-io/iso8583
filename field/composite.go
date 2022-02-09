@@ -2,6 +2,7 @@ package field
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -87,6 +88,49 @@ func (f *Composite) SetSpec(spec *Spec) {
 	f.spec = spec
 	f.tagToSubfieldMap = map[string]Field{}
 	f.orderedSpecFieldTags = orderedKeys(spec.Subfields, spec.Tag.Sort)
+}
+
+func (f *Composite) UnmarshalValue(v interface{}) error {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("data is not a pointer or nil")
+	}
+
+	// get the struct from the pointer
+	dataStruct := rv.Elem()
+
+	if dataStruct.Kind() != reflect.Struct {
+		return errors.New("data is not a struct")
+	}
+
+	// iterate over struct fields
+	for i := 0; i < dataStruct.NumField(); i++ {
+		dataFieldName := dataStruct.Type().Field(i).Name
+
+		// skip struct field if its name starts not from F
+		if len(dataFieldName) == 0 || dataFieldName[0:1] != "F" {
+			continue
+		}
+
+		tag := dataFieldName[1:]
+
+		messageField, ok := f.tagToSubfieldMap[tag]
+		if !ok {
+			continue
+		}
+
+		dataField := dataStruct.Field(i)
+		if dataField.IsNil() {
+			dataField.Set(reflect.New(dataField.Type().Elem()))
+		}
+
+		err := messageField.UnmarshalValue(dataField.Interface())
+		if err != nil {
+			return fmt.Errorf("failed to get data from field %s: %w", tag, err)
+		}
+	}
+
+	return nil
 }
 
 // SetData traverses through fields provided in the data parameter matches them

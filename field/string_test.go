@@ -58,6 +58,17 @@ func TestStringField(t *testing.T) {
 	require.Equal(t, "hello", data.Value)
 }
 
+func TestStringFieldUnmarshalValue(t *testing.T) {
+	str := NewStringValue("hello")
+
+	val := &String{}
+
+	err := str.UnmarshalValue(val)
+
+	require.NoError(t, err)
+	require.Equal(t, "hello", val.Value)
+}
+
 func TestStringFieldZeroLength(t *testing.T) {
 	str := NewStringValue("")
 	str.SetSpec(&Spec{

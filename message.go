@@ -40,6 +40,7 @@ func NewMessage(spec *MessageSpec) *Message {
 	}
 }
 
+// Deprecated. Use iso8583.Unmarshal instead.
 func (m *Message) Data() interface{} {
 	return m.data
 }

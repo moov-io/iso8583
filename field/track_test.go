@@ -141,6 +141,35 @@ func TestTrack1(t *testing.T) {
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 
+		t.Run("UnmarshalValue gets track values into data parameter", func(t *testing.T) {
+			expDate, err := time.Parse("0601", "9901")
+			require.NoError(t, err)
+
+			track := NewTrack1(track1Spec)
+			err = track.SetData(&Track1{
+				FixedLength:          true,
+				FormatCode:           "B",
+				PrimaryAccountNumber: "1234567890123445",
+				ServiceCode:          "120",
+				DiscretionaryData:    "0000000000000**XXX******",
+				ExpirationDate:       &expDate,
+				Name:                 "PADILLA/L.",
+			})
+			require.NoError(t, err)
+
+			data := &Track1{}
+
+			err = track.UnmarshalValue(data)
+
+			require.NoError(t, err)
+			require.Equal(t, "B", data.FormatCode)
+			require.Equal(t, "1234567890123445", data.PrimaryAccountNumber)
+			require.Equal(t, "120", data.ServiceCode)
+			require.Equal(t, "0000000000000**XXX******", data.DiscretionaryData)
+			require.Equal(t, expDate, *data.ExpirationDate)
+			require.Equal(t, "PADILLA/L.", data.Name)
+		})
+
 		t.Run("Pack correctly serializes data struct to bytes", func(t *testing.T) {
 			expDate, err := time.Parse("0601", "9901")
 			require.NoError(t, err)
@@ -277,6 +306,32 @@ func TestTrack2TypedAPI(t *testing.T) {
 			track := NewTrack2(track2Spec)
 			err := track.SetData(NewStringValue("hello"))
 			require.EqualError(t, err, "data does not match required *Track type")
+		})
+
+		t.Run("UnmarshalValue gets track values into data parameter", func(t *testing.T) {
+			expDate, err := time.Parse("0601", "9901")
+			require.NoError(t, err)
+
+			track := NewTrack2(track2Spec)
+			err = track.SetData(&Track2{
+				PrimaryAccountNumber: "4000340000000506",
+				Separator:            "D",
+				ServiceCode:          "111",
+				DiscretionaryData:    "123400001230",
+				ExpirationDate:       &expDate,
+			})
+			require.NoError(t, err)
+
+			data := &Track2{}
+
+			err = track.UnmarshalValue(data)
+
+			require.NoError(t, err)
+			require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
+			require.Equal(t, "D", data.Separator)
+			require.Equal(t, "111", data.ServiceCode)
+			require.Equal(t, "123400001230", data.DiscretionaryData)
+			require.Equal(t, expDate, *data.ExpirationDate)
 		})
 
 		t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
@@ -462,6 +517,25 @@ func TestTrack3TypedAPI(t *testing.T) {
 			track := NewTrack3(track3Spec)
 			err := track.SetData(NewStringValue("hello"))
 			require.EqualError(t, err, "data does not match required *Track type")
+		})
+
+		t.Run("UnmarshalValue gets track values into data parameter", func(t *testing.T) {
+			track := NewTrack3(track3Spec)
+			err := track.SetData(&Track3{
+				FormatCode:           `01`,
+				PrimaryAccountNumber: `1234567890123445`,
+				DiscretionaryData:    `724724000000000****00300XXXX020200099010=********************==1=100000000000000000**`,
+			})
+			require.NoError(t, err)
+
+			data := &Track3{}
+
+			err = track.UnmarshalValue(data)
+
+			require.NoError(t, err)
+			require.Equal(t, "01", data.FormatCode)
+			require.Equal(t, "1234567890123445", data.PrimaryAccountNumber)
+			require.Equal(t, "724724000000000****00300XXXX020200099010=********************==1=100000000000000000**", data.DiscretionaryData)
 		})
 
 		t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {

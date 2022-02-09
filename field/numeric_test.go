@@ -51,6 +51,17 @@ func TestNumericField(t *testing.T) {
 	require.Equal(t, 9876, data.Value)
 }
 
+func TestNumericFieldUnmarshalValue(t *testing.T) {
+	str := NewNumericValue(9876)
+
+	val := &Numeric{}
+
+	err := str.UnmarshalValue(val)
+
+	require.NoError(t, err)
+	require.Equal(t, 9876, val.Value)
+}
+
 func TestNumericFieldWithNotANumber(t *testing.T) {
 	numeric := NewNumeric(&Spec{
 		Length:      10,
