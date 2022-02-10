@@ -140,4 +140,37 @@ func TestDecode(t *testing.T) {
 		err = Unmarshal(message, &ISO87Data{})
 		require.NoError(t, err)
 	})
+
+	// t.Run("Unmarshal using field tags", func(t *testing.T) {
+	// 	type TestISOF3Data struct {
+	// 		One   *field.String `index:"1"`
+	// 		Two   *field.String `index:"2"`
+	// 		Three *field.String `index:"3"`
+	// 	}
+
+	// 	type ISO87Data struct {
+	// 		MTI                  *field.String  `index:"0"`
+	// 		PrimaryAccountNumber *field.String  `index:"2"`
+	// 		AdditionalData       *TestISOF3Data `index:"3"`
+	// 		Amount               *field.String  `index:"4"`
+	// 	}
+
+	// 	message := NewMessage(spec)
+
+	// 	rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
+	// 	err := message.Unpack([]byte(rawMsg))
+
+	// 	require.NoError(t, err)
+
+	// 	data := &ISO87Data{}
+	// 	err = Unmarshal(message, data)
+	// 	require.NoError(t, err)
+
+	// 	require.Equal(t, "0100", data.MTI.Value)
+	// 	require.Equal(t, "4242424242424242", data.PrimaryAccountNumber.Value)
+	// 	require.Equal(t, "12", data.AdditionalData.One.Value)
+	// 	require.Equal(t, "34", data.AdditionalData.Two.Value)
+	// 	require.Equal(t, "56", data.AdditionalData.Three.Value)
+	// 	require.Equal(t, "100", data.Amount.Value)
+	// })
 }
