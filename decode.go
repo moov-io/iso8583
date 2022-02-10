@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 )
 
@@ -25,17 +26,14 @@ func Unmarshal(message *Message, v interface{}) error {
 
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
-		dataFieldName := dataStruct.Type().Field(i).Name
-
-		// skip struct field if its name starts not from F
-		if len(dataFieldName) == 0 || dataFieldName[0:1] != "F" {
-			continue
+		fieldIndex, err := getFieldIndex(dataStruct.Type().Field(i))
+		if err != nil {
+			return fmt.Errorf("getting field %d index: %w", i, err)
 		}
 
-		indexStr := dataFieldName[1:]
-		fieldIndex, err := strconv.Atoi(indexStr)
-		if err != nil {
-			return fmt.Errorf("converting field intex into int: %w", err)
+		// skip field without index
+		if fieldIndex < 0 {
+			continue
 		}
 
 		// we can get data only if field value is set
@@ -56,4 +54,34 @@ func Unmarshal(message *Message, v interface{}) error {
 	}
 
 	return nil
+}
+
+var fieldNameIndexRe = regexp.MustCompile(`^F\d+$`)
+
+// fieldIndex returns index of the field. First, it checks field name. If it
+// does not match FNN (when NN is digits), it checks value of `index` tag.  If
+// negative value returned (-1) then index was not found for the field.
+func getFieldIndex(field reflect.StructField) (int, error) {
+	dataFieldName := field.Name
+
+	if len(dataFieldName) > 0 && fieldNameIndexRe.MatchString(dataFieldName) {
+		indexStr := dataFieldName[1:]
+		fieldIndex, err := strconv.Atoi(indexStr)
+		if err != nil {
+			return -1, fmt.Errorf("converting field index into int: %w", err)
+		}
+
+		return fieldIndex, nil
+	}
+
+	if indexStr := field.Tag.Get("index"); indexStr != "" {
+		fieldIndex, err := strconv.Atoi(indexStr)
+		if err != nil {
+			return -1, fmt.Errorf("converting field index into int: %w", err)
+		}
+
+		return fieldIndex, nil
+	}
+
+	return -1, nil
 }

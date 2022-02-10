@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -11,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDecode(t *testing.T) {
+func TestUnmarshal(t *testing.T) {
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
 			0: field.NewString(&field.Spec{
@@ -114,22 +115,20 @@ func TestDecode(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("Unmarshal should not panic when field names no not follow FNN pattern", func(t *testing.T) {
+	t.Run("Unmarshal using field tags", func(t *testing.T) {
 		type TestISOF3Data struct {
-			A  string
-			F  string
-			F1 *field.String
-			F2 *field.String
-			F3 *field.String
+			One   *field.String `index:"1"`
+			Two   *field.String `index:"2"`
+			Three *field.String `index:"3"`
 		}
 
 		type ISO87Data struct {
-			F0   *field.String
-			F2   *field.String
-			F3   *TestISOF3Data
-			F4   *field.String
-			Name *field.String
+			MTI                  *field.String  `index:"0"`
+			PrimaryAccountNumber *field.String  `index:"2"`
+			AdditionalData       *TestISOF3Data `index:"3"`
+			Amount               *field.String  `index:"4"`
 		}
+
 		message := NewMessage(spec)
 
 		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
@@ -137,7 +136,75 @@ func TestDecode(t *testing.T) {
 
 		require.NoError(t, err)
 
-		err = Unmarshal(message, &ISO87Data{})
+		data := &ISO87Data{}
+		err = Unmarshal(message, data)
 		require.NoError(t, err)
+
+		require.Equal(t, "0100", data.MTI.Value)
+		require.Equal(t, "4242424242424242", data.PrimaryAccountNumber.Value)
+		require.Equal(t, "12", data.AdditionalData.One.Value)
+		require.Equal(t, "34", data.AdditionalData.Two.Value)
+		require.Equal(t, "56", data.AdditionalData.Three.Value)
+		require.Equal(t, "100", data.Amount.Value)
+	})
+}
+
+func TestUnmarshal_getFieldIndex(t *testing.T) {
+	t.Run("returns index from field name", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			F1 string
+		}{}).Elem()
+
+		index, err := getFieldIndex(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Equal(t, 1, index)
+	})
+
+	t.Run("returns index from field tag", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			Name   string `index:"abcd"`
+			F      string `index:"02"`
+			Amount string `index:"3"`
+		}{}).Elem()
+
+		// get index from field Name
+		_, err := getFieldIndex(st.Type().Field(0))
+
+		require.Error(t, err)
+		require.EqualError(t, err, "converting field index into int: strconv.Atoi: parsing \"abcd\": invalid syntax")
+
+		// get index from field F
+		index, err := getFieldIndex(st.Type().Field(1))
+
+		require.NoError(t, err)
+		require.Equal(t, 2, index)
+
+		// get index from field Amount
+		index, err = getFieldIndex(st.Type().Field(2))
+
+		require.NoError(t, err)
+		require.Equal(t, 3, index)
+	})
+
+	t.Run("returns empty string when no tag and field name does not match the pattern", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			Name string
+		}{}).Elem()
+
+		index, err := getFieldIndex(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Equal(t, -1, index)
+
+		// single letter field without tag is ignored
+		st = reflect.ValueOf(&struct {
+			F string
+		}{}).Elem()
+
+		index, err = getFieldIndex(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Equal(t, -1, index)
 	})
 }

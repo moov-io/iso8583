@@ -2,6 +2,7 @@ package field
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -157,6 +158,11 @@ type CompositeTestDataWithoutTagPadding struct {
 	F02 *String
 }
 
+type CompositeTestDataWithoutTagPaddingWithIndexTag struct {
+	F01 *String `index:"01"`
+	F02 *String `index:"02"`
+}
+
 type TLVTestData struct {
 	F9A   *String
 	F9F02 *String
@@ -190,6 +196,31 @@ func TestCompositeFieldUnmarshalValue(t *testing.T) {
 
 		require.Equal(t, "210720", data.F9A.Value)
 		require.Equal(t, "000000000501", data.F9F02.Value)
+	})
+
+	t.Run("UnmarshalValue gets data for composite field using field tag `index`", func(t *testing.T) {
+		type tlvTestData struct {
+			Date          *String `index:"9A"`
+			TransactionID *String `index:"9F02"`
+		}
+		// first, we need to populate fields of composite field
+		// we will do it by packing the field
+		composite := NewComposite(tlvTestSpec)
+		err := composite.SetData(&TLVTestData{
+			F9A:   NewStringValue("210720"),
+			F9F02: NewStringValue("000000000501"),
+		})
+		require.NoError(t, err)
+
+		_, err = composite.Pack()
+		require.NoError(t, err)
+
+		data := &tlvTestData{}
+		err = composite.UnmarshalValue(data)
+		require.NoError(t, err)
+
+		require.Equal(t, "210720", data.Date.Value)
+		require.Equal(t, "000000000501", data.TransactionID.Value)
 	})
 }
 
@@ -1008,5 +1039,58 @@ func TestCompositeJSONConversion(t *testing.T) {
 		s, err := composite.String()
 		require.NoError(t, err)
 		require.Equal(t, "0102AB03021211060102YZ", s)
+	})
+}
+
+func TestComposite_getFieldIndexOrTag(t *testing.T) {
+	t.Run("returns index from field name", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			F1 string
+		}{}).Elem()
+
+		index, err := getFieldIndexOrTag(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Equal(t, "1", index)
+	})
+
+	t.Run("returns index from field tag", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			Name string `index:"abcd"`
+			F    string `index:"02"`
+		}{}).Elem()
+
+		// get index from field Name
+		index, err := getFieldIndexOrTag(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Equal(t, "abcd", index)
+
+		// get index from field F
+		index, err = getFieldIndexOrTag(st.Type().Field(1))
+
+		require.NoError(t, err)
+		require.Equal(t, "02", index)
+	})
+
+	t.Run("returns empty string when no tag and field name does not match the pattern", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			Name string
+		}{}).Elem()
+
+		index, err := getFieldIndexOrTag(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Empty(t, index)
+
+		// single letter field without tag is ignored
+		st = reflect.ValueOf(&struct {
+			F string
+		}{}).Elem()
+
+		index, err = getFieldIndexOrTag(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Empty(t, index)
 	})
 }
