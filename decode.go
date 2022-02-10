@@ -56,19 +56,28 @@ func Unmarshal(message *Message, v interface{}) error {
 	return nil
 }
 
-var indexFieldNameRe = regexp.MustCompile(`^F\d+$`)
+var fieldNameIndexRe = regexp.MustCompile(`^F\d+$`)
 
 // fieldIndex returns index of the field. First, it checks field name. If it
-// does not match FNN (when NN is digits), it checks value of `index` tag.
-// If negative value returned (-1) then index was not found for the field.
+// does not match FNN (when NN is digits), it checks value of `index` tag.  If
+// negative value returned (-1) then index was not found for the field.
 func getFieldIndex(field reflect.StructField) (int, error) {
 	dataFieldName := field.Name
 
-	if len(dataFieldName) > 0 && indexFieldNameRe.MatchString(dataFieldName) {
+	if len(dataFieldName) > 0 && fieldNameIndexRe.MatchString(dataFieldName) {
 		indexStr := dataFieldName[1:]
 		fieldIndex, err := strconv.Atoi(indexStr)
 		if err != nil {
-			return -1, fmt.Errorf("converting field intex into int: %w", err)
+			return -1, fmt.Errorf("converting field index into int: %w", err)
+		}
+
+		return fieldIndex, nil
+	}
+
+	if indexStr := field.Tag.Get("index"); indexStr != "" {
+		fieldIndex, err := strconv.Atoi(indexStr)
+		if err != nil {
+			return -1, fmt.Errorf("converting field index into int: %w", err)
 		}
 
 		return fieldIndex, nil

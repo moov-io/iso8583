@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/sort"
@@ -105,16 +106,17 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
-		dataFieldName := dataStruct.Type().Field(i).Name
+		indexOrTag, err := getFieldIndexOrTag(dataStruct.Type().Field(i))
+		if err != nil {
+			return fmt.Errorf("getting field %d index: %w", i, err)
+		}
 
-		// skip struct field if its name starts not from F
-		if len(dataFieldName) == 0 || dataFieldName[0:1] != "F" {
+		// skip field without index
+		if indexOrTag == "" {
 			continue
 		}
 
-		tag := dataFieldName[1:]
-
-		messageField, ok := f.tagToSubfieldMap[tag]
+		messageField, ok := f.tagToSubfieldMap[indexOrTag]
 		if !ok {
 			continue
 		}
@@ -124,9 +126,9 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 			dataField.Set(reflect.New(dataField.Type().Elem()))
 		}
 
-		err := messageField.UnmarshalValue(dataField.Interface())
+		err = messageField.UnmarshalValue(dataField.Interface())
 		if err != nil {
-			return fmt.Errorf("failed to get data from field %s: %w", tag, err)
+			return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
 		}
 	}
 
@@ -433,4 +435,23 @@ func orderedKeys(kvs map[string]Field, sorter sort.StringSlice) []string {
 	}
 	sorter(keys)
 	return keys
+}
+
+var fieldNameTagRe = regexp.MustCompile(`^F.+$`)
+
+// getFieldIndexOrTag returns index or tag of the field. First, it checks the
+// field name. If it does not match F.+ pattern, it checks value of `index`
+// tag.  If empty string, then index/tag was not found for the field.
+func getFieldIndexOrTag(field reflect.StructField) (string, error) {
+	dataFieldName := field.Name
+
+	if len(dataFieldName) > 0 && fieldNameTagRe.MatchString(dataFieldName) {
+		return dataFieldName[1:], nil
+	}
+
+	if fieldIndex := field.Tag.Get("index"); fieldIndex != "" {
+		return fieldIndex, nil
+	}
+
+	return "", nil
 }
