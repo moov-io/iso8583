@@ -67,7 +67,10 @@ type Composite struct {
 // validates and sets its Spec before returning it.
 // Refer to SetSpec() for more information on Spec validation.
 func NewComposite(spec *Spec) *Composite {
-	f := &Composite{}
+	subfields := CreateSubfields(spec)
+	f := &Composite{
+		tagToSubfieldMap: subfields,
+	}
 	f.SetSpec(spec)
 
 	// we have to create fields for the spec here

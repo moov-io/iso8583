@@ -77,3 +77,13 @@ func CreateSubfield(specField Field) Field {
 
 	return fl
 }
+
+func CreateSubfields(s *Spec) map[string]Field {
+	subfields := map[string]Field{}
+
+	for k, specField := range s.Subfields {
+		subfields[k] = CreateSubfield(specField)
+	}
+
+	return subfields
+}
