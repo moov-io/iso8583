@@ -132,6 +132,10 @@ func (f *Binary) SetData(data interface{}) error {
 	return nil
 }
 
+func (f *Binary) MarshalValue(data interface{}) error {
+	return f.SetData(data)
+}
+
 func (f *Binary) MarshalJSON() ([]byte, error) {
 	str, err := f.String()
 	if err != nil {

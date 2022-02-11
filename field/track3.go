@@ -148,6 +148,10 @@ func (f *Track3) SetData(data interface{}) error {
 	return nil
 }
 
+func (f *Track3) MarshalValue(data interface{}) error {
+	return f.SetData(data)
+}
+
 func (f *Track3) unpack(raw []byte) error {
 	if raw == nil || !track3Regex.Match(raw) {
 		return errors.New("invalid track data")

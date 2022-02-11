@@ -30,6 +30,10 @@ type Field interface {
 	// a pointer it returns error.
 	UnmarshalValue(v interface{}) error
 
+	// MarshalValue sets field Value into provided v. If v is nil or not
+	// a pointer it returns error.
+	MarshalValue(v interface{}) error
+
 	// String returns a string representation of the field Value
 	String() (string, error)
 }

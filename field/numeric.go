@@ -140,6 +140,10 @@ func (f *Numeric) SetData(data interface{}) error {
 	return nil
 }
 
+func (f *Numeric) MarshalValue(data interface{}) error {
+	return f.SetData(data)
+}
+
 func (f *Numeric) MarshalJSON() ([]byte, error) {
 	return json.Marshal(f.Value)
 }

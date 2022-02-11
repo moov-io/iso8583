@@ -69,6 +69,8 @@ type Composite struct {
 func NewComposite(spec *Spec) *Composite {
 	f := &Composite{}
 	f.SetSpec(spec)
+
+	// we have to create fields for the spec here
 	return f
 }
 
@@ -160,6 +162,50 @@ func (f *Composite) SetData(data interface{}) error {
 	}
 
 	f.data = &dataStruct
+	return nil
+}
+
+func (f *Composite) MarshalValue(v interface{}) error {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("data is not a pointer or nil")
+	}
+
+	// get the struct from the pointer
+	dataStruct := rv.Elem()
+
+	if dataStruct.Kind() != reflect.Struct {
+		return errors.New("data is not a struct")
+	}
+
+	// iterate over struct fields
+	for i := 0; i < dataStruct.NumField(); i++ {
+		indexOrTag, err := getFieldIndexOrTag(dataStruct.Type().Field(i))
+		if err != nil {
+			return fmt.Errorf("getting field %d index: %w", i, err)
+		}
+
+		// skip field without index
+		if indexOrTag == "" {
+			continue
+		}
+
+		messageField, ok := f.tagToSubfieldMap[indexOrTag]
+		if !ok {
+			return fmt.Errorf("no message field defined by spec with index (or tag): %s", indexOrTag)
+		}
+
+		dataField := dataStruct.Field(i)
+		if dataField.IsNil() {
+			continue
+		}
+
+		err = messageField.MarshalValue(dataField.Interface())
+		if err != nil {
+			return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
+		}
+	}
+
 	return nil
 }
 

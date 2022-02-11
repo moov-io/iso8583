@@ -130,6 +130,10 @@ func (f *String) SetData(data interface{}) error {
 	return nil
 }
 
+func (f *String) MarshalValue(data interface{}) error {
+	return f.SetData(data)
+}
+
 func (f *String) MarshalJSON() ([]byte, error) {
 	return json.Marshal(f.Value)
 }

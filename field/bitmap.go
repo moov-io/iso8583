@@ -139,6 +139,10 @@ func (f *Bitmap) SetData(data interface{}) error {
 	return nil
 }
 
+func (f *Bitmap) MarshalValue(data interface{}) error {
+	return f.SetData(data)
+}
+
 func (f *Bitmap) Reset() {
 	f.bitmap = utils.NewBitmap(64 * maxBitmaps)
 }
