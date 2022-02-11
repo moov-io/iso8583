@@ -1012,6 +1012,8 @@ func TestCompositeJSONConversion(t *testing.T) {
 
 		require.NoError(t, composite.UnmarshalJSON([]byte(json)))
 
+		composite.UnmarshalValue(data)
+
 		require.Equal(t, "AB", data.F1.Value)
 		require.Nil(t, data.F2)
 		require.Equal(t, 12, data.F3.Value)

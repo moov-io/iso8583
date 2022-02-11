@@ -67,7 +67,15 @@ type Composite struct {
 // validates and sets its Spec before returning it.
 // Refer to SetSpec() for more information on Spec validation.
 func NewComposite(spec *Spec) *Composite {
+	fmt.Printf("spec = %+v\n", spec)
 	subfields := CreateSubfields(spec)
+	fmt.Printf("subfields = %+v\n", subfields)
+	if _, ok := subfields["1"]; ok {
+		fmt.Printf("subfields[1] = %+v\n", subfields["1"])
+	}
+	if _, ok := subfields["11"]; ok {
+		fmt.Printf("subfields[11] = %+v\n", subfields["11"])
+	}
 	f := &Composite{
 		tagToSubfieldMap: subfields,
 	}
@@ -92,7 +100,6 @@ func (f *Composite) SetSpec(spec *Spec) {
 		panic(err)
 	}
 	f.spec = spec
-	f.tagToSubfieldMap = map[string]Field{}
 	f.orderedSpecFieldTags = orderedKeys(spec.Subfields, spec.Tag.Sort)
 }
 
@@ -311,7 +318,11 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 		if _, ok := f.spec.Subfields[tag]; !ok {
 			return fmt.Errorf("failed to unmarshal subfield %v: received subfield not defined in spec", tag)
 		}
-		subfield := f.createAndSetSubfield(tag)
+
+		subfield, ok := f.tagToSubfieldMap[tag]
+		if !ok {
+			continue
+		}
 
 		if err = f.setSubfieldData(tag, subfield); err != nil {
 			return err
@@ -327,7 +338,13 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 func (f *Composite) pack() ([]byte, error) {
 	packed := []byte{}
 	for _, tag := range f.orderedSpecFieldTags {
-		var field Field
+		field, ok := f.tagToSubfieldMap[tag]
+		if !ok {
+			return nil, fmt.Errorf("no subfield for tag %s", tag)
+			// continue
+		}
+
+		// var field Field
 		if f.data != nil {
 			fieldName := fmt.Sprintf("F%v", tag)
 			// get the struct field
@@ -337,16 +354,9 @@ func (f *Composite) pack() ([]byte, error) {
 			if dataField == (reflect.Value{}) || dataField.IsNil() {
 				continue
 			}
-			field = f.createAndSetSubfield(tag)
-
+			// field = f.createAndSetSubfield(tag)
 			if err := field.SetData(dataField.Interface()); err != nil {
 				return nil, fmt.Errorf("failed to set data for field %v: %w", tag, err)
-			}
-		} else {
-			var ok bool
-			field, ok = f.tagToSubfieldMap[tag]
-			if !ok {
-				continue
 			}
 		}
 
@@ -381,7 +391,11 @@ func (f *Composite) unpack(data []byte, hasPrefix bool) (int, error) {
 func (f *Composite) unpackSubfields(data []byte, hasPrefix bool) (int, error) {
 	offset := 0
 	for _, tag := range f.orderedSpecFieldTags {
-		field := f.createAndSetSubfield(tag)
+		field, ok := f.tagToSubfieldMap[tag]
+		if !ok {
+			continue
+		}
+
 		if err := f.setSubfieldData(tag, field); err != nil {
 			return 0, err
 		}
@@ -414,7 +428,11 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		if _, ok := f.spec.Subfields[tag]; !ok {
 			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
 		}
-		field := f.createAndSetSubfield(tag)
+
+		field, ok := f.tagToSubfieldMap[tag]
+		if !ok {
+			continue
+		}
 
 		if err := f.setSubfieldData(tag, field); err != nil {
 			return 0, err
@@ -452,11 +470,11 @@ func (f *Composite) setSubfieldData(tag string, specField Field) error {
 	return nil
 }
 
-func (f *Composite) createAndSetSubfield(tag string) Field {
-	field := CreateSubfield(f.spec.Subfields[tag])
-	f.tagToSubfieldMap[tag] = field
-	return field
-}
+// func (f *Composite) createAndSetSubfield(tag string) Field {
+// 	field := CreateSubfield(f.spec.Subfields[tag])
+// 	f.tagToSubfieldMap[tag] = field
+// 	return field
+// }
 
 func validateCompositeSpec(spec *Spec) error {
 	if spec.Tag == nil || spec.Tag.Sort == nil {
