@@ -58,7 +58,8 @@ type Composite struct {
 	spec *Spec
 
 	orderedSpecFieldTags []string
-	tagToSubfieldMap     map[string]Field
+	subfields            map[string]Field
+	subfieldsMap         map[string]struct{}
 
 	data *reflect.Value
 }
@@ -79,15 +80,24 @@ type CompositeWithSubfields interface {
 }
 
 func (f *Composite) ConstructSubfields() {
-	if f.tagToSubfieldMap == nil {
+	if f.subfields == nil {
 		subfields := CreateSubfields(f.spec)
-		f.tagToSubfieldMap = subfields
+		f.subfields = subfields
 	}
+	f.subfieldsMap = make(map[string]struct{})
 }
 
 // Spec returns the receiver's spec.
 func (f *Composite) Spec() *Spec {
 	return f.spec
+}
+
+func (f *Composite) GetSubfields() map[string]Field {
+	fields := map[string]Field{}
+	for i := range f.subfieldsMap {
+		fields[i] = f.subfields[i]
+	}
+	return fields
 }
 
 // SetSpec validates the spec and creates new instances of Subfields defined
@@ -128,8 +138,13 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 			continue
 		}
 
-		messageField, ok := f.tagToSubfieldMap[indexOrTag]
+		messageField, ok := f.subfields[indexOrTag]
 		if !ok {
+			continue
+		}
+
+		// unmarshal only subfield that has the value set
+		if _, set := f.subfieldsMap[indexOrTag]; !set {
 			continue
 		}
 
@@ -202,7 +217,7 @@ func (f *Composite) MarshalValue(v interface{}) error {
 			continue
 		}
 
-		messageField, ok := f.tagToSubfieldMap[indexOrTag]
+		messageField, ok := f.subfields[indexOrTag]
 		if !ok {
 			continue
 		}
@@ -216,6 +231,8 @@ func (f *Composite) MarshalValue(v interface{}) error {
 		if err != nil {
 			return fmt.Errorf("failed to set data from field %s: %w", indexOrTag, err)
 		}
+
+		f.subfieldsMap[indexOrTag] = struct{}{}
 	}
 
 	return nil
@@ -298,11 +315,12 @@ func (f *Composite) String() (string, error) {
 
 // MarshalJSON implements the encoding/json.Marshaler interface.
 func (f *Composite) MarshalJSON() ([]byte, error) {
-	// We pack the field to populate f.tagToSubfieldMap
-	// if _, err := f.Pack(); err != nil {
-	// 	return nil, err
-	// }
-	jsonData := OrderedMap(f.tagToSubfieldMap)
+	strFieldMap := map[string]Field{}
+	for k, v := range f.GetSubfields() {
+		strFieldMap[fmt.Sprint(k)] = v
+	}
+
+	jsonData := OrderedMap(strFieldMap)
 	return json.Marshal(jsonData)
 }
 
@@ -321,7 +339,7 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("failed to unmarshal subfield %v: received subfield not defined in spec", tag)
 		}
 
-		subfield, ok := f.tagToSubfieldMap[tag]
+		subfield, ok := f.subfields[tag]
 		if !ok {
 			continue
 		}
@@ -329,6 +347,9 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 		if err = f.setSubfieldData(tag, subfield); err != nil {
 			return err
 		}
+
+		f.subfieldsMap[tag] = struct{}{}
+
 		if err := json.Unmarshal(rawMsg, subfield); err != nil {
 			return fmt.Errorf("failed to unmarshal subfield %v: %w", tag, err)
 		}
@@ -340,10 +361,14 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 func (f *Composite) pack() ([]byte, error) {
 	packed := []byte{}
 	for _, tag := range f.orderedSpecFieldTags {
-		field, ok := f.tagToSubfieldMap[tag]
+		field, ok := f.subfields[tag]
 		if !ok {
 			return nil, fmt.Errorf("no subfield for tag %s", tag)
 			// continue
+		}
+
+		if _, set := f.subfieldsMap[tag]; !set {
+			continue
 		}
 
 		// var field Field
@@ -393,7 +418,7 @@ func (f *Composite) unpack(data []byte, hasPrefix bool) (int, error) {
 func (f *Composite) unpackSubfields(data []byte, hasPrefix bool) (int, error) {
 	offset := 0
 	for _, tag := range f.orderedSpecFieldTags {
-		field, ok := f.tagToSubfieldMap[tag]
+		field, ok := f.subfields[tag]
 		if !ok {
 			continue
 		}
@@ -401,6 +426,7 @@ func (f *Composite) unpackSubfields(data []byte, hasPrefix bool) (int, error) {
 		if err := f.setSubfieldData(tag, field); err != nil {
 			return 0, err
 		}
+		f.subfieldsMap[tag] = struct{}{}
 		read, err := field.Unpack(data[offset:])
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
@@ -431,7 +457,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
 		}
 
-		field, ok := f.tagToSubfieldMap[tag]
+		field, ok := f.subfields[tag]
 		if !ok {
 			continue
 		}
@@ -439,6 +465,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		if err := f.setSubfieldData(tag, field); err != nil {
 			return 0, err
 		}
+		f.subfieldsMap[tag] = struct{}{}
 
 		read, err = field.Unpack(data[offset:])
 		if err != nil {

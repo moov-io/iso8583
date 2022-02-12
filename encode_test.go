@@ -84,8 +84,7 @@ func TestMarshal(t *testing.T) {
 		}
 
 		message := NewMessage(spec)
-
-		data := &ISO87Data{
+		err := Marshal(message, &ISO87Data{
 			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
 			F3: &TestISOF3Data{
@@ -94,11 +93,10 @@ func TestMarshal(t *testing.T) {
 				F3: field.NewStringValue("56"),
 			},
 			F4: field.NewStringValue("100"),
-		}
-		err := Marshal(message, data)
+		})
 		require.NoError(t, err)
 
-		data = &ISO87Data{}
+		data := &ISO87Data{}
 
 		Unmarshal(message, data)
 

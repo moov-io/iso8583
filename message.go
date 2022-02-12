@@ -26,6 +26,7 @@ type Message struct {
 
 	// stores all fields according to the spec
 	fields map[int]field.Field
+
 	// tracks which fields were set
 	fieldsMap map[int]struct{}
 }

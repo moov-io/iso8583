@@ -42,6 +42,8 @@ func Unmarshal(message *Message, v interface{}) error {
 			continue
 		}
 
+		// TODO: we have to check if field value was set
+
 		dataField := dataStruct.Field(i)
 		if dataField.IsNil() {
 			dataField.Set(reflect.New(dataField.Type().Elem()))
