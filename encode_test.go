@@ -88,21 +88,25 @@ func TestMarshal(t *testing.T) {
 		data := &ISO87Data{
 			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
-			// F3: &TestISOF3Data{
-			// 	F1: field.NewStringValue("12"),
-			// 	F2: field.NewStringValue("34"),
-			// 	F3: field.NewStringValue("56"),
-			// },
+			F3: &TestISOF3Data{
+				F1: field.NewStringValue("12"),
+				F2: field.NewStringValue("34"),
+				F3: field.NewStringValue("56"),
+			},
 			F4: field.NewStringValue("100"),
 		}
 		err := Marshal(message, data)
 		require.NoError(t, err)
 
+		data = &ISO87Data{}
+
+		Unmarshal(message, data)
+
 		require.Equal(t, "0100", data.F0.Value)
 		require.Equal(t, "4242424242424242", data.F2.Value)
-		// require.Equal(t, "12", data.F3.F1.Value)
-		// require.Equal(t, "34", data.F3.F2.Value)
-		// require.Equal(t, "56", data.F3.F3.Value)
+		require.Equal(t, "12", data.F3.F1.Value)
+		require.Equal(t, "34", data.F3.F2.Value)
+		require.Equal(t, "56", data.F3.F3.Value)
 		require.Equal(t, "100", data.F4.Value)
 	})
 

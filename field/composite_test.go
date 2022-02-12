@@ -172,7 +172,7 @@ func TestComposite_SetData(t *testing.T) {
 	t.Run("SetData returns an error on provision of primitive type data", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpec)
 		err := composite.SetData("primitive str")
-		require.EqualError(t, err, "failed to set data as struct is expected, got: string")
+		require.EqualError(t, err, "marshal composite field value: data is not a pointer or nil")
 	})
 }
 
@@ -275,10 +275,9 @@ func TestCompositePacking(t *testing.T) {
 		err := composite.SetData(&TestDataIncorrectType{
 			F1: NewNumericValue(1),
 		})
-		require.NoError(t, err)
 
-		_, err = composite.Pack()
-		require.EqualError(t, err, "failed to set data for field 1: data does not match required *String type")
+		require.Error(t, err)
+		require.Error(t, err, "marshal composite field value: failed to set data from field 1: data does not match required *String type")
 	})
 
 	t.Run("Pack returns error on failure of subfield packing", func(t *testing.T) {

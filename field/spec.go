@@ -75,6 +75,10 @@ func CreateSubfield(specField Field) Field {
 	fl := reflect.New(fieldType).Interface().(Field)
 	fl.SetSpec(specField.Spec())
 
+	if composite, ok := fl.(CompositeWithSubfields); ok {
+		composite.ConstructSubfields()
+	}
+
 	return fl
 }
 

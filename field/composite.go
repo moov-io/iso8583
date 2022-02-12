@@ -67,22 +67,22 @@ type Composite struct {
 // validates and sets its Spec before returning it.
 // Refer to SetSpec() for more information on Spec validation.
 func NewComposite(spec *Spec) *Composite {
-	fmt.Printf("spec = %+v\n", spec)
-	subfields := CreateSubfields(spec)
-	fmt.Printf("subfields = %+v\n", subfields)
-	if _, ok := subfields["1"]; ok {
-		fmt.Printf("subfields[1] = %+v\n", subfields["1"])
-	}
-	if _, ok := subfields["11"]; ok {
-		fmt.Printf("subfields[11] = %+v\n", subfields["11"])
-	}
-	f := &Composite{
-		tagToSubfieldMap: subfields,
-	}
+	f := &Composite{}
 	f.SetSpec(spec)
+	f.ConstructSubfields()
 
-	// we have to create fields for the spec here
 	return f
+}
+
+type CompositeWithSubfields interface {
+	ConstructSubfields()
+}
+
+func (f *Composite) ConstructSubfields() {
+	if f.tagToSubfieldMap == nil {
+		subfields := CreateSubfields(f.spec)
+		f.tagToSubfieldMap = subfields
+	}
 }
 
 // Spec returns the receiver's spec.
@@ -160,17 +160,19 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 //          F4 *SubfieldCompositeData
 //      }
 //
-func (f *Composite) SetData(data interface{}) error {
-	dataStruct := reflect.ValueOf(data)
-	if dataStruct.Kind() == reflect.Ptr || dataStruct.Kind() == reflect.Interface {
-		// get the struct
-		dataStruct = dataStruct.Elem()
+func (f *Composite) SetData(v interface{}) error {
+	err := f.MarshalValue(v)
+	if err != nil {
+		return fmt.Errorf("marshal composite field value: %w", err)
 	}
 
-	if dataStruct.Kind() != reflect.Struct {
-		return fmt.Errorf("failed to set data as struct is expected, got: %s", dataStruct.Kind())
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("data is not a pointer or nil")
 	}
 
+	// get the struct from the pointer
+	dataStruct := rv.Elem()
 	f.data = &dataStruct
 	return nil
 }
@@ -202,7 +204,7 @@ func (f *Composite) MarshalValue(v interface{}) error {
 
 		messageField, ok := f.tagToSubfieldMap[indexOrTag]
 		if !ok {
-			return fmt.Errorf("no message field defined by spec with index (or tag): %s", indexOrTag)
+			continue
 		}
 
 		dataField := dataStruct.Field(i)
@@ -212,7 +214,7 @@ func (f *Composite) MarshalValue(v interface{}) error {
 
 		err = messageField.MarshalValue(dataField.Interface())
 		if err != nil {
-			return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
+			return fmt.Errorf("failed to set data from field %s: %w", indexOrTag, err)
 		}
 	}
 
@@ -297,9 +299,9 @@ func (f *Composite) String() (string, error) {
 // MarshalJSON implements the encoding/json.Marshaler interface.
 func (f *Composite) MarshalJSON() ([]byte, error) {
 	// We pack the field to populate f.tagToSubfieldMap
-	if _, err := f.Pack(); err != nil {
-		return nil, err
-	}
+	// if _, err := f.Pack(); err != nil {
+	// 	return nil, err
+	// }
 	jsonData := OrderedMap(f.tagToSubfieldMap)
 	return json.Marshal(jsonData)
 }
