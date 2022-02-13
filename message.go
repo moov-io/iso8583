@@ -21,10 +21,8 @@ const (
 )
 
 type Message struct {
-	spec      *MessageSpec
-	data      interface{}
-	dataValue *reflect.Value
-	bitmap    *field.Bitmap
+	spec   *MessageSpec
+	bitmap *field.Bitmap
 
 	// stores all fields according to the spec
 	fields map[int]field.Field
@@ -43,30 +41,9 @@ func NewMessage(spec *MessageSpec) *Message {
 	}
 }
 
-// Deprecated. Use iso8583.Unmarshal instead.
-func (m *Message) Data() interface{} {
-	return m.data
-}
-
+// Deprecated. Use Marshal intead.
 func (m *Message) SetData(data interface{}) error {
-	m.data = data
-
-	if m.data == nil {
-		return nil
-	}
-
-	dataStruct := reflect.ValueOf(data)
-	if dataStruct.Kind() == reflect.Ptr || dataStruct.Kind() == reflect.Interface {
-		// get the struct
-		dataStruct = dataStruct.Elem()
-	}
-
-	if reflect.TypeOf(dataStruct).Kind() != reflect.Struct {
-		return fmt.Errorf("failed to set data as struct is expected, got: %s", reflect.TypeOf(dataStruct).Kind())
-	}
-
-	m.dataValue = &dataStruct
-	return nil
+	return m.Marshal(data)
 }
 
 func (m *Message) Bitmap() *field.Bitmap {
@@ -131,11 +108,6 @@ func (m *Message) GetField(id int) field.Field {
 	return m.fields[id]
 }
 
-func (m *Message) IsFieldValueSet(id int) bool {
-	_, ok := m.fieldsMap[id]
-	return ok
-}
-
 // Fields returns the map of the set fields
 func (m *Message) GetFields() map[int]field.Field {
 	fields := map[int]field.Field{}
@@ -149,7 +121,7 @@ func (m *Message) Pack() ([]byte, error) {
 	packed := []byte{}
 	m.Bitmap().Reset()
 
-	ids, err := m.setPackableDataFields()
+	ids, err := m.packableFieldIDs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to pack message: %w", err)
 	}
@@ -182,20 +154,17 @@ func (m *Message) Pack() ([]byte, error) {
 func (m *Message) Unpack(src []byte) error {
 	var off int
 
+	// reset fields that were set
 	m.fieldsMap = map[int]struct{}{}
+
 	// This method implicitly also sets m.fieldsMap[bitmapIdx]
 	m.Bitmap().Reset()
 
-	// unpack MTI
-	if m.dataValue != nil {
-		if err := m.setUnpackableDataField(0); err != nil {
-			return err
-		}
-	}
 	read, err := m.fields[mtiIdx].Unpack(src)
 	if err != nil {
 		return fmt.Errorf("failed to unpack MTI: %w", err)
 	}
+
 	m.fieldsMap[mtiIdx] = struct{}{}
 
 	off = read
@@ -215,17 +184,12 @@ func (m *Message) Unpack(src []byte) error {
 				return fmt.Errorf("failed to unpack field %d: no specification found", i)
 			}
 
-			if m.dataValue != nil {
-				if err := m.setUnpackableDataField(i); err != nil {
-					return err
-				}
-			}
-
-			m.fieldsMap[i] = struct{}{}
 			read, err = fl.Unpack(src[off:])
 			if err != nil {
 				return fmt.Errorf("failed to unpack field %d (%s): %w", i, fl.Spec().Description, err)
 			}
+
+			m.fieldsMap[i] = struct{}{}
 
 			off += read
 		}
@@ -275,85 +239,32 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("failed to unmarshal field %d: no specification found", i)
 		}
 
-		if m.dataValue != nil {
-			if err := m.setUnpackableDataField(i); err != nil {
-				return err
-			}
-		}
-
-		m.fieldsMap[i] = struct{}{}
 		if err := json.Unmarshal(rawMsg, field); err != nil {
 			return fmt.Errorf("failed to unmarshal field %v: %w", id, err)
 		}
+
+		m.fieldsMap[i] = struct{}{}
 	}
 
 	return nil
 }
 
-func (m *Message) setPackableDataFields() ([]int, error) {
-	// Index 0 and 1 represent the MTI and bitmap respectively.
-	// These fields are assumed to be always populated.
-	populatedFieldIDs := []int{0, 1}
+func (m *Message) packableFieldIDs() ([]int, error) {
+	// Index 1 represent bitmap which is always populated.
+	populatedFieldIDs := []int{1}
 
-	for id, field := range m.fields {
+	for id, _ := range m.fieldsMap {
 		// represents the bitmap
 		if id == 1 {
 			continue
 		}
 
-		// These fields are set using the typed API
-		if m.dataValue != nil {
-			dataField := m.dataFieldValue(id)
-			// no non-nil data field was found with this name
-			if dataField == (reflect.Value{}) || dataField.IsNil() {
-				continue
-			}
-			if err := field.SetData(dataField.Interface()); err != nil {
-				return nil, fmt.Errorf("failed to set data for field %d: %w", id, err)
-			}
-
-			// mark field as set
-			m.fieldsMap[id] = struct{}{}
-		}
-
-		// These fields are set using the untyped API
-		_, ok := m.fieldsMap[id]
-		// We don't wish set the MTI again, hence we ignore the 0
-		// index
-		if (ok || m.dataValue != nil) && id != 0 {
-			populatedFieldIDs = append(populatedFieldIDs, id)
-		}
+		populatedFieldIDs = append(populatedFieldIDs, id)
 	}
+
 	sort.Ints(populatedFieldIDs)
 
 	return populatedFieldIDs, nil
-}
-
-func (m *Message) setUnpackableDataField(id int) error {
-	specField, ok := m.fields[id]
-	if !ok {
-		return fmt.Errorf("failed to unpack field %d: no specification found", id)
-	}
-
-	dataField := m.dataFieldValue(id)
-	// no data field was found with this name
-	if dataField == (reflect.Value{}) {
-		return nil
-	}
-
-	isNil := dataField.IsNil()
-	if isNil {
-		dataField.Set(reflect.New(dataField.Type().Elem()))
-	}
-	if err := specField.SetData(dataField.Interface()); err != nil {
-		return fmt.Errorf("failed to set data for field %d: %w", id, err)
-	}
-
-	return nil
-}
-
-func (m *Message) dataFieldValue(id int) reflect.Value {
-	return m.dataValue.FieldByName(fmt.Sprintf("F%d", id))
 }
 
 // Clone clones the message by creating a new message from the binary
@@ -365,10 +276,6 @@ func (m *Message) Clone() (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	dataStruct := reflect.New(m.dataValue.Type()).Interface()
-
-	newMessage.SetData(dataStruct)
 
 	mti, err := m.GetMTI()
 	if err != nil {
@@ -386,9 +293,9 @@ func (m *Message) Clone() (*Message, error) {
 	return newMessage, nil
 }
 
-// TODO: Marshal traverses v and sets message field value into the corresponding
-// struct field value pointed by v. If v is nil or not a pointer it returns
-// error.
+// Marshal traverses through fields provided in the v parameter matches them
+// with their spec definition and calls Marshal(...) on each spec field with the
+// appropriate data field.
 func (m *Message) Marshal(v interface{}) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {

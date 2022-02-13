@@ -172,7 +172,7 @@ func TestComposite_SetData(t *testing.T) {
 	t.Run("SetData returns an error on provision of primitive type data", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpec)
 		err := composite.SetData("primitive str")
-		require.EqualError(t, err, "marshal composite field value: data is not a pointer or nil")
+		require.EqualError(t, err, "data is not a pointer or nil")
 	})
 }
 
@@ -1006,7 +1006,7 @@ func TestCompositeJSONConversion(t *testing.T) {
 
 		require.NoError(t, composite.UnmarshalJSON([]byte(json)))
 
-		composite.Unmarshal(data)
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Nil(t, data.F2)

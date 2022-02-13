@@ -1109,11 +1109,6 @@ func TestMessageClone(t *testing.T) {
 	require.Equal(t, messageData.F55.F9F02.Value, message2Data.F55.F9F02.Value)
 	require.Equal(t, messageData.F120.Value, message2Data.F120.Value)
 
-	data2.F2 = field.NewStringValue("1234567890123456789")
-	message.SetData(data2)
-
-	require.NotEqual(t, message.data.(*TestISOData).F2, message2.data.(*TestISOData).F2)
-
 	message3, err := message2.Clone()
 	require.NoError(t, err)
 
