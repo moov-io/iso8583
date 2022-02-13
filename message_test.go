@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 	"time"
 
@@ -140,7 +141,9 @@ func TestMessage(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "100", s)
 
-		data := message.Data().(*ISO87Data)
+		data := &ISO87Data{}
+
+		require.NoError(t, Unmarshal(message, data))
 
 		require.Equal(t, "0100", data.F0.Value)
 		require.Equal(t, "4242424242424242", data.F2.Value)
@@ -502,7 +505,8 @@ func TestPackUnpack(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "77700", s)
 
-		data := message.Data().(*TestISOData)
+		data := &TestISOData{}
+		require.NoError(t, Unmarshal(message, data))
 
 		assert.Equal(t, "4276555555555555", data.F2.Value)
 		assert.Equal(t, "00", data.F3.F1.Value)
@@ -720,9 +724,6 @@ func TestMessageJSON(t *testing.T) {
 
 		input := []byte(`{"0":"0100","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`)
 
-		data := &TestISOData{}
-		require.NoError(t, message.SetData(data))
-
 		want := &TestISOData{
 			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
@@ -735,6 +736,10 @@ func TestMessageJSON(t *testing.T) {
 		}
 
 		require.NoError(t, json.Unmarshal(input, message))
+
+		data := &TestISOData{}
+		require.NoError(t, Unmarshal(message, data))
+
 		require.Equal(t, want.F0.Value, data.F0.Value)
 		require.Equal(t, want.F2.Value, data.F2.Value)
 		require.Equal(t, want.F3.F1.Value, data.F3.F1.Value)
@@ -1072,8 +1077,11 @@ func TestMessageClone(t *testing.T) {
 
 	require.Equal(t, mti, mti2)
 
-	messageData := message.Data().(*TestISOData)
-	message2Data := message2.Data().(*TestISOData)
+	messageData := &TestISOData{}
+	message2Data := &TestISOData{}
+
+	require.NoError(t, Unmarshal(message, messageData))
+	require.NoError(t, Unmarshal(message2, message2Data))
 
 	require.Equal(t, messageData.F2.Value, message2Data.F2.Value)
 	require.Equal(t, messageData.F3.F1.Value, message2Data.F3.F1.Value)
@@ -1117,7 +1125,8 @@ func TestMessageClone(t *testing.T) {
 
 	require.Equal(t, mti2, mti3)
 
-	message3Data := message3.Data().(*TestISOData)
+	message3Data := &TestISOData{}
+	require.NoError(t, Unmarshal(message3, message3Data))
 
 	require.Equal(t, message2Data.F2.Value, message3Data.F2.Value)
 	require.Equal(t, message2Data.F3.F1.Value, message3Data.F3.F1.Value)
@@ -1144,4 +1153,64 @@ func TestMessageClone(t *testing.T) {
 	require.Equal(t, message2Data.F55.F9A.Value, message3Data.F55.F9A.Value)
 	require.Equal(t, message2Data.F55.F9F02.Value, message3Data.F55.F9F02.Value)
 	require.Equal(t, message2Data.F120.Value, message3Data.F120.Value)
+}
+
+func Test_getFieldIndex(t *testing.T) {
+	t.Run("returns index from field name", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			F1 string
+		}{}).Elem()
+
+		index, err := getFieldIndex(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Equal(t, 1, index)
+	})
+
+	t.Run("returns index from field tag", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			Name   string `index:"abcd"`
+			F      string `index:"02"`
+			Amount string `index:"3"`
+		}{}).Elem()
+
+		// get index from field Name
+		_, err := getFieldIndex(st.Type().Field(0))
+
+		require.Error(t, err)
+		require.EqualError(t, err, "converting field index into int: strconv.Atoi: parsing \"abcd\": invalid syntax")
+
+		// get index from field F
+		index, err := getFieldIndex(st.Type().Field(1))
+
+		require.NoError(t, err)
+		require.Equal(t, 2, index)
+
+		// get index from field Amount
+		index, err = getFieldIndex(st.Type().Field(2))
+
+		require.NoError(t, err)
+		require.Equal(t, 3, index)
+	})
+
+	t.Run("returns empty string when no tag and field name does not match the pattern", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			Name string
+		}{}).Elem()
+
+		index, err := getFieldIndex(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Equal(t, -1, index)
+
+		// single letter field without tag is ignored
+		st = reflect.ValueOf(&struct {
+			F string
+		}{}).Elem()
+
+		index, err = getFieldIndex(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Equal(t, -1, index)
+	})
 }
