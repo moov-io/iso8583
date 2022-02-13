@@ -113,7 +113,7 @@ func (f *Composite) SetSpec(spec *Spec) {
 	f.orderedSpecFieldTags = orderedKeys(spec.Subfields, spec.Tag.Sort)
 }
 
-func (f *Composite) UnmarshalValue(v interface{}) error {
+func (f *Composite) Unmarshal(v interface{}) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("data is not a pointer or nil")
@@ -153,7 +153,7 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 			dataField.Set(reflect.New(dataField.Type().Elem()))
 		}
 
-		err = messageField.UnmarshalValue(dataField.Interface())
+		err = messageField.Unmarshal(dataField.Interface())
 		if err != nil {
 			return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
 		}
@@ -176,7 +176,7 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 //      }
 //
 func (f *Composite) SetData(v interface{}) error {
-	err := f.MarshalValue(v)
+	err := f.Marshal(v)
 	if err != nil {
 		return fmt.Errorf("marshal composite field value: %w", err)
 	}
@@ -192,7 +192,7 @@ func (f *Composite) SetData(v interface{}) error {
 	return nil
 }
 
-func (f *Composite) MarshalValue(v interface{}) error {
+func (f *Composite) Marshal(v interface{}) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("data is not a pointer or nil")
@@ -227,7 +227,7 @@ func (f *Composite) MarshalValue(v interface{}) error {
 			continue
 		}
 
-		err = messageField.MarshalValue(dataField.Interface())
+		err = messageField.Marshal(dataField.Interface())
 		if err != nil {
 			return fmt.Errorf("failed to set data from field %s: %w", indexOrTag, err)
 		}

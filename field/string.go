@@ -98,7 +98,7 @@ func (f *String) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *String) UnmarshalValue(v interface{}) error {
+func (f *String) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
 	}
@@ -130,7 +130,7 @@ func (f *String) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *String) MarshalValue(data interface{}) error {
+func (f *String) Marshal(data interface{}) error {
 	return f.SetData(data)
 }
 

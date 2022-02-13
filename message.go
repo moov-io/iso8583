@@ -426,7 +426,7 @@ func (m *Message) Marshal(v interface{}) error {
 			continue
 		}
 
-		err = messageField.MarshalValue(dataField.Interface())
+		err = messageField.Marshal(dataField.Interface())
 		if err != nil {
 			return fmt.Errorf("failed to set value to field %d: %w", fieldIndex, err)
 		}
@@ -480,7 +480,7 @@ func (m *Message) Unmarshal(v interface{}) error {
 			dataField.Set(reflect.New(dataField.Type().Elem()))
 		}
 
-		err = messageField.UnmarshalValue(dataField.Interface())
+		err = messageField.Unmarshal(dataField.Interface())
 		if err != nil {
 			return fmt.Errorf("failed to get value from field %d: %w", fieldIndex, err)
 		}

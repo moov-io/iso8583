@@ -112,7 +112,7 @@ func (f *Track3) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *Track3) UnmarshalValue(v interface{}) error {
+func (f *Track3) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
 	}
@@ -148,7 +148,7 @@ func (f *Track3) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *Track3) MarshalValue(data interface{}) error {
+func (f *Track3) Marshal(data interface{}) error {
 	return f.SetData(data)
 }
 

@@ -58,12 +58,12 @@ func TestStringField(t *testing.T) {
 	require.Equal(t, "hello", data.Value)
 }
 
-func TestStringFieldUnmarshalValue(t *testing.T) {
+func TestStringFieldUnmarshal(t *testing.T) {
 	str := NewStringValue("hello")
 
 	val := &String{}
 
-	err := str.UnmarshalValue(val)
+	err := str.Unmarshal(val)
 
 	require.NoError(t, err)
 	require.Equal(t, "hello", val.Value)

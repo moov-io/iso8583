@@ -176,8 +176,8 @@ func TestComposite_SetData(t *testing.T) {
 	})
 }
 
-func TestCompositeFieldUnmarshalValue(t *testing.T) {
-	t.Run("UnmarshalValue gets data for composite field", func(t *testing.T) {
+func TestCompositeFieldUnmarshal(t *testing.T) {
+	t.Run("Unmarshal gets data for composite field", func(t *testing.T) {
 		// first, we need to populate fields of composite field
 		// we will do it by packing the field
 		composite := NewComposite(tlvTestSpec)
@@ -191,14 +191,14 @@ func TestCompositeFieldUnmarshalValue(t *testing.T) {
 		require.NoError(t, err)
 
 		data := &TLVTestData{}
-		err = composite.UnmarshalValue(data)
+		err = composite.Unmarshal(data)
 		require.NoError(t, err)
 
 		require.Equal(t, "210720", data.F9A.Value)
 		require.Equal(t, "000000000501", data.F9F02.Value)
 	})
 
-	t.Run("UnmarshalValue gets data for composite field using field tag `index`", func(t *testing.T) {
+	t.Run("Unmarshal gets data for composite field using field tag `index`", func(t *testing.T) {
 		type tlvTestData struct {
 			Date          *String `index:"9A"`
 			TransactionID *String `index:"9F02"`
@@ -216,7 +216,7 @@ func TestCompositeFieldUnmarshalValue(t *testing.T) {
 		require.NoError(t, err)
 
 		data := &tlvTestData{}
-		err = composite.UnmarshalValue(data)
+		err = composite.Unmarshal(data)
 		require.NoError(t, err)
 
 		require.Equal(t, "210720", data.Date.Value)
@@ -258,7 +258,7 @@ func TestTLVPacking(t *testing.T) {
 		require.Equal(t, 17, read)
 
 		data := &TLVTestData{}
-		require.NoError(t, composite.UnmarshalValue(data))
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "210720", data.F9A.Value)
 		require.Equal(t, "000000000501", data.F9F02.Value)
@@ -364,7 +364,7 @@ func TestCompositePacking(t *testing.T) {
 		_, err := composite.Unpack([]byte("ABCD12"))
 
 		data := &TestDataIncorrectType{}
-		err = composite.UnmarshalValue(data)
+		err = composite.Unmarshal(data)
 
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to get data from field 1: data does not match required *String type")
@@ -470,7 +470,7 @@ func TestCompositePacking(t *testing.T) {
 		require.NoError(t, err)
 
 		data := &CompositeTestData{}
-		require.NoError(t, composite.UnmarshalValue(data))
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
@@ -485,7 +485,7 @@ func TestCompositePacking(t *testing.T) {
 		require.NoError(t, err)
 
 		data := &CompositeTestData{}
-		require.NoError(t, composite.UnmarshalValue(data))
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
@@ -779,7 +779,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		require.Equal(t, 30, read)
 
 		data := &CompositeTestData{}
-		require.NoError(t, composite.UnmarshalValue(data))
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
@@ -794,7 +794,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 
 		data := &CompositeTestDataWithoutTagPadding{}
 
-		require.NoError(t, composite.UnmarshalValue(data))
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.NoError(t, err)
 		require.Equal(t, 14, read)
@@ -812,7 +812,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		require.Equal(t, 14, read)
 
 		data := &CompositeTestData{}
-		require.NoError(t, composite.UnmarshalValue(data))
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Nil(t, data.F2)
@@ -830,7 +830,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		require.Equal(t, 20, read)
 
 		data := &CompositeTestData{}
-		require.NoError(t, composite.UnmarshalValue(data))
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
@@ -1006,7 +1006,7 @@ func TestCompositeJSONConversion(t *testing.T) {
 
 		require.NoError(t, composite.UnmarshalJSON([]byte(json)))
 
-		composite.UnmarshalValue(data)
+		composite.Unmarshal(data)
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Nil(t, data.F2)

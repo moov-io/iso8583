@@ -100,7 +100,7 @@ func (f *Binary) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *Binary) UnmarshalValue(v interface{}) error {
+func (f *Binary) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
 	}
@@ -132,7 +132,7 @@ func (f *Binary) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *Binary) MarshalValue(data interface{}) error {
+func (f *Binary) Marshal(data interface{}) error {
 	return f.SetData(data)
 }
 

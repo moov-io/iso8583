@@ -141,7 +141,7 @@ func TestTrack1(t *testing.T) {
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 
-		t.Run("UnmarshalValue gets track values into data parameter", func(t *testing.T) {
+		t.Run("Unmarshal gets track values into data parameter", func(t *testing.T) {
 			expDate, err := time.Parse("0601", "9901")
 			require.NoError(t, err)
 
@@ -159,7 +159,7 @@ func TestTrack1(t *testing.T) {
 
 			data := &Track1{}
 
-			err = track.UnmarshalValue(data)
+			err = track.Unmarshal(data)
 
 			require.NoError(t, err)
 			require.Equal(t, "B", data.FormatCode)
@@ -308,7 +308,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 
-		t.Run("UnmarshalValue gets track values into data parameter", func(t *testing.T) {
+		t.Run("Unmarshal gets track values into data parameter", func(t *testing.T) {
 			expDate, err := time.Parse("0601", "9901")
 			require.NoError(t, err)
 
@@ -324,7 +324,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 			data := &Track2{}
 
-			err = track.UnmarshalValue(data)
+			err = track.Unmarshal(data)
 
 			require.NoError(t, err)
 			require.Equal(t, "4000340000000506", data.PrimaryAccountNumber)
@@ -519,7 +519,7 @@ func TestTrack3TypedAPI(t *testing.T) {
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 
-		t.Run("UnmarshalValue gets track values into data parameter", func(t *testing.T) {
+		t.Run("Unmarshal gets track values into data parameter", func(t *testing.T) {
 			track := NewTrack3(track3Spec)
 			err := track.SetData(&Track3{
 				FormatCode:           `01`,
@@ -530,7 +530,7 @@ func TestTrack3TypedAPI(t *testing.T) {
 
 			data := &Track3{}
 
-			err = track.UnmarshalValue(data)
+			err = track.Unmarshal(data)
 
 			require.NoError(t, err)
 			require.Equal(t, "01", data.FormatCode)

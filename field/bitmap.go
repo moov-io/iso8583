@@ -107,7 +107,7 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 	return read, nil
 }
 
-func (f *Bitmap) UnmarshalValue(v interface{}) error {
+func (f *Bitmap) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
 	}
@@ -139,7 +139,7 @@ func (f *Bitmap) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *Bitmap) MarshalValue(data interface{}) error {
+func (f *Bitmap) Marshal(data interface{}) error {
 	return f.SetData(data)
 }
 

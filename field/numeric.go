@@ -109,7 +109,7 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *Numeric) UnmarshalValue(v interface{}) error {
+func (f *Numeric) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
 	}
@@ -140,7 +140,7 @@ func (f *Numeric) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *Numeric) MarshalValue(data interface{}) error {
+func (f *Numeric) Marshal(data interface{}) error {
 	return f.SetData(data)
 }
 
