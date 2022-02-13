@@ -293,9 +293,9 @@ func (m *Message) Clone() (*Message, error) {
 	return newMessage, nil
 }
 
-// Marshal traverses through fields provided in the v parameter matches them
-// with their spec definition and calls Marshal(...) on each spec field with the
-// appropriate data field.
+// Marshal populates message fields with v struct field values. It traverses
+// through the message fields and calls Unmarshal(...) on them setting the v If
+// v  is nil or not a pointer it returns error.
 func (m *Message) Marshal(v interface{}) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
@@ -344,9 +344,9 @@ func (m *Message) Marshal(v interface{}) error {
 	return nil
 }
 
-// Unmarshal traverses the message fields recursively and for each field, sets
-// the field value into the corresponding struct field value pointed by v. If v
-// is nil or not a pointer it returns error.
+// Unmarshal populates v struct fields with message field values. It traverses
+// through the message fields and calls Unmarshal(...) on them setting the v If
+// v  is nil or not a pointer it returns error.
 func (m *Message) Unmarshal(v interface{}) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
