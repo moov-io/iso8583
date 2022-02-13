@@ -58,8 +58,12 @@ type Composite struct {
 	spec *Spec
 
 	orderedSpecFieldTags []string
-	subfields            map[string]Field
-	subfieldsMap         map[string]struct{}
+
+	// stores all fields according to the spec
+	subfields map[string]Field
+
+	// tracks which subfields were set
+	setSubfields map[string]struct{}
 
 	data *reflect.Value
 }
@@ -84,7 +88,7 @@ func (f *Composite) ConstructSubfields() {
 		subfields := CreateSubfields(f.spec)
 		f.subfields = subfields
 	}
-	f.subfieldsMap = make(map[string]struct{})
+	f.setSubfields = make(map[string]struct{})
 }
 
 // Spec returns the receiver's spec.
@@ -92,9 +96,10 @@ func (f *Composite) Spec() *Spec {
 	return f.spec
 }
 
-func (f *Composite) GetSubfields() map[string]Field {
+// getSubfields returns map of fields with values were set
+func (f *Composite) getSubfields() map[string]Field {
 	fields := map[string]Field{}
-	for i := range f.subfieldsMap {
+	for i := range f.setSubfields {
 		fields[i] = f.subfields[i]
 	}
 	return fields
@@ -144,7 +149,7 @@ func (f *Composite) Unmarshal(v interface{}) error {
 		}
 
 		// unmarshal only subfield that has the value set
-		if _, set := f.subfieldsMap[indexOrTag]; !set {
+		if _, set := f.setSubfields[indexOrTag]; !set {
 			continue
 		}
 
@@ -232,7 +237,7 @@ func (f *Composite) Marshal(v interface{}) error {
 			return fmt.Errorf("failed to set data from field %s: %w", indexOrTag, err)
 		}
 
-		f.subfieldsMap[indexOrTag] = struct{}{}
+		f.setSubfields[indexOrTag] = struct{}{}
 	}
 
 	return nil
@@ -316,7 +321,7 @@ func (f *Composite) String() (string, error) {
 // MarshalJSON implements the encoding/json.Marshaler interface.
 func (f *Composite) MarshalJSON() ([]byte, error) {
 	strFieldMap := map[string]Field{}
-	for k, v := range f.GetSubfields() {
+	for k, v := range f.getSubfields() {
 		strFieldMap[fmt.Sprint(k)] = v
 	}
 
@@ -350,7 +355,7 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 		// 	return err
 		// }
 
-		f.subfieldsMap[tag] = struct{}{}
+		f.setSubfields[tag] = struct{}{}
 
 		if err := json.Unmarshal(rawMsg, subfield); err != nil {
 			return fmt.Errorf("failed to unmarshal subfield %v: %w", tag, err)
@@ -369,7 +374,7 @@ func (f *Composite) pack() ([]byte, error) {
 			// continue
 		}
 
-		if _, set := f.subfieldsMap[tag]; !set {
+		if _, set := f.setSubfields[tag]; !set {
 			continue
 		}
 
@@ -412,7 +417,7 @@ func (f *Composite) unpackSubfields(data []byte, hasPrefix bool) (int, error) {
 		// if err := f.setSubfieldData(tag, field); err != nil {
 		// 	return 0, err
 		// }
-		f.subfieldsMap[tag] = struct{}{}
+		f.setSubfields[tag] = struct{}{}
 		read, err := field.Unpack(data[offset:])
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
@@ -451,7 +456,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		// if err := f.setSubfieldData(tag, field); err != nil {
 		// 	return 0, err
 		// }
-		f.subfieldsMap[tag] = struct{}{}
+		f.setSubfields[tag] = struct{}{}
 
 		read, err = field.Unpack(data[offset:])
 		if err != nil {
