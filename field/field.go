@@ -23,7 +23,7 @@ type Field interface {
 	// Bytes returns binary representation of the field Value
 	Bytes() ([]byte, error)
 
-	// SetData links provided data parameter with the field Value
+	// Deprecated. Use Marshal intead.
 	SetData(data interface{}) error
 
 	// Unmarshal sets field Value into provided v. If v is nil or not
