@@ -208,14 +208,14 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 
 	fieldMap := m.GetFields()
 	strFieldMap := map[string]field.Field{}
-	for k, v := range fieldMap {
+	for id, field := range fieldMap {
 		// we don't wish to populate the bitmap in the final
 		// JSON since it is dynamically generated when packing
 		// and unpacking anyways.
-		if k == bitmapIdx {
+		if id == bitmapIdx {
 			continue
 		}
-		strFieldMap[fmt.Sprint(k)] = v
+		strFieldMap[fmt.Sprint(id)] = field
 	}
 
 	// get only fields that were set
@@ -253,7 +253,7 @@ func (m *Message) packableFieldIDs() ([]int, error) {
 	// Index 1 represent bitmap which is always populated.
 	populatedFieldIDs := []int{1}
 
-	for id, _ := range m.fieldsMap {
+	for id := range m.fieldsMap {
 		// represents the bitmap
 		if id == 1 {
 			continue

@@ -122,7 +122,6 @@ func TestMessage(t *testing.T) {
 		}
 
 		message := NewMessage(spec)
-		message.SetData(&ISO87Data{})
 
 		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
 		err := message.Unpack([]byte(rawMsg))
