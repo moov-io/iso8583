@@ -362,6 +362,7 @@ func TestCompositePacking(t *testing.T) {
 		composite := NewComposite(compositeTestSpec)
 
 		_, err := composite.Unpack([]byte("ABCD12"))
+		require.NoError(t, err)
 
 		data := &TestDataIncorrectType{}
 		err = composite.Unmarshal(data)
