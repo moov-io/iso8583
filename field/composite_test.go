@@ -276,7 +276,7 @@ func TestCompositePacking(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.Error(t, err, "marshal composite field value: failed to set data from field 1: data does not match required *String type")
+		require.EqualError(t, err, "failed to set data from field 1: data does not match required *String type")
 	})
 
 	t.Run("Pack returns error on failure of subfield packing", func(t *testing.T) {
