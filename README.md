@@ -131,13 +131,13 @@ Notice in the examples below, you do not need to set the bitmap value manually, 
 
 #### Setting values of individual fields
 
-If you need to set few fields, you can easily set them like this:
+If you need to set few fields, you can easily set them using `message.Field(id, string)` or `message.BinaryField(id, []byte)` like this:
 
 ```go
 // create message with defined spec
 message := NewMessage(spec)
 
-// sets message type indicator at field 0
+// set message type indicator at field 0
 message.MTI("0100")
 
 // set all message fields you need as strings
@@ -157,9 +157,11 @@ rawMessage, err := message.Pack()
 // now you can send rawMessage over the wire
 ```
 
+Working with individual fields is limited to two types: `string` or `[]byte`. Underlying field converts the input into its own type. If it fails, then error is returned.
+
 #### Setting values using data struct
 
-Accessing individual fields is handy when you want to get value of one or two fields. When you need to access a lot of them, using structs is more convenient.
+Accessing individual fields is handy when you want to get value of one or two fields. When you need to access a lot of them and you want to work with field types, using structs with `message.Marshal(data)` is more convenient.
 
 First, you need to define a struct with fields you want to set. Fields should correspond to the spec field types. Here is an example:
 
@@ -193,7 +195,7 @@ When you have a binary (packed) message and you know the specification it follow
 
 #### Getting values of individual fields
 
-You can easily access individual fields like this:
+You can access values of individual fields using `message.GetString(id)`, `message.GetBytes(id)` like this:
 
 ```go
 message := NewMessage(spec)
@@ -212,12 +214,11 @@ amount, err := message.GetString(4) // Transaction amount: 100
 // handle error
 ```
 
-You can get individual field values only as a `String` or as a `[]byte`.
-
+Again, you are limited to a `string` or a `[]byte` types when you get values of individual fields.
 
 #### Getting values using data struct
 
-To get values of multiple fields with their types just pass an empty struct for the data you want to access:
+To get values of multiple fields with their types just pass a pointer to a struct for the data you want into `message.Unmarshal(data)` like this:
 
 ```go
 // list fields you want to set, add `index` tag with field index or tag (for
@@ -234,8 +235,10 @@ message := NewMessage(spec)
 err := message.Unpack(rawMessage)
 // handle error
 
-// get typed data
+// create pointer to empty struct
 data := &NetworkManagementRequest{}
+
+// get field values into data struct
 err = message.Unmarshal(data)
 // handle error
 
