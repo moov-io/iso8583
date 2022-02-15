@@ -125,25 +125,31 @@ spec := &iso8583.MessageSpec{
 
 ### Build and pack the message
 
-After the specification is defined, you can build a message. Having a binary representation of your message that's packed according to the provided spec lets you send it directly to a payment system! There are two ways to generate a message: typed or untyped.
+After the specification is defined, you can build a message. Having a binary representation of your message that's packed according to the provided spec lets you send it directly to a payment system!
 
 Notice in the examples below, you do not need to set the bitmap value manually, as it is automatically generated for you during packing.
 
-#### Untyped fields
+#### Setting values of individual fields
 
-If you don't care about types, and strings are fine for you, then you can easily set message fields like this:
+If you need to set few fields, you can easily set them using `message.Field(id, string)` or `message.BinaryField(id, []byte)` like this:
 
 ```go
 // create message with defined spec
 message := NewMessage(spec)
 
-// sets message type indicator at field 0
+// set message type indicator at field 0
 message.MTI("0100")
 
 // set all message fields you need as strings
-message.Field(2, "4242424242424242")
-message.Field(3, "123456")
-message.Field(4, "100")
+
+err := message.Field(2, "4242424242424242")
+// handle error
+
+err = message.Field(3, "123456")
+// handle error
+
+err = message.Field(4, "100")
+// handle error
 
 // generate binary representation of the message into rawMessage
 rawMessage, err := message.Pack()
@@ -151,79 +157,96 @@ rawMessage, err := message.Pack()
 // now you can send rawMessage over the wire
 ```
 
-The binary message created will be `"01007000000000000000164242424242424242123456000000000100"`.
+Working with individual fields is limited to two types: `string` or `[]byte`. Underlying field converts the input into its own type. If it fails, then error is returned.
 
-#### Typed fields
+#### Setting values using data struct
 
-In many cases, you may want to work with specific types (numbers, strings, time, etc.) when setting message fields.
+Accessing individual fields is handy when you want to get value of one or two fields. When you need to access a lot of them and you want to work with field types, using structs with `message.Marshal(data)` is more convenient.
 
-First, you need to define a struct that corresponds to the spec field types. Here is an example:
+First, you need to define a struct with fields you want to set. Fields should correspond to the spec field types. Here is an example:
 
 ```go
-// use the same types from message specification
-type ISO87Data struct {
-	F2 *field.StringField
-	F3 *field.NumericField
-	F4 *field.StringField
+// list fields you want to set, add `index` tag with field index or tag (for
+// composite subfields) use the same types from message specification
+type NetworkManagementRequest struct {
+	MTI                  *field.String `index:"0"`
+	TransmissionDateTime *field.String `index:"7"`
+	STAN                 *field.String `index:"11"`
+	InformationCode      *field.String `index:"70"`
 }
 
 message := NewMessage(spec)
-message.MTI("0100")
 
 // now, pass data with fields into the message 
-err := message.SetData(&ISO87Data{
-	F2: field.NewStringValue("4242424242424242"),
-	F3: field.NewNumericValue(123456),
-	F4: field.NewStringValue("100"),
+err := message.Marshal(&NetworkManagementRequest{
+	MTI:                  field.NewStringValue("0800"),
+	TransmissionDateTime: field.NewStringValue(time.Now().UTC().Format("060102150405")),
+	STAN:                 field.NewStringValue("000001"),
+	InformationCode:      field.NewStringValue("001"),
 })
 
 // pack the message and send it to your provider
-rawMessage, err := message.Pack()
+requestMessage, err := message.Pack()
 ```
 
 ### Parse the message and access the data
 
-When you have a binary (packed) message and you know the specification it follows, you can unpack it and access the data. Again, you have two options for data access: untyped and typed.
+When you have a binary (packed) message and you know the specification it follows, you can unpack it and access the data. Again, you have two options for data access: access individual fields or populate struct with message field values.
 
-#### Untyped fields
+#### Getting values of individual fields
 
-With this approach you can easily access fields as strings:
+You can access values of individual fields using `message.GetString(id)`, `message.GetBytes(id)` like this:
 
 ```go
 message := NewMessage(spec)
 message.Unpack(rawMessage)
 
-message.GetMTI() // MTI: 0100
-message.GetString(2) // Card number: 4242424242424242
-message.GetString(3) // Processing code: 123456
-message.GetString(4) // Transaction amount: 100
+mti, err := message.GetMTI() // MTI: 0100
+// handle error
+
+pan, err := message.GetString(2) // Card number: 4242424242424242
+// handle error
+
+processingCode, err := message.GetString(3) // Processing code: 123456
+// handle error
+
+amount, err := message.GetString(4) // Transaction amount: 100
+// handle error
 ```
 
-#### Typed fields
+Again, you are limited to a `string` or a `[]byte` types when you get values of individual fields.
 
-To get typed field values just pass an empty struct for the data you want to access:
+#### Getting values using data struct
+
+To get values of multiple fields with their types just pass a pointer to a struct for the data you want into `message.Unmarshal(data)` like this:
 
 ```go
-// use the same types from message specification
-type ISO87Data struct {
-	F2 *field.StringField
-	F3 *field.NumericField
-	F4 *field.StringField
+// list fields you want to set, add `index` tag with field index or tag (for
+// composite subfields) use the same types from message specification
+type NetworkManagementRequest struct {
+	MTI                  *field.String `index:"0"`
+	TransmissionDateTime *field.String `index:"7"`
+	STAN                 *field.String `index:"11"`
+	InformationCode      *field.String `index:"70"`
 }
 
 message := NewMessage(spec)
 // let's unpack binary message
 err := message.Unpack(rawMessage)
-
-// get typed data
-data := &ISO87Data{}
-err = iso8583.Unmarshal(message, data)
 // handle error
 
-// now you have typed values
-data.F2.Value // is a string "4242424242424242"
-data.F3.Value // is an int 123456
-data.F4.Value // is a string "100"
+// create pointer to empty struct
+data := &NetworkManagementRequest{}
+
+// get field values into data struct
+err = message.Unmarshal(data)
+// handle error
+
+// now you can access field values
+data.MTI.Value // "0100"
+data.TransmissionDateTime.Value // "220102103212"
+data.STAN.Value // "000001"
+data.InformationCode.Value // "001"
 ```
 
 For complete code samples please check [./message_test.go](./message_test.go).
@@ -254,7 +277,7 @@ it will produce following JSON:
 }
 ```
 
-Also, you can unmarshal JSON into `iso8583.Message` object using the untyped API as such:
+Also, you can unmarshal JSON into `iso8583.Message`:
 
 ```go
 input := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
@@ -263,23 +286,8 @@ message := NewMessage(spec)
 if err := json.Unmarshal([]byte(input), message); err != nil {
     // handle err
 }
-```
 
-Similarly, the typed API may be used as such:
-
-```go
-input := `{"0":"0100","1":"700000000000000000000000000000000000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
-
-message := NewMessage(spec)
-data := &TestISOData{}
-if err := message.SetData(data); err != nil {
-    // handle error
-}
-if err = json.Unmarshal([]byte(input), message); err != nil {
-    // handle err
-}
-
-fmt.Printf("Field F2: %v", data.F2.Value) // This will print "4242424242424242"
+// access indidual fields or using struct
 ```
 
 ### Network Header

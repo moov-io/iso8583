@@ -58,9 +58,12 @@ type Composite struct {
 	spec *Spec
 
 	orderedSpecFieldTags []string
-	tagToSubfieldMap     map[string]Field
 
-	data *reflect.Value
+	// stores all fields according to the spec
+	subfields map[string]Field
+
+	// tracks which subfields were set
+	setSubfields map[string]struct{}
 }
 
 // NewComposite creates a new instance of the *Composite struct,
@@ -69,12 +72,36 @@ type Composite struct {
 func NewComposite(spec *Spec) *Composite {
 	f := &Composite{}
 	f.SetSpec(spec)
+	f.ConstructSubfields()
+
 	return f
+}
+
+// CompositeWithSubfields is used when composite field is created without
+// calling NewComposite e.g. in iso8583.NewMessage(...)
+type CompositeWithSubfields interface {
+	ConstructSubfields()
+}
+
+func (f *Composite) ConstructSubfields() {
+	if f.subfields == nil {
+		f.subfields = CreateSubfields(f.spec)
+	}
+	f.setSubfields = make(map[string]struct{})
 }
 
 // Spec returns the receiver's spec.
 func (f *Composite) Spec() *Spec {
 	return f.spec
+}
+
+// getSubfields returns the map of set sub fields
+func (f *Composite) getSubfields() map[string]Field {
+	fields := map[string]Field{}
+	for i := range f.setSubfields {
+		fields[i] = f.subfields[i]
+	}
+	return fields
 }
 
 // SetSpec validates the spec and creates new instances of Subfields defined
@@ -87,11 +114,10 @@ func (f *Composite) SetSpec(spec *Spec) {
 		panic(err)
 	}
 	f.spec = spec
-	f.tagToSubfieldMap = map[string]Field{}
 	f.orderedSpecFieldTags = orderedKeys(spec.Subfields, spec.Tag.Sort)
 }
 
-func (f *Composite) UnmarshalValue(v interface{}) error {
+func (f *Composite) Unmarshal(v interface{}) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("data is not a pointer or nil")
@@ -116,8 +142,13 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 			continue
 		}
 
-		messageField, ok := f.tagToSubfieldMap[indexOrTag]
+		messageField, ok := f.subfields[indexOrTag]
 		if !ok {
+			continue
+		}
+
+		// unmarshal only subfield that has the value set
+		if _, set := f.setSubfields[indexOrTag]; !set {
 			continue
 		}
 
@@ -126,7 +157,7 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 			dataField.Set(reflect.New(dataField.Type().Elem()))
 		}
 
-		err = messageField.UnmarshalValue(dataField.Interface())
+		err = messageField.Unmarshal(dataField.Interface())
 		if err != nil {
 			return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
 		}
@@ -135,8 +166,13 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 	return nil
 }
 
-// SetData traverses through fields provided in the data parameter matches them
-// with their spec definition and calls SetData(...) on each spec field with the
+// Deprecated. Use Marshal instead
+func (f *Composite) SetData(v interface{}) error {
+	return f.Marshal(v)
+}
+
+// Marshal traverses through fields provided in the data parameter matches them
+// with their spec definition and calls Marshal(...) on each spec field with the
 // appropriate data field.
 //
 // A valid input is as follows:
@@ -148,18 +184,49 @@ func (f *Composite) UnmarshalValue(v interface{}) error {
 //          F4 *SubfieldCompositeData
 //      }
 //
-func (f *Composite) SetData(data interface{}) error {
-	dataStruct := reflect.ValueOf(data)
-	if dataStruct.Kind() == reflect.Ptr || dataStruct.Kind() == reflect.Interface {
-		// get the struct
-		dataStruct = dataStruct.Elem()
+func (f *Composite) Marshal(v interface{}) error {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("data is not a pointer or nil")
 	}
+
+	// get the struct from the pointer
+	dataStruct := rv.Elem()
 
 	if dataStruct.Kind() != reflect.Struct {
-		return fmt.Errorf("failed to set data as struct is expected, got: %s", dataStruct.Kind())
+		return errors.New("data is not a struct")
 	}
 
-	f.data = &dataStruct
+	// iterate over struct fields
+	for i := 0; i < dataStruct.NumField(); i++ {
+		indexOrTag, err := getFieldIndexOrTag(dataStruct.Type().Field(i))
+		if err != nil {
+			return fmt.Errorf("getting field %d index: %w", i, err)
+		}
+
+		// skip field without index
+		if indexOrTag == "" {
+			continue
+		}
+
+		messageField, ok := f.subfields[indexOrTag]
+		if !ok {
+			continue
+		}
+
+		dataField := dataStruct.Field(i)
+		if dataField.IsNil() {
+			continue
+		}
+
+		err = messageField.Marshal(dataField.Interface())
+		if err != nil {
+			return fmt.Errorf("failed to set data from field %s: %w", indexOrTag, err)
+		}
+
+		f.setSubfields[indexOrTag] = struct{}{}
+	}
+
 	return nil
 }
 
@@ -240,11 +307,7 @@ func (f *Composite) String() (string, error) {
 
 // MarshalJSON implements the encoding/json.Marshaler interface.
 func (f *Composite) MarshalJSON() ([]byte, error) {
-	// We pack the field to populate f.tagToSubfieldMap
-	if _, err := f.Pack(); err != nil {
-		return nil, err
-	}
-	jsonData := OrderedMap(f.tagToSubfieldMap)
+	jsonData := OrderedMap(f.getSubfields())
 	return json.Marshal(jsonData)
 }
 
@@ -262,14 +325,17 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 		if _, ok := f.spec.Subfields[tag]; !ok {
 			return fmt.Errorf("failed to unmarshal subfield %v: received subfield not defined in spec", tag)
 		}
-		subfield := f.createAndSetSubfield(tag)
 
-		if err = f.setSubfieldData(tag, subfield); err != nil {
-			return err
+		subfield, ok := f.subfields[tag]
+		if !ok {
+			continue
 		}
+
 		if err := json.Unmarshal(rawMsg, subfield); err != nil {
 			return fmt.Errorf("failed to unmarshal subfield %v: %w", tag, err)
 		}
+
+		f.setSubfields[tag] = struct{}{}
 	}
 
 	return nil
@@ -278,27 +344,14 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 func (f *Composite) pack() ([]byte, error) {
 	packed := []byte{}
 	for _, tag := range f.orderedSpecFieldTags {
-		var field Field
-		if f.data != nil {
-			fieldName := fmt.Sprintf("F%v", tag)
-			// get the struct field
-			dataField := f.data.FieldByName(fieldName)
+		field, ok := f.subfields[tag]
+		if !ok {
+			return nil, fmt.Errorf("no subfield for tag %s", tag)
+			// continue
+		}
 
-			// no non-nil data field was found with this name
-			if dataField == (reflect.Value{}) || dataField.IsNil() {
-				continue
-			}
-			field = f.createAndSetSubfield(tag)
-
-			if err := field.SetData(dataField.Interface()); err != nil {
-				return nil, fmt.Errorf("failed to set data for field %v: %w", tag, err)
-			}
-		} else {
-			var ok bool
-			field, ok = f.tagToSubfieldMap[tag]
-			if !ok {
-				continue
-			}
+		if _, set := f.setSubfields[tag]; !set {
+			continue
 		}
 
 		if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
@@ -332,14 +385,18 @@ func (f *Composite) unpack(data []byte, hasPrefix bool) (int, error) {
 func (f *Composite) unpackSubfields(data []byte, hasPrefix bool) (int, error) {
 	offset := 0
 	for _, tag := range f.orderedSpecFieldTags {
-		field := f.createAndSetSubfield(tag)
-		if err := f.setSubfieldData(tag, field); err != nil {
-			return 0, err
+		field, ok := f.subfields[tag]
+		if !ok {
+			continue
 		}
+
 		read, err := field.Unpack(data[offset:])
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
+
+		f.setSubfields[tag] = struct{}{}
+
 		offset += read
 
 		if hasPrefix && offset >= len(data) {
@@ -365,48 +422,22 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		if _, ok := f.spec.Subfields[tag]; !ok {
 			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
 		}
-		field := f.createAndSetSubfield(tag)
 
-		if err := f.setSubfieldData(tag, field); err != nil {
-			return 0, err
+		field, ok := f.subfields[tag]
+		if !ok {
+			continue
 		}
 
 		read, err = field.Unpack(data[offset:])
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
+
+		f.setSubfields[tag] = struct{}{}
+
 		offset += read
 	}
 	return offset, nil
-}
-
-func (f *Composite) setSubfieldData(tag string, specField Field) error {
-	if f.data == nil {
-		return nil
-	}
-
-	fieldName := fmt.Sprintf("F%v", tag)
-
-	// get the struct field
-	dataField := f.data.FieldByName(fieldName)
-
-	// if data field was found with this name
-	if dataField != (reflect.Value{}) {
-		if dataField.IsNil() {
-			dataField.Set(reflect.New(dataField.Type().Elem()))
-		}
-		if err := specField.SetData(dataField.Interface()); err != nil {
-			return fmt.Errorf("failed to set data for field %v: %w", tag, err)
-		}
-	}
-
-	return nil
-}
-
-func (f *Composite) createAndSetSubfield(tag string) Field {
-	field := CreateSubfield(f.spec.Subfields[tag])
-	f.tagToSubfieldMap[tag] = field
-	return field
 }
 
 func validateCompositeSpec(spec *Spec) error {

@@ -31,5 +31,10 @@ func createMessageField(specField field.Field) field.Field {
 	fl := reflect.New(fieldType).Interface().(field.Field)
 	fl.SetSpec(specField.Spec())
 
+	// if it's a composite field, we have to recusively create its subfields as well
+	if composite, ok := fl.(field.CompositeWithSubfields); ok {
+		composite.ConstructSubfields()
+	}
+
 	return fl
 }

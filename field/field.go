@@ -23,12 +23,16 @@ type Field interface {
 	// Bytes returns binary representation of the field Value
 	Bytes() ([]byte, error)
 
-	// SetData links provided data parameter with the field Value
+	// Deprecated. Use Marshal intead.
 	SetData(data interface{}) error
 
-	// UnmarshalValue sets field Value into provided v. If v is nil or not
+	// Unmarshal sets field Value into provided v. If v is nil or not
 	// a pointer it returns error.
-	UnmarshalValue(v interface{}) error
+	Unmarshal(v interface{}) error
+
+	// Marshal sets field Value into provided v. If v is nil or not
+	// a pointer it returns error.
+	Marshal(v interface{}) error
 
 	// String returns a string representation of the field Value
 	String() (string, error)

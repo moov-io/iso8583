@@ -172,12 +172,12 @@ func TestComposite_SetData(t *testing.T) {
 	t.Run("SetData returns an error on provision of primitive type data", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpec)
 		err := composite.SetData("primitive str")
-		require.EqualError(t, err, "failed to set data as struct is expected, got: string")
+		require.EqualError(t, err, "data is not a pointer or nil")
 	})
 }
 
-func TestCompositeFieldUnmarshalValue(t *testing.T) {
-	t.Run("UnmarshalValue gets data for composite field", func(t *testing.T) {
+func TestCompositeFieldUnmarshal(t *testing.T) {
+	t.Run("Unmarshal gets data for composite field", func(t *testing.T) {
 		// first, we need to populate fields of composite field
 		// we will do it by packing the field
 		composite := NewComposite(tlvTestSpec)
@@ -191,14 +191,14 @@ func TestCompositeFieldUnmarshalValue(t *testing.T) {
 		require.NoError(t, err)
 
 		data := &TLVTestData{}
-		err = composite.UnmarshalValue(data)
+		err = composite.Unmarshal(data)
 		require.NoError(t, err)
 
 		require.Equal(t, "210720", data.F9A.Value)
 		require.Equal(t, "000000000501", data.F9F02.Value)
 	})
 
-	t.Run("UnmarshalValue gets data for composite field using field tag `index`", func(t *testing.T) {
+	t.Run("Unmarshal gets data for composite field using field tag `index`", func(t *testing.T) {
 		type tlvTestData struct {
 			Date          *String `index:"9A"`
 			TransactionID *String `index:"9F02"`
@@ -216,7 +216,7 @@ func TestCompositeFieldUnmarshalValue(t *testing.T) {
 		require.NoError(t, err)
 
 		data := &tlvTestData{}
-		err = composite.UnmarshalValue(data)
+		err = composite.Unmarshal(data)
 		require.NoError(t, err)
 
 		require.Equal(t, "210720", data.Date.Value)
@@ -251,15 +251,14 @@ func TestTLVPacking(t *testing.T) {
 	})
 
 	t.Run("Unpack correctly deserialises bytes to the data struct", func(t *testing.T) {
-		data := &TLVTestData{}
-
 		composite := NewComposite(tlvTestSpec)
-		err := composite.SetData(data)
-		require.NoError(t, err)
 
 		read, err := composite.Unpack([]byte{0x30, 0x31, 0x34, 0x9a, 0x3, 0x21, 0x7, 0x20, 0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1})
 		require.NoError(t, err)
 		require.Equal(t, 17, read)
+
+		data := &TLVTestData{}
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "210720", data.F9A.Value)
 		require.Equal(t, "000000000501", data.F9F02.Value)
@@ -275,10 +274,9 @@ func TestCompositePacking(t *testing.T) {
 		err := composite.SetData(&TestDataIncorrectType{
 			F1: NewNumericValue(1),
 		})
-		require.NoError(t, err)
 
-		_, err = composite.Pack()
-		require.EqualError(t, err, "failed to set data for field 1: data does not match required *String type")
+		require.Error(t, err)
+		require.EqualError(t, err, "failed to set data from field 1: data does not match required *String type")
 	})
 
 	t.Run("Pack returns error on failure of subfield packing", func(t *testing.T) {
@@ -362,13 +360,15 @@ func TestCompositePacking(t *testing.T) {
 			F1 *Numeric
 		}
 		composite := NewComposite(compositeTestSpec)
-		err := composite.SetData(&TestDataIncorrectType{})
+
+		_, err := composite.Unpack([]byte("ABCD12"))
 		require.NoError(t, err)
 
-		read, err := composite.Unpack([]byte("ABCD12"))
-		require.Equal(t, 0, read)
+		data := &TestDataIncorrectType{}
+		err = composite.Unmarshal(data)
+
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to set data for field 1: data does not match required *String type")
+		require.EqualError(t, err, "failed to get data from field 1: data does not match required *String type")
 	})
 
 	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
@@ -464,15 +464,14 @@ func TestCompositePacking(t *testing.T) {
 	})
 
 	t.Run("Unpack correctly deserialises bytes to the data struct", func(t *testing.T) {
-		data := &CompositeTestData{}
-
 		composite := NewComposite(compositeTestSpec)
-		err := composite.SetData(data)
-		require.NoError(t, err)
 
 		read, err := composite.Unpack([]byte("ABCD12"))
 		require.Equal(t, compositeTestSpec.Length, read)
 		require.NoError(t, err)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
@@ -481,14 +480,13 @@ func TestCompositePacking(t *testing.T) {
 	})
 
 	t.Run("SetBytes correctly deserialises bytes to the data struct", func(t *testing.T) {
-		data := &CompositeTestData{}
-
 		composite := NewComposite(compositeTestSpec)
-		err := composite.SetData(data)
+
+		err := composite.SetBytes([]byte("ABCD12"))
 		require.NoError(t, err)
 
-		err = composite.SetBytes([]byte("ABCD12"))
-		require.NoError(t, err)
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
@@ -774,16 +772,15 @@ func TestCompositePackingWithTags(t *testing.T) {
 	})
 
 	t.Run("Unpack correctly deserialises out of order composite subfields to the data struct", func(t *testing.T) {
-		data := &CompositeTestData{}
-
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
-		require.NoError(t, err)
 
 		read, err := composite.Unpack([]byte("280202CD0302120102AB11060102YZ"))
 
 		require.NoError(t, err)
 		require.Equal(t, 30, read)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
@@ -792,13 +789,13 @@ func TestCompositePackingWithTags(t *testing.T) {
 	})
 
 	t.Run("Unpack correctly deserialises out of order composite subfields to the unpadded data struct", func(t *testing.T) {
-		data := &CompositeTestDataWithoutTagPadding{}
-
 		composite := NewComposite(compositeTestSpecWithoutTagPadding)
-		err := composite.SetData(data)
-		require.NoError(t, err)
 
 		read, err := composite.Unpack([]byte("120202CD0102AB"))
+
+		data := &CompositeTestDataWithoutTagPadding{}
+
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.NoError(t, err)
 		require.Equal(t, 14, read)
@@ -808,16 +805,15 @@ func TestCompositePackingWithTags(t *testing.T) {
 	})
 
 	t.Run("Unpack correctly deserialises partial subfields to the data struct", func(t *testing.T) {
-		data := &CompositeTestData{}
-
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
-		require.NoError(t, err)
 
 		read, err := composite.Unpack([]byte("120302120102AB"))
 
 		require.NoError(t, err)
 		require.Equal(t, 14, read)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Nil(t, data.F2)
@@ -825,11 +821,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 	})
 
 	t.Run("Unpack correctly ignores excess bytes in excess of the length described by the prefix", func(t *testing.T) {
-		data := &CompositeTestData{}
-
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
-		require.NoError(t, err)
 
 		// "11060102YZ" falls outside of the bounds of the 18 byte limit imposed
 		// by the prefix. Therefore, F11 must be nil.
@@ -837,6 +829,9 @@ func TestCompositePackingWithTags(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, 20, read)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Equal(t, "CD", data.F2.Value)
@@ -1011,6 +1006,8 @@ func TestCompositeJSONConversion(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, composite.UnmarshalJSON([]byte(json)))
+
+		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value)
 		require.Nil(t, data.F2)
