@@ -1305,7 +1305,7 @@ func TestMessageMarshaling(t *testing.T) {
 		require.Equal(t, "100", data.F4.Value)
 	})
 
-	t.Run("Marshal nil", func(t *testing.T) {
+	t.Run("Marshal nil returns nil", func(t *testing.T) {
 		message := NewMessage(spec)
 
 		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
@@ -1314,7 +1314,7 @@ func TestMessageMarshaling(t *testing.T) {
 		require.NoError(t, err)
 
 		err = message.Marshal(nil)
-		require.Error(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("Marshal using field tags", func(t *testing.T) {

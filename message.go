@@ -295,15 +295,17 @@ func (m *Message) Clone() (*Message, error) {
 
 // Marshal populates message fields with v struct field values. It traverses
 // through the message fields and calls Unmarshal(...) on them setting the v If
-// v  is nil or not a pointer it returns error.
+// v is not a struct or not a pointer to struct then it returns error.
 func (m *Message) Marshal(v interface{}) error {
-	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
-		return errors.New("data is not a pointer or nil")
+	if v == nil {
+		return nil
 	}
 
-	// get the struct from the pointer
-	dataStruct := rv.Elem()
+	dataStruct := reflect.ValueOf(v)
+
+	if dataStruct.Kind() == reflect.Ptr || dataStruct.Kind() == reflect.Interface {
+		dataStruct = dataStruct.Elem()
+	}
 
 	if dataStruct.Kind() != reflect.Struct {
 		return errors.New("data is not a struct")
