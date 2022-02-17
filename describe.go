@@ -1,4 +1,4 @@
-package describe
+package iso8583
 
 import (
 	"encoding/hex"
@@ -8,13 +8,12 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/field"
 )
 
 var defaultSpecName = "ISO 8583"
 
-func Message(w io.Writer, message *iso8583.Message) error {
+func Describe(w io.Writer, message *Message) error {
 	specName := defaultSpecName
 	if spec := message.GetSpec(); spec != nil && spec.Name != "" {
 		specName = spec.Name
