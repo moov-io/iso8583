@@ -4,6 +4,7 @@ package utils
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Bitmap struct {
@@ -53,11 +54,11 @@ func (b *Bitmap) Len() int {
 }
 
 func (b *Bitmap) String() string {
-	var out string
+	var bits []string
 
 	for _, byte_ := range b.bitmap {
-		out += fmt.Sprintf("%08b ", byte_)
+		bits = append(bits, fmt.Sprintf("%08b", byte_))
 	}
 
-	return out
+	return strings.Join(bits, " ")
 }

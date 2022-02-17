@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/moov-io/iso8583"
-	"github.com/moov-io/iso8583/cmd/iso8583/describe"
 	"github.com/moov-io/iso8583/specs"
 )
 
@@ -27,7 +26,7 @@ func describeMessage(paths []string, spec *iso8583.MessageSpec) error {
 			fmt.Fprintf(os.Stdout, "Trying to describe file anyway...\n")
 		}
 
-		err = describe.Message(os.Stdout, message)
+		err = iso8583.Describe(os.Stdout, message)
 		if err != nil {
 			return fmt.Errorf("describing message: %w", err)
 		}
