@@ -26,7 +26,7 @@ func describeMessage(paths []string, spec *iso8583.MessageSpec) error {
 			fmt.Fprintf(os.Stdout, "Trying to describe file anyway...\n")
 		}
 
-		err = iso8583.Describe(os.Stdout, message)
+		err = iso8583.Describe(message, os.Stdout)
 		if err != nil {
 			return fmt.Errorf("describing message: %w", err)
 		}

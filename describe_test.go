@@ -40,7 +40,7 @@ func TestDescribe(t *testing.T) {
 
 	out := bytes.NewBuffer([]byte{})
 	require.NotPanics(t, func() {
-		Describe(out, message)
+		Describe(message, out)
 	})
 
 	expectedOutput := `ISO 8583 Message:
