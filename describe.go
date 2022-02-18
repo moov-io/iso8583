@@ -13,7 +13,7 @@ import (
 
 var defaultSpecName = "ISO 8583"
 
-func Describe(w io.Writer, message *Message) error {
+func Describe(message *Message, w io.Writer) error {
 	specName := defaultSpecName
 	if spec := message.GetSpec(); spec != nil && spec.Name != "" {
 		specName = spec.Name
