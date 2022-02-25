@@ -476,12 +476,12 @@ var fieldNameTagRe = regexp.MustCompile(`^F.+$`)
 func getFieldIndexOrTag(field reflect.StructField) (string, error) {
 	dataFieldName := field.Name
 
-	if len(dataFieldName) > 0 && fieldNameTagRe.MatchString(dataFieldName) {
-		return dataFieldName[1:], nil
-	}
-
 	if fieldIndex := field.Tag.Get("index"); fieldIndex != "" {
 		return fieldIndex, nil
+	}
+
+	if len(dataFieldName) > 0 && fieldNameTagRe.MatchString(dataFieldName) {
+		return dataFieldName[1:], nil
 	}
 
 	return "", nil

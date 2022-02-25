@@ -406,8 +406,7 @@ var fieldNameIndexRe = regexp.MustCompile(`^F\d+$`)
 func getFieldIndex(field reflect.StructField) (int, error) {
 	dataFieldName := field.Name
 
-	if len(dataFieldName) > 0 && fieldNameIndexRe.MatchString(dataFieldName) {
-		indexStr := dataFieldName[1:]
+	if indexStr := field.Tag.Get("index"); indexStr != "" {
 		fieldIndex, err := strconv.Atoi(indexStr)
 		if err != nil {
 			return -1, fmt.Errorf("converting field index into int: %w", err)
@@ -416,7 +415,8 @@ func getFieldIndex(field reflect.StructField) (int, error) {
 		return fieldIndex, nil
 	}
 
-	if indexStr := field.Tag.Get("index"); indexStr != "" {
+	if len(dataFieldName) > 0 && fieldNameIndexRe.MatchString(dataFieldName) {
+		indexStr := dataFieldName[1:]
 		fieldIndex, err := strconv.Atoi(indexStr)
 		if err != nil {
 			return -1, fmt.Errorf("converting field index into int: %w", err)

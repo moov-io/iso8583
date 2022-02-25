@@ -1161,6 +1161,17 @@ func Test_getFieldIndex(t *testing.T) {
 		require.Equal(t, 1, index)
 	})
 
+	t.Run("returns index from field tag instead of field name when both match", func(t *testing.T) {
+		st := reflect.ValueOf(&struct {
+			F1 string `index:"2"`
+		}{}).Elem()
+
+		index, err := getFieldIndex(st.Type().Field(0))
+
+		require.NoError(t, err)
+		require.Equal(t, 2, index)
+	})
+
 	t.Run("returns index from field tag", func(t *testing.T) {
 		st := reflect.ValueOf(&struct {
 			Name   string `index:"abcd"`
