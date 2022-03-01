@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -12,6 +13,13 @@ import (
 )
 
 var defaultSpecName = "ISO 8583"
+
+var panFilter = regexp.MustCompile(`^\d(\d*)\d{4}$`)
+
+const (
+	bitmapIndex = 1
+	panIndex    = 2
+)
 
 func Describe(message *Message, w io.Writer) error {
 	specName := defaultSpecName
@@ -47,12 +55,16 @@ func Describe(message *Message, w io.Writer) error {
 
 	for _, i := range sortFieldIDs(fields) {
 		// skip the bitmap
-		if i == 1 {
+		if i == bitmapIndex {
 			continue
 		}
 		field := fields[i]
 		desc := field.Spec().Description
 		str, err := field.String()
+		//
+		if i == panIndex && len(str) > 5 {
+			str = fmt.Sprintf("%s****%s", str[0:1], str[len(str)-4:])
+		}
 		if err != nil {
 			errorList = append(errorList, err.Error())
 			continue
