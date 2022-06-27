@@ -69,21 +69,6 @@ func TestStringFieldUnmarshal(t *testing.T) {
 	require.Equal(t, "hello", val.Value)
 }
 
-func TestStringFieldZeroLength(t *testing.T) {
-	str := NewStringValue("")
-	str.SetSpec(&Spec{
-		Length:      10,
-		Description: "Field",
-		Enc:         encoding.ASCII,
-		Pref:        prefix.ASCII.Fixed,
-	})
-
-	packed, err := str.Pack()
-	require.NoError(t, err)
-	require.Equal(t, []byte{}, packed)
-	require.Equal(t, "", string(packed))
-}
-
 func TestStringJSONUnmarshal(t *testing.T) {
 	input := []byte(`"4000"`)
 

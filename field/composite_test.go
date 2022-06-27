@@ -726,7 +726,27 @@ func TestCompositePackingWithTags(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 14, read)
 
+		require.Nil(t, data.F12)
+		require.Nil(t, data.F13)
+		require.Nil(t, data.F14)
+
 		packedBytes, err := composite.Pack()
+		require.NoError(t, err)
+		require.Equal(t, packedBytes, packed)
+
+		// Making sample with outside of length size
+		composite.spec.Length = 14
+		data.F12 = NewStringValue("PO")
+		data.F12.spec = &Spec{
+			Length:      2,
+			Description: "POS Authorization Life Cycle",
+			Enc:         encoding.ASCII,
+			Pref:        prefix.ASCII.Fixed,
+		}
+
+		require.Equal(t, "PO", data.F12.Value)
+
+		packedBytes, err = composite.Pack()
 		require.NoError(t, err)
 		require.Equal(t, packedBytes, packed)
 	})
