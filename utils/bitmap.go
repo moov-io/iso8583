@@ -34,13 +34,25 @@ func NewBitmapFromData(data []byte) *Bitmap {
 
 func (b *Bitmap) IsSet(i int) bool {
 	i = i - 1
-	return b.bitmap[i/8]&tA[i%8] != 0
+
+	index := i / 8
+
+	if index >= len(b.bitmap) {
+		return false
+	}
+
+	return b.bitmap[index]&tA[i%8] != 0
 }
 
 func (b *Bitmap) Set(i int) {
 	i = i - 1
 	index := i / 8
 	bit := i % 8
+
+	if index >= len(b.bitmap) {
+		return
+	}
+
 	b.bitmap[index] = b.bitmap[index] | tA[bit]
 }
 

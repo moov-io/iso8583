@@ -24,6 +24,38 @@ func (s *MessageSpec) CreateMessageFields() map[int]field.Field {
 	return fields
 }
 
+// GetBitmapsSize returns size of Bit Maps based on spec
+// Min : 1
+// Max : 10
+func (s *MessageSpec) GetBitmapsSize() (size int) {
+
+	size = 1 // primary
+	maxIndex := 0
+
+	for key, elm := range s.Fields {
+		if elm.Spec() != nil && key > maxIndex {
+			maxIndex = key
+		}
+	}
+
+	if maxIndex < 65 {
+		return
+	}
+
+	remainder := maxIndex % 64
+	if remainder != 0 {
+		remainder = 1
+	}
+
+	size = maxIndex/64 + remainder
+
+	if size > 10 { // max check
+		size = 10
+	}
+
+	return
+}
+
 func createMessageField(specField field.Field) field.Field {
 	fieldType := reflect.TypeOf(specField).Elem()
 

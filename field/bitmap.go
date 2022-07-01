@@ -7,21 +7,23 @@ import (
 )
 
 const minBitmapLength = 8 // 64 bit, 8 bytes, or 16 hex digits
-const maxBitmaps = 3
+const defaultBitmaps = 1
 
 var _ Field = (*Bitmap)(nil)
 
 // NOTE: Bitmap does not support JSON encoding or decoding.
 type Bitmap struct {
-	spec   *Spec
-	bitmap *utils.Bitmap
-	data   *Bitmap
+	spec    *Spec
+	bitmap  *utils.Bitmap
+	data    *Bitmap
+	mapSize int
 }
 
 func NewBitmap(spec *Spec) *Bitmap {
 	return &Bitmap{
-		spec:   spec,
-		bitmap: utils.NewBitmap(64 * maxBitmaps),
+		spec:    spec,
+		mapSize: defaultBitmaps,
+		bitmap:  utils.NewBitmap(64 * defaultBitmaps),
 	}
 }
 
@@ -31,6 +33,11 @@ func (f *Bitmap) Spec() *Spec {
 
 func (f *Bitmap) SetSpec(spec *Spec) {
 	f.spec = spec
+}
+
+func (f *Bitmap) SetMapSize(size int) {
+	f.mapSize = size
+	f.Reset()
 }
 
 func (f *Bitmap) SetBytes(b []byte) error {
@@ -54,7 +61,7 @@ func (f *Bitmap) Pack() ([]byte, error) {
 
 	count := f.bitmapsCount()
 
-	// here we have max possible bytes for the bitmap 8*maxBitmaps
+	// here we have max possible bytes for the bitmap 8*mapSize
 	data, err := f.Bytes()
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve bytes: %w", err)
@@ -73,7 +80,7 @@ func (f *Bitmap) Pack() ([]byte, error) {
 // Unpack of the Bitmap field returns data of varied length
 // if there is only primary bitmap (bit 1 is not set) we return only 8 bytes (or 16 for hex encoding)
 // if secondary bitmap presents (bit 1 is set) we return 16 bytes (or 32 for hex encoding)
-// and so on for maxBitmaps
+// and so on for mapSize
 func (f *Bitmap) Unpack(data []byte) (int, error) {
 	minLen, _, err := f.spec.Pref.DecodeLength(minBitmapLength, data)
 	if err != nil {
@@ -84,7 +91,7 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 	read := 0
 
 	// read max
-	for i := 0; i < maxBitmaps; i++ {
+	for i := 0; i < f.getMapSize(); i++ {
 		decoded, readDecoded, err := f.spec.Enc.Decode(data[read:], minLen)
 		if err != nil {
 			return 0, fmt.Errorf("failed to decode content for %d bitmap: %w", i+1, err)
@@ -97,6 +104,10 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 		// if no more bitmaps, exit loop
 		if !bitmap.IsSet(1) {
 			break
+		}
+
+		if i == f.getMapSize()-1 && bitmap.IsSet(1) {
+			return 0, fmt.Errorf("failed to decode content for %d bitmap: invalid extended bitmap indicator", i+1)
 		}
 	}
 
@@ -144,7 +155,7 @@ func (f *Bitmap) Marshal(data interface{}) error {
 }
 
 func (f *Bitmap) Reset() {
-	f.bitmap = utils.NewBitmap(64 * maxBitmaps)
+	f.bitmap = utils.NewBitmap(64 * f.getMapSize())
 }
 
 func (f *Bitmap) Set(i int) {
@@ -161,13 +172,20 @@ func (f *Bitmap) Len() int {
 
 func (f *Bitmap) bitmapsCount() int {
 	count := 1
-	for i := 0; i < maxBitmaps; i++ {
+	for i := 0; i < f.getMapSize(); i++ {
 		if f.IsSet(i*64 + 1) {
 			count += 1
 		}
 	}
 
 	return count
+}
+
+func (f *Bitmap) getMapSize() int {
+	if f.mapSize == 0 {
+		f.mapSize = defaultBitmaps
+	}
+	return f.mapSize
 }
 
 func (f *Bitmap) setBitmapFields() bool {
@@ -177,8 +195,10 @@ func (f *Bitmap) setBitmapFields() bool {
 	// 3rd bitmap bits 129-192
 	// bitmap bit 65
 
+	// ...
+
 	// start from the 2nd bitmap as for the 1st bitmap we don't need to set any bits
-	for bitmapIndex := 2; bitmapIndex <= maxBitmaps; bitmapIndex++ {
+	for bitmapIndex := f.getMapSize(); bitmapIndex > 1; bitmapIndex-- {
 
 		// are there fields for this (bitmapIndex) bitmap?
 		bitmapStart := (bitmapIndex-1)*64 + 2 // we skip firt bit as it's for the next bitmap
@@ -187,8 +207,10 @@ func (f *Bitmap) setBitmapFields() bool {
 		for i := bitmapStart; i <= bitmapEnd; i++ {
 			bitmapBit := (bitmapIndex-2)*64 + 1
 			if f.IsSet(i) {
-				f.Set(bitmapBit)
-				break
+				for subBitmap := bitmapBit; subBitmap > 0; subBitmap -= 64 {
+					f.Set(subBitmap)
+				}
+				return true
 			}
 		}
 	}

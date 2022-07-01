@@ -9,8 +9,10 @@ import (
 func TestBitmap(t *testing.T) {
 	bitmap := NewBitmap(50)
 	bitmap.Set(10)
+	bitmap.Set(255)
 	require.True(t, bitmap.IsSet(10))
 	require.False(t, bitmap.IsSet(11))
+	require.False(t, bitmap.IsSet(255))
 
 	src := []byte{232, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	bitmap2 := NewBitmapFromData(src)

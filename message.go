@@ -52,7 +52,11 @@ func (m *Message) Bitmap() *field.Bitmap {
 	}
 
 	m.bitmap = m.fields[bitmapIdx].(*field.Bitmap)
-	m.bitmap.Reset()
+	if m.spec != nil {
+		m.bitmap.SetMapSize(m.spec.GetBitmapsSize())
+	} else {
+		m.bitmap.Reset()
+	}
 	m.fieldsMap[bitmapIdx] = struct{}{}
 
 	return m.bitmap
@@ -179,6 +183,12 @@ func (m *Message) Unpack(src []byte) error {
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
 		if m.Bitmap().IsSet(i) {
+
+			// Extended bitmap indicator
+			if i > 64 && i%64 == 1 {
+				continue
+			}
+
 			fl, ok := m.fields[i]
 			if !ok {
 				return fmt.Errorf("failed to unpack field %d: no specification found", i)

@@ -32,6 +32,8 @@ func TestHexBitmap(t *testing.T) {
 			Pref:        prefix.Hex.Fixed,
 		})
 
+		bitmap.SetMapSize(2)
+
 		// set bits: 1, 10, 70
 		read, err := bitmap.Unpack([]byte("804000000000000004000000000000000000000000000000"))
 
@@ -48,6 +50,8 @@ func TestHexBitmap(t *testing.T) {
 			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
+
+		bitmap.SetMapSize(3)
 
 		// set bits: 1, 10, 65, 140
 		read, err := bitmap.Unpack([]byte("804000000000000080000000000000000010000000000000"))
@@ -79,11 +83,13 @@ func TestHexBitmap(t *testing.T) {
 			Pref:        prefix.Hex.Fixed,
 		})
 
+		bitmap.SetMapSize(2)
+
 		// bits 2, 20, 65, 120 are set, but no data for third bitmap
 		_, err := bitmap.Unpack([]byte("c0001000000000008000000000000100"))
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "for 3 bitmap: not enough data to read")
+		require.Contains(t, err.Error(), "failed to decode content for 2 bitmap: invalid extended bitmap indicator")
 	})
 
 	t.Run("With primary bitmap only it returns signle bitmap length", func(t *testing.T) {
@@ -108,6 +114,8 @@ func TestHexBitmap(t *testing.T) {
 			Pref:        prefix.Hex.Fixed,
 		})
 
+		bitmap.SetMapSize(2)
+
 		bitmap.Set(20) // first bitmap field
 		bitmap.Set(70) // second bitmap field
 
@@ -123,6 +131,8 @@ func TestHexBitmap(t *testing.T) {
 			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,
 		})
+
+		bitmap.SetMapSize(3)
 
 		bitmap.Set(20)  // first bitmap field
 		bitmap.Set(70)  // second bitmap field
@@ -158,6 +168,8 @@ func TestBinaryBitmap(t *testing.T) {
 			Pref:        prefix.Binary.Fixed,
 		})
 
+		bitmap.SetMapSize(2)
+
 		bitmap.Set(20) // first bitmap field
 		bitmap.Set(70) // second bitmap field
 
@@ -173,6 +185,8 @@ func TestBinaryBitmap(t *testing.T) {
 			Enc:         encoding.Binary,
 			Pref:        prefix.Binary.Fixed,
 		})
+
+		bitmap.SetMapSize(3)
 
 		bitmap.Set(20)  // first bitmap field
 		bitmap.Set(70)  // second bitmap field

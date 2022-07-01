@@ -73,6 +73,81 @@ func TestMessage(t *testing.T) {
 		},
 	}
 
+	extSpec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.BytesToASCIIHex,
+				Pref:        prefix.Hex.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			3: field.NewComposite(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
+				Subfields: map[string]field.Field{
+					"1": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"2": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "From Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"3": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "To Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
+			}),
+			4: field.NewString(&field.Spec{
+				Length:      12,
+				Description: "Transaction Amount",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			66: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			130: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			258: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+		},
+	}
+
 	t.Run("Test packing and unpacking untyped fields", func(t *testing.T) {
 		message := NewMessage(spec)
 		message.MTI("0100")
@@ -105,6 +180,55 @@ func TestMessage(t *testing.T) {
 		s, err = message.GetString(4)
 		require.NoError(t, err)
 		require.Equal(t, "100", s)
+	})
+
+	t.Run("Test packing and unpacking untyped fields with extended specification", func(t *testing.T) {
+		message := NewMessage(extSpec)
+		message.MTI("0100")
+		require.NoError(t, message.Field(2, "4242424242424242"))
+		require.NoError(t, message.Field(3, "123456"))
+		require.NoError(t, message.Field(4, "100"))
+		require.NoError(t, message.Field(66, "4242424242424242"))
+		require.NoError(t, message.Field(130, "4242424242424242"))
+		require.NoError(t, message.Field(258, "4242424242424242"))
+
+		got, err := message.Pack()
+
+		want := "0100F000000000000000C000000000000000C00000000000000080000000000000004000000000000000164242424242424242123456000000000100164242424242424242164242424242424242164242424242424242"
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Equal(t, want, string(got))
+
+		message = NewMessage(extSpec)
+		message.Unpack([]byte(want))
+
+		s, err := message.GetMTI()
+		require.NoError(t, err)
+		require.Equal(t, "0100", s)
+
+		s, err = message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", s)
+
+		s, err = message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "123456", s)
+
+		s, err = message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", s)
+
+		s, err = message.GetString(66)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", s)
+
+		s, err = message.GetString(130)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", s)
+
+		s, err = message.GetString(258)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", s)
 	})
 
 	t.Run("Test unpacking with typed fields", func(t *testing.T) {
