@@ -340,6 +340,8 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 func (f *Composite) pack() ([]byte, error) {
 
 	// getting max length of data
+	//  length prefix of variable field is formatted string with same size, L/LL/LLL
+	//  so we can get real size of length prefix from spec length (instead of len(packed))
 	encodedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, f.spec.Length)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
