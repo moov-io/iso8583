@@ -44,7 +44,7 @@ func Describe(paths []string, specName string) error {
 }
 
 func DescribeWithSpecFile(paths []string, specFileName string) error {
-	spec, err := createSpecFromFile(specFileName)
+	spec, err := specs.CreateFromJsonFile(specFileName)
 	if err != nil || spec == nil {
 		return fmt.Errorf("creating spec from file: %w", err)
 	}
@@ -71,19 +71,4 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 	}
 
 	return message, nil
-}
-
-func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {
-	fd, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("opening file %s: %w", path, err)
-	}
-	defer fd.Close()
-
-	raw, err := ioutil.ReadAll(fd)
-	if err != nil {
-		return nil, fmt.Errorf("reading file %s: %w", path, err)
-	}
-
-	return specs.Builder.ImportJSON(raw)
 }
