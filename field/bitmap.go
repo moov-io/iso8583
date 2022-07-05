@@ -184,6 +184,7 @@ func (f *Bitmap) bitmapsCount() int {
 func (f *Bitmap) getMapSize() int {
 	if f.mapSize == 0 {
 		f.mapSize = defaultBitmaps
+		f.Reset()
 	}
 	return f.mapSize
 }
