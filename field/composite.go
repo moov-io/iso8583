@@ -255,15 +255,10 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
-	isVariableLength := false
-	if offset != 0 {
-		isVariableLength = true
-	}
-
 	// data is stripped of the prefix before it is provided to unpack().
 	// Therefore, it is unaware of when to stop parsing unless we bound the
 	// length of the slice by the data length.
-	read, err := f.unpack(data[offset:offset+dataLen], isVariableLength)
+	read, err := f.unpack(data[offset : offset+dataLen])
 	if err != nil {
 		return 0, err
 	}
@@ -279,7 +274,7 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 // pack all subfields in full. However, unlike Unpack(), it requires the
 // aggregate length of the subfields not to be encoded in the prefix.
 func (f *Composite) SetBytes(data []byte) error {
-	_, err := f.unpack(data, false)
+	_, err := f.unpack(data)
 	return err
 }
 
@@ -338,28 +333,11 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 }
 
 func (f *Composite) pack() ([]byte, error) {
-
-	// getting max length of data
-	//  length prefix of variable field is formatted string with same size, L/LL/LLL
-	//  so we can get real size of length prefix from spec length (instead of len(packed))
-	encodedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, f.spec.Length)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %w", err)
-	}
-
-	isVariableLength := false
-	maxLength := f.spec.Length
-	if len(encodedLength) > 0 {
-		isVariableLength = true
-		maxLength = f.spec.Length - len(encodedLength)
-	}
-
 	packed := []byte{}
 	for _, tag := range f.orderedSpecFieldTags {
 		field, ok := f.subfields[tag]
 		if !ok {
 			return nil, fmt.Errorf("no subfield for tag %s", tag)
-			// continue
 		}
 
 		if _, set := f.setSubfields[tag]; !set {
@@ -384,21 +362,19 @@ func (f *Composite) pack() ([]byte, error) {
 		}
 		packed = append(packed, packedBytes...)
 
-		if isVariableLength && len(packed) >= maxLength {
-			break
-		}
 	}
+
 	return packed, nil
 }
 
-func (f *Composite) unpack(data []byte, isVariableLength bool) (int, error) {
+func (f *Composite) unpack(data []byte) (int, error) {
 	if f.spec.Tag.Enc != nil {
 		return f.unpackSubfieldsByTag(data)
 	}
-	return f.unpackSubfields(data, isVariableLength)
+	return f.unpackSubfields(data)
 }
 
-func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, error) {
+func (f *Composite) unpackSubfields(data []byte) (int, error) {
 	offset := 0
 	for _, tag := range f.orderedSpecFieldTags {
 		field, ok := f.subfields[tag]
@@ -414,11 +390,8 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, er
 		f.setSubfields[tag] = struct{}{}
 
 		offset += read
-
-		if isVariableLength && offset >= len(data) {
-			break
-		}
 	}
+
 	return offset, nil
 }
 
