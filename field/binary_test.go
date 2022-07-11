@@ -109,4 +109,11 @@ func TestBinaryField(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, `"AB"`, string(marshalledJSON))
 	})
+
+	t.Run("returns error for zero value when fixed length and no padding specified", func(t *testing.T) {
+		bin := NewBinary(spec)
+		_, err := bin.Pack()
+
+		require.EqualError(t, err, "failed to encode length: field length: 0 should be fixed: 10")
+	})
 }
