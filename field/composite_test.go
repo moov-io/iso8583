@@ -423,6 +423,43 @@ func TestCompositePacking(t *testing.T) {
 		require.EqualError(t, err, "failed to decode length: data length: 7 is larger than maximum 4")
 	})
 
+	t.Run("Unpack without error when not all subfields are set", func(t *testing.T) {
+		spec := &Spec{
+			Length: 4,
+			Pref:   prefix.ASCII.L,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
+			Subfields: map[string]Field{
+				"1": NewString(&Spec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.Fixed,
+				}),
+				"2": NewString(&Spec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.Fixed,
+				}),
+				"3": NewNumeric(&Spec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.Fixed,
+				}),
+			},
+		}
+		data := &CompositeTestData{}
+
+		composite := NewComposite(spec)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		// There is data only for first subfield
+		read, err := composite.Unpack([]byte("2AB"))
+		require.Equal(t, 3, read)
+		require.NoError(t, err)
+	})
+
 	t.Run("Unpack returns an error on offset not matching data length", func(t *testing.T) {
 		invalidSpec := &Spec{
 			// Base field length < summation of lengths of subfields
