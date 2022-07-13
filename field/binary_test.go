@@ -28,16 +28,6 @@ func TestBinaryField(t *testing.T) {
 		require.Equal(t, in, packed)
 	})
 
-	t.Run("Pack returns empty struct when given zero-length data", func(t *testing.T) {
-		bin := NewBinaryValue([]byte{})
-		bin.SetSpec(spec)
-
-		packed, err := bin.Pack()
-
-		require.NoError(t, err)
-		require.Equal(t, []byte{}, packed)
-	})
-
 	t.Run("String returns binary data encoded in HEX", func(t *testing.T) {
 		bin := NewBinary(spec)
 		bin.Value = in
@@ -118,5 +108,12 @@ func TestBinaryField(t *testing.T) {
 		marshalledJSON, err := bin.MarshalJSON()
 		require.NoError(t, err)
 		require.Equal(t, `"AB"`, string(marshalledJSON))
+	})
+
+	t.Run("returns error for zero value when fixed length and no padding specified", func(t *testing.T) {
+		bin := NewBinary(spec)
+		_, err := bin.Pack()
+
+		require.EqualError(t, err, "failed to encode length: field length: 0 should be fixed: 10")
 	})
 }

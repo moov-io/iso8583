@@ -56,6 +56,22 @@ func TestStringField(t *testing.T) {
 	err = str.SetBytes([]byte("hello"))
 	require.NoError(t, err)
 	require.Equal(t, "hello", data.Value)
+
+}
+
+func TestStringPack(t *testing.T) {
+	t.Run("returns error for zero value when fixed length and no padding specified", func(t *testing.T) {
+		spec := &Spec{
+			Length:      10,
+			Description: "Field",
+			Enc:         encoding.ASCII,
+			Pref:        prefix.ASCII.Fixed,
+		}
+		str := NewString(spec)
+		_, err := str.Pack()
+
+		require.EqualError(t, err, "failed to encode length: field length: 0 should be fixed: 10")
+	})
 }
 
 func TestStringFieldUnmarshal(t *testing.T) {
@@ -67,21 +83,6 @@ func TestStringFieldUnmarshal(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, "hello", val.Value)
-}
-
-func TestStringFieldZeroLength(t *testing.T) {
-	str := NewStringValue("")
-	str.SetSpec(&Spec{
-		Length:      10,
-		Description: "Field",
-		Enc:         encoding.ASCII,
-		Pref:        prefix.ASCII.Fixed,
-	})
-
-	packed, err := str.Pack()
-	require.NoError(t, err)
-	require.Equal(t, []byte{}, packed)
-	require.Equal(t, "", string(packed))
 }
 
 func TestStringJSONUnmarshal(t *testing.T) {
