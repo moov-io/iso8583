@@ -3,6 +3,7 @@ package encoding
 import (
 	"fmt"
 
+	"github.com/moov-io/iso8583/utils"
 	"github.com/yerden/go-util/bcd"
 )
 
@@ -19,7 +20,7 @@ func (e *bcdEncoder) Encode(src []byte) ([]byte, error) {
 	dst := make([]byte, bcd.EncodedLen(len(src)))
 	n, err := enc.Encode(dst, src)
 	if err != nil {
-		return nil, err
+		return nil, utils.NewSafeError(err, "failed to perform BCD encoding")
 	}
 
 	return dst[:n], nil
@@ -43,7 +44,7 @@ func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 	dst := make([]byte, decodedLen)
 	_, err := dec.Decode(dst, src[:read])
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, utils.NewSafeError(err, "failed to perform BCD decoding")
 	}
 
 	// becase BCD is right aligned, we skip first bytes and

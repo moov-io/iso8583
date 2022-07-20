@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/moov-io/iso8583/utils"
 )
 
 var _ Field = (*String)(nil)
@@ -131,14 +133,18 @@ func (f *String) Marshal(data interface{}) error {
 }
 
 func (f *String) MarshalJSON() ([]byte, error) {
-	return json.Marshal(f.Value)
+	bytes, err := json.Marshal(f.Value)
+	if err != nil {
+		return nil, utils.NewSafeError(err, "failed to JSON marshal string to bytes")
+	}
+	return bytes, nil
 }
 
 func (f *String) UnmarshalJSON(b []byte) error {
 	var v string
 	err := json.Unmarshal(b, &v)
 	if err != nil {
-		return fmt.Errorf("failed to JSON unmarshal bytes to string: %w", err)
+		return utils.NewSafeError(err, "failed to JSON unmarshal bytes to string")
 	}
 	return f.SetBytes([]byte(v))
 }

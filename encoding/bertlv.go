@@ -2,8 +2,9 @@ package encoding
 
 import (
 	"bytes"
-	"fmt"
 	"math/bits"
+
+	"github.com/moov-io/iso8583/utils"
 )
 
 // BER-TLV Tag encoder
@@ -34,7 +35,7 @@ func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
 
 	firstByte, err := r.ReadByte()
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, utils.NewSafeError(err, "failed to read byte")
 	}
 	tagLenBytes := 1
 
@@ -46,7 +47,7 @@ func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
 	for shouldReadSubsequentByte {
 		b, err := r.ReadByte()
 		if err != nil {
-			return nil, tagLenBytes, fmt.Errorf("failed to decode TLV tag: %w", err)
+			return nil, tagLenBytes, utils.NewSafeError(err, "failed to decode TLV tag")
 		}
 		tagLenBytes++
 		// We read subsequent bytes to extract the tag by checking if

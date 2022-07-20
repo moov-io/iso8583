@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+
+	"github.com/moov-io/iso8583/utils"
 )
 
 var _ Field = (*Numeric)(nil)
@@ -47,7 +49,7 @@ func (f *Numeric) SetBytes(b []byte) error {
 		// otherwise parse the raw to an int
 		val, err := strconv.Atoi(string(b))
 		if err != nil {
-			return fmt.Errorf("failed to convert into number: %w", err)
+			return utils.NewSafeError(err, "failed to convert into number")
 		}
 		f.Value = val
 	}
@@ -145,14 +147,18 @@ func (f *Numeric) Marshal(data interface{}) error {
 }
 
 func (f *Numeric) MarshalJSON() ([]byte, error) {
-	return json.Marshal(f.Value)
+	bytes, err := json.Marshal(f.Value)
+	if err != nil {
+		return nil, utils.NewSafeError(err, "failed to JSON marshal int to bytes")
+	}
+	return bytes, nil
 }
 
 func (f *Numeric) UnmarshalJSON(b []byte) error {
 	var v int
 	err := json.Unmarshal(b, &v)
 	if err != nil {
-		return fmt.Errorf("failed to JSON unmarshal bytes to int: %w", err)
+		return utils.NewSafeError(err, "failed to JSON unmarshal bytes to int")
 	}
 	return f.SetBytes([]byte(fmt.Sprintf("%d", v)))
 }

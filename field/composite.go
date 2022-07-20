@@ -9,6 +9,7 @@ import (
 
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/sort"
+	"github.com/moov-io/iso8583/utils"
 )
 
 var _ Field = (*Composite)(nil)
@@ -304,7 +305,11 @@ func (f *Composite) String() (string, error) {
 // MarshalJSON implements the encoding/json.Marshaler interface.
 func (f *Composite) MarshalJSON() ([]byte, error) {
 	jsonData := OrderedMap(f.getSubfields())
-	return json.Marshal(jsonData)
+	bytes, err := json.Marshal(jsonData)
+	if err != nil {
+		return nil, utils.NewSafeError(err, "failed to JSON marshal map to bytes")
+	}
+	return bytes, nil
 }
 
 // UnmarshalJSON implements the encoding/json.Unmarshaler interface.
@@ -314,7 +319,7 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 	var data map[string]json.RawMessage
 	err := json.Unmarshal(b, &data)
 	if err != nil {
-		return err
+		return utils.NewSafeError(err, "failed to JSON unmarshal bytes to map")
 	}
 
 	for tag, rawMsg := range data {
@@ -328,7 +333,7 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 		}
 
 		if err := json.Unmarshal(rawMsg, subfield); err != nil {
-			return fmt.Errorf("failed to unmarshal subfield %v: %w", tag, err)
+			return utils.NewSafeErrorf(err, "failed to unmarshal subfield %v", tag)
 		}
 
 		f.setSubfields[tag] = struct{}{}
