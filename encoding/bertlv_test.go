@@ -42,6 +42,18 @@ func TestBerTLVTag(t *testing.T) {
 }
 
 func TestBerTLVTag_DecodeOnInvalidInput(t *testing.T) {
+	t.Run("when bytes are nil", func(t *testing.T) {
+		_, _, err := BerTLVTag.Decode(nil, 0)
+		require.EqualError(t, err, "failed to read byte")
+		require.ErrorIs(t, err, io.EOF)
+	})
+
+	t.Run("when bytes are empty", func(t *testing.T) {
+		_, _, err := BerTLVTag.Decode([]byte{}, 0)
+		require.EqualError(t, err, "failed to read byte")
+		require.ErrorIs(t, err, io.EOF)
+	})
+
 	t.Run("when bits 5-1 of first byte set but 2nd byte does not exist", func(t *testing.T) {
 		_, _, err := BerTLVTag.Decode([]byte{0x5F}, 0)
 		require.EqualError(t, err, "failed to decode TLV tag")

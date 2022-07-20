@@ -87,18 +87,18 @@ func TestNumericFieldWithNotANumber(t *testing.T) {
 		Pad:         padding.Left(' '),
 	})
 
-	numeric.SetBytes([]byte("hello"))
+	err := numeric.SetBytes([]byte("hello"))
+	require.Error(t, err)
+	require.EqualError(t, err, "failed to convert into number")
 	require.Equal(t, 0, numeric.Value)
 
 	packed, err := numeric.Pack()
-
 	require.NoError(t, err)
 	require.Equal(t, "         0", string(packed))
 
 	_, err = numeric.Unpack([]byte("hhhhhhhhhh"))
-
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to convert into number")
+	require.EqualError(t, err, "failed to set bytes: failed to convert into number")
 }
 
 func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
