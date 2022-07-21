@@ -3,6 +3,7 @@ package field
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -382,7 +383,8 @@ func TestCompositePacking(t *testing.T) {
 		read, err := composite.Unpack([]byte("ABCDEF"))
 		require.Equal(t, 0, read)
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to unpack subfield 3: failed to set bytes: failed to convert into number: strconv.Atoi: parsing \"EF\": invalid syntax")
+		require.EqualError(t, err, "failed to unpack subfield 3: failed to set bytes: failed to convert into number")
+		require.ErrorIs(t, err, strconv.ErrSyntax)
 	})
 
 	t.Run("Unpack returns an error on length of data exceeding max length", func(t *testing.T) {

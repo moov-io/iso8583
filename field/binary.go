@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/moov-io/iso8583/encoding"
+	"github.com/moov-io/iso8583/utils"
 )
 
 var _ Field = (*Binary)(nil)
@@ -118,7 +119,7 @@ func (f *Binary) SetData(data interface{}) error {
 
 	bin, ok := data.(*Binary)
 	if !ok {
-		return fmt.Errorf("data does not match required *Binary type")
+		return errors.New("data does not match required *Binary type")
 	}
 
 	f.data = bin
@@ -137,19 +138,23 @@ func (f *Binary) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(str)
+	bytes, err := json.Marshal(str)
+	if err != nil {
+		return nil, utils.NewSafeError(err, "failed to JSON marshal string to bytes")
+	}
+	return bytes, nil
 }
 
 func (f *Binary) UnmarshalJSON(b []byte) error {
 	var v string
 	err := json.Unmarshal(b, &v)
 	if err != nil {
-		return fmt.Errorf("failed to JSON unmarshal bytes to string: %w", err)
+		return utils.NewSafeError(err, "failed to JSON unmarshal bytes to string")
 	}
 
 	hex, err := encoding.ASCIIHexToBytes.Encode([]byte(v))
 	if err != nil {
-		return fmt.Errorf("failed to convert ASCII Hex string to bytes")
+		return utils.NewSafeError(err, "failed to convert ASCII Hex string to bytes")
 	}
 	return f.SetBytes(hex)
 }

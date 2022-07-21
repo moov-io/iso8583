@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/moov-io/iso8583/field"
+	"github.com/moov-io/iso8583/utils"
 )
 
 var _ json.Marshaler = (*Message)(nil)
@@ -219,7 +220,11 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 	}
 
 	// get only fields that were set
-	return json.Marshal(field.OrderedMap(strFieldMap))
+	bytes, err := json.Marshal(field.OrderedMap(strFieldMap))
+	if err != nil {
+		return nil, utils.NewSafeError(err, "failed to JSON marshal map to bytes")
+	}
+	return bytes, nil
 }
 
 func (m *Message) UnmarshalJSON(b []byte) error {
@@ -240,7 +245,7 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 		}
 
 		if err := json.Unmarshal(rawMsg, field); err != nil {
-			return fmt.Errorf("failed to unmarshal field %v: %w", id, err)
+			return utils.NewSafeErrorf(err, "failed to unmarshal field %v", id)
 		}
 
 		m.fieldsMap[i] = struct{}{}

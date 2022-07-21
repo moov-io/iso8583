@@ -16,6 +16,7 @@ import (
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	moovsort "github.com/moov-io/iso8583/sort"
+	"github.com/moov-io/iso8583/utils"
 )
 
 type FieldConstructorFunc func(spec *field.Spec) field.Field
@@ -194,7 +195,7 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 	dummySpec := specDummy{}
 	err := json.Unmarshal(raw, &dummySpec)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshalling spec: %w", err)
+		return nil, utils.NewSafeError(err, "failed to JSON unmarshal bytes to MessageSpec")
 	}
 
 	if len(dummySpec.Fields) == 0 {
@@ -349,7 +350,7 @@ func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]
 	enc.SetIndent("", "\t")
 
 	if err := enc.Encode(dummy); err != nil {
-		return nil, fmt.Errorf("unable to export message spec:  %w", err)
+		return nil, utils.NewSafeError(err, "failed to perform JSON encoding")
 	}
 
 	return outputBuffer.Bytes(), nil

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+
+	"github.com/moov-io/iso8583/utils"
 )
 
 // Custom type to sort keys in resulting JSON
@@ -23,7 +25,7 @@ func (om OrderedMap) MarshalJSON() ([]byte, error) {
 	for _, i := range keys {
 		b, err := json.Marshal(om[i])
 		if err != nil {
-			return nil, err
+			return nil, utils.NewSafeError(err, "failed to JSON marshal field to bytes")
 		}
 		buf.WriteString(fmt.Sprintf("\"%v\":", i))
 		buf.Write(b)

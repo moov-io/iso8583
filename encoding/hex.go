@@ -2,8 +2,10 @@ package encoding
 
 import (
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"strings"
+
+	"github.com/moov-io/iso8583/utils"
 )
 
 // HEX to ASCII encoder
@@ -31,14 +33,14 @@ func (e hexToASCIIEncoder) Decode(data []byte, length int) ([]byte, int, error) 
 	// to read 8 HEX digits we have to read 16 ASCII chars (bytes)
 	read := hex.EncodedLen(length)
 	if read > len(data) {
-		return nil, 0, fmt.Errorf("not enough data to read")
+		return nil, 0, errors.New("not enough data to read")
 	}
 
 	out := make([]byte, length)
 
 	_, err := hex.Decode(out, data[:read])
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, utils.NewSafeError(err, "failed to perform hex decoding")
 	}
 
 	return out, read, nil
@@ -56,7 +58,7 @@ func (e asciiToHexEncoder) Encode(data []byte) ([]byte, error) {
 
 	_, err := hex.Decode(out, data)
 	if err != nil {
-		return nil, err
+		return nil, utils.NewSafeError(err, "failed to perform hex decoding")
 	}
 
 	return out, nil
@@ -68,7 +70,7 @@ func (e asciiToHexEncoder) Encode(data []byte) ([]byte, error) {
 // 0x2A} would be converted to []byte("5F2A")
 func (e asciiToHexEncoder) Decode(data []byte, length int) ([]byte, int, error) {
 	if length > len(data) {
-		return nil, 0, fmt.Errorf("not enough data to read")
+		return nil, 0, errors.New("not enough data to read")
 	}
 
 	out := make([]byte, hex.EncodedLen(length))
