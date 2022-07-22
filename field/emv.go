@@ -210,22 +210,12 @@ func (f *EMV) Unpack(data []byte) (int, error) {
 	}
 	offset += read
 
-	raw, read, err := f.spec.Enc.Decode(data[offset:], dataLen)
-	if err != nil {
-		return 0, fmt.Errorf("failed to decode content: %w", err)
-	}
-
-	if f.spec.Pad != nil {
-		raw = f.spec.Pad.Unpad(raw)
-	}
-	offset += read
-
-	_, err = f.unpack(raw)
+	read, err = f.unpack(data[offset : offset+dataLen])
 	if err != nil {
 		return 0, err
 	}
 
-	return offset, nil
+	return offset + read, nil
 }
 
 // SetBytes iterates over the receiver's subfields and unpacks them.
@@ -346,9 +336,6 @@ func (f *EMV) unpack(data []byte) (int, error) {
 func validateEMVSpec(spec *Spec) error {
 	if spec.Pad != nil && spec.Pad != padding.None {
 		return fmt.Errorf("EMV spec only supports nil or None spec padding values")
-	}
-	if spec.Enc == nil {
-		return fmt.Errorf("EMV spec only supports a valid Enc value")
 	}
 	if spec.Pref == nil {
 		return fmt.Errorf("EMV spec only supports a valid pref")

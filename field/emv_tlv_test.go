@@ -85,7 +85,7 @@ func TestEMVPacking(t *testing.T) {
 		type TestDataIncorrectType struct {
 			F1 *PrimitiveTLV
 		}
-		emv := NewEMV(constructedTestSpec)
+		emv := NewEMV(emvTestSpec)
 		err := emv.SetData(&TestDataIncorrectType{
 			F1: NewPrimitiveTLVValue([]byte{0x0, 0x93}),
 		})
@@ -95,12 +95,12 @@ func TestEMVPacking(t *testing.T) {
 
 		packed, err := emv.Pack()
 		require.NoError(t, err)
-		require.Equal(t, []byte{0x0}, packed)
+		require.Equal(t, []byte{0x30, 0x30, 0x30}, packed) // length is 000
 	})
 
 	t.Run("Pack returns nested tlv struct", func(t *testing.T) {
 
-		emv := NewEMV(constructedTestSpec)
+		emv := NewEMV(emvTestSpec)
 
 		err := emv.SetData(&EMVDummy{
 			F01: NewPrimitiveTLVValue([]byte{0x01, 0x7f}),
@@ -114,11 +114,11 @@ func TestEMVPacking(t *testing.T) {
 		packed, err := emv.Pack()
 
 		require.NoError(t, err)
-		require.Equal(t, "118202017F9F3602027F9F3B059F4502047F", fmt.Sprintf("%X", packed))
+		require.Equal(t, "3031378202017F9F3602027F9F3B059F4502047F", fmt.Sprintf("%X", packed))
 	})
 
 	t.Run("Pack returns an error on failure of invalid value", func(t *testing.T) {
-		emv := NewEMV(constructedTestSpec)
+		emv := NewEMV(emvTestSpec)
 
 		err := emv.SetData(&EMVDummy{
 			F01: NewPrimitiveTLVValue([]byte{0x01, 0xff}),
@@ -140,16 +140,16 @@ func TestEMVPacking(t *testing.T) {
 
 func TestEMVUnpacking(t *testing.T) {
 
-	hexString := "118202017F9F3602027F9F3B059F4502047F"
+	hexString := "3031378202017F9F3602027F9F3B059F4502047F"
 	raw, err := encoding.BerTLVTag.Encode([]byte(hexString))
 	require.NoError(t, err)
 
 	t.Run("Unpack decode raw bytes without any struct mapping", func(t *testing.T) {
-		emv := NewEMV(constructedTestSpec)
+		emv := NewEMV(emvTestSpec)
 
 		read, err := emv.Unpack(raw)
 		require.NoError(t, err)
-		require.Equal(t, 18, read)
+		require.Equal(t, 20, read)
 
 		packed, err := emv.Pack()
 		require.NoError(t, err)
@@ -157,7 +157,7 @@ func TestEMVUnpacking(t *testing.T) {
 	})
 
 	t.Run("Unpack decode raw bytes with struct mapping", func(t *testing.T) {
-		emv := NewEMV(constructedTestSpec)
+		emv := NewEMV(emvTestSpec)
 
 		dummy := &EMVDummy{
 			F01: NewPrimitiveTLVValue(nil),
@@ -170,7 +170,7 @@ func TestEMVUnpacking(t *testing.T) {
 
 		read, err := emv.Unpack(raw)
 		require.NoError(t, err)
-		require.Equal(t, 18, read)
+		require.Equal(t, 20, read)
 
 		packed, err := emv.Pack()
 		require.NoError(t, err)
@@ -184,7 +184,7 @@ func TestEMVUnpacking(t *testing.T) {
 
 func TestEMVGetSetBytes(t *testing.T) {
 
-	hexString := "118202017F9F3602027F9F3B059F4502047F"
+	hexString := "3031378202017F9F3602027F9F3B059F4502047F"
 	raw, err := encoding.BerTLVTag.Encode([]byte(hexString))
 	require.NoError(t, err)
 
@@ -192,7 +192,7 @@ func TestEMVGetSetBytes(t *testing.T) {
 	value, err := encoding.BerTLVTag.Encode([]byte(valueString))
 	require.NoError(t, err)
 
-	emv := NewEMV(constructedTestSpec)
+	emv := NewEMV(emvTestSpec)
 	err = emv.SetBytes(value)
 	require.NoError(t, err)
 
@@ -206,12 +206,12 @@ func TestEMVGetSetBytes(t *testing.T) {
 
 	err = emv.SetBytes(raw)
 	require.Error(t, err)
-	require.Equal(t, "failed to unpack subfield 82: tag mismatch: want to read 82, got 11", err.Error())
+	require.Equal(t, "failed to unpack subfield 82: tag mismatch: want to read 82, got 30", err.Error())
 }
 
 func TestEMVGetValue(t *testing.T) {
 
-	emv := NewEMV(constructedTestSpec)
+	emv := NewEMV(emvTestSpec)
 
 	err := emv.SetData(&EMVDummy{
 		F01: NewPrimitiveTLVValue([]byte{0x01, 0x7f}),
@@ -230,7 +230,7 @@ func TestEMVGetValue(t *testing.T) {
 
 func TestEMVSetValue(t *testing.T) {
 
-	emv := NewEMV(constructedTestSpec)
+	emv := NewEMV(emvTestSpec)
 
 	err := emv.SetData(&EMVDummy{
 		F01: NewPrimitiveTLVValue([]byte{0x01, 0x7f}),
