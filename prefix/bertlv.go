@@ -11,12 +11,16 @@ import (
 // BerTLV encodes and decodes the length of BER-TLV fields based on the
 // following rules:
 //
-// Short Form: When the most-significant bit is off, the length field consists
-// of only one byte in which the right-most 7 bits contain the number of bytes
-// in the Value field, as an unsigned binary integer. This form of the Length
-// field supports data lengths of 127 bytes.  For example, a Length value of
-// 126 can be encoded as binary 01111110 (hexadecimal equivalent of 7E).
+// When bit b8 of the most significant byte of the length field is set to 0, the length
+// field consists of only one byte. Bits b7 to b1 code the number of bytes of the value
+// field. The length field is within the range 1 to 127.
 //
+// When bit b8 of the most significant byte of the length field is set to 1, the
+// subsequent bits b7 to b1 of the most significant byte code the number of
+// subsequent bytes in the length field. The subsequent bytes code an integer
+// representing the number of bytes in the value field. Two bytes are necessary to
+// express up to 255 bytes in the value field.
+
 // Long Form: When the most-significant bit is on, the Length field consists of
 // an initial byte and one or more subsequent bytes. The right-most 7 bits of
 // the initial byte contain the number of subsequent bytes in the Length field,
@@ -33,10 +37,15 @@ type berTLVPrefixer struct{}
 // NOTE: Because BER-TLV lengths are encoded dynamically, the maxLen method
 // argument is ignored.
 func (p *berTLVPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
+	if dataLen == 0 {
+		return []byte{byte(0)}, nil
+	}
+
 	buf := big.NewInt(int64(dataLen)).Bytes()
 	if dataLen <= 127 {
 		return buf, nil
 	}
+
 	return append([]byte{setMSB(uint8(len(buf)))}, buf...), nil
 }
 

@@ -20,6 +20,9 @@ type TagSpec struct {
 	// This field should not be populated in conjunction with the TLV Tag
 	// encoder as their lengths are determined dynamically.
 	Length int
+	// Tag is an identifier to specify data field. ASCII Hex-digits
+	// The field use for tlv only
+	Tag string
 	// Enc defines the encoder used to marshal and unmarshal
 	// the tag.
 	Enc encoding.Encoder
