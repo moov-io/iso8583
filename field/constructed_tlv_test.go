@@ -170,6 +170,7 @@ func TestConstructedTLVUnpacking(t *testing.T) {
 			},
 		}
 		err := tlv.SetData(dummy)
+		require.NoError(t, err)
 
 		read, err := tlv.Unpack(raw)
 		require.NoError(t, err)

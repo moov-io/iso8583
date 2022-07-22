@@ -167,6 +167,7 @@ func TestEMVUnpacking(t *testing.T) {
 			},
 		}
 		err := emv.SetData(dummy)
+		require.NoError(t, err)
 
 		read, err := emv.Unpack(raw)
 		require.NoError(t, err)

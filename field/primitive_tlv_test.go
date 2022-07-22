@@ -71,6 +71,7 @@ func TestPrimitiveTLVField(t *testing.T) {
 	tlv = NewPrimitiveTLV(spec)
 	length, err = tlv.Unpack(sampleWithUnmatchedTag)
 	require.Error(t, err)
+	require.Equal(t, 0, length)
 	require.Equal(t, "tag mismatch: want to read 9F02, got 9F03", err.Error())
 
 }
