@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
+	"io"
+	"os"
 	"reflect"
 )
 
@@ -86,6 +88,39 @@ func (f *ConstructedTLV) ConstructSubfields() {
 // Spec returns the receiver's spec.
 func (f *ConstructedTLV) Spec() *Spec {
 	return f.spec
+}
+
+// describe returns tlv tree with tag and value
+func (f *ConstructedTLV) describe(output io.Writer, padLeft int) {
+
+	if output == nil {
+		output = os.Stdout
+	}
+
+	for _, tag := range f.orderedSpecFieldTags {
+		field, ok := f.subfields[tag]
+		if !ok {
+			continue
+		}
+
+		if field.Spec() == nil || field.Spec().Tag == nil {
+			continue
+		}
+
+		fmtStr := "%s\t:"
+		for i:=0; i<padLeft;i++ {
+			// spaces for tree levels
+			fmtStr = "  " + fmtStr
+		}
+
+		if sub, ok := field.(*PrimitiveTLV); ok {
+			raw, _ := sub.Bytes()
+			fmt.Fprintf(output, fmtStr + " %X\n", field.Spec().Tag.Tag, raw)
+		} else if sub, ok := field.(*ConstructedTLV); ok {
+			fmt.Fprintf(output, fmtStr + "\n", field.Spec().Tag.Tag)
+			sub.describe(output, padLeft+1)
+		}
+	}
 }
 
 // getSubfields returns the map of set sub fields

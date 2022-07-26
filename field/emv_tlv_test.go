@@ -1,6 +1,7 @@
 package field
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -80,7 +81,7 @@ type EMVDummy struct {
 	F03 *ConstructedData
 }
 
-func TestEMVPacking(t *testing.T) {
+func TestEMV_Packing(t *testing.T) {
 	t.Run("Pack returns an null tlv when setting mismatched struct", func(t *testing.T) {
 		type TestDataIncorrectType struct {
 			F1 *PrimitiveTLV
@@ -138,7 +139,7 @@ func TestEMVPacking(t *testing.T) {
 	})
 }
 
-func TestEMVUnpacking(t *testing.T) {
+func TestEMV_Unpacking(t *testing.T) {
 
 	hexString := "3031378202017F9F3602027F9F3B059F4502047F"
 	raw, err := encoding.BerTLVTag.Encode([]byte(hexString))
@@ -183,7 +184,7 @@ func TestEMVUnpacking(t *testing.T) {
 	})
 }
 
-func TestEMVGetSetBytes(t *testing.T) {
+func TestEMV_GetSetBytes(t *testing.T) {
 
 	hexString := "3031378202017F9F3602027F9F3B059F4502047F"
 	raw, err := encoding.BerTLVTag.Encode([]byte(hexString))
@@ -210,7 +211,7 @@ func TestEMVGetSetBytes(t *testing.T) {
 	require.Equal(t, "failed to unpack subfield 82: tag mismatch: want to read 82, got 30", err.Error())
 }
 
-func TestEMVGetValue(t *testing.T) {
+func TestEMV_GetValue(t *testing.T) {
 
 	emv := NewEMV(emvTestSpec)
 
@@ -229,7 +230,7 @@ func TestEMVGetValue(t *testing.T) {
 
 }
 
-func TestEMVSetValue(t *testing.T) {
+func TestEMV_SetValue(t *testing.T) {
 
 	emv := NewEMV(emvTestSpec)
 
@@ -249,4 +250,23 @@ func TestEMVSetValue(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "046F", fmt.Sprintf("%X", value))
 
+}
+
+func TestEMV_Describe(t *testing.T) {
+
+	emv := NewEMV(emvTestSpec)
+
+	err := emv.SetData(&EMVDummy{
+		F01: NewPrimitiveTLVValue([]byte{0x01, 0x7f}),
+		F02: NewPrimitiveTLVValue([]byte{0x02, 0x7f}),
+		F03: &ConstructedData{
+			F04: NewPrimitiveTLVValue([]byte{0x04, 0x7f}),
+		},
+	})
+	require.NoError(t, err)
+
+	buf := bytes.NewBufferString("")
+	emv.Describe(buf)
+
+	require.Equal(t, "82....: 017F\n9F36..: 027F\n9F3B..:\n  9F45: 047F\n", buf.String())
 }

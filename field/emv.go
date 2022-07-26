@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"reflect"
+	"text/tabwriter"
 
 	"github.com/moov-io/iso8583/padding"
 )
@@ -54,6 +57,37 @@ func (f *EMV) ConstructSubfields() {
 // Spec returns the receiver's spec.
 func (f *EMV) Spec() *Spec {
 	return f.spec
+}
+
+// Describe returns tlv tree with tag and value
+func (f *EMV) Describe(output io.Writer) {
+
+	if output == nil {
+		output = os.Stdout
+	}
+
+	tw := tabwriter.NewWriter(output, 0, 0, 0, '.', 0)
+
+	for _, tag := range f.orderedSpecFieldTags {
+		field, ok := f.subfields[tag]
+		if !ok {
+			continue
+		}
+
+		if field.Spec() == nil || field.Spec().Tag == nil {
+			continue
+		}
+
+		if sub, ok := field.(*PrimitiveTLV); ok {
+			raw, _ := sub.Bytes()
+			fmt.Fprintf(tw, "%s\t: %X\n", field.Spec().Tag.Tag, raw)
+		} else if sub, ok := field.(*ConstructedTLV); ok {
+			fmt.Fprintf(tw, "%s\t:\n", field.Spec().Tag.Tag)
+			sub.describe(tw, 1)
+		}
+	}
+
+	tw.Flush()
 }
 
 // getSubfields returns the map of set sub fields

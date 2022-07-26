@@ -1,6 +1,7 @@
 package field
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -83,7 +84,7 @@ type ConstructedTerminal struct {
 	F03 *ConstructedCurrencyCode
 }
 
-func TestConstructedTLVPacking(t *testing.T) {
+func TestConstructedTLV_Packing(t *testing.T) {
 	t.Run("Pack returns an null tlv when setting mismatched struct", func(t *testing.T) {
 		type TestDataIncorrectType struct {
 			F1 *PrimitiveTLV
@@ -141,7 +142,7 @@ func TestConstructedTLVPacking(t *testing.T) {
 	})
 }
 
-func TestConstructedTLVUnpacking(t *testing.T) {
+func TestConstructedTLV_Unpacking(t *testing.T) {
 
 	hexString := "9F33118202017F9F3602027F9F3B059F4502047F"
 	raw, err := encoding.BerTLVTag.Encode([]byte(hexString))
@@ -186,7 +187,7 @@ func TestConstructedTLVUnpacking(t *testing.T) {
 	})
 }
 
-func TestConstructedTLVGetSetBytes(t *testing.T) {
+func TestConstructedTLV_GetSetBytes(t *testing.T) {
 
 	hexString := "9F33118202017F9F3602027F9F3B059F4502047F"
 	raw, err := encoding.BerTLVTag.Encode([]byte(hexString))
@@ -213,7 +214,7 @@ func TestConstructedTLVGetSetBytes(t *testing.T) {
 	require.Equal(t, "failed to unpack subfield 82: tag mismatch: want to read 82, got 9F33", err.Error())
 }
 
-func TestConstructedTLVGetValue(t *testing.T) {
+func TestConstructedTLV_GetValue(t *testing.T) {
 
 	tlv := NewConstructedTLV(constructedTestSpec)
 
@@ -232,7 +233,7 @@ func TestConstructedTLVGetValue(t *testing.T) {
 
 }
 
-func TestConstructedTLVSetValue(t *testing.T) {
+func TestConstructedTLV_SetValue(t *testing.T) {
 
 	tlv := NewConstructedTLV(constructedTestSpec)
 
@@ -252,4 +253,23 @@ func TestConstructedTLVSetValue(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "046F", fmt.Sprintf("%X", value))
 
+}
+
+func TestConstructedTLV_describe(t *testing.T) {
+
+	tlv := NewConstructedTLV(constructedTestSpec)
+
+	err := tlv.SetData(&ConstructedTerminal{
+		F01: NewPrimitiveTLVValue([]byte{0x01, 0x7f}),
+		F02: NewPrimitiveTLVValue([]byte{0x02, 0x7f}),
+		F03: &ConstructedCurrencyCode{
+			F04: NewPrimitiveTLVValue([]byte{0x04, 0x7f}),
+		},
+	})
+	require.NoError(t, err)
+
+	buf := bytes.NewBufferString("")
+	tlv.describe(buf, 0)
+
+	require.Equal(t, "82\t: 017F\n9F36\t: 027F\n9F3B\t:\n  9F45\t: 047F\n", buf.String())
 }
