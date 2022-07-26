@@ -108,16 +108,16 @@ func (f *ConstructedTLV) describe(output io.Writer, padLeft int) {
 		}
 
 		fmtStr := "%s\t:"
-		for i:=0; i<padLeft;i++ {
+		for i := 0; i < padLeft; i++ {
 			// spaces for tree levels
 			fmtStr = "  " + fmtStr
 		}
 
 		if sub, ok := field.(*PrimitiveTLV); ok {
 			raw, _ := sub.Bytes()
-			fmt.Fprintf(output, fmtStr + " %X\n", field.Spec().Tag.Tag, raw)
+			fmt.Fprintf(output, fmtStr+" %X\n", field.Spec().Tag.Tag, raw)
 		} else if sub, ok := field.(*ConstructedTLV); ok {
-			fmt.Fprintf(output, fmtStr + "\n", field.Spec().Tag.Tag)
+			fmt.Fprintf(output, fmtStr+"\n", field.Spec().Tag.Tag)
 			sub.describe(output, padLeft+1)
 		}
 	}
