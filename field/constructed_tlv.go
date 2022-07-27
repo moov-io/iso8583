@@ -15,7 +15,7 @@ var _ Field = (*ConstructedTLV)(nil)
 var _ json.Marshaler = (*ConstructedTLV)(nil)
 var _ json.Unmarshaler = (*ConstructedTLV)(nil)
 
-// A constructed BER-TLV data object consists of a tag, a length, and a value field
+// ConstructedTLV is a BER-TLV data object consists of a tag, a length, and a value field
 // composed of one or more BER-TLV data objects. A record in an AEF governed by
 // this specification is a constructed BER-TLV data object.
 //
@@ -24,8 +24,6 @@ var _ json.Unmarshaler = (*ConstructedTLV)(nil)
 //						number 1                          number n
 //
 // NOTE: Constructed TLV has not primitive value
-//
-
 type ConstructedTLV struct {
 	spec *Spec
 
