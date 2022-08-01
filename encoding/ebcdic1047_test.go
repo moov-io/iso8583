@@ -249,6 +249,15 @@ func TestEBCDIC1047Encode(t *testing.T) {
 func TestEBCDIC1047Decode(t *testing.T) {
 	t.Parallel()
 
+	t.Run("errors on invalid data length", func(t *testing.T) {
+		t.Parallel()
+
+		decoding, length, err := EBCDIC1047.Decode([]byte("test"), 5)
+		require.Nil(t, decoding)
+		require.Zero(t, length)
+		require.EqualError(t, err, "not enough data to decode. expected len 5, got 4")
+	})
+
 	t.Run("decode whole string", func(t *testing.T) {
 		t.Parallel()
 		for _, testCase := range knownEncodings {

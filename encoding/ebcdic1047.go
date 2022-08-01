@@ -1,6 +1,8 @@
 package encoding
 
 import (
+	"fmt"
+
 	"github.com/moov-io/iso8583/utils"
 	xencoding "golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
@@ -26,6 +28,12 @@ func (e ebcdic1047Encoder) Encode(data []byte) ([]byte, error) {
 }
 
 func (e ebcdic1047Encoder) Decode(data []byte, length int) ([]byte, int, error) {
+	if len(data) < length {
+		return nil, 0, fmt.Errorf(
+			"not enough data to decode. expected len %d, got %d", length, len(data),
+		)
+	}
+
 	data = data[:length]
 	out, err := e.decoder.Bytes(data)
 	if err != nil {
