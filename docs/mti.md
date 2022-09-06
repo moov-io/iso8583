@@ -75,4 +75,4 @@ Deciphering an MTI code is very straightforward. For code `1100`, you can derive
 
 Thus, `1100` is an authorization request originating from the acquirer and using the 1993 version of ISO 8583.
 
-There are some codes that are invalid under normal circumstances. For example, `1101` would represent an authorization request originating from an issuer, which isn't possible. Certain codes are also significantly more common than others — check out this [reference guide for common MTI codes and their standard meanings](http://www.fintrnmsgtool.com/iso-mti-code.html).
+There are some codes that are invalid under normal circumstances. For example, `1102` would represent an authorization request originating from an issuer, which isn't possible. Certain codes are also significantly more common than others — check out this [reference guide for common MTI codes and their standard meanings](http://www.fintrnmsgtool.com/iso-mti-code.html).
