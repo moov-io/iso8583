@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/moov-io/iso8583/encoding"
 )
 
 var Hex = Prefixers{
@@ -46,17 +44,15 @@ func (p *hexVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 		return nil, fmt.Errorf("field length: %d is larger than maximum: %d", dataLen, maxLen)
 	}
 
-	if len(strconv.Itoa(dataLen)) > p.Digits {
+	maxPossibleLength := 1<<(p.Digits*8) - 1
+	if dataLen > maxPossibleLength {
 		return nil, fmt.Errorf("number of digits in length: %d exceeds: %d", dataLen, p.Digits)
 	}
 
-	strLen := strconv.Itoa(dataLen)
-	res, err := encoding.BytesToASCIIHex.Encode([]byte(strLen))
-	if err != nil {
-		return nil, err
-	}
+	strLen := strconv.FormatInt(int64(dataLen), 16)
+	res := fmt.Sprintf("%0*s", p.Digits*2, strings.ToUpper(strLen))
 
-	return res, nil
+	return []byte(res), nil
 }
 
 func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
@@ -65,21 +61,16 @@ func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error)
 		return 0, 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", length, len(data))
 	}
 
-	bDigits, _, err := encoding.BytesToASCIIHex.Decode(data[:length], p.Digits)
+	dataLen, err := strconv.ParseInt(string(data[:length]), 16, p.Digits*8)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	dataLen, err := strconv.Atoi(string(bDigits))
-	if err != nil {
-		return 0, 0, err
-	}
-
-	if dataLen > maxLen {
+	if int(dataLen) > maxLen {
 		return 0, 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
 	}
 
-	return dataLen, length, nil
+	return int(dataLen), length, nil
 }
 
 func (p *hexVarPrefixer) Inspect() string {
