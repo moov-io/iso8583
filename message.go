@@ -70,7 +70,10 @@ func (m *Message) GetSpec() *MessageSpec {
 
 func (m *Message) Field(id int, val string) error {
 	if f, ok := m.fields[id]; ok {
-		m.fieldsMap[id] = struct{}{}
+		delete(m.fieldsMap, id)
+		if val != "" {
+			m.fieldsMap[id] = struct{}{}
+		}
 		return f.SetBytes([]byte(val))
 	}
 	return fmt.Errorf("failed to set field %d. ID does not exist", id)
@@ -78,7 +81,10 @@ func (m *Message) Field(id int, val string) error {
 
 func (m *Message) BinaryField(id int, val []byte) error {
 	if f, ok := m.fields[id]; ok {
-		m.fieldsMap[id] = struct{}{}
+		delete(m.fieldsMap, id)
+		if val != nil {
+			m.fieldsMap[id] = struct{}{}
+		}
 		return f.SetBytes(val)
 	}
 	return fmt.Errorf("failed to set binary field %d. ID does not exist", id)
