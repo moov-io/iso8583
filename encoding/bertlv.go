@@ -22,10 +22,10 @@ func (berTLVEncoderTag) Encode(data []byte) ([]byte, error) {
 // Decode converts hexadecimal TLV bytes into their ASCII representation according
 // to the following rules:
 //
-// 1) If bits 5 - 1 of the tag's first byte are all set, then we must read
-//    the subsequent byte for the tag number.
-// 2) We must continue reading subsequent bytes until we arrive at one whose
-//    most significant bit is unset.
+//  1. If bits 5 - 1 of the tag's first byte are all set, then we must read
+//     the subsequent byte for the tag number.
+//  2. We must continue reading subsequent bytes until we arrive at one whose
+//     most significant bit is unset.
 //
 // On success, the ASCII representation of the Tag is returned along with the
 // number of bytes read e.g. []byte{0x5F, 0x2A} would be converted to

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/moov-io/iso8583"
@@ -59,7 +59,7 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 	}
 	defer fd.Close()
 
-	raw, err := ioutil.ReadAll(fd)
+	raw, err := io.ReadAll(fd)
 	if err != nil {
 		return nil, fmt.Errorf("reading file %s: %w", path, err)
 	}
@@ -80,7 +80,7 @@ func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {
 	}
 	defer fd.Close()
 
-	raw, err := ioutil.ReadAll(fd)
+	raw, err := io.ReadAll(fd)
 	if err != nil {
 		return nil, fmt.Errorf("reading file %s: %w", path, err)
 	}
