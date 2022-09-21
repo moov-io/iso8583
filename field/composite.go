@@ -178,13 +178,12 @@ func (f *Composite) SetData(v interface{}) error {
 //
 // A valid input is as follows:
 //
-//      type CompositeData struct {
-//          F1 *String
-//          F2 *String
-//          F3 *Numeric
-//          F4 *SubfieldCompositeData
-//      }
-//
+//	type CompositeData struct {
+//	    F1 *String
+//	    F2 *String
+//	    F3 *Numeric
+//	    F4 *SubfieldCompositeData
+//	}
 func (f *Composite) Marshal(v interface{}) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
