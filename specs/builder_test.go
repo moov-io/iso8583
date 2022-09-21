@@ -1,7 +1,7 @@
 package specs
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -35,7 +35,7 @@ func TestBuilder(t *testing.T) {
 }
 
 func TestExampleJSONSpec(t *testing.T) {
-	asciiJson, err := ioutil.ReadFile("../examples/specs/spec87ascii.json")
+	asciiJson, err := os.ReadFile("../examples/specs/spec87ascii.json")
 	require.NoError(t, err)
 
 	asciiSpec, err := Builder.ImportJSON(asciiJson)

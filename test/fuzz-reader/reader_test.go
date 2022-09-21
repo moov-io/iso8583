@@ -18,7 +18,6 @@
 package fuzzreader
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -35,7 +34,7 @@ func TestCorpusSymlinks(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip()
 	}
-	fds, err := ioutil.ReadDir("corpus")
+	fds, err := os.ReadDir("corpus")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +43,7 @@ func TestCorpusSymlinks(t *testing.T) {
 	}
 
 	for i := range fds {
-		if fds[i].Mode()&os.ModeSymlink != 0 {
+		if fds[i].Type()&os.ModeSymlink != 0 {
 			if path, err := os.Readlink(filepath.Join("corpus", fds[i].Name())); err != nil {
 				t.Errorf("broken symlink: %v", err)
 			} else {
@@ -60,7 +59,7 @@ func TestCorpusSymlinks(t *testing.T) {
 
 func TestFuzzWithValidData(t *testing.T) {
 
-	byteData, err := ioutil.ReadFile(filepath.Join("..", "..", "test", "testdata", "financial_transaction_message.dat"))
+	byteData, err := os.ReadFile(filepath.Join("..", "..", "test", "testdata", "financial_transaction_message.dat"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +68,7 @@ func TestFuzzWithValidData(t *testing.T) {
 		t.Errorf("Expected value is 1 (got %v)", ret)
 	}
 
-	byteData, err = ioutil.ReadFile(filepath.Join(basePath, "..", "testdata", "iso_reversal_message_error_date.dat"))
+	byteData, err = os.ReadFile(filepath.Join(basePath, "..", "testdata", "iso_reversal_message_error_date.dat"))
 	if err != nil {
 		t.Fatal(err)
 	}
