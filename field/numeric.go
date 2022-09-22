@@ -61,11 +61,24 @@ func (f *Numeric) SetBytes(b []byte) error {
 }
 
 func (f *Numeric) Bytes() ([]byte, error) {
+	if f == nil {
+		return nil, nil
+	}
 	return []byte(strconv.Itoa(f.Value)), nil
 }
 
 func (f *Numeric) String() (string, error) {
+	if f == nil {
+		return "", nil
+	}
 	return strconv.Itoa(f.Value), nil
+}
+
+func (f *Numeric) GetValue() int {
+	if f == nil {
+		return 0
+	}
+	return f.Value
 }
 
 func (f *Numeric) Pack() ([]byte, error) {

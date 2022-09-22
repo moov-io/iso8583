@@ -48,11 +48,24 @@ func (f *Binary) SetBytes(b []byte) error {
 }
 
 func (f *Binary) Bytes() ([]byte, error) {
+	if f == nil {
+		return nil, nil
+	}
 	return f.Value, nil
 }
 
 func (f *Binary) String() (string, error) {
+	if f == nil {
+		return "", nil
+	}
 	return fmt.Sprintf("%X", f.Value), nil
+}
+
+func (f *Binary) GetValue() []byte {
+	if f == nil {
+		return nil
+	}
+	return f.Value
 }
 
 func (f *Binary) Pack() ([]byte, error) {

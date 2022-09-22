@@ -117,3 +117,18 @@ func TestBinaryField(t *testing.T) {
 		require.EqualError(t, err, "failed to encode length: field length: 0 should be fixed: 10")
 	})
 }
+
+func TestBinaryNil(t *testing.T) {
+	var str *Binary = nil
+
+	bs, err := str.Bytes()
+	require.NoError(t, err)
+	require.Nil(t, bs)
+
+	value, err := str.String()
+	require.NoError(t, err)
+	require.Equal(t, "", value)
+
+	bs = str.GetValue()
+	require.Nil(t, bs)
+}

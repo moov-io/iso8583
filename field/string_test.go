@@ -59,6 +59,21 @@ func TestStringField(t *testing.T) {
 
 }
 
+func TestStringNil(t *testing.T) {
+	var str *String = nil
+
+	bs, err := str.Bytes()
+	require.NoError(t, err)
+	require.Nil(t, bs)
+
+	value, err := str.String()
+	require.NoError(t, err)
+	require.Equal(t, "", value)
+
+	value = str.GetValue()
+	require.Equal(t, "", value)
+}
+
 func TestStringPack(t *testing.T) {
 	t.Run("returns error for zero value when fixed length and no padding specified", func(t *testing.T) {
 		spec := &Spec{

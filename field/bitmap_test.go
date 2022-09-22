@@ -274,3 +274,15 @@ func TestBitmap_SetData(t *testing.T) {
 		require.Equal(t, []byte("a"), b)
 	})
 }
+
+func TestBitmapNil(t *testing.T) {
+	var str *Bitmap = nil
+
+	bs, err := str.Bytes()
+	require.NoError(t, err)
+	require.Nil(t, bs)
+
+	value, err := str.String()
+	require.NoError(t, err)
+	require.Equal(t, "", value)
+}

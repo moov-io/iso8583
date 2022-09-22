@@ -47,11 +47,24 @@ func (f *String) SetBytes(b []byte) error {
 }
 
 func (f *String) Bytes() ([]byte, error) {
+	if f == nil {
+		return nil, nil
+	}
 	return []byte(f.Value), nil
 }
 
 func (f *String) String() (string, error) {
+	if f == nil {
+		return "", nil
+	}
 	return f.Value, nil
+}
+
+func (f *String) GetValue() string {
+	if f == nil {
+		return ""
+	}
+	return f.Value
 }
 
 func (f *String) Pack() ([]byte, error) {

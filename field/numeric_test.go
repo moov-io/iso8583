@@ -51,6 +51,21 @@ func TestNumericField(t *testing.T) {
 	require.Equal(t, 9876, data.Value)
 }
 
+func TestNumericNil(t *testing.T) {
+	var str *Numeric = nil
+
+	bs, err := str.Bytes()
+	require.NoError(t, err)
+	require.Nil(t, bs)
+
+	value, err := str.String()
+	require.NoError(t, err)
+	require.Equal(t, "", value)
+
+	n := str.GetValue()
+	require.Equal(t, 0, n)
+}
+
 func TestNumericPack(t *testing.T) {
 	t.Run("returns error for zero value when fixed length and no padding specified", func(t *testing.T) {
 		spec := &Spec{
