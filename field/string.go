@@ -13,7 +13,7 @@ var _ json.Marshaler = (*String)(nil)
 var _ json.Unmarshaler = (*String)(nil)
 
 type String struct {
-	Value string `json:"value"`
+	value string
 	spec  *Spec
 	data  *String
 }
@@ -26,7 +26,7 @@ func NewString(spec *Spec) *String {
 
 func NewStringValue(val string) *String {
 	return &String{
-		Value: val,
+		value: val,
 	}
 }
 
@@ -39,7 +39,7 @@ func (f *String) SetSpec(spec *Spec) {
 }
 
 func (f *String) SetBytes(b []byte) error {
-	f.Value = string(b)
+	f.value = string(b)
 	if f.data != nil {
 		*(f.data) = *f
 	}
@@ -50,25 +50,25 @@ func (f *String) Bytes() ([]byte, error) {
 	if f == nil {
 		return nil, nil
 	}
-	return []byte(f.Value), nil
+	return []byte(f.value), nil
 }
 
 func (f *String) String() (string, error) {
 	if f == nil {
 		return "", nil
 	}
-	return f.Value, nil
+	return f.value, nil
 }
 
-func (f *String) GetValue() string {
+func (f *String) Value() string {
 	if f == nil {
 		return ""
 	}
-	return f.Value
+	return f.value
 }
 
 func (f *String) Pack() ([]byte, error) {
-	data := []byte(f.Value)
+	data := []byte(f.value)
 
 	if f.spec.Pad != nil {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
@@ -119,7 +119,7 @@ func (f *String) Unmarshal(v interface{}) error {
 		return errors.New("data does not match required *String type")
 	}
 
-	str.Value = f.Value
+	str.value = f.value
 
 	return nil
 }
@@ -135,8 +135,8 @@ func (f *String) SetData(data interface{}) error {
 	}
 
 	f.data = str
-	if str.Value != "" {
-		f.Value = str.Value
+	if str.value != "" {
+		f.value = str.value
 	}
 	return nil
 }
@@ -146,7 +146,7 @@ func (f *String) Marshal(data interface{}) error {
 }
 
 func (f *String) MarshalJSON() ([]byte, error) {
-	bytes, err := json.Marshal(f.Value)
+	bytes, err := json.Marshal(f.value)
 	if err != nil {
 		return nil, utils.NewSafeError(err, "failed to JSON marshal string to bytes")
 	}

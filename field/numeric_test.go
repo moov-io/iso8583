@@ -20,7 +20,7 @@ func TestNumericField(t *testing.T) {
 	numeric := NewNumeric(spec)
 
 	numeric.SetBytes([]byte("100"))
-	require.Equal(t, 100, numeric.Value)
+	require.Equal(t, 100, numeric.Value())
 
 	packed, err := numeric.Pack()
 	require.NoError(t, err)
@@ -34,7 +34,7 @@ func TestNumericField(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "9876", string(b))
 
-	require.Equal(t, 9876, numeric.Value)
+	require.Equal(t, 9876, numeric.Value())
 
 	numeric = NewNumeric(spec)
 	numeric.SetData(NewNumericValue(9876))
@@ -48,7 +48,7 @@ func TestNumericField(t *testing.T) {
 	length, err = numeric.Unpack([]byte("      9876"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
-	require.Equal(t, 9876, data.Value)
+	require.Equal(t, 9876, data.Value())
 }
 
 func TestNumericNil(t *testing.T) {
@@ -62,7 +62,7 @@ func TestNumericNil(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "", value)
 
-	n := str.GetValue()
+	n := str.Value()
 	require.Equal(t, 0, n)
 }
 
@@ -90,7 +90,7 @@ func TestNumericFieldUnmarshal(t *testing.T) {
 	err := str.Unmarshal(val)
 
 	require.NoError(t, err)
-	require.Equal(t, 9876, val.Value)
+	require.Equal(t, 9876, val.Value())
 }
 
 func TestNumericFieldWithNotANumber(t *testing.T) {
@@ -105,7 +105,7 @@ func TestNumericFieldWithNotANumber(t *testing.T) {
 	err := numeric.SetBytes([]byte("hello"))
 	require.Error(t, err)
 	require.EqualError(t, err, "failed to convert into number")
-	require.Equal(t, 0, numeric.Value)
+	require.Equal(t, 0, numeric.Value())
 
 	packed, err := numeric.Pack()
 	require.NoError(t, err)
@@ -126,7 +126,7 @@ func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
 	})
 
 	numeric.SetBytes([]byte("0"))
-	require.Equal(t, 0, numeric.Value)
+	require.Equal(t, 0, numeric.Value())
 
 	packed, err := numeric.Pack()
 
@@ -142,7 +142,7 @@ func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "0", string(bs))
 
-	require.Equal(t, 0, numeric.Value)
+	require.Equal(t, 0, numeric.Value())
 }
 
 func TestNumericSetBytesSetsDataOntoDataStruct(t *testing.T) {
@@ -160,7 +160,7 @@ func TestNumericSetBytesSetsDataOntoDataStruct(t *testing.T) {
 	err = numeric.SetBytes([]byte("9"))
 	require.NoError(t, err)
 
-	require.Equal(t, 9, data.Value)
+	require.Equal(t, 9, data.Value())
 }
 
 func TestNumericJSONMarshal(t *testing.T) {
@@ -181,5 +181,5 @@ func TestNumericJSONUnmarshal(t *testing.T) {
 	})
 
 	require.NoError(t, numeric.UnmarshalJSON(input))
-	require.Equal(t, 4000, numeric.Value)
+	require.Equal(t, 4000, numeric.Value())
 }
