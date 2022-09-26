@@ -243,10 +243,10 @@ err = message.Unmarshal(data)
 // handle error
 
 // now you can access field values
-data.MTI.Value // "0100"
-data.TransmissionDateTime.Value // "220102103212"
-data.STAN.Value // "000001"
-data.InformationCode.Value // "001"
+data.MTI.Value() // "0100"
+data.TransmissionDateTime.Value() // "220102103212"
+data.STAN.Value() // "000001"
+data.InformationCode.Value() // "001"
 ```
 
 For complete code samples please check [./message_test.go](./message_test.go).
