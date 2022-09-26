@@ -42,10 +42,16 @@ func (f *Bitmap) SetBytes(b []byte) error {
 }
 
 func (f *Bitmap) Bytes() ([]byte, error) {
+	if f == nil {
+		return nil, nil
+	}
 	return f.bitmap.Bytes(), nil
 }
 
 func (f *Bitmap) String() (string, error) {
+	if f == nil {
+		return "", nil
+	}
 	return f.bitmap.String(), nil
 }
 

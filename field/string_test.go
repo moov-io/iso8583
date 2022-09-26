@@ -20,7 +20,7 @@ func TestStringField(t *testing.T) {
 	str := NewString(spec)
 
 	str.SetBytes([]byte("hello"))
-	require.Equal(t, "hello", str.Value)
+	require.Equal(t, "hello", str.Value())
 
 	packed, err := str.Pack()
 	require.NoError(t, err)
@@ -34,7 +34,7 @@ func TestStringField(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "olleh", string(b))
 
-	require.Equal(t, "olleh", str.Value)
+	require.Equal(t, "olleh", str.Value())
 
 	str = NewString(spec)
 	str.SetData(NewStringValue("hello"))
@@ -48,15 +48,30 @@ func TestStringField(t *testing.T) {
 	length, err = str.Unpack([]byte("     olleh"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
-	require.Equal(t, "olleh", data.Value)
+	require.Equal(t, "olleh", data.Value())
 
 	str = NewString(spec)
 	data = &String{}
 	str.SetData(data)
 	err = str.SetBytes([]byte("hello"))
 	require.NoError(t, err)
-	require.Equal(t, "hello", data.Value)
+	require.Equal(t, "hello", data.Value())
 
+}
+
+func TestStringNil(t *testing.T) {
+	var str *String = nil
+
+	bs, err := str.Bytes()
+	require.NoError(t, err)
+	require.Nil(t, bs)
+
+	value, err := str.String()
+	require.NoError(t, err)
+	require.Equal(t, "", value)
+
+	value = str.Value()
+	require.Equal(t, "", value)
 }
 
 func TestStringPack(t *testing.T) {
@@ -82,7 +97,7 @@ func TestStringFieldUnmarshal(t *testing.T) {
 	err := str.Unmarshal(val)
 
 	require.NoError(t, err)
-	require.Equal(t, "hello", val.Value)
+	require.Equal(t, "hello", val.Value())
 }
 
 func TestStringJSONUnmarshal(t *testing.T) {
@@ -96,7 +111,7 @@ func TestStringJSONUnmarshal(t *testing.T) {
 	})
 
 	require.NoError(t, str.UnmarshalJSON(input))
-	require.Equal(t, "4000", str.Value)
+	require.Equal(t, "4000", str.Value())
 }
 
 func TestStringJSONMarshal(t *testing.T) {

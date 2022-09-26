@@ -14,7 +14,7 @@ var _ json.Marshaler = (*Binary)(nil)
 var _ json.Unmarshaler = (*Binary)(nil)
 
 type Binary struct {
-	Value []byte `json:"value"`
+	value []byte
 	spec  *Spec
 	data  *Binary
 }
@@ -27,7 +27,7 @@ func NewBinary(spec *Spec) *Binary {
 
 func NewBinaryValue(val []byte) *Binary {
 	return &Binary{
-		Value: val,
+		value: val,
 	}
 }
 
@@ -40,7 +40,7 @@ func (f *Binary) SetSpec(spec *Spec) {
 }
 
 func (f *Binary) SetBytes(b []byte) error {
-	f.Value = b
+	f.value = b
 	if f.data != nil {
 		*(f.data) = *f
 	}
@@ -48,15 +48,28 @@ func (f *Binary) SetBytes(b []byte) error {
 }
 
 func (f *Binary) Bytes() ([]byte, error) {
-	return f.Value, nil
+	if f == nil {
+		return nil, nil
+	}
+	return f.value, nil
 }
 
 func (f *Binary) String() (string, error) {
-	return fmt.Sprintf("%X", f.Value), nil
+	if f == nil {
+		return "", nil
+	}
+	return fmt.Sprintf("%X", f.value), nil
+}
+
+func (f *Binary) Value() []byte {
+	if f == nil {
+		return nil
+	}
+	return f.value
 }
 
 func (f *Binary) Pack() ([]byte, error) {
-	data := f.Value
+	data := f.value
 
 	if f.spec.Pad != nil {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
@@ -107,7 +120,7 @@ func (f *Binary) Unmarshal(v interface{}) error {
 		return errors.New("data does not match required *Binary type")
 	}
 
-	bin.Value = f.Value
+	bin.value = f.value
 
 	return nil
 }
@@ -123,8 +136,8 @@ func (f *Binary) SetData(data interface{}) error {
 	}
 
 	f.data = bin
-	if bin.Value != nil {
-		f.Value = bin.Value
+	if bin.value != nil {
+		f.value = bin.value
 	}
 	return nil
 }

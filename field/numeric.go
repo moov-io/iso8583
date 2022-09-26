@@ -14,7 +14,7 @@ var _ json.Marshaler = (*Numeric)(nil)
 var _ json.Unmarshaler = (*Numeric)(nil)
 
 type Numeric struct {
-	Value int `json:"value"`
+	value int
 	spec  *Spec
 	data  *Numeric
 }
@@ -27,7 +27,7 @@ func NewNumeric(spec *Spec) *Numeric {
 
 func NewNumericValue(val int) *Numeric {
 	return &Numeric{
-		Value: val,
+		value: val,
 	}
 }
 
@@ -43,15 +43,15 @@ func (f *Numeric) SetBytes(b []byte) error {
 	if len(b) == 0 {
 		// for a length 0 raw, string(raw) would become "" which makes Atoi return an error
 		// however for example "0000" (value 0 left-padded with '0') should have 0 as output, not an error
-		// so if the length of raw is 0, set f.Value to 0 instead of parsing the raw
-		f.Value = 0
+		// so if the length of raw is 0, set f.value to 0 instead of parsing the raw
+		f.value = 0
 	} else {
 		// otherwise parse the raw to an int
 		val, err := strconv.Atoi(string(b))
 		if err != nil {
 			return utils.NewSafeError(err, "failed to convert into number")
 		}
-		f.Value = val
+		f.value = val
 	}
 
 	if f.data != nil {
@@ -61,15 +61,28 @@ func (f *Numeric) SetBytes(b []byte) error {
 }
 
 func (f *Numeric) Bytes() ([]byte, error) {
-	return []byte(strconv.Itoa(f.Value)), nil
+	if f == nil {
+		return nil, nil
+	}
+	return []byte(strconv.Itoa(f.value)), nil
 }
 
 func (f *Numeric) String() (string, error) {
-	return strconv.Itoa(f.Value), nil
+	if f == nil {
+		return "", nil
+	}
+	return strconv.Itoa(f.value), nil
+}
+
+func (f *Numeric) Value() int {
+	if f == nil {
+		return 0
+	}
+	return f.value
 }
 
 func (f *Numeric) Pack() ([]byte, error) {
-	data := []byte(strconv.Itoa(f.Value))
+	data := []byte(strconv.Itoa(f.value))
 
 	if f.spec.Pad != nil {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
@@ -120,7 +133,7 @@ func (f *Numeric) Unmarshal(v interface{}) error {
 		return errors.New("data does not match required *Numeric type")
 	}
 
-	num.Value = f.Value
+	num.value = f.value
 
 	return nil
 }
@@ -136,8 +149,8 @@ func (f *Numeric) SetData(data interface{}) error {
 	}
 
 	f.data = num
-	if num.Value != 0 {
-		f.Value = num.Value
+	if num.value != 0 {
+		f.value = num.value
 	}
 	return nil
 }
@@ -147,7 +160,7 @@ func (f *Numeric) Marshal(data interface{}) error {
 }
 
 func (f *Numeric) MarshalJSON() ([]byte, error) {
-	bytes, err := json.Marshal(f.Value)
+	bytes, err := json.Marshal(f.value)
 	if err != nil {
 		return nil, utils.NewSafeError(err, "failed to JSON marshal int to bytes")
 	}

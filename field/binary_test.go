@@ -30,7 +30,7 @@ func TestBinaryField(t *testing.T) {
 
 	t.Run("String returns binary data encoded in HEX", func(t *testing.T) {
 		bin := NewBinary(spec)
-		bin.Value = in
+		bin.value = in
 
 		str, err := bin.String()
 
@@ -45,7 +45,7 @@ func TestBinaryField(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, len(in), n)
-		require.Equal(t, in, bin.Value)
+		require.Equal(t, in, bin.value)
 	})
 
 	t.Run("SetData sets data to the field", func(t *testing.T) {
@@ -65,7 +65,7 @@ func TestBinaryField(t *testing.T) {
 		err := bin.Unmarshal(val)
 
 		require.NoError(t, err)
-		require.Equal(t, []byte{1, 2, 3}, val.Value)
+		require.Equal(t, []byte{1, 2, 3}, val.value)
 	})
 
 	t.Run("SetBytes sets data to the data field", func(t *testing.T) {
@@ -76,7 +76,7 @@ func TestBinaryField(t *testing.T) {
 		err := bin.SetBytes(in)
 		require.NoError(t, err)
 
-		require.Equal(t, in, data.Value)
+		require.Equal(t, in, data.value)
 	})
 
 	t.Run("Unpack sets data to data value", func(t *testing.T) {
@@ -88,7 +88,7 @@ func TestBinaryField(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, len(in), n)
-		require.Equal(t, in, data.Value)
+		require.Equal(t, in, data.value)
 	})
 
 	t.Run("UnmarshalJSON unquotes input before handling it", func(t *testing.T) {
@@ -116,4 +116,19 @@ func TestBinaryField(t *testing.T) {
 
 		require.EqualError(t, err, "failed to encode length: field length: 0 should be fixed: 10")
 	})
+}
+
+func TestBinaryNil(t *testing.T) {
+	var str *Binary = nil
+
+	bs, err := str.Bytes()
+	require.NoError(t, err)
+	require.Nil(t, bs)
+
+	value, err := str.String()
+	require.NoError(t, err)
+	require.Equal(t, "", value)
+
+	bs = str.Value()
+	require.Nil(t, bs)
 }
