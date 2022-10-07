@@ -57,6 +57,10 @@ func TestStringField(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "hello", data.Value())
 
+	str = NewString(spec)
+
+	str.SetValue("hello")
+	require.Equal(t, "hello", data.Value())
 }
 
 func TestStringNil(t *testing.T) {

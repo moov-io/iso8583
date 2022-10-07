@@ -49,6 +49,11 @@ func TestNumericField(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
 	require.Equal(t, 9876, data.Value())
+
+	numeric = NewNumeric(spec)
+	numeric.SetValue(9876)
+
+	require.Equal(t, 9876, numeric.Value())
 }
 
 func TestNumericNil(t *testing.T) {

@@ -81,6 +81,10 @@ func (f *Numeric) Value() int {
 	return f.value
 }
 
+func (f *Numeric) SetValue(v int) {
+	f.value = v
+}
+
 func (f *Numeric) Pack() ([]byte, error) {
 	data := []byte(strconv.Itoa(f.value))
 
