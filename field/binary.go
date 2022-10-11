@@ -68,6 +68,10 @@ func (f *Binary) Value() []byte {
 	return f.value
 }
 
+func (f *Binary) SetValue(v []byte) {
+	f.value = v
+}
+
 func (f *Binary) Pack() ([]byte, error) {
 	data := f.value
 

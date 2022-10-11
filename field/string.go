@@ -67,6 +67,10 @@ func (f *String) Value() string {
 	return f.value
 }
 
+func (f *String) SetValue(v string) {
+	f.value = v
+}
+
 func (f *String) Pack() ([]byte, error) {
 	data := []byte(f.value)
 
