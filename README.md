@@ -47,7 +47,7 @@ Moov ISO8583 currently offers a Go package with plans for an API in the near fut
 
 ## Go library
 
-This project uses [Go Modules](https://github.com/golang/go/wiki/Modules) and Go v1.14 or higher. See [Golang's install instructions](https://golang.org/doc/install) for help in setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
+This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.18 or newer. See [Golang's install instructions](https://golang.org/doc/install) for help in setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
 
 ### Installation
 
@@ -67,7 +67,7 @@ Spec87ASCII is suitable for the majority of use cases. Simply instantiate a new 
 ```
 isomessage := iso8583.NewMessage(specs.Spec87ASCII)
 ```
-If this spec does not meet your needs, we encourage you to modify it or create your own using the information below. 
+If this spec does not meet your needs, we encourage you to modify it or create your own using the information below.
 
 First, you need to define the format of the message fields that are described in your ISO8583 specification. Each data field has a type and its own spec. You can create a `NewBitmap`, `NewString`, or `NewNumeric` field. Each individual field spec consists of a few elements:
 
@@ -177,7 +177,7 @@ type NetworkManagementRequest struct {
 
 message := NewMessage(spec)
 
-// now, pass data with fields into the message 
+// now, pass data with fields into the message
 err := message.Marshal(&NetworkManagementRequest{
 	MTI:                  field.NewStringValue("0800"),
 	TransmissionDateTime: field.NewStringValue(time.Now().UTC().Format("060102150405")),
@@ -435,7 +435,7 @@ Twitter [@moov](https://twitter.com/moov)	| You can follow Moov.io's Twitter fee
 
 Please review our [Contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started! Check out our [issues for first time contributors](https://github.com/moov-io/iso8583/contribute) for something to help out with.
 
-This project uses [Go Modules](https://github.com/golang/go/wiki/Modules) and uses Go v1.14 or higher. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
+This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.18 or newer. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
 
 ## Related projects
 As part of Moov's initiative to offer open source fintech infrastructure, we have a large collection of active projects you may find useful:
