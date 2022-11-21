@@ -13,7 +13,7 @@ import (
 
 var defaultSpecName = "ISO 8583"
 
-func Describe(message *Message, w io.Writer) error {
+func Describe(message *Message, w io.Writer, filters ...FieldFilter) error {
 	specName := defaultSpecName
 	if spec := message.GetSpec(); spec != nil && spec.Name != "" {
 		specName = spec.Name
@@ -43,6 +43,12 @@ func Describe(message *Message, w io.Writer) error {
 	// display the rest of all set fields
 	fields := message.GetFields()
 
+	// making filter map
+	filterMap := make(map[int]FilterFunc)
+	for _, filter := range filters {
+		filter(filterMap)
+	}
+
 	var errorList []string
 
 	for _, i := range sortFieldIDs(fields) {
@@ -57,6 +63,12 @@ func Describe(message *Message, w io.Writer) error {
 			errorList = append(errorList, err.Error())
 			continue
 		}
+
+		// apply filtering
+		if filter, existed := filterMap[i]; existed {
+			str = filter(str, fields[i])
+		}
+
 		fmt.Fprintf(tw, fmt.Sprintf("F%03d %s\t: %%s\n", i, desc), str)
 	}
 
