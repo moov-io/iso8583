@@ -6,6 +6,18 @@ import (
 	"github.com/moov-io/iso8583/field"
 )
 
+const (
+	emvFirstIndex = 4
+	emvLastIndex  = 4
+	emvPattern    = " ... "
+	pinFirstIndex = 2
+	pinLastIndex  = 2
+	pinPattern    = "****"
+	panFistIndex  = 4
+	panLastIndex  = 4
+	panPattern    = "****"
+)
+
 type FilterFunc func(in string, data field.Field) string
 
 type FieldFilter func(fieldFilters map[int]FilterFunc)
@@ -30,25 +42,25 @@ var DefaultFilter = func() []FieldFilter {
 }
 
 var EMVFilter = func(in string, data field.Field) string {
-	if len(in) < 8 {
+	if len(in) < emvFirstIndex+emvLastIndex {
 		return in
 	}
 
-	return in[0:4] + " ... " + in[len(in)-4:]
+	return in[0:emvFirstIndex] + emvPattern + in[len(in)-emvLastIndex:]
 }
 
 var PINFilter = func(in string, data field.Field) string {
-	if len(in) < 4 {
+	if len(in) < pinFirstIndex+pinLastIndex {
 		return in
 	}
-	return in[0:2] + "****" + in[len(in)-2:]
+	return in[0:pinFirstIndex] + pinPattern + in[len(in)-pinLastIndex:]
 }
 
 var PANFilter = func(in string, data field.Field) string {
-	if len(in) < 8 {
+	if len(in) < panFistIndex+panLastIndex {
 		return in
 	}
-	return in[0:4] + "****" + in[len(in)-4:]
+	return in[0:panFistIndex] + panPattern + in[len(in)-panLastIndex:]
 }
 
 var Track1Filter = func(in string, data field.Field) string {
