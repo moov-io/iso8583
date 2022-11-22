@@ -28,7 +28,7 @@ func FilterField(id int, filterFn FilterFunc) FieldFilter {
 	}
 }
 
-var DefaultFilter = func() []FieldFilter {
+var DefaultFilters = func() []FieldFilter {
 	filters := []FieldFilter{
 		FilterField(2, PANFilter),
 		FilterField(20, PANFilter),
