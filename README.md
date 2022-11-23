@@ -33,6 +33,7 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 	- [Define specification](#define-your-specification)
 	- [Build message](#build-and-pack-the-message)
 	- [Parse message](#parse-the-message-and-access-the-data)
+	- [Inspect message fields](#inspect-message-fields)
 	- [JSON encoding](#json-encoding)
 	- [Network header](#network-header)
 - [ISO8583 CLI](#cli)
@@ -251,6 +252,60 @@ data.InformationCode.Value() // "001"
 
 For complete code samples please check [./message_test.go](./message_test.go).
 
+### Inspect message fields
+
+There is a `Describe` function in the package that displays all message fields
+in a human-readable way. Here is an example of how you can print message fields
+with their values to STDOUT:
+
+```go
+// print message to os.Stdout
+iso8583.Describe(message, os.Stdout)
+```
+
+and it will produce the following output:
+
+```
+MTI........................................: 0100
+Bitmap.....................................: 000000000000000000000000000000000000000000000000
+Bitmap bits................................: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+F000 Message Type Indicator................: 0100
+F002 Primary Account Number................: 4242****4242
+F003 Processing Code.......................: 123456
+F004 Transaction Amount....................: 100
+F020 PAN Extended Country Code.............: 4242****4242
+F035 Track 2 Data..........................: 4000****0506=2512111123400001230
+F036 Track 3 Data..........................: 011234****3445=724724000000000****00300XXXX020200099010=********************==1=100000000000000000**
+F045 Track 1 Data..........................: B4815****1896^YATES/EUGENE L^^^356858      00998000000
+F052 PIN Data..............................: 12****78
+F055 ICC Data – EMV Having Multiple Tags...: ICC  ... Tags
+```
+
+by default, we apply `iso8583.DefaultFilters` to mask the values of the fields
+with sensitive data. You can define your filter functions and redact specific
+fields like this:
+
+```go
+filterAll = func(in string, data field.Field) string {
+	runesInString := utf8.RuneCountInString(in)
+
+	return strings.Repeat("*", runesInString)
+}
+
+// filter only value of the field 2
+iso8583.Describe(message, os.Stdout, filterAll(2, filterAll))
+
+// outputs:
+// F002 Primary Account Number................: ************
+```
+
+If you want to view unfiltered values, you can use no-op filters `iso8583.DoNotFilterFields` that we defined:
+
+```go
+// display unfiltered field values
+iso8583.Describe(message, os.Stdout, DoNotFilterFields()...)
+```
+
 ### JSON encoding
 
 You can serialize message into JSON format:
@@ -388,12 +443,19 @@ Example:
 
 ```
 ➜ ./bin/iso8583 describe msg.bin
-ISO 8583 Message:
-MTI.............................: 0100
-Bitmap..........................: A2380000008000000400000000000000
-Bitmap bits.....................: 10100010 10100010 10100010 10100010 10100010 10100010 10100010 10100010
-001 Processing Code.............: 000001
-011 System Trace Audit Number...: 005835
+MTI........................................: 0100
+Bitmap.....................................: 000000000000000000000000000000000000000000000000
+Bitmap bits................................: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+F000 Message Type Indicator................: 0100
+F002 Primary Account Number................: 4242****4242
+F003 Processing Code.......................: 123456
+F004 Transaction Amount....................: 100
+F020 PAN Extended Country Code.............: 4242****4242
+F035 Track 2 Data..........................: 4000****0506=2512111123400001230
+F036 Track 3 Data..........................: 011234****3445=724724000000000****00300XXXX020200099010=********************==1=100000000000000000**
+F045 Track 1 Data..........................: B4815****1896^YATES/EUGENE L^^^356858      00998000000
+F052 PIN Data..............................: 12****78
+F055 ICC Data – EMV Having Multiple Tags...: ICC  ... Tags
 ```
 
 You can specify which of the built-in specs to use to the describe message via
