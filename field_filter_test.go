@@ -41,11 +41,9 @@ func TestFieldFilter(t *testing.T) {
 	err = message.Field(55, "ICC Data – EMV Having Multiple Tags")
 	require.NoError(t, err)
 
-	filters := DefaultFilters()
-
 	out := bytes.NewBuffer([]byte{})
 	require.NotPanics(t, func() {
-		Describe(message, out, filters...)
+		Describe(message, out)
 	})
 
 	expectedOutput := `ISO 8583 v1987 ASCII Message:
@@ -67,7 +65,7 @@ F055 ICC Data – EMV Having Multiple Tags...: ICC  ... Tags
 
 	out.Reset()
 	require.NotPanics(t, func() {
-		Describe(message, out)
+		Describe(message, out, DoNotFilterFields()...)
 	})
 
 	expectedOutput = `ISO 8583 v1987 ASCII Message:

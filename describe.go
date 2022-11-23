@@ -43,8 +43,14 @@ func Describe(message *Message, w io.Writer, filters ...FieldFilter) error {
 	// display the rest of all set fields
 	fields := message.GetFields()
 
+	// use default filter
+	if len(filters) == 0 {
+		filters = DefaultFilters()
+	}
+
 	// making filter map
 	filterMap := make(map[int]FilterFunc)
+
 	for _, filter := range filters {
 		filter(filterMap)
 	}

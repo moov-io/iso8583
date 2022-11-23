@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/moov-io/iso8583/field"
 )
@@ -41,8 +42,19 @@ var DefaultFilters = func() []FieldFilter {
 	return filters
 }
 
+var DoNotFilterFields = func() []FieldFilter {
+	filters := []FieldFilter{
+		FilterField(-1, NoOpFilter),
+	}
+	return filters
+}
+
+var NoOpFilter = func(in string, data field.Field) string {
+	return in
+}
+
 var EMVFilter = func(in string, data field.Field) string {
-	if len(in) < emvFirstIndex+emvLastIndex {
+	if utf8.RuneCountInString(in) < emvFirstIndex+emvLastIndex {
 		return in
 	}
 
@@ -50,14 +62,14 @@ var EMVFilter = func(in string, data field.Field) string {
 }
 
 var PINFilter = func(in string, data field.Field) string {
-	if len(in) < pinFirstIndex+pinLastIndex {
+	if utf8.RuneCountInString(in) < pinFirstIndex+pinLastIndex {
 		return in
 	}
 	return in[0:pinFirstIndex] + pinPattern + in[len(in)-pinLastIndex:]
 }
 
 var PANFilter = func(in string, data field.Field) string {
-	if len(in) < panFistIndex+panLastIndex {
+	if utf8.RuneCountInString(in) < panFistIndex+panLastIndex {
 		return in
 	}
 	return in[0:panFistIndex] + panPattern + in[len(in)-panLastIndex:]
@@ -89,6 +101,7 @@ var Track3Filter = func(in string, data field.Field) string {
 		return in
 	}
 	track.PrimaryAccountNumber = PANFilter(track.PrimaryAccountNumber, nil)
+
 	return getTrackDataString(in, &track)
 }
 
