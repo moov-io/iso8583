@@ -141,6 +141,43 @@ var (
 			}),
 		},
 	}
+
+	constructedBERTLVTestSpec = &Spec{
+		Length:      999,
+		Description: "ICC Data – EMV Having Multiple Tags",
+		Pref:        prefix.ASCII.LLL,
+		Tag: &TagSpec{
+			Enc:  encoding.BerTLVTag,
+			Sort: sort.StringsByHex,
+		},
+		Subfields: map[string]Field{
+			"82": NewString(&Spec{
+				Description: "Application Interchange Profile",
+				Enc:         encoding.ASCIIHexToBytes,
+				Pref:        prefix.BerTLV,
+			}),
+			"9F36": NewString(&Spec{
+				Description: "Currency Code, Application Reference",
+				Enc:         encoding.ASCIIHexToBytes,
+				Pref:        prefix.BerTLV,
+			}),
+			"9F3B": NewComposite(&Spec{
+				Description: "Currency Code, Application Reference",
+				Pref:        prefix.BerTLV,
+				Tag: &TagSpec{
+					Enc:  encoding.BerTLVTag,
+					Sort: sort.StringsByHex,
+				},
+				Subfields: map[string]Field{
+					"9F45": NewString(&Spec{
+						Description: "Data Authentication Code",
+						Enc:         encoding.ASCIIHexToBytes,
+						Pref:        prefix.BerTLV,
+					}),
+				},
+			}),
+		},
+	}
 )
 
 type CompositeTestData struct {
@@ -167,6 +204,16 @@ type CompositeTestDataWithoutTagPaddingWithIndexTag struct {
 type TLVTestData struct {
 	F9A   *String
 	F9F02 *String
+}
+
+type ConstructedTLVTestData struct {
+	F82   *String
+	F9F36 *String
+	F9F3B *SubConstructedTLVTestData
+}
+
+type SubConstructedTLVTestData struct {
+	F9F45 *String
 }
 
 func TestComposite_SetData(t *testing.T) {
@@ -199,6 +246,29 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 		require.Equal(t, "000000000501", data.F9F02.Value())
 	})
 
+	t.Run("Unmarshal gets data for composite field (constructed)", func(t *testing.T) {
+		composite := NewComposite(constructedBERTLVTestSpec)
+		err := composite.SetData(&ConstructedTLVTestData{
+			F82:   NewStringValue("017F"),
+			F9F36: NewStringValue("027F"),
+			F9F3B: &SubConstructedTLVTestData{
+				F9F45: NewStringValue("047F"),
+			},
+		})
+		require.NoError(t, err)
+
+		_, err = composite.Pack()
+		require.NoError(t, err)
+
+		data := &ConstructedTLVTestData{}
+		err = composite.Unmarshal(data)
+		require.NoError(t, err)
+
+		require.Equal(t, "017F", data.F82.Value())
+		require.Equal(t, "027F", data.F9F36.Value())
+		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
+	})
+
 	t.Run("Unmarshal gets data for composite field using field tag `index`", func(t *testing.T) {
 		type tlvTestData struct {
 			Date          *String `index:"9A"`
@@ -226,7 +296,7 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 }
 
 func TestTLVPacking(t *testing.T) {
-	t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
+	t.Run("Pack correctly serializes data to bytes (general tlv)", func(t *testing.T) {
 		data := &TLVTestData{
 			F9A:   NewStringValue("210720"),
 			F9F02: NewStringValue("000000000501"),
@@ -263,6 +333,71 @@ func TestTLVPacking(t *testing.T) {
 
 		require.Equal(t, "210720", data.F9A.Value())
 		require.Equal(t, "000000000501", data.F9F02.Value())
+	})
+
+	t.Run("Pack correctly serializes data to bytes (constructed ber-tlv)", func(t *testing.T) {
+		data := &ConstructedTLVTestData{
+			F82:   NewStringValue("017f"),
+			F9F36: NewStringValue("027f"),
+			F9F3B: &SubConstructedTLVTestData{
+				F9F45: NewStringValue("047f"),
+			},
+		}
+
+		composite := NewComposite(constructedBERTLVTestSpec)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		// TLV Length: 0x30, 0x31, 0x37 (017)
+		//
+		// Tag: 0x82 (82)
+		// Length: 0x02 (2 bytes)
+		// Value: 0x01, 0x7f (017F)
+		//
+		// Tag: 0x9f, 0x36 (9F36)
+		// Length: 0x02 (2 bytes)
+		// Value: 0x02, 0x7f (027f)
+		//
+		// Tag: 0x9f, 0x3b (9F3B)
+		// Length: 0x05 (5 bytes)
+		// Value:
+		//  Tag: 0x9f, 0x45 (9F45)
+		// 	Length: 0x02 (2 bytes)
+		// 	Value: 0x04, 0x7f (047F)
+		require.Equal(t, []byte{0x30, 0x31, 0x37, 0x82, 0x2, 0x1, 0x7f, 0x9f, 0x36, 0x2, 0x2, 0x7f, 0x9f, 0x3b, 0x5, 0x9f, 0x45, 0x2, 0x4, 0x7f}, packed)
+	})
+
+	t.Run("Unpack correctly deserialises bytes to the data struct (constructed ber-tlv)", func(t *testing.T) {
+		composite := NewComposite(constructedBERTLVTestSpec)
+
+		read, err := composite.Unpack([]byte{0x30, 0x31, 0x37, 0x82, 0x2, 0x1, 0x7f, 0x9f, 0x36, 0x2, 0x2, 0x7f, 0x9f, 0x3b, 0x5, 0x9f, 0x45, 0x2, 0x4, 0x7f})
+		require.NoError(t, err)
+		require.Equal(t, 20, read)
+
+		data := &ConstructedTLVTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "017F", data.F82.Value())
+		require.Equal(t, "027F", data.F9F36.Value())
+		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
+	})
+
+	t.Run("Unpack correctly deserialises bytes to the data struct (constructed ber-tlv, unordered value)", func(t *testing.T) {
+		composite := NewComposite(constructedBERTLVTestSpec)
+
+		read, err := composite.Unpack([]byte{0x30, 0x31, 0x37, 0x9f, 0x36, 0x2, 0x2, 0x7f, 0x9f, 0x3b, 0x5, 0x9f, 0x45, 0x2, 0x4, 0x7f, 0x82, 0x2, 0x1, 0x7f})
+		require.NoError(t, err)
+		require.Equal(t, 20, read)
+
+		data := &ConstructedTLVTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "017F", data.F82.Value())
+		require.Equal(t, "027F", data.F9F36.Value())
+		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
 	})
 }
 
