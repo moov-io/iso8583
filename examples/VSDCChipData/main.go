@@ -145,7 +145,7 @@ func main() {
 
 	fmt.Println(fmt.Sprintf("0x%X", rawValue))
 
-	fmt.Println("\n EMV Having Multiple Tags (Bit 55) \n")
+	fmt.Println("\n EMV Having Multiple Tags (Bit 55)")
 	fmt.Println("ICC Data length: ", fmt.Sprintf("0x%X", rawValue[0:3]))
 	fmt.Println(".........length: ", fmt.Sprintf("0x%X", rawValue[3:4]))
 	fmt.Println(".............id: ", fmt.Sprintf("0x%X", rawValue[4:5]))
