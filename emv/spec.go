@@ -31,7 +31,7 @@ var Spec = &field.Spec{
 			Enc:         encoding.ASCIIHexToBytes,
 			Pref:        prefix.BerTLV,
 		}),
-		"9F02": field.NewString(&field.Spec{
+		"9F02": field.NewNumeric(&field.Spec{
 			Description: "Amount, Authorised (Numeric)",
 			Enc:         encoding.ASCIIHexToBytes,
 			Pref:        prefix.BerTLV,
@@ -41,7 +41,7 @@ var Spec = &field.Spec{
 			Enc:         encoding.ASCIIHexToBytes,
 			Pref:        prefix.BerTLV,
 		}),
-		"9F03": field.NewString(&field.Spec{
+		"9F03": field.NewNumeric(&field.Spec{
 			Description: "Amount, Other (Numeric)",
 			Enc:         encoding.ASCIIHexToBytes,
 			Pref:        prefix.BerTLV,
@@ -146,8 +146,8 @@ var Spec = &field.Spec{
 			Enc:         encoding.ASCIIHexToBytes,
 			Pref:        prefix.BerTLV,
 		}),
-		"9F36": field.NewString(&field.Spec{
-			Description: "Application Transaction Counter (ATC)",
+		"9F36": field.NewNumeric(&field.Spec{
+			Description: "Application Transaction Counter",
 			Enc:         encoding.ASCIIHexToBytes,
 			Pref:        prefix.BerTLV,
 		}),
