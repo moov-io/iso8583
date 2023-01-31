@@ -160,48 +160,48 @@ func (f *Bitmap) Reset() {
 }
 
 // For auto expand mode if we expand bitmap we should set bit that shows the presence of the next bitmap
-func (b *Bitmap) Set(n int) {
+func (f *Bitmap) Set(n int) {
 	if n <= 0 {
 		return
 	}
 
 	// do we have to expand bitmap?
-	if n > len(b.data)*8 {
-		if b.spec.DisableAutoExpand {
+	if n > len(f.data)*8 {
+		if f.spec.DisableAutoExpand {
 			return
 		}
 
 		// calculate how many bitmaps we need to store n-th bit
-		bitmapIndex := (n - 1) / (b.bitmapLenght * 8)
+		bitmapIndex := (n - 1) / (f.bitmapLenght * 8)
 		newBitmapsCount := (bitmapIndex + 1)
 
 		// set first bit of the first byte of the last bitmap in
 		// current data to 1 to show the presence of the next bitmap
-		b.data[len(b.data)-b.bitmapLenght] |= 1 << 7
+		f.data[len(f.data)-f.bitmapLenght] |= 1 << 7
 
 		// add new empty bitmaps and for every new bitmap except the
 		// last one, set bit that shows the presence of the next bitmap
-		for i := newBitmapsCount - len(b.data)/b.bitmapLenght; i > 0; i-- {
-			newBitmap := make([]byte, b.bitmapLenght)
+		for i := newBitmapsCount - len(f.data)/f.bitmapLenght; i > 0; i-- {
+			newBitmap := make([]byte, f.bitmapLenght)
 			// set first bit of the first byte of the new bitmap to 1
 			// but only if it is not the last bitmap
 			if i > 1 {
 				newBitmap[0] = 128 // 10000000 - first bit is set (big endian)
 			}
-			b.data = append(b.data, newBitmap...)
+			f.data = append(f.data, newBitmap...)
 		}
 	}
 
 	// set bit
-	b.data[(n-1)/8] |= 1 << (uint(7-(n-1)) % 8)
+	f.data[(n-1)/8] |= 1 << (uint(7-(n-1)) % 8)
 }
 
-func (b *Bitmap) IsSet(n int) bool {
-	if n <= 0 || n > len(b.data)*8 {
+func (f *Bitmap) IsSet(n int) bool {
+	if n <= 0 || n > len(f.data)*8 {
 		return false
 	}
 
-	return b.data[(n-1)/8]&(1<<(uint(7-(n-1))%8)) != 0
+	return f.data[(n-1)/8]&(1<<(uint(7-(n-1))%8)) != 0
 }
 
 func (f *Bitmap) Len() int {
