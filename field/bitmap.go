@@ -16,6 +16,8 @@ type Bitmap struct {
 
 const defaultBitmapLength = 8
 
+const firstBitOn = 128 // 10000000 - big endian
+
 func NewBitmap(spec *Spec) *Bitmap {
 	length := spec.Length
 	if length == 0 {
@@ -101,7 +103,7 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 		f.data = append(f.data, decoded...)
 
 		// if it's a fixed bitmap or first bit of the decoded bitmap is not set, exit loop
-		if f.spec.DisableAutoExpand || decoded[0]&(1<<7) == 0 {
+		if f.spec.DisableAutoExpand || decoded[0]&firstBitOn == 0 {
 			break
 		}
 	}
@@ -174,7 +176,7 @@ func (f *Bitmap) Set(n int) {
 
 		// set first bit of the first byte of the last bitmap in
 		// current data to 1 to show the presence of the next bitmap
-		f.data[len(f.data)-f.bitmapLenght] |= 1 << 7
+		f.data[len(f.data)-f.bitmapLenght] |= firstBitOn
 
 		// add new empty bitmaps and for every new bitmap except the
 		// last one, set bit that shows the presence of the next bitmap
@@ -183,7 +185,7 @@ func (f *Bitmap) Set(n int) {
 			// set first bit of the first byte of the new bitmap to 1
 			// but only if it is not the last bitmap
 			if i > 1 {
-				newBitmap[0] = 128 // 10000000 - first bit is set (big endian)
+				newBitmap[0] = firstBitOn
 			}
 			f.data = append(f.data, newBitmap...)
 		}
