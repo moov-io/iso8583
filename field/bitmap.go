@@ -5,9 +5,6 @@ import (
 	"strings"
 )
 
-const minBitmapLength = 8 // 64 bit, 8 bytes, or 16 hex digits
-const maxBitmaps = 3
-
 var _ Field = (*Bitmap)(nil)
 
 // Bitmap is a 1-indexed big endian bitmap field.
@@ -94,7 +91,7 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 
 	// read until we have no more bitmaps
 	// or only read one bitmap if DisableAutoExpand is set
-	for true {
+	for {
 		i++
 		decoded, readDecoded, err := f.spec.Enc.Decode(data[read:], minLen)
 		if err != nil {
@@ -146,7 +143,7 @@ func (f *Bitmap) Marshal(data interface{}) error {
 }
 
 // Reset resets the bitmap to its initial state because of how message works,
-// Message need a way to initalize bitmap. That's why we set parameters to
+// Message need a way to initialize bitmap. That's why we set parameters to
 // their default values here like we do in constructor.
 func (f *Bitmap) Reset() {
 	length := f.spec.Length
