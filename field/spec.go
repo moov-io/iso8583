@@ -55,6 +55,15 @@ type Spec struct {
 	// Subfields defines the subfields held within the field. Only
 	// applicable to composite field types.
 	Subfields map[string]Field
+	// DisableAutoExpand configuration parameter disables the automatic
+	// expansion of the bitmap. This feature (enabled by default) expands
+	// the bitmap when bits are set outside the current range or when
+	// reading (unpacking) the bitmap and encountering a set first bit,
+	// which indicates the presence of an additional bitmap.
+	// When automatic expansion is disabled, bits set beyond the bitmap range
+	// will be disregarded, and the size of the bitmap will not change when
+	// the first bit is set.
+	DisableAutoExpand bool
 }
 
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {
