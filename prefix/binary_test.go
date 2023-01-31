@@ -153,6 +153,19 @@ func Test_binaryVarPrefixer_DecodeLength(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name: "success(L)_withMoreData",
+			fields: fields{
+				Digits: 1,
+			},
+			args: args{
+				maxLen: 32,
+				data:   []byte{0x18, 0x0, 0x0, 0x0},
+			},
+			wantDataLen: 24,
+			wantRead:    1,
+			wantErr:     false,
+		},
+		{
 			name: "success(LLL)",
 			fields: fields{
 				Digits: 3,
@@ -160,6 +173,19 @@ func Test_binaryVarPrefixer_DecodeLength(t *testing.T) {
 			args: args{
 				maxLen: 19999999,
 				data:   []byte{0xab, 0xcb, 0xff},
+			},
+			wantDataLen: 11258879,
+			wantRead:    3,
+			wantErr:     false,
+		},
+		{
+			name: "success(LLL)_withMoreData",
+			fields: fields{
+				Digits: 3,
+			},
+			args: args{
+				maxLen: 19999999,
+				data:   []byte{0xab, 0xcb, 0xff, 0x0, 0x0, 0x0},
 			},
 			wantDataLen: 11258879,
 			wantRead:    3,
