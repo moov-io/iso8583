@@ -2,26 +2,32 @@ package field
 
 import (
 	"fmt"
-
-	"github.com/moov-io/iso8583/utils"
+	"strings"
 )
-
-const minBitmapLength = 8 // 64 bit, 8 bytes, or 16 hex digits
-const maxBitmaps = 3
 
 var _ Field = (*Bitmap)(nil)
 
-// NOTE: Bitmap does not support JSON encoding or decoding.
+// Bitmap is a 1-indexed big endian bitmap field.
 type Bitmap struct {
-	spec   *Spec
-	bitmap *utils.Bitmap
-	data   *Bitmap
+	spec         *Spec
+	data         []byte
+	bitmapLenght int
 }
 
+const defaultBitmapLength = 8
+
+const firstBitOn = 128 // 10000000 - big endian
+
 func NewBitmap(spec *Spec) *Bitmap {
+	length := spec.Length
+	if length == 0 {
+		length = defaultBitmapLength
+	}
+
 	return &Bitmap{
-		spec:   spec,
-		bitmap: utils.NewBitmap(64 * maxBitmaps),
+		spec:         spec,
+		data:         make([]byte, length),
+		bitmapLenght: length,
 	}
 }
 
@@ -34,10 +40,7 @@ func (f *Bitmap) SetSpec(spec *Spec) {
 }
 
 func (f *Bitmap) SetBytes(b []byte) error {
-	f.bitmap = utils.NewBitmapFromData(b)
-	if f.data != nil {
-		*(f.data) = *f
-	}
+	f.data = b
 	return nil
 }
 
@@ -45,30 +48,25 @@ func (f *Bitmap) Bytes() ([]byte, error) {
 	if f == nil {
 		return nil, nil
 	}
-	return f.bitmap.Bytes(), nil
+	return f.data, nil
 }
 
 func (f *Bitmap) String() (string, error) {
 	if f == nil {
 		return "", nil
 	}
-	return f.bitmap.String(), nil
+
+	var bits []string
+
+	for _, byte_ := range f.data {
+		bits = append(bits, fmt.Sprintf("%08b", byte_))
+	}
+
+	return strings.Join(bits, " "), nil
 }
 
 func (f *Bitmap) Pack() ([]byte, error) {
-	f.setBitmapFields()
-
-	count := f.bitmapsCount()
-
-	// here we have max possible bytes for the bitmap 8*maxBitmaps
-	data, err := f.Bytes()
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve bytes: %w", err)
-	}
-
-	data = data[0 : 8*count]
-
-	packed, err := f.spec.Enc.Encode(data)
+	packed, err := f.spec.Enc.Encode(f.data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
@@ -76,38 +74,38 @@ func (f *Bitmap) Pack() ([]byte, error) {
 	return packed, nil
 }
 
-// Unpack of the Bitmap field returns data of varied length
-// if there is only primary bitmap (bit 1 is not set) we return only 8 bytes (or 16 for hex encoding)
-// if secondary bitmap presents (bit 1 is set) we return 16 bytes (or 32 for hex encoding)
-// and so on for maxBitmaps
+// Unpack sets the bitmap data. It returns the number of bytes read from the
+// data. Usually it's 8 for binary, 16 for hex - for a single bitmap.
+// If DisableAutoExpand is not set (default), it will read all bitmaps until
+// the first bit of the read bitmap is not set.
+// If DisableAutoExpand is set, it will only read the first bitmap regardless
+// of the first bit being set.
 func (f *Bitmap) Unpack(data []byte) (int, error) {
-	minLen, _, err := f.spec.Pref.DecodeLength(minBitmapLength, data)
+	minLen, _, err := f.spec.Pref.DecodeLength(f.bitmapLenght, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
-	rawBitmap := make([]byte, 0)
+	f.data = make([]byte, 0)
 	read := 0
 
-	// read max
-	for i := 0; i < maxBitmaps; i++ {
+	var i int
+
+	// read until we have no more bitmaps
+	// or only read one bitmap if DisableAutoExpand is set
+	for {
+		i++
 		decoded, readDecoded, err := f.spec.Enc.Decode(data[read:], minLen)
 		if err != nil {
-			return 0, fmt.Errorf("failed to decode content for %d bitmap: %w", i+1, err)
+			return 0, fmt.Errorf("failed to decode content for %d bitmap: %w", i, err)
 		}
 		read += readDecoded
+		f.data = append(f.data, decoded...)
 
-		rawBitmap = append(rawBitmap, decoded...)
-		bitmap := utils.NewBitmapFromData(decoded)
-
-		// if no more bitmaps, exit loop
-		if !bitmap.IsSet(1) {
+		// if it's a fixed bitmap or first bit of the decoded bitmap is not set, exit loop
+		if f.spec.DisableAutoExpand || decoded[0]&firstBitOn == 0 {
 			break
 		}
-	}
-
-	if err := f.SetBytes(rawBitmap); err != nil {
-		return 0, fmt.Errorf("failed to set bytes: %w", err)
 	}
 
 	return read, nil
@@ -123,7 +121,7 @@ func (f *Bitmap) Unmarshal(v interface{}) error {
 		return fmt.Errorf("data does not match required *Bitmap type")
 	}
 
-	bmap.bitmap = f.bitmap
+	bmap.data = f.data
 
 	return nil
 }
@@ -138,10 +136,7 @@ func (f *Bitmap) SetData(data interface{}) error {
 		return fmt.Errorf("data does not match required *Bitmap type")
 	}
 
-	f.data = bmap
-	if bmap.bitmap != nil {
-		f.bitmap = bmap.bitmap
-	}
+	f.data = bmap.data
 	return nil
 }
 
@@ -149,55 +144,65 @@ func (f *Bitmap) Marshal(data interface{}) error {
 	return f.SetData(data)
 }
 
+// Reset resets the bitmap to its initial state because of how message works,
+// Message need a way to initialize bitmap. That's why we set parameters to
+// their default values here like we do in constructor.
 func (f *Bitmap) Reset() {
-	f.bitmap = utils.NewBitmap(64 * maxBitmaps)
+	length := f.spec.Length
+	if length == 0 {
+		length = defaultBitmapLength
+	}
+
+	f.bitmapLenght = length
+	// this actually resets the bitmap
+	f.data = make([]byte, f.bitmapLenght)
 }
 
-func (f *Bitmap) Set(i int) {
-	f.bitmap.Set(i)
+// For auto expand mode if we expand bitmap we should set bit that shows the presence of the next bitmap
+func (f *Bitmap) Set(n int) {
+	if n <= 0 {
+		return
+	}
+
+	// do we have to expand bitmap?
+	if n > len(f.data)*8 {
+		if f.spec.DisableAutoExpand {
+			return
+		}
+
+		// calculate how many bitmaps we need to store n-th bit
+		bitmapIndex := (n - 1) / (f.bitmapLenght * 8)
+		newBitmapsCount := (bitmapIndex + 1)
+
+		// set first bit of the first byte of the last bitmap in
+		// current data to 1 to show the presence of the next bitmap
+		f.data[len(f.data)-f.bitmapLenght] |= firstBitOn
+
+		// add new empty bitmaps and for every new bitmap except the
+		// last one, set bit that shows the presence of the next bitmap
+		for i := newBitmapsCount - len(f.data)/f.bitmapLenght; i > 0; i-- {
+			newBitmap := make([]byte, f.bitmapLenght)
+			// set first bit of the first byte of the new bitmap to 1
+			// but only if it is not the last bitmap
+			if i > 1 {
+				newBitmap[0] = firstBitOn
+			}
+			f.data = append(f.data, newBitmap...)
+		}
+	}
+
+	// set bit
+	f.data[(n-1)/8] |= 1 << (uint(7-(n-1)) % 8)
 }
 
-func (f *Bitmap) IsSet(i int) bool {
-	return f.bitmap.IsSet(i)
+func (f *Bitmap) IsSet(n int) bool {
+	if n <= 0 || n > len(f.data)*8 {
+		return false
+	}
+
+	return f.data[(n-1)/8]&(1<<(uint(7-(n-1))%8)) != 0
 }
 
 func (f *Bitmap) Len() int {
-	return f.bitmap.Len()
-}
-
-func (f *Bitmap) bitmapsCount() int {
-	count := 1
-	for i := 0; i < maxBitmaps; i++ {
-		if f.IsSet(i*64 + 1) {
-			count += 1
-		}
-	}
-
-	return count
-}
-
-func (f *Bitmap) setBitmapFields() bool {
-	// 2nd bitmap bits 65 -128
-	// bitmap bit 1
-
-	// 3rd bitmap bits 129-192
-	// bitmap bit 65
-
-	// start from the 2nd bitmap as for the 1st bitmap we don't need to set any bits
-	for bitmapIndex := 2; bitmapIndex <= maxBitmaps; bitmapIndex++ {
-
-		// are there fields for this (bitmapIndex) bitmap?
-		bitmapStart := (bitmapIndex-1)*64 + 2 // we skip firt bit as it's for the next bitmap
-		bitmapEnd := (bitmapIndex) * 64       //
-
-		for i := bitmapStart; i <= bitmapEnd; i++ {
-			bitmapBit := (bitmapIndex-2)*64 + 1
-			if f.IsSet(i) {
-				f.Set(bitmapBit)
-				break
-			}
-		}
-	}
-
-	return false
+	return len(f.data) * 8
 }

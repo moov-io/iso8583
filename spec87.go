@@ -19,7 +19,7 @@ var Spec87 *MessageSpec = &MessageSpec{
 			Pref:        prefix.ASCII.Fixed,
 		}),
 		1: field.NewBitmap(&field.Spec{
-			Length:      16,
+			Length:      8,
 			Description: "Bitmap",
 			Enc:         encoding.BytesToASCIIHex,
 			Pref:        prefix.Hex.Fixed,

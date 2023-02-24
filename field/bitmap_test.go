@@ -8,6 +8,66 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestFixedBitmap(t *testing.T) {
+	bitmap := NewBitmap(&Spec{
+		Length:            2, // 2 bytes - 16 bits
+		Description:       "Bitmap",
+		Enc:               encoding.BytesToASCIIHex,
+		Pref:              prefix.Hex.Fixed,
+		DisableAutoExpand: true,
+	})
+
+	// when setting bits inside of bitmap range
+	bitmap.Set(1)
+	bitmap.Set(16)
+
+	// then bits should be set
+	require.True(t, bitmap.IsSet(1))
+	require.True(t, bitmap.IsSet(16))
+
+	// and bitmap should be 2 bytes
+	data, err := bitmap.Bytes()
+	require.NoError(t, err)
+	require.Len(t, data, 2)
+
+	// and packed bitmap should be 4 bytes (2 bytes encoded in hex)`
+	packed, err := bitmap.Pack()
+	require.NoError(t, err)
+	require.Len(t, packed, 4)
+
+	// when setting bit outside of bitmap range
+	bitmap.Set(17)
+	require.False(t, bitmap.IsSet(17))
+
+	// and bitmap still should be 2 bytes (no auto expand)
+	data, err = bitmap.Bytes()
+	require.NoError(t, err)
+	require.Len(t, data, 2)
+
+	// when resetting bitmap
+	bitmap.Reset()
+
+	// then bitmap should be empty
+	data, _ = bitmap.Bytes()
+	require.Equal(t, []byte{0, 0}, data)
+
+	// when unpacking bitmap
+	read, err := bitmap.Unpack(packed)
+
+	// then bitmap should be unpacked
+	require.NoError(t, err)
+
+	// and 4 bytes (because 2 bytes encoded in hex) should be read
+	require.Equal(t, 4, read)
+
+	// and bits should be set
+	require.True(t, bitmap.IsSet(1))
+	require.True(t, bitmap.IsSet(16))
+
+	// but bit 17 should not be set
+	require.False(t, bitmap.IsSet(17))
+}
+
 func TestHexBitmap(t *testing.T) {
 	t.Run("Read only first bitmap", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
@@ -196,7 +256,7 @@ func TestBitmap_Unmarshal(t *testing.T) {
 		bitmap := NewBitmap(spec)
 		bitmap.Set(10) // set bit
 
-		data := NewBitmap(nil)
+		data := NewBitmap(&Spec{})
 
 		err := bitmap.Unmarshal(data)
 
@@ -234,12 +294,13 @@ func TestBitmap_SetData(t *testing.T) {
 	t.Run("Unpack sets the data field with the correct bitmap provided using SetData", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
-		data := &Bitmap{}
-		bitmap.SetData(data)
 		// set bit: 10
 		read, err := bitmap.Unpack(bitmapBytes)
 		require.NoError(t, err)
 		require.Equal(t, 16, read) // 16 is 8 bytes (one bitmap) encoded in hex
+
+		data := &Bitmap{}
+		bitmap.Unmarshal(data)
 
 		bitmapBytes, err := bitmap.Bytes()
 		require.NoError(t, err)
@@ -251,10 +312,10 @@ func TestBitmap_SetData(t *testing.T) {
 	t.Run("Pack returns bytes using the bitmap provided using SetData", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
-		data := NewBitmap(nil)
+		data := NewBitmap(&Spec{})
 		data.Set(20) // first bitmap field
 
-		bitmap.SetData(data)
+		bitmap.Marshal(data)
 
 		packed, err := bitmap.Pack()
 		require.NoError(t, err)
@@ -264,11 +325,12 @@ func TestBitmap_SetData(t *testing.T) {
 	t.Run("SetBytes sets data to the data field", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
-		data := &Bitmap{}
-		bitmap.SetData(data)
-
 		err := bitmap.SetBytes([]byte("a"))
 		require.NoError(t, err)
+
+		data := &Bitmap{}
+		bitmap.Unmarshal(data)
+
 		b, err := data.Bytes()
 		require.NoError(t, err)
 		require.Equal(t, []byte("a"), b)
