@@ -81,6 +81,8 @@ func CreateSubfield(specField Field) Field {
 	fieldType := reflect.TypeOf(specField).Elem()
 
 	// create new field and convert it to Field interface
+
+	//nolint:forcetypeassert // we know the type of the field we're creating here
 	fl := reflect.New(fieldType).Interface().(Field)
 	fl.SetSpec(specField.Spec())
 
