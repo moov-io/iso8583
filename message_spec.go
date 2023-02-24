@@ -28,6 +28,8 @@ func createMessageField(specField field.Field) field.Field {
 	fieldType := reflect.TypeOf(specField).Elem()
 
 	// create new field and convert it to field.Field interface
+
+	//nolint:forcetypeassert // we know the type of the field we're creating here
 	fl := reflect.New(fieldType).Interface().(field.Field)
 	fl.SetSpec(specField.Spec())
 

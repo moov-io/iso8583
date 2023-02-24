@@ -52,7 +52,15 @@ func (m *Message) Bitmap() *field.Bitmap {
 		return m.bitmap
 	}
 
-	m.bitmap = m.fields[bitmapIdx].(*field.Bitmap)
+	bitmap, ok := m.fields[bitmapIdx]
+	if !ok {
+		return nil
+	}
+
+	if m.bitmap, ok = bitmap.(*field.Bitmap); !ok {
+		panic(fmt.Sprintf("bitmap field is %T not of type *field.Bitmap", m.fields[bitmapIdx]))
+	}
+
 	m.bitmap.Reset()
 	m.fieldsMap[bitmapIdx] = struct{}{}
 
