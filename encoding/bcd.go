@@ -7,7 +7,10 @@ import (
 	"github.com/yerden/go-util/bcd"
 )
 
-var BCD Encoder = &bcdEncoder{}
+var (
+	_   Encoder = (*bcdEncoder)(nil)
+	BCD         = &bcdEncoder{}
+)
 
 type bcdEncoder struct{}
 
@@ -27,6 +30,11 @@ func (e *bcdEncoder) Encode(src []byte) ([]byte, error) {
 }
 
 func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, int, error) {
+	// length should be positive
+	if length < 0 {
+		return nil, 0, fmt.Errorf("length should be positive, got %d", length)
+	}
+
 	// for BCD encoding the length should be even
 	decodedLen := length
 	if length%2 != 0 {

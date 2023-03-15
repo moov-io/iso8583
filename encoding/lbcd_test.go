@@ -46,3 +46,11 @@ func TestLBCD(t *testing.T) {
 		require.ErrorIs(t, err, bcd.ErrBadInput)
 	})
 }
+
+func FuzzDecodeLBCD(f *testing.F) {
+	enc := LBCD
+
+	f.Fuzz(func(t *testing.T, data []byte, length int) {
+		enc.Decode(data, length)
+	})
+}

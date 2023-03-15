@@ -32,3 +32,11 @@ func TestEBCDIC(t *testing.T) {
 
 	})
 }
+
+func FuzzDecodeEBCDIC(f *testing.F) {
+	enc := &ebcdicEncoder{}
+
+	f.Fuzz(func(t *testing.T, data []byte, length int) {
+		enc.Decode(data, length)
+	})
+}

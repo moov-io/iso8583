@@ -1437,3 +1437,70 @@ func TestMessageMarshaling(t *testing.T) {
 		require.Equal(t, "100", data.Amount.Value())
 	})
 }
+
+func FuzzUnpack(f *testing.F) {
+	spec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.BytesToASCIIHex,
+				Pref:        prefix.Hex.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			3: field.NewComposite(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
+				Subfields: map[string]field.Field{
+					"1": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"2": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "From Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"3": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "To Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
+			}),
+			4: field.NewString(&field.Spec{
+				Length:      12,
+				Description: "Transaction Amount",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+		},
+	}
+
+	f.Add([]byte("01007000000000000000164242424242424242123456000000000100")) // Use f.Add to provide a seed corpus
+
+	f.Fuzz(func(t *testing.T, orig []byte) {
+		message := NewMessage(spec)
+		// we only care when it panics
+		message.Unpack(orig)
+	})
+}

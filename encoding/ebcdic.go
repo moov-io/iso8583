@@ -75,7 +75,10 @@ var (
 		'\x38', '\x39', '\xFA', '\xFB', '\xFC', '\xFD', '\xFE', '\xFF'}
 )
 
-var EBCDIC Encoder = &ebcdicEncoder{}
+var (
+	_      Encoder = (*ebcdicEncoder)(nil)
+	EBCDIC         = &ebcdicEncoder{}
+)
 
 type ebcdicEncoder struct{}
 
@@ -88,6 +91,10 @@ func (e *ebcdicEncoder) Encode(src []byte) ([]byte, error) {
 }
 
 func (e *ebcdicEncoder) Decode(src []byte, length int) ([]byte, int, error) {
+	if length < 0 {
+		return nil, 0, fmt.Errorf("length should be positive, got %d", length)
+	}
+
 	if len(src) < length {
 		return nil, 0, fmt.Errorf("not enough data to decode. expected len %d, got %d", length, len(src))
 	}

@@ -66,3 +66,11 @@ func TestBerTLVTag_DecodeOnInvalidInput(t *testing.T) {
 		require.ErrorIs(t, err, io.EOF)
 	})
 }
+
+func FuzzDecodeBerTLV(f *testing.F) {
+	enc := &berTLVEncoderTag{}
+
+	f.Fuzz(func(t *testing.T, data []byte, length int) {
+		enc.Decode(data, length)
+	})
+}

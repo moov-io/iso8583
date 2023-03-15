@@ -40,3 +40,11 @@ func TestASCII(t *testing.T) {
 		require.EqualError(t, err, "failed to perform ASCII encoding")
 	})
 }
+
+func FuzzDecodeASCII(f *testing.F) {
+	enc := &asciiEncoder{}
+
+	f.Fuzz(func(t *testing.T, data []byte, length int) {
+		enc.Decode(data, length)
+	})
+}

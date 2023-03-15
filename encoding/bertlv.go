@@ -7,8 +7,10 @@ import (
 	"github.com/moov-io/iso8583/utils"
 )
 
-// BER-TLV Tag encoder
-var BerTLVTag Encoder = &berTLVEncoderTag{}
+var (
+	_         Encoder = (*berTLVEncoderTag)(nil)
+	BerTLVTag         = &berTLVEncoderTag{}
+)
 
 type berTLVEncoderTag struct{}
 
