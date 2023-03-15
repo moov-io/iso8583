@@ -4,7 +4,10 @@ import (
 	"fmt"
 )
 
-var Binary Encoder = &binaryEncoder{}
+var (
+	_      Encoder = (*binaryEncoder)(nil)
+	Binary         = &binaryEncoder{}
+)
 
 type binaryEncoder struct{}
 
@@ -15,6 +18,10 @@ func (e binaryEncoder) Encode(data []byte) ([]byte, error) {
 }
 
 func (e binaryEncoder) Decode(data []byte, length int) ([]byte, int, error) {
+	if length < 0 {
+		return nil, 0, fmt.Errorf("length should be positive, got %d", length)
+	}
+
 	out := append([]byte(nil), data...)
 
 	if length > len(data) {

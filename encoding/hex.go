@@ -3,13 +3,17 @@ package encoding
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/moov-io/iso8583/utils"
 )
 
 // HEX to ASCII encoder
-var BytesToASCIIHex = &hexToASCIIEncoder{}
+var (
+	_               Encoder = (*hexToASCIIEncoder)(nil)
+	BytesToASCIIHex         = &hexToASCIIEncoder{}
+)
 
 type hexToASCIIEncoder struct{}
 
@@ -30,6 +34,10 @@ func (e hexToASCIIEncoder) Encode(data []byte) ([]byte, error) {
 // length is number of HEX-digits (two ASCII characters is one HEX digit)
 // e.g. []byte("AABBCC") would be converted into []byte{0xAA, 0xBB, 0xCC}
 func (e hexToASCIIEncoder) Decode(data []byte, length int) ([]byte, int, error) {
+	if length < 0 {
+		return nil, 0, fmt.Errorf("length should be positive, got %d", length)
+	}
+
 	// to read 8 HEX digits we have to read 16 ASCII chars (bytes)
 	read := hex.EncodedLen(length)
 	if read > len(data) {
@@ -47,7 +55,10 @@ func (e hexToASCIIEncoder) Decode(data []byte, length int) ([]byte, int, error) 
 }
 
 // ASCII To HEX encoder
-var ASCIIHexToBytes = &asciiToHexEncoder{}
+var (
+	_               Encoder = (*asciiToHexEncoder)(nil)
+	ASCIIHexToBytes         = &asciiToHexEncoder{}
+)
 
 type asciiToHexEncoder struct{}
 
@@ -69,6 +80,10 @@ func (e asciiToHexEncoder) Encode(data []byte) ([]byte, error) {
 // On success, the ASCII representation bytes are returned e.g. []byte{0x5F,
 // 0x2A} would be converted to []byte("5F2A")
 func (e asciiToHexEncoder) Decode(data []byte, length int) ([]byte, int, error) {
+	if length < 0 {
+		return nil, 0, fmt.Errorf("length should be positive, got %d", length)
+	}
+
 	if length > len(data) {
 		return nil, 0, errors.New("not enough data to read")
 	}

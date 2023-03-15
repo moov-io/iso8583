@@ -279,3 +279,11 @@ func TestEBCDIC1047Decode(t *testing.T) {
 		require.Equal(t, expectedPartialMessage, string(decoding))
 	})
 }
+
+func FuzzDecodeEBCDIC1047(f *testing.F) {
+	enc := EBCDIC1047
+
+	f.Fuzz(func(t *testing.T, data []byte, length int) {
+		enc.Decode(data, length)
+	})
+}

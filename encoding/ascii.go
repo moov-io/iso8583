@@ -6,7 +6,10 @@ import (
 	"github.com/moov-io/iso8583/utils"
 )
 
-var ASCII Encoder = &asciiEncoder{}
+var (
+	_     Encoder = (*asciiEncoder)(nil)
+	ASCII         = &asciiEncoder{}
+)
 
 type asciiEncoder struct{}
 

@@ -43,3 +43,19 @@ func TestASCIIToHexEncoder(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, "failed to perform hex decoding")
 }
+
+func FuzzDecodeBytesToASCIIHex(f *testing.F) {
+	enc := BytesToASCIIHex
+
+	f.Fuzz(func(t *testing.T, data []byte, length int) {
+		enc.Decode(data, length)
+	})
+}
+
+func FuzzDecodeASCIIHexToBytes(f *testing.F) {
+	enc := ASCIIHexToBytes
+
+	f.Fuzz(func(t *testing.T, data []byte, length int) {
+		enc.Decode(data, length)
+	})
+}
