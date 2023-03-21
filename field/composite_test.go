@@ -335,6 +335,28 @@ func TestTLVPacking(t *testing.T) {
 		require.Equal(t, "000000000501", data.F9F02.Value())
 	})
 
+	t.Run("Unpack correctly deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
+		// Turn on the skipping unexpected tags capability and turn it off at the end of test
+		tlvTestSpec.Tag.SkipUnknownTLVTags = true
+		defer func() {
+			tlvTestSpec.Tag.SkipUnknownTLVTags = false
+		}()
+
+		composite := NewComposite(tlvTestSpec)
+
+		// Data contains tags 9F36, 9A, 9F02 and 9F37
+		read, err := composite.Unpack([]byte{0x30, 0x32, 0x36, 0x9f, 0x36, 0x2, 0x1, 0x57, 0x9a, 0x3, 0x21, 0x7, 0x20,
+			0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1, 0x9f, 0x37, 0x4, 0x9b, 0xad, 0xbc, 0xab})
+		require.NoError(t, err)
+		require.Equal(t, 29, read)
+
+		data := &TLVTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "210720", data.F9A.Value())
+		require.Equal(t, "000000000501", data.F9F02.Value())
+	})
+
 	t.Run("Pack correctly serializes data to bytes (constructed ber-tlv)", func(t *testing.T) {
 		data := &ConstructedTLVTestData{
 			F82:   NewStringValue("017f"),
@@ -398,6 +420,15 @@ func TestTLVPacking(t *testing.T) {
 		require.Equal(t, "017F", data.F82.Value())
 		require.Equal(t, "027F", data.F9F36.Value())
 		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
+	})
+
+	t.Run("Unpack throws an error due unexpected tags", func(t *testing.T) {
+		composite := NewComposite(tlvTestSpec)
+
+		// Data contains tags 9F36, 9A, 9F02 and 9F37
+		_, err := composite.Unpack([]byte{0x30, 0x32, 0x36, 0x9f, 0x36, 0x2, 0x1, 0x57, 0x9a, 0x3, 0x21, 0x7, 0x20,
+			0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1, 0x9f, 0x37, 0x4, 0x9b, 0xad, 0xbc, 0xab})
+		require.EqualError(t, err, "failed to unpack subfield 9F36: field not defined in Spec")
 	})
 }
 
@@ -1114,6 +1145,61 @@ func TestCompositeJSONConversion(t *testing.T) {
 		s, err := composite.String()
 		require.NoError(t, err)
 		require.Equal(t, "0102AB03021211060102YZ", s)
+	})
+}
+
+func TestTLVJSONConversion(t *testing.T) {
+	json := `{"9A":"210720","9F02":"000000000501"}`
+
+	t.Run("MarshalJSON TLV Data Ok", func(t *testing.T) {
+		data := &TLVTestData{
+			F9A:   NewStringValue("210720"),
+			F9F02: NewStringValue("000000000501"),
+		}
+
+		composite := NewComposite(tlvTestSpec)
+		require.NoError(t, composite.Marshal(data))
+
+		actual, err := composite.MarshalJSON()
+		require.NoError(t, err)
+
+		require.JSONEq(t, json, string(actual))
+	})
+
+	t.Run("UnmarshalJSON TLV data skipping unexpected tags", func(t *testing.T) {
+		// Turn on the skipping unexpected tags capability and turn it off at the end of test
+		tlvTestSpec.Tag.SkipUnknownTLVTags = true
+		defer func() {
+			tlvTestSpec.Tag.SkipUnknownTLVTags = false
+		}()
+		json_extra_tags := `{"9A":"210720","9F02":"000000000501", "9F37": "9badbcab"}`
+
+		data := &TLVTestData{}
+
+		composite := NewComposite(tlvTestSpec)
+		err := composite.Marshal(data)
+		require.NoError(t, err)
+
+		require.NoError(t, composite.UnmarshalJSON([]byte(json_extra_tags)))
+
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "210720", data.F9A.Value())
+		require.Equal(t, "000000000501", data.F9F02.Value())
+	})
+
+	t.Run("UnmarshalJSON TLV data throws an error due unexpected tags", func(t *testing.T) {
+		json_extra_tags := `{"9A":"210720","9F02":"000000000501", "9F37": "9badbcab"}`
+
+		data := &TLVTestData{}
+
+		composite := NewComposite(tlvTestSpec)
+		err := composite.Marshal(data)
+		require.NoError(t, err)
+
+		err = composite.UnmarshalJSON([]byte(json_extra_tags))
+		require.Error(t, err)
+		require.EqualError(t, err, "failed to unmarshal subfield 9F37: received subfield not defined in spec")
 	})
 }
 
