@@ -413,6 +413,10 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, er
 	return offset, nil
 }
 
+// ignoredMaxLen is a constant meant to be used in encoders that don't use the maxLength argument during
+// length decoding.
+const ignoredMaxLen int = 0
+
 func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 	offset := 0
 	for offset < len(data) {
@@ -430,7 +434,6 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 			if f.skipUnknownTLVTags() {
 				// Obtain the length of the unknown tag and add it to the offset.
 				// Because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
-				const ignoredMaxLen int = 0
 				fieldLength, readed, err := prefix.BerTLV.DecodeLength(ignoredMaxLen, data[offset:])
 				if err != nil {
 					return 0, err
