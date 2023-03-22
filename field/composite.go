@@ -327,7 +327,7 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 	}
 
 	for tag, rawMsg := range data {
-		if _, ok := f.spec.Subfields[tag]; !ok && !skipUnknownTLVTags(f) {
+		if _, ok := f.spec.Subfields[tag]; !ok && !f.skipUnknownTLVTags() {
 			return fmt.Errorf("failed to unmarshal subfield %v: received subfield not defined in spec", tag)
 		}
 
@@ -426,20 +426,24 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 			tagBytes = f.spec.Tag.Pad.Unpad(tagBytes)
 		}
 		tag := string(tagBytes)
-		if _, ok := f.spec.Subfields[tag]; !ok && !skipUnknownTLVTags(f) {
+		if _, ok := f.spec.Subfields[tag]; !ok {
+			if f.skipUnknownTLVTags() {
+				// Obtain the length of the unknown tag and add it to the offset.
+				// Because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
+				const ignoredMaxLen int = 0
+				fieldLength, readed, err := prefix.BerTLV.DecodeLength(ignoredMaxLen, data[offset:])
+				if err != nil {
+					return 0, err
+				}
+				offset += fieldLength + readed
+				continue
+			}
+
 			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
 		}
 
 		field, ok := f.subfields[tag]
 		if !ok {
-			// Obtain the length of the unknown tag and add it to the offset.
-			if skipUnknownTLVTags(f) {
-				fieldLength, readed, err := prefix.BerTLV.DecodeLength(999, data[offset:])
-				if err != nil {
-					return 0, err
-				}
-				offset += fieldLength + readed
-			}
 			continue
 		}
 
@@ -453,6 +457,10 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		offset += read
 	}
 	return offset, nil
+}
+
+func (f *Composite) skipUnknownTLVTags() bool {
+	return f.spec.Tag != nil && f.spec.Tag.SkipUnknownTLVTags && f.spec.Tag.Enc == encoding.BerTLVTag
 }
 
 func validateCompositeSpec(spec *Spec) error {
@@ -500,8 +508,4 @@ func getFieldIndexOrTag(field reflect.StructField) (string, error) {
 	}
 
 	return "", nil
-}
-
-func skipUnknownTLVTags(field *Composite) bool {
-	return field.spec.Tag != nil && field.spec.Tag.SkipUnknownTLVTags && field.spec.Tag.Enc == encoding.BerTLVTag
 }

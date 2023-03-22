@@ -342,9 +342,11 @@ func TestTLVPacking(t *testing.T) {
 			tlvTestSpec.Tag.SkipUnknownTLVTags = false
 		}()
 
+		// The field's specification contains the tags 9A and 9F02
 		composite := NewComposite(tlvTestSpec)
 
-		// Data contains tags 9F36, 9A, 9F02 and 9F37
+		// This data contains tags 9A and 9F02 that are mapped in the specification, but also
+		// contains tags 9F36 and 9F37 which aren't in the specification.
 		read, err := composite.Unpack([]byte{0x30, 0x32, 0x36, 0x9f, 0x36, 0x2, 0x1, 0x57, 0x9a, 0x3, 0x21, 0x7, 0x20,
 			0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1, 0x9f, 0x37, 0x4, 0x9b, 0xad, 0xbc, 0xab})
 		require.NoError(t, err)
@@ -425,7 +427,8 @@ func TestTLVPacking(t *testing.T) {
 	t.Run("Unpack throws an error due unexpected tags", func(t *testing.T) {
 		composite := NewComposite(tlvTestSpec)
 
-		// Data contains tags 9F36, 9A, 9F02 and 9F37
+		// This data contains tags 9A and 9F02 that are mapped in the specification, but also
+		// contains tags 9F36 and 9F37 which aren't in the specification.
 		_, err := composite.Unpack([]byte{0x30, 0x32, 0x36, 0x9f, 0x36, 0x2, 0x1, 0x57, 0x9a, 0x3, 0x21, 0x7, 0x20,
 			0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1, 0x9f, 0x37, 0x4, 0x9b, 0xad, 0xbc, 0xab})
 		require.EqualError(t, err, "failed to unpack subfield 9F36: field not defined in Spec")
@@ -1172,7 +1175,10 @@ func TestTLVJSONConversion(t *testing.T) {
 		defer func() {
 			tlvTestSpec.Tag.SkipUnknownTLVTags = false
 		}()
-		json_extra_tags := `{"9A":"210720","9F02":"000000000501", "9F37": "9badbcab"}`
+
+		// This data contains tags 9A and 9F02 that are mapped in the specification, but also
+		// contains tag 9F37 which isn't in the specification.
+		json_tags := `{"9A":"210720","9F02":"000000000501", "9F37": "9badbcab"}`
 
 		data := &TLVTestData{}
 
@@ -1180,7 +1186,7 @@ func TestTLVJSONConversion(t *testing.T) {
 		err := composite.Marshal(data)
 		require.NoError(t, err)
 
-		require.NoError(t, composite.UnmarshalJSON([]byte(json_extra_tags)))
+		require.NoError(t, composite.UnmarshalJSON([]byte(json_tags)))
 
 		require.NoError(t, composite.Unmarshal(data))
 
@@ -1189,7 +1195,9 @@ func TestTLVJSONConversion(t *testing.T) {
 	})
 
 	t.Run("UnmarshalJSON TLV data throws an error due unexpected tags", func(t *testing.T) {
-		json_extra_tags := `{"9A":"210720","9F02":"000000000501", "9F37": "9badbcab"}`
+		// This data contains tags 9A and 9F02 that are mapped in the specification, but also
+		// contains tag 9F37 which isn't in the specification.
+		json_tags := `{"9A":"210720","9F02":"000000000501", "9F37": "9badbcab"}`
 
 		data := &TLVTestData{}
 
@@ -1197,7 +1205,7 @@ func TestTLVJSONConversion(t *testing.T) {
 		err := composite.Marshal(data)
 		require.NoError(t, err)
 
-		err = composite.UnmarshalJSON([]byte(json_extra_tags))
+		err = composite.UnmarshalJSON([]byte(json_tags))
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to unmarshal subfield 9F37: received subfield not defined in spec")
 	})
