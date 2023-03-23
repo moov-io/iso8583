@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/moov-io/iso8583/encoding"
+	"github.com/moov-io/iso8583/prefix"
 	"reflect"
 	"regexp"
 
@@ -325,7 +327,7 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 	}
 
 	for tag, rawMsg := range data {
-		if _, ok := f.spec.Subfields[tag]; !ok {
+		if _, ok := f.spec.Subfields[tag]; !ok && !f.skipUnknownTLVTags() {
 			return fmt.Errorf("failed to unmarshal subfield %v: received subfield not defined in spec", tag)
 		}
 
@@ -411,6 +413,10 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, er
 	return offset, nil
 }
 
+// ignoredMaxLen is a constant meant to be used in encoders that don't use the maxLength argument during
+// length decoding.
+const ignoredMaxLen int = 0
+
 func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 	offset := 0
 	for offset < len(data) {
@@ -425,6 +431,17 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		}
 		tag := string(tagBytes)
 		if _, ok := f.spec.Subfields[tag]; !ok {
+			if f.skipUnknownTLVTags() {
+				// Obtain the length of the unknown tag and add it to the offset.
+				// Because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
+				fieldLength, readed, err := prefix.BerTLV.DecodeLength(ignoredMaxLen, data[offset:])
+				if err != nil {
+					return 0, err
+				}
+				offset += fieldLength + readed
+				continue
+			}
+
 			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
 		}
 
@@ -443,6 +460,10 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		offset += read
 	}
 	return offset, nil
+}
+
+func (f *Composite) skipUnknownTLVTags() bool {
+	return f.spec.Tag != nil && f.spec.Tag.SkipUnknownTLVTags && f.spec.Tag.Enc == encoding.BerTLVTag
 }
 
 func validateCompositeSpec(spec *Spec) error {
