@@ -39,11 +39,11 @@ func StringsByInt(x []string) {
 // of even length.
 func StringsByHex(x []string) {
 	sort.Slice(x, func(i, j int) bool {
-		valI, err := encoding.ASCIIHexToBytes.Encode([]byte(x[i]))
+		valI, _, err := encoding.ASCIIHexToBytes.Encode([]byte(x[i]))
 		if err != nil {
 			panic(fmt.Sprintf("failed to encode ascii hex %s to bytes : %v", x[i], err))
 		}
-		valJ, err := encoding.ASCIIHexToBytes.Encode([]byte(x[j]))
+		valJ, _, err := encoding.ASCIIHexToBytes.Encode([]byte(x[j]))
 		if err != nil {
 			panic(fmt.Sprintf("failed to sort strings by hex: %v", err))
 		}

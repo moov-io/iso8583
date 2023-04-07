@@ -220,7 +220,7 @@ var knownEncodings = []struct {
 func TestEBCDIC1047SingleCharacterEncode(t *testing.T) {
 	t.Parallel()
 	for character, expectedEncoding := range ebcdic1047CharacterEncodings {
-		encoding, err := EBCDIC1047.Encode([]byte(character))
+		encoding, _, err := EBCDIC1047.Encode([]byte(character))
 		require.NoError(t, err)
 		require.Len(t, encoding, 1)
 		require.Equal(t, expectedEncoding, encoding[0])
@@ -240,7 +240,7 @@ func TestEBCDIC1047SingleCharacterDecode(t *testing.T) {
 func TestEBCDIC1047Encode(t *testing.T) {
 	t.Parallel()
 	for _, testCase := range knownEncodings {
-		encoding, err := EBCDIC1047.Encode([]byte(testCase.Phrase))
+		encoding, _, err := EBCDIC1047.Encode([]byte(testCase.Phrase))
 		require.NoError(t, err)
 		require.Equal(t, testCase.Encoding, encoding)
 	}

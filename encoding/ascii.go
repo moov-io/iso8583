@@ -13,16 +13,16 @@ var (
 
 type asciiEncoder struct{}
 
-func (e asciiEncoder) Encode(data []byte) ([]byte, error) {
+func (e asciiEncoder) Encode(data []byte) ([]byte, int, error) {
 	var out []byte
 	for _, r := range data {
 		if r > 127 {
-			return nil, utils.NewSafeError(fmt.Errorf("invalid ASCII char: '%s'", string(r)), "failed to perform ASCII encoding")
+			return nil, 0, utils.NewSafeError(fmt.Errorf("invalid ASCII char: '%s'", string(r)), "failed to perform ASCII encoding")
 		}
 		out = append(out, r)
 	}
 
-	return out, nil
+	return out, len(out), nil
 }
 
 func (e asciiEncoder) Decode(data []byte, length int) ([]byte, int, error) {

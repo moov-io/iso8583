@@ -21,12 +21,12 @@ type ebcdic1047Encoder struct {
 	decoder *xencoding.Decoder
 }
 
-func (e ebcdic1047Encoder) Encode(data []byte) ([]byte, error) {
+func (e ebcdic1047Encoder) Encode(data []byte) ([]byte, int, error) {
 	bytes, err := e.encoder.Bytes(data)
 	if err != nil {
-		return nil, utils.NewSafeError(err, "failed to encode EBCDIC")
+		return nil, 0, utils.NewSafeError(err, "failed to encode EBCDIC")
 	}
-	return bytes, nil
+	return bytes, len(bytes), nil
 }
 
 func (e ebcdic1047Encoder) Decode(data []byte, length int) ([]byte, int, error) {

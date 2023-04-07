@@ -20,14 +20,14 @@ type hexToASCIIEncoder struct{}
 // Encode converts bytes into their ASCII representation.  On success, the
 // ASCII representation bytes are returned e.g. []byte{0x5F, 0x2A} would be
 // converted to []byte("5F2A")
-func (e hexToASCIIEncoder) Encode(data []byte) ([]byte, error) {
+func (e hexToASCIIEncoder) Encode(data []byte) ([]byte, int, error) {
 	out := make([]byte, hex.EncodedLen(len(data)))
 	hex.Encode(out, data)
 
 	str := string(out)
 	str = strings.ToUpper(str)
 
-	return []byte(str), nil
+	return []byte(str), len(str), nil
 }
 
 // Decodes ASCII hex and returns bytes
@@ -64,15 +64,15 @@ type asciiToHexEncoder struct{}
 
 // Encode converts ASCII Hex-digits into a byte slice e.g. []byte("AABBCC")
 // would be converted into []byte{0xAA, 0xBB, 0xCC}
-func (e asciiToHexEncoder) Encode(data []byte) ([]byte, error) {
+func (e asciiToHexEncoder) Encode(data []byte) ([]byte, int, error) {
 	out := make([]byte, hex.DecodedLen(len(data)))
 
 	_, err := hex.Decode(out, data)
 	if err != nil {
-		return nil, utils.NewSafeError(err, "failed to perform hex decoding")
+		return nil, 0, utils.NewSafeError(err, "failed to perform hex decoding")
 	}
 
-	return out, nil
+	return out, len(out), nil
 }
 
 // Decode converts bytes into their ASCII representation.

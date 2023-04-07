@@ -54,16 +54,17 @@ func TestBCD(t *testing.T) {
 	})
 
 	t.Run("Encode", func(t *testing.T) {
-		res, err := BCD.Encode([]byte("0110"))
+		res, _, err := BCD.Encode([]byte("0110"))
 		require.NoError(t, err)
 		require.Equal(t, []byte{0x01, 0x10}, res)
 
 		// right justified by default
-		res, err = BCD.Encode([]byte("123"))
+		res, length, err := BCD.Encode([]byte("123"))
 		require.NoError(t, err)
 		require.Equal(t, []byte{0x01, 0x23}, res)
+		require.Equal(t, 3, length)
 
-		_, err = BCD.Encode([]byte("abc"))
+		_, _, err = BCD.Encode([]byte("abc"))
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to perform BCD encoding")
 		require.ErrorIs(t, err, bcd.ErrBadInput)

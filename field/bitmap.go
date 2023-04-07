@@ -66,7 +66,7 @@ func (f *Bitmap) String() (string, error) {
 }
 
 func (f *Bitmap) Pack() ([]byte, error) {
-	packed, err := f.spec.Enc.Encode(f.data)
+	packed, _, err := f.spec.Enc.Encode(f.data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}

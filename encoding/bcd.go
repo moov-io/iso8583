@@ -14,7 +14,8 @@ var (
 
 type bcdEncoder struct{}
 
-func (e *bcdEncoder) Encode(src []byte) ([]byte, error) {
+func (e *bcdEncoder) Encode(src []byte) ([]byte, int, error) {
+	length := len(src)
 	if len(src)%2 != 0 {
 		src = append([]byte("0"), src...)
 	}
@@ -23,10 +24,10 @@ func (e *bcdEncoder) Encode(src []byte) ([]byte, error) {
 	dst := make([]byte, bcd.EncodedLen(len(src)))
 	n, err := enc.Encode(dst, src)
 	if err != nil {
-		return nil, utils.NewSafeError(err, "failed to perform BCD encoding")
+		return nil, 0, utils.NewSafeError(err, "failed to perform BCD encoding")
 	}
 
-	return dst[:n], nil
+	return dst[:n], length, nil
 }
 
 func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, int, error) {

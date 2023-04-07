@@ -25,7 +25,7 @@ func TestEBCDIC(t *testing.T) {
 	})
 
 	t.Run("Encode", func(t *testing.T) {
-		res, err := EBCDIC.Encode([]byte{0x12, 0x94})
+		res, _, err := EBCDIC.Encode([]byte{0x12, 0x94})
 
 		require.NoError(t, err)
 		require.Equal(t, []byte{0x12, 0x34}, res)

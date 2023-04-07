@@ -22,7 +22,7 @@ func TestHexToASCIIEncoder(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, "failed to perform hex decoding")
 
-	got, err = enc.Encode([]byte{0xAA, 0xBB, 0xCC})
+	got, _, err = enc.Encode([]byte{0xAA, 0xBB, 0xCC})
 	require.NoError(t, err)
 	require.Equal(t, []byte("AABBCC"), got)
 }
@@ -35,11 +35,11 @@ func TestASCIIToHexEncoder(t *testing.T) {
 	require.Equal(t, []byte("AABBCC"), got)
 	require.Equal(t, 3, read)
 
-	got, err = enc.Encode([]byte("aabbcc"))
+	got, _, err = enc.Encode([]byte("aabbcc"))
 	require.NoError(t, err)
 	require.Equal(t, []byte{0xAA, 0xBB, 0xCC}, got)
 
-	_, err = enc.Encode([]byte("nothex"))
+	_, _, err = enc.Encode([]byte("nothex"))
 	require.Error(t, err)
 	require.EqualError(t, err, "failed to perform hex decoding")
 }

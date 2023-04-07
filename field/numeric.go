@@ -92,12 +92,12 @@ func (f *Numeric) Pack() ([]byte, error) {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
 	}
 
-	packed, err := f.spec.Enc.Encode(data)
+	packed, encLength, err := f.spec.Enc.Encode(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, encLength)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}

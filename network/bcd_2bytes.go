@@ -29,7 +29,7 @@ func (h *BCD2BytesHeader) Length() int {
 
 func (h *BCD2BytesHeader) WriteTo(w io.Writer) (int, error) {
 	strLen := fmt.Sprintf("%04d", h.Len)
-	res, err := encoding.BCD.Encode([]byte(strLen))
+	res, _, err := encoding.BCD.Encode([]byte(strLen))
 	if err != nil {
 		return 0, err
 	}

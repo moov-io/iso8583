@@ -34,7 +34,7 @@ func TestBerTLVTag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc+"_Encode", func(t *testing.T) {
-			hexTag, err := BerTLVTag.Encode(tt.asciiTag)
+			hexTag, _, err := BerTLVTag.Encode(tt.asciiTag)
 			require.NoError(t, err)
 			require.Equal(t, tt.hexTag, hexTag)
 		})

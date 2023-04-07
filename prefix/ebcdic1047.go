@@ -30,7 +30,7 @@ func (p *ebcdic1047Prefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	}
 
 	strLen := fmt.Sprintf("%0*d", p.digits, dataLen)
-	res, err := encoding.EBCDIC1047.Encode([]byte(strLen))
+	res, _, err := encoding.EBCDIC1047.Encode([]byte(strLen))
 	if err != nil {
 		return nil, err
 	}

@@ -31,7 +31,7 @@ func (p *bcdVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	}
 
 	strLen := fmt.Sprintf("%0*d", p.Digits, dataLen)
-	res, err := encoding.BCD.Encode([]byte(strLen))
+	res, _, err := encoding.BCD.Encode([]byte(strLen))
 	if err != nil {
 		return nil, err
 	}

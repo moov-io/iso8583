@@ -11,10 +11,10 @@ var (
 
 type binaryEncoder struct{}
 
-func (e binaryEncoder) Encode(data []byte) ([]byte, error) {
+func (e binaryEncoder) Encode(data []byte) ([]byte, int, error) {
 	out := append([]byte(nil), data...)
 
-	return out, nil
+	return out, len(out), nil
 }
 
 func (e binaryEncoder) Decode(data []byte, length int) ([]byte, int, error) {

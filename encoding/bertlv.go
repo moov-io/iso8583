@@ -16,9 +16,8 @@ type berTLVEncoderTag struct{}
 
 // Encode converts ASCII Hex-digits into a byte slice e.g. []byte("AABBCC")
 // would be converted into []byte{0xAA, 0xBB, 0xCC}
-func (berTLVEncoderTag) Encode(data []byte) ([]byte, error) {
-	out, err := ASCIIHexToBytes.Encode(data)
-	return out, err
+func (berTLVEncoderTag) Encode(data []byte) ([]byte, int, error) {
+	return ASCIIHexToBytes.Encode(data)
 }
 
 // Decode converts hexadecimal TLV bytes into their ASCII representation according

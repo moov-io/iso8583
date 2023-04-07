@@ -79,12 +79,12 @@ func (f *Binary) Pack() ([]byte, error) {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
 	}
 
-	packed, err := f.spec.Enc.Encode(data)
+	packed, encLength, err := f.spec.Enc.Encode(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, encLength)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
@@ -169,7 +169,7 @@ func (f *Binary) UnmarshalJSON(b []byte) error {
 		return utils.NewSafeError(err, "failed to JSON unmarshal bytes to string")
 	}
 
-	hex, err := encoding.ASCIIHexToBytes.Encode([]byte(v))
+	hex, _, err := encoding.ASCIIHexToBytes.Encode([]byte(v))
 	if err != nil {
 		return utils.NewSafeError(err, "failed to convert ASCII Hex string to bytes")
 	}

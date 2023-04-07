@@ -82,12 +82,12 @@ var (
 
 type ebcdicEncoder struct{}
 
-func (e *ebcdicEncoder) Encode(src []byte) ([]byte, error) {
+func (e *ebcdicEncoder) Encode(src []byte) ([]byte, int, error) {
 	var dst []byte
 	for _, v := range src {
 		dst = append(dst, asciiToEbcdic[v])
 	}
-	return dst, nil
+	return dst, len(dst), nil
 }
 
 func (e *ebcdicEncoder) Decode(src []byte, length int) ([]byte, int, error) {

@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/prefix"
 	"reflect"
 	"regexp"
+
+	"github.com/moov-io/iso8583/encoding"
+	"github.com/moov-io/iso8583/prefix"
 
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/sort"
@@ -363,7 +364,7 @@ func (f *Composite) pack() ([]byte, error) {
 			if f.spec.Tag.Pad != nil {
 				tagBytes = f.spec.Tag.Pad.Pad(tagBytes, f.spec.Tag.Length)
 			}
-			tagBytes, err := f.spec.Tag.Enc.Encode(tagBytes)
+			tagBytes, _, err := f.spec.Tag.Enc.Encode(tagBytes)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert subfield Tag \"%v\" to int", tagBytes)
 			}

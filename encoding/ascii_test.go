@@ -30,12 +30,12 @@ func TestASCII(t *testing.T) {
 	})
 
 	t.Run("Encode", func(t *testing.T) {
-		res, err := enc.Encode([]byte("hello"))
+		res, _, err := enc.Encode([]byte("hello"))
 
 		require.NoError(t, err)
 		require.Equal(t, []byte("hello"), res)
 
-		_, err = enc.Encode([]byte("hello, 世界!"))
+		_, _, err = enc.Encode([]byte("hello, 世界!"))
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to perform ASCII encoding")
 	})
