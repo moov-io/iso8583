@@ -14,6 +14,7 @@ var (
 
 type bcdEncoder struct{}
 
+// Encode returns packed data and the original length in digits
 func (e *bcdEncoder) Encode(src []byte) ([]byte, int, error) {
 	length := len(src)
 	if len(src)%2 != 0 {
@@ -30,6 +31,7 @@ func (e *bcdEncoder) Encode(src []byte) ([]byte, int, error) {
 	return dst[:n], length, nil
 }
 
+// Decode returns bcd unpacked data and number of digits decoded
 func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 	// length should be positive
 	if length < 0 {
