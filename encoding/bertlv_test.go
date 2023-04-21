@@ -60,7 +60,7 @@ func TestBerTLVTag_DecodeOnInvalidInput(t *testing.T) {
 		require.ErrorIs(t, err, io.EOF)
 	})
 
-	t.Run("when MSB of 2nd byte set but 3nd byte does not exist", func(t *testing.T) {
+	t.Run("when MSB of 2nd byte set but 3rd byte does not exist", func(t *testing.T) {
 		_, _, err := BerTLVTag.Decode([]byte{0x5F, 0xA8}, 0)
 		require.EqualError(t, err, "failed to decode TLV tag")
 		require.ErrorIs(t, err, io.EOF)
