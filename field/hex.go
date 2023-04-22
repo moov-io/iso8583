@@ -1,6 +1,7 @@
 package field
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,37 +9,38 @@ import (
 	"github.com/moov-io/iso8583/utils"
 )
 
-var _ Field = (*String)(nil)
-var _ json.Marshaler = (*String)(nil)
-var _ json.Unmarshaler = (*String)(nil)
+var _ Field = (*Hex)(nil)
+var _ json.Marshaler = (*Hex)(nil)
+var _ json.Unmarshaler = (*Hex)(nil)
 
-type String struct {
+// Hex is a field that contains a hex string.
+type Hex struct {
 	value string
 	spec  *Spec
-	data  *String
+	data  *Hex
 }
 
-func NewString(spec *Spec) *String {
-	return &String{
+func NewHex(spec *Spec) *Hex {
+	return &Hex{
 		spec: spec,
 	}
 }
 
-func NewStringValue(val string) *String {
-	return &String{
+func NewHexValue(val string) *Hex {
+	return &Hex{
 		value: val,
 	}
 }
 
-func (f *String) Spec() *Spec {
+func (f *Hex) Spec() *Spec {
 	return f.spec
 }
 
-func (f *String) SetSpec(spec *Spec) {
+func (f *Hex) SetSpec(spec *Spec) {
 	f.spec = spec
 }
 
-func (f *String) SetBytes(b []byte) error {
+func (f *Hex) SetBytes(b []byte) error {
 	f.value = string(b)
 	if f.data != nil {
 		*(f.data) = *f
@@ -46,32 +48,32 @@ func (f *String) SetBytes(b []byte) error {
 	return nil
 }
 
-func (f *String) Bytes() ([]byte, error) {
+func (f *Hex) Bytes() ([]byte, error) {
 	if f == nil {
 		return nil, nil
 	}
 	return []byte(f.value), nil
 }
 
-func (f *String) String() (string, error) {
+func (f *Hex) String() (string, error) {
 	if f == nil {
 		return "", nil
 	}
 	return f.value, nil
 }
 
-func (f *String) Value() string {
+func (f *Hex) Value() string {
 	if f == nil {
 		return ""
 	}
 	return f.value
 }
 
-func (f *String) SetValue(v string) {
+func (f *Hex) SetValue(v string) {
 	f.value = v
 }
 
-func (f *String) Pack() ([]byte, error) {
+func (f *Hex) Pack() ([]byte, error) {
 	data := []byte(f.value)
 
 	if f.spec.Pad != nil {
@@ -83,7 +85,9 @@ func (f *String) Pack() ([]byte, error) {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(data))
+	dataLen := hex.DecodedLen(len(data))
+
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, dataLen)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
@@ -91,7 +95,7 @@ func (f *String) Pack() ([]byte, error) {
 	return append(packedLength, packed...), nil
 }
 
-func (f *String) Unpack(data []byte) (int, error) {
+func (f *Hex) Unpack(data []byte) (int, error) {
 	dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %w", err)
@@ -113,14 +117,14 @@ func (f *String) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *String) Unmarshal(v interface{}) error {
+func (f *Hex) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
 	}
 
-	str, ok := v.(*String)
+	str, ok := v.(*Hex)
 	if !ok {
-		return errors.New("data does not match required *String type")
+		return errors.New("data does not match required *Hex type")
 	}
 
 	str.value = f.value
@@ -128,14 +132,14 @@ func (f *String) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *String) SetData(data interface{}) error {
+func (f *Hex) SetData(data interface{}) error {
 	if data == nil {
 		return nil
 	}
 
-	str, ok := data.(*String)
+	str, ok := data.(*Hex)
 	if !ok {
-		return fmt.Errorf("data does not match required *String type")
+		return fmt.Errorf("data does not match required *Hex type")
 	}
 
 	f.data = str
@@ -145,11 +149,11 @@ func (f *String) SetData(data interface{}) error {
 	return nil
 }
 
-func (f *String) Marshal(data interface{}) error {
+func (f *Hex) Marshal(data interface{}) error {
 	return f.SetData(data)
 }
 
-func (f *String) MarshalJSON() ([]byte, error) {
+func (f *Hex) MarshalJSON() ([]byte, error) {
 	bytes, err := json.Marshal(f.value)
 	if err != nil {
 		return nil, utils.NewSafeError(err, "failed to JSON marshal string to bytes")
@@ -157,7 +161,7 @@ func (f *String) MarshalJSON() ([]byte, error) {
 	return bytes, nil
 }
 
-func (f *String) UnmarshalJSON(b []byte) error {
+func (f *Hex) UnmarshalJSON(b []byte) error {
 	var v string
 	err := json.Unmarshal(b, &v)
 	if err != nil {

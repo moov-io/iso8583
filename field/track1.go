@@ -77,7 +77,7 @@ func (f *Track1) Pack() ([]byte, error) {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(data))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}

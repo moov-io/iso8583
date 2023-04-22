@@ -40,8 +40,12 @@ type TagSpec struct {
 
 // Spec defines the structure of a field.
 type Spec struct {
-	// Length defines the maximum length of field (bytes, characters or
-	// digits), for both fixed and variable lengths.
+	// Length defines the maximum length of field (bytes, characters,
+	// digits or hex digits), for both fixed and variable lengths.
+	// You should use appropriate field types corresponding to the
+	// length of the field you're defining, e.g. Numeric, String, Binary
+	// etc. For Hex fields, the length is defined in terms of the number
+	// of bytes, while the value of the field is hex string.
 	Length int
 	// Tag sets the tag specification. Only applicable to composite field
 	// types.
