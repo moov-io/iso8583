@@ -69,6 +69,9 @@ type Spec struct {
 	// will be disregarded, and the size of the bitmap will not change when
 	// the first bit is set.
 	DisableAutoExpand bool
+	// Bitmap defines a bitmap field that is used only by a composite field type.
+	// It defines the way that the composite will determine its subflieds existence.
+	Bitmap *Bitmap
 }
 
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {
