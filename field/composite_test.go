@@ -513,7 +513,7 @@ func TestTLVPacking(t *testing.T) {
 		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
 	})
 
-	t.Run("Unpack correctly deserialises bytes to the data struct (constructed ber-tlv, unordered value)", func(t *testing.T) {
+	t.Run("123Unpack correctly deserialises bytes to the data struct (constructed ber-tlv, unordered value)", func(t *testing.T) {
 		composite := NewComposite(constructedBERTLVTestSpec)
 
 		read, err := composite.Unpack([]byte{0x30, 0x31, 0x37, 0x9f, 0x36, 0x2, 0x2, 0x7f, 0x9f, 0x3b, 0x5, 0x9f, 0x45, 0x2, 0x4, 0x7f, 0x82, 0x2, 0x1, 0x7f})
@@ -627,6 +627,64 @@ func TestCompositePacking(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, "ABCD12", string(packed))
+	})
+
+	t.Run("Pack and unpack data with BCD encoding", func(t *testing.T) {
+		var compositeSpecWithBCD = &Spec{
+			Length:      2, // always in bytes
+			Description: "Point of Service Entry Mode",
+			Pref:        prefix.BCD.Fixed,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
+			Subfields: map[string]Field{
+				"1": NewString(&Spec{
+					Length:      2,
+					Description: "PAN/Date Entry Mode",
+					Enc:         encoding.BCD,
+					Pref:        prefix.BCD.Fixed,
+				}),
+				"2": NewString(&Spec{
+					Length:      2,
+					Description: "PIN Entry Capability",
+					Enc:         encoding.BCD,
+					Pref:        prefix.BCD.Fixed,
+				}),
+			},
+		}
+
+		type data struct {
+			PANEntryMode *String `index:"1"`
+			PINEntryMode *String `index:"2"`
+		}
+
+		f := NewComposite(compositeSpecWithBCD)
+
+		d := &data{
+			PANEntryMode: NewStringValue("01"),
+			PINEntryMode: NewStringValue("02"),
+		}
+
+		err := f.Marshal(d)
+		require.NoError(t, err)
+
+		packed, err := f.Pack()
+		require.NoError(t, err)
+		require.Equal(t, []byte{0x01, 0x02}, packed)
+
+		// unpacking
+
+		f = NewComposite(compositeSpecWithBCD)
+		read, err := f.Unpack(packed)
+		require.NoError(t, err)
+		require.Equal(t, 2, read) // two bytes read
+
+		d = &data{}
+		err = f.Unmarshal(d)
+		require.NoError(t, err)
+
+		require.Equal(t, "01", d.PANEntryMode.Value())
+		require.Equal(t, "02", d.PINEntryMode.Value())
 	})
 
 	t.Run("Unpack returns an error on mismatch of subfield types", func(t *testing.T) {
