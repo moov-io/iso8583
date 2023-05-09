@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -13,7 +14,7 @@ var _ Field = (*Hex)(nil)
 var _ json.Marshaler = (*Hex)(nil)
 var _ json.Unmarshaler = (*Hex)(nil)
 
-// Hex is a field that contains a hex string.
+// Hex is a field that contains a hex string value, but is encoded as binary
 type Hex struct {
 	value string
 	spec  *Spec
@@ -26,6 +27,9 @@ func NewHex(spec *Spec) *Hex {
 	}
 }
 
+// NewHexValue creates a new Hex field with the given value The value is
+// converted from hex to bytes before packing, so we don't validate that val is
+// a valid hex string here.
 func NewHexValue(val string) *Hex {
 	return &Hex{
 		value: val,
@@ -41,7 +45,7 @@ func (f *Hex) SetSpec(spec *Spec) {
 }
 
 func (f *Hex) SetBytes(b []byte) error {
-	f.value = string(b)
+	f.value = strings.ToUpper(hex.EncodeToString(b))
 	if f.data != nil {
 		*(f.data) = *f
 	}
@@ -52,7 +56,7 @@ func (f *Hex) Bytes() ([]byte, error) {
 	if f == nil {
 		return nil, nil
 	}
-	return []byte(f.value), nil
+	return hex.DecodeString(f.value)
 }
 
 func (f *Hex) String() (string, error) {
@@ -74,7 +78,10 @@ func (f *Hex) SetValue(v string) {
 }
 
 func (f *Hex) Pack() ([]byte, error) {
-	data := []byte(f.value)
+	data, err := f.Bytes()
+	if err != nil {
+		return nil, utils.NewSafeErrorf(err, "converting hex field into bytes")
+	}
 
 	if f.spec.Pad != nil {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
@@ -85,9 +92,7 @@ func (f *Hex) Pack() ([]byte, error) {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
-	dataLen := hex.DecodedLen(len(data))
-
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, dataLen)
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(data))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
@@ -154,7 +159,12 @@ func (f *Hex) Marshal(data interface{}) error {
 }
 
 func (f *Hex) MarshalJSON() ([]byte, error) {
-	bytes, err := json.Marshal(f.value)
+	data, err := f.String()
+	if err != nil {
+		return nil, utils.NewSafeError(err, "convert hex field into bytes")
+	}
+
+	bytes, err := json.Marshal(data)
 	if err != nil {
 		return nil, utils.NewSafeError(err, "failed to JSON marshal string to bytes")
 	}
@@ -167,5 +177,8 @@ func (f *Hex) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return utils.NewSafeError(err, "failed to JSON unmarshal bytes to string")
 	}
-	return f.SetBytes([]byte(v))
+
+	f.value = v
+
+	return nil
 }

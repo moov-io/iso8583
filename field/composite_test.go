@@ -235,12 +235,12 @@ var (
 		Subfields: map[string]Field{
 			"9A": NewHex(&Spec{
 				Description: "Transaction Date",
-				Enc:         encoding.ASCIIHexToBytes,
+				Enc:         encoding.Binary,
 				Pref:        prefix.BerTLV,
 			}),
 			"9F02": NewHex(&Spec{
 				Description: "Amount, Authorized (Numeric)",
-				Enc:         encoding.ASCIIHexToBytes,
+				Enc:         encoding.Binary,
 				Pref:        prefix.BerTLV,
 			}),
 		},
@@ -257,12 +257,12 @@ var (
 		Subfields: map[string]Field{
 			"82": NewHex(&Spec{
 				Description: "Application Interchange Profile",
-				Enc:         encoding.ASCIIHexToBytes,
+				Enc:         encoding.Binary,
 				Pref:        prefix.BerTLV,
 			}),
 			"9F36": NewHex(&Spec{
 				Description: "Currency Code, Application Reference",
-				Enc:         encoding.ASCIIHexToBytes,
+				Enc:         encoding.Binary,
 				Pref:        prefix.BerTLV,
 			}),
 			"9F3B": NewComposite(&Spec{
@@ -275,7 +275,7 @@ var (
 				Subfields: map[string]Field{
 					"9F45": NewHex(&Spec{
 						Description: "Data Authentication Code",
-						Enc:         encoding.ASCIIHexToBytes,
+						Enc:         encoding.Binary,
 						Pref:        prefix.BerTLV,
 					}),
 				},
