@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/prefix"
 	"reflect"
 	"regexp"
+	"strconv"
 
+	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
+	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
+
 	"github.com/moov-io/iso8583/utils"
 )
 
@@ -58,7 +60,8 @@ var _ json.Unmarshaler = (*Composite)(nil)
 // For the sake of determinism, packing of subfields is executed in order of Tag
 // (using Spec.Tag.Sort) regardless of the value of Spec.Tag.Length.
 type Composite struct {
-	spec *Spec
+	spec   *Spec
+	bitmap *Bitmap
 
 	orderedSpecFieldTags []string
 
@@ -117,7 +120,17 @@ func (f *Composite) SetSpec(spec *Spec) {
 		panic(err)
 	}
 	f.spec = spec
-	f.orderedSpecFieldTags = orderedKeys(spec.Subfields, spec.Tag.Sort)
+
+	var sortFn sort.StringSlice
+
+	// When bitmap is defined, always order tags by int.
+	if spec.Bitmap != nil {
+		sortFn = sort.StringsByInt
+	} else {
+		sortFn = spec.Tag.Sort
+	}
+
+	f.orderedSpecFieldTags = orderedKeys(spec.Subfields, sortFn)
 }
 
 func (f *Composite) Unmarshal(v interface{}) error {
@@ -295,6 +308,27 @@ func (f *Composite) Bytes() ([]byte, error) {
 	return f.pack()
 }
 
+// Bitmap returns the parsed bitmap instantiated on the key "0" of the spec.
+// In case the bitmap is not instantiated on the spec, returns nil.
+func (f *Composite) Bitmap() *Bitmap {
+	if f.bitmap != nil {
+		return f.bitmap
+	}
+
+	if f.spec.Bitmap == nil {
+		return nil
+	}
+
+	bitmap, ok := CreateSubfield(f.spec.Bitmap).(*Bitmap)
+	if !ok {
+		return nil
+	}
+
+	f.bitmap = bitmap
+
+	return f.bitmap
+}
+
 // String iterates over the receiver's subfields, packs them and converts the
 // result to a string. The result does not incorporate the encoded aggregate
 // length of the subfields in the prefix.
@@ -347,6 +381,54 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 }
 
 func (f *Composite) pack() ([]byte, error) {
+	if f.Bitmap() != nil {
+		return f.packByBitmap()
+	}
+
+	return f.packByTag()
+}
+
+func (f *Composite) packByBitmap() ([]byte, error) {
+	f.Bitmap().Reset()
+
+	// Set bitmap bits for all fields that are present.
+	for id := range f.setSubfields {
+		idInt, err := strconv.Atoi(id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to pack composite: %w", err)
+		}
+
+		f.Bitmap().Set(idInt)
+	}
+
+	// pack bitmap.
+	packed, err := f.Bitmap().Pack()
+	if err != nil {
+		return nil, fmt.Errorf("failed to pack bitmap: %w", err)
+	}
+
+	// pack fields
+	for _, i := range f.orderedSpecFieldTags {
+		// If this ordered field is not set, continue to the next field.
+		if _, ok := f.setSubfields[i]; !ok {
+			continue
+		}
+
+		field, ok := f.subfields[i]
+		if !ok {
+			return nil, fmt.Errorf("failed to pack subfield %s: no specification found", i)
+		}
+		packedField, err := field.Pack()
+		if err != nil {
+			return nil, fmt.Errorf("failed to pack subfield %s (%s): %w", i, field.Spec().Description, err)
+		}
+		packed = append(packed, packedField...)
+	}
+
+	return packed, nil
+}
+
+func (f *Composite) packByTag() ([]byte, error) {
 	packed := []byte{}
 	for _, tag := range f.orderedSpecFieldTags {
 		field, ok := f.subfields[tag]
@@ -382,6 +464,9 @@ func (f *Composite) pack() ([]byte, error) {
 }
 
 func (f *Composite) unpack(data []byte, isVariableLength bool) (int, error) {
+	if f.Bitmap() != nil {
+		return f.unpackSubfieldsByBitmap(data)
+	}
 	if f.spec.Tag.Enc != nil {
 		return f.unpackSubfieldsByTag(data)
 	}
@@ -411,6 +496,44 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, er
 	}
 
 	return offset, nil
+}
+
+func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, error) {
+	var off int
+
+	// Reset fields that were set.
+	f.setSubfields = make(map[string]struct{})
+
+	f.Bitmap().Reset()
+
+	read, err := f.Bitmap().Unpack(data[off:])
+	if err != nil {
+		return 0, fmt.Errorf("failed to unpack bitmap: %w", err)
+	}
+
+	off += read
+
+	for i := 1; i <= f.Bitmap().Len(); i++ {
+		if f.Bitmap().IsSet(i) {
+			iStr := strconv.Itoa(i)
+
+			fl, ok := f.subfields[iStr]
+			if !ok {
+				return 0, fmt.Errorf("failed to unpack subfield %s: no specification found", iStr)
+			}
+
+			read, err = fl.Unpack(data[off:])
+			if err != nil {
+				return 0, fmt.Errorf("failed to unpack subfield %s (%s): %w", iStr, fl.Spec().Description, err)
+			}
+
+			f.setSubfields[iStr] = struct{}{}
+
+			off += read
+		}
+	}
+
+	return off, nil
 }
 
 // ignoredMaxLen is a constant meant to be used in encoders that don't use the maxLength argument during
@@ -467,26 +590,50 @@ func (f *Composite) skipUnknownTLVTags() bool {
 }
 
 func validateCompositeSpec(spec *Spec) error {
-	if spec.Tag == nil || spec.Tag.Sort == nil {
-		return fmt.Errorf("Composite spec requires a Tag.Sort function to be defined")
+	if spec.Enc != nil {
+		return fmt.Errorf("Composite spec only supports a nil Enc value")
 	}
 	if spec.Pad != nil && spec.Pad != padding.None {
 		return fmt.Errorf("Composite spec only supports nil or None spec padding values")
 	}
-	if spec.Enc != nil {
-		return fmt.Errorf("Composite spec only supports a nil Enc value")
+	if (spec.Bitmap == nil && spec.Tag == nil) || (spec.Bitmap != nil && spec.Tag != nil) {
+		return fmt.Errorf("Composite spec only supports a definition of Bitmap or Tag, can't stand both or neither")
 	}
-	if spec.Tag != nil && spec.Tag.Enc == nil && spec.Tag.Length > 0 {
+
+	// If bitmap is defined, validates subfields keys.
+	// spec.Tag is not validated.
+	if spec.Bitmap != nil {
+		if !spec.Bitmap.spec.DisableAutoExpand {
+			return fmt.Errorf("Composite spec only supports a bitmap with 'DisableAutoExpand = true'")
+		}
+
+		for key := range spec.Subfields {
+			parsedKey, err := strconv.Atoi(key)
+			if err != nil {
+				return fmt.Errorf("error parsing key from bitmapped subfield definition: %w", err)
+			}
+
+			if parsedKey <= 0 {
+				return fmt.Errorf("Composite spec only supports integers greater than 0 as keys for bitmapped subfields definition")
+			}
+		}
+
+		return nil
+	}
+
+	// Validate spec.Tag.
+	if spec.Tag.Sort == nil {
+		return fmt.Errorf("Composite spec requires a Tag.Sort function to define a Tag")
+	}
+	if spec.Tag.Enc == nil && spec.Tag.Length > 0 {
 		return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
 	}
-	if spec.Tag.Sort == nil {
-		return fmt.Errorf("Composite spec requires a Tag.Sort function to be defined")
-	}
+
 	return nil
 }
 
 func orderedKeys(kvs map[string]Field, sorter sort.StringSlice) []string {
-	keys := make([]string, 0)
+	keys := make([]string, 0, len(kvs))
 	for k := range kvs {
 		keys = append(keys, k)
 	}

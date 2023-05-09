@@ -95,6 +95,110 @@ var (
 		},
 	}
 
+	compositeTestSpecWithDefaultBitmap = &Spec{
+		Length:      36,
+		Description: "Test Spec",
+		Pref:        prefix.ASCII.LL,
+		Bitmap: NewBitmap(&Spec{
+			Length:            8,
+			Description:       "Bitmap",
+			Enc:               encoding.BytesToASCIIHex,
+			Pref:              prefix.Hex.Fixed,
+			DisableAutoExpand: true,
+		}),
+		Subfields: map[string]Field{
+			"1": NewString(&Spec{
+				Length:      2,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"2": NewString(&Spec{
+				Length:      2,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"3": NewNumeric(&Spec{
+				Length:      2,
+				Description: "Numeric Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"11": NewComposite(&Spec{
+				Length:      6,
+				Description: "Sub-Composite Field",
+				Pref:        prefix.ASCII.LL,
+				Tag: &TagSpec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pad:    padding.Left('0'),
+					Sort:   sort.StringsByInt,
+				},
+				Subfields: map[string]Field{
+					"1": NewString(&Spec{
+						Length:      2,
+						Description: "String Field",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.LL,
+					}),
+				},
+			}),
+		},
+	}
+
+	compositeTestSpecWithSizedBitmap = &Spec{
+		Length:      30,
+		Description: "Test Spec",
+		Pref:        prefix.ASCII.LL,
+		Bitmap: NewBitmap(&Spec{
+			Length:            3,
+			Description:       "Bitmap",
+			Enc:               encoding.BytesToASCIIHex,
+			Pref:              prefix.Hex.Fixed,
+			DisableAutoExpand: true,
+		}),
+		Subfields: map[string]Field{
+			"1": NewString(&Spec{
+				Length:      2,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"2": NewString(&Spec{
+				Length:      2,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"3": NewNumeric(&Spec{
+				Length:      2,
+				Description: "Numeric Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"11": NewComposite(&Spec{
+				Length:      6,
+				Description: "Sub-Composite Field",
+				Pref:        prefix.ASCII.LL,
+				Tag: &TagSpec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pad:    padding.Left('0'),
+					Sort:   sort.StringsByInt,
+				},
+				Subfields: map[string]Field{
+					"1": NewString(&Spec{
+						Length:      2,
+						Description: "String Field",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.LL,
+					}),
+				},
+			}),
+		},
+	}
+
 	compositeTestSpecWithoutTagPadding = &Spec{
 		Length:      30,
 		Description: "Test Spec",
@@ -952,6 +1056,329 @@ func TestCompositePackingWithTags(t *testing.T) {
 	})
 }
 
+func TestCompositePackingWithBitmap(t *testing.T) {
+	t.Run("Pack returns error when encoded data length is different than specified fixed length", func(t *testing.T) {
+		// Base field length < sum of subfields lengths.
+		// This will throw an error when encoding the field's length.
+		invalidSpec := &Spec{
+			Length: 20,
+			Pref:   prefix.ASCII.Fixed,
+			Bitmap: NewBitmap(&Spec{
+				Length:            8,
+				Pref:              prefix.Binary.Fixed,
+				Enc:               encoding.Binary,
+				DisableAutoExpand: true,
+			}),
+			Subfields: map[string]Field{
+				"1": NewString(&Spec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.Fixed,
+				}),
+				"2": NewString(&Spec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.Fixed,
+				}),
+				"3": NewNumeric(&Spec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.Fixed,
+				}),
+			},
+		}
+		data := &CompositeTestData{
+			F1: NewStringValue("AB"),
+			F2: NewStringValue("CD"),
+			F3: NewNumericValue(12),
+		}
+
+		composite := NewComposite(invalidSpec)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		b, err := composite.Pack()
+		require.Nil(t, b)
+		require.Error(t, err)
+		require.EqualError(t, err, "failed to encode length: field length: 14 should be fixed: 20")
+	})
+
+	t.Run("Pack returns error when encoded data length is larger than specified variable max length", func(t *testing.T) {
+		invalidSpec := &Spec{
+			Length: 5,
+			Pref:   prefix.ASCII.LL,
+			Bitmap: NewBitmap(&Spec{
+				Length:            8,
+				Pref:              prefix.Binary.Fixed,
+				Enc:               encoding.Binary,
+				DisableAutoExpand: true,
+			}),
+			Subfields: map[string]Field{
+				"1": NewString(&Spec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.Fixed,
+				}),
+				"2": NewString(&Spec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.Fixed,
+				}),
+				"3": NewNumeric(&Spec{
+					Length: 2,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.Fixed,
+				}),
+			},
+		}
+		data := &CompositeTestData{
+			F1: NewStringValue("AB"),
+			F2: NewStringValue("CD"),
+			F3: NewNumericValue(12),
+		}
+
+		composite := NewComposite(invalidSpec)
+		err := composite.Marshal(data)
+		require.NoError(t, err)
+
+		b, err := composite.Pack()
+		require.Nil(t, b)
+		require.EqualError(t, err, "failed to encode length: field length: 14 is larger than maximum: 5")
+	})
+
+	t.Run("Pack correctly serializes fully populated data to bytes with default bitmap", func(t *testing.T) {
+		data := &CompositeTestData{
+			F1: NewStringValue("AB"),
+			F2: NewStringValue("CD"),
+			F3: NewNumericValue(12),
+			F11: &SubCompositeData{
+				F1: NewStringValue("YZ"),
+			},
+		}
+
+		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		require.Equal(t, "36E02000000000000002AB02CD0212060102YZ", string(packed))
+	})
+
+	t.Run("Pack correctly serializes partially populated data to bytes with default bitmap", func(t *testing.T) {
+		data := &CompositeTestData{
+			F1: NewStringValue("AB"),
+			F3: NewNumericValue(12),
+		}
+
+		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		require.NoError(t, err)
+		require.Equal(t, "24A00000000000000002AB0212", string(packed))
+	})
+
+	t.Run("Pack correctly serializes fully populated data to bytes with sized bitmap on 3 bytes", func(t *testing.T) {
+		data := &CompositeTestData{
+			F1: NewStringValue("AB"),
+			F2: NewStringValue("CD"),
+			F3: NewNumericValue(12),
+			F11: &SubCompositeData{
+				F1: NewStringValue("YZ"),
+			},
+		}
+
+		composite := NewComposite(compositeTestSpecWithSizedBitmap)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		require.Equal(t, "26E0200002AB02CD0212060102YZ", string(packed))
+	})
+
+	t.Run("Pack correctly serializes partially populated data to bytes with sized bitmap on 3 bytes", func(t *testing.T) {
+		data := &CompositeTestData{
+			F1: NewStringValue("AB"),
+			F3: NewNumericValue(12),
+		}
+
+		composite := NewComposite(compositeTestSpecWithSizedBitmap)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		require.NoError(t, err)
+		require.Equal(t, "14A0000002AB0212", string(packed))
+	})
+
+	t.Run("Unpack returns an error on failure of subfield to unpack bytes with default bitmap", func(t *testing.T) {
+		data := &CompositeTestData{}
+
+		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		// F1 fails to unpack - it requires length to be defined instead of AB.
+		read, err := composite.Unpack([]byte("30E020000000000000AB02AB060102YZ"))
+		require.Equal(t, 0, read)
+		require.Error(t, err)
+		require.EqualError(t, err, "failed to unpack subfield 1 (String Field): failed to decode length: strconv.Atoi: parsing \"AB\": invalid syntax")
+	})
+
+	t.Run("Unpack returns an error on data having subfield ID not in spec with default bitmap", func(t *testing.T) {
+		data := &CompositeTestData{}
+
+		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		// Index 2-3 = 70 indicates the presence of field 4. This field is not defined on spec.
+		read, err := composite.Unpack([]byte("32702000000000000002AB0212060102YZ"))
+		require.Equal(t, 0, read)
+		require.EqualError(t, err, "failed to unpack subfield 4: no specification found")
+	})
+
+	t.Run("Unpack correctly deserialises out of order composite subfields to the data struct with default bitmap", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
+
+		read, err := composite.Unpack([]byte("36E02000000000000002AB02CD0212060102YZ"))
+
+		require.NoError(t, err)
+		require.Equal(t, 38, read)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "AB", data.F1.Value())
+		require.Equal(t, "CD", data.F2.Value())
+		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, "YZ", data.F11.F1.Value())
+	})
+
+	t.Run("Unpack correctly deserialises partial subfields to the data struct with sized bitmap on 3 bytes", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
+
+		read, err := composite.Unpack([]byte("24A00000000000000002AB0212"))
+
+		require.NoError(t, err)
+		require.Equal(t, 26, read)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "AB", data.F1.Value())
+		require.Equal(t, 12, data.F3.Value())
+		require.Nil(t, data.F11)
+	})
+
+	t.Run("Unpack correctly ignores excess bytes in excess of the length described by the prefix with default bitmap", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
+
+		// "060102YZ" falls outside of the bounds of the 24 byte limit imposed
+		// by the prefix. Therefore, F11 must be nil.
+		read, err := composite.Unpack([]byte("28E00000000000000002AB02CD0212060102YZ"))
+
+		require.NoError(t, err)
+		require.Equal(t, 30, read)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "AB", data.F1.Value())
+		require.Equal(t, "CD", data.F2.Value())
+		require.Equal(t, 12, data.F3.Value())
+		require.Nil(t, data.F11)
+	})
+
+	t.Run("Unpack returns an error on failure of subfield to unpack bytes with sized bitmap on 3 bytes", func(t *testing.T) {
+		data := &CompositeTestData{}
+
+		composite := NewComposite(compositeTestSpecWithSizedBitmap)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		// F1 fails to unpack - it requires length to be defined instead of AB.
+		read, err := composite.Unpack([]byte("20E02000AB02CD060102YZ"))
+		require.Equal(t, 0, read)
+		require.Error(t, err)
+		require.EqualError(t, err, "failed to unpack subfield 1 (String Field): failed to decode length: strconv.Atoi: parsing \"AB\": invalid syntax")
+	})
+
+	t.Run("Unpack returns an error on data having subfield ID not in spec with sized bitmap on 3 bytes", func(t *testing.T) {
+		data := &CompositeTestData{}
+
+		composite := NewComposite(compositeTestSpecWithSizedBitmap)
+		err := composite.SetData(data)
+		require.NoError(t, err)
+
+		// Index 2-3 = 70 indicates the presence of field 4. This field is not defined on spec.
+		read, err := composite.Unpack([]byte("2270200002CD0212060102YZ"))
+		require.Equal(t, 0, read)
+		require.EqualError(t, err, "failed to unpack subfield 4: no specification found")
+	})
+
+	t.Run("Unpack correctly deserialises out of order composite subfields to the data struct with sized bitmap on 3 bytes", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithSizedBitmap)
+
+		read, err := composite.Unpack([]byte("26E0200002AB02CD0212060102YZ"))
+
+		require.NoError(t, err)
+		require.Equal(t, 28, read)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "AB", data.F1.Value())
+		require.Equal(t, "CD", data.F2.Value())
+		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, "YZ", data.F11.F1.Value())
+	})
+
+	t.Run("Unpack correctly deserialises partial subfields to the data struct with sized bitmap on 3 bytes", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithSizedBitmap)
+
+		read, err := composite.Unpack([]byte("14A0000002AB0212"))
+
+		require.NoError(t, err)
+		require.Equal(t, 16, read)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "AB", data.F1.Value())
+		require.Equal(t, 12, data.F3.Value())
+		require.Nil(t, data.F11)
+	})
+
+	t.Run("Unpack correctly ignores excess bytes in excess of the length described by the prefix with sized bitmap on 3 bytes", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithSizedBitmap)
+
+		// "60102YZ" falls outside of the bounds of the 24 byte limit imposed
+		// by the prefix. Therefore, F11 must be nil.
+		read, err := composite.Unpack([]byte("18E0000002AB02CD0212060102YZ"))
+
+		require.NoError(t, err)
+		require.Equal(t, 20, read)
+
+		data := &CompositeTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "AB", data.F1.Value())
+		require.Equal(t, "CD", data.F2.Value())
+		require.Equal(t, 12, data.F3.Value())
+		require.Nil(t, data.F11)
+	})
+}
+
 func TestCompositeHandlesValidSpecs(t *testing.T) {
 	tests := []struct {
 		desc string
@@ -991,6 +1418,20 @@ func TestCompositeHandlesValidSpecs(t *testing.T) {
 				Subfields: map[string]Field{},
 			},
 		},
+		{
+			desc: "accepts Bitmap on spec and no tag",
+			spec: &Spec{
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
+				Bitmap: NewBitmap(&Spec{
+					Length:            8,
+					Pref:              prefix.Binary.Fixed,
+					Enc:               encoding.Binary,
+					DisableAutoExpand: true,
+				}),
+				Subfields: map[string]Field{},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -1013,24 +1454,16 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 		spec *Spec
 	}{
 		{
-			desc: "panics on nil Tag being defined in spec",
-			err:  "Composite spec requires a Tag.Sort function to be defined",
+			desc: "panics on non-nil Enc value being defined in spec",
+			err:  "Composite spec only supports a nil Enc value",
 			spec: &Spec{
 				Length:    6,
+				Enc:       encoding.ASCII,
 				Pref:      prefix.ASCII.Fixed,
-				Pad:       padding.Left('0'),
 				Subfields: map[string]Field{},
-			},
-		},
-		{
-			desc: "panics on nil Tag.Sort being defined in spec",
-			err:  "Composite spec requires a Tag.Sort function to be defined",
-			spec: &Spec{
-				Length:    6,
-				Pref:      prefix.ASCII.Fixed,
-				Pad:       padding.Left('0'),
-				Subfields: map[string]Field{},
-				Tag:       &TagSpec{},
+				Tag: &TagSpec{
+					Sort: sort.StringsByInt,
+				},
 			},
 		},
 		{
@@ -1047,16 +1480,98 @@ func TestCompositePanicsOnSpecValidationFailures(t *testing.T) {
 			},
 		},
 		{
-			desc: "panics on non-nil Enc value being defined in spec",
-			err:  "Composite spec only supports a nil Enc value",
+			desc: "panics on no Tag and no Bitmap being defined in spec",
+			err:  "Composite spec only supports a definition of Bitmap or Tag, can't stand both or neither",
 			spec: &Spec{
 				Length:    6,
-				Enc:       encoding.ASCII,
 				Pref:      prefix.ASCII.Fixed,
 				Subfields: map[string]Field{},
+			},
+		},
+		{
+			desc: "panics on both Tag and Bitmap being defined in spec",
+			err:  "Composite spec only supports a definition of Bitmap or Tag, can't stand both or neither",
+			spec: &Spec{
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
 				Tag: &TagSpec{
 					Sort: sort.StringsByInt,
 				},
+				Bitmap: NewBitmap(&Spec{
+					Length:            8,
+					Pref:              prefix.Binary.Fixed,
+					Enc:               encoding.Binary,
+					DisableAutoExpand: true,
+				}),
+				Subfields: map[string]Field{},
+			},
+		},
+		{
+			desc: "panics on invalid int defined as a subfield key on a bitmapped composite definition",
+			err:  "error parsing key from bitmapped subfield definition: strconv.Atoi: parsing \"invalid\": invalid syntax",
+			spec: &Spec{
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
+				Bitmap: NewBitmap(&Spec{
+					Length:            8,
+					Pref:              prefix.Binary.Fixed,
+					Enc:               encoding.Binary,
+					DisableAutoExpand: true,
+				}),
+				Subfields: map[string]Field{
+					"invalid": NewString(&Spec{
+						Length:            1,
+						Pref:              prefix.ASCII.Fixed,
+						Enc:               encoding.ASCII,
+						DisableAutoExpand: true,
+					}),
+				},
+			},
+		},
+		{
+			desc: "panics on an int lower than 1 defined as a subfield key on a bitmapped composite definition",
+			err:  "Composite spec only supports integers greater than 0 as keys for bitmapped subfields definition",
+			spec: &Spec{
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
+				Bitmap: NewBitmap(&Spec{
+					Length:            8,
+					Pref:              prefix.Binary.Fixed,
+					Enc:               encoding.Binary,
+					DisableAutoExpand: true,
+				}),
+				Subfields: map[string]Field{
+					"0": NewString(&Spec{
+						Length: 1,
+						Pref:   prefix.ASCII.Fixed,
+						Enc:    encoding.ASCII,
+					}),
+				},
+			},
+		},
+		{
+			desc: "panics on a bitmap with DisableAutoExpand = false",
+			err:  "Composite spec only supports a bitmap with 'DisableAutoExpand = true'",
+			spec: &Spec{
+				Length: 6,
+				Pref:   prefix.ASCII.Fixed,
+				Bitmap: NewBitmap(&Spec{
+					Length:            8,
+					Pref:              prefix.Binary.Fixed,
+					Enc:               encoding.Binary,
+					DisableAutoExpand: false,
+				}),
+				Subfields: map[string]Field{},
+			},
+		},
+		{
+			desc: "panics on nil Tag.Sort",
+			err:  "Composite spec requires a Tag.Sort function to define a Tag",
+			spec: &Spec{
+				Length:    6,
+				Pref:      prefix.ASCII.Fixed,
+				Subfields: map[string]Field{},
+				Tag:       &TagSpec{},
 			},
 		},
 		{
