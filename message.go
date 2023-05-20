@@ -84,6 +84,15 @@ func (m *Message) Field(id int, val string) error {
 	return fmt.Errorf("failed to set field %d. ID does not exist", id)
 }
 
+// Unset removes a previously set field
+func (m *Message) Unset(id int) error {
+	if _, ok := m.fields[id]; ok {
+		delete(m.fieldsMap, id)
+		return nil
+	}
+	return fmt.Errorf("failed to unset field %d. ID does not exist", id)
+}
+
 func (m *Message) BinaryField(id int, val []byte) error {
 	if f, ok := m.fields[id]; ok {
 		m.fieldsMap[id] = struct{}{}
