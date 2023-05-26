@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -550,6 +551,69 @@ func TestPackUnpack(t *testing.T) {
 		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
+	})
+
+	// this test should check that BCD fields are packed and
+	// unpacked correctly it's a confirmation that issue
+	// https://github.com/moov-io/iso8583/issues/220 is fixed
+	t.Run("Pack and Unpack BCD fields", func(t *testing.T) {
+		var spec = &MessageSpec{
+			Fields: map[int]field.Field{
+				0: field.NewNumeric(&field.Spec{
+					Length:      4,
+					Description: "Message Type Indicator",
+					Enc:         encoding.BCD,
+					Pref:        prefix.BCD.Fixed,
+				}),
+				1: field.NewBitmap(&field.Spec{
+					Description: "Bitmap",
+					Enc:         encoding.Binary,
+					Pref:        prefix.Binary.Fixed,
+				}),
+				2: field.NewNumeric(&field.Spec{
+					Length:      4,
+					Description: "SomeFixedField",
+					Enc:         encoding.BCD,
+					Pref:        prefix.BCD.Fixed,
+				}),
+				3: field.NewNumeric(&field.Spec{
+					Length:      3,
+					Description: "SomeVarField",
+					Enc:         encoding.BCD,
+					Pref:        prefix.BCD.LLLL,
+				}),
+			},
+		}
+
+		msg := NewMessage(spec)
+
+		msg.MTI("1234")
+		msg.Field(2, "4567")
+		msg.Field(3, "890")
+
+		out, err := msg.Pack()
+		require.NoError(t, err)
+
+		got := hex.EncodeToString(out)
+
+		expected := "1234" + // MTI
+			"6000000000000000" + // Bitmap
+			"4567" + // SomeFixedField
+			"0003" + // LLLL in BCD
+			"0890" // SomeVarField in BCD 0x08 0x90
+
+		require.Equal(t, expected, got)
+
+		in := NewMessage(spec)
+
+		err = in.Unpack(out)
+		require.NoError(t, err)
+
+		result, _ := in.GetField(2).String()
+		require.Equal(t, "4567", result)
+
+		result, _ = in.GetField(3).String()
+		require.Equal(t, "890", result)
 	})
 }
 

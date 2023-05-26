@@ -26,6 +26,9 @@ var _ json.Unmarshaler = (*Composite)(nil)
 // documentation and error messages. These subfields are defined using the
 // 'Subfields' field on the field.Spec struct.
 //
+// Because composite subfields may be encoded with different encodings, the
+// Length field on the field.Spec struct is in bytes.
+//
 // Composite handles aggregate fields of the following format:
 // - Length (if variable)
 // - []Subfield

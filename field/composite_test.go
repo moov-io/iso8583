@@ -233,14 +233,14 @@ var (
 			Sort: sort.StringsByHex,
 		},
 		Subfields: map[string]Field{
-			"9A": NewString(&Spec{
+			"9A": NewHex(&Spec{
 				Description: "Transaction Date",
-				Enc:         encoding.ASCIIHexToBytes,
+				Enc:         encoding.Binary,
 				Pref:        prefix.BerTLV,
 			}),
-			"9F02": NewString(&Spec{
+			"9F02": NewHex(&Spec{
 				Description: "Amount, Authorized (Numeric)",
-				Enc:         encoding.ASCIIHexToBytes,
+				Enc:         encoding.Binary,
 				Pref:        prefix.BerTLV,
 			}),
 		},
@@ -255,14 +255,14 @@ var (
 			Sort: sort.StringsByHex,
 		},
 		Subfields: map[string]Field{
-			"82": NewString(&Spec{
+			"82": NewHex(&Spec{
 				Description: "Application Interchange Profile",
-				Enc:         encoding.ASCIIHexToBytes,
+				Enc:         encoding.Binary,
 				Pref:        prefix.BerTLV,
 			}),
-			"9F36": NewString(&Spec{
+			"9F36": NewHex(&Spec{
 				Description: "Currency Code, Application Reference",
-				Enc:         encoding.ASCIIHexToBytes,
+				Enc:         encoding.Binary,
 				Pref:        prefix.BerTLV,
 			}),
 			"9F3B": NewComposite(&Spec{
@@ -273,9 +273,9 @@ var (
 					Sort: sort.StringsByHex,
 				},
 				Subfields: map[string]Field{
-					"9F45": NewString(&Spec{
+					"9F45": NewHex(&Spec{
 						Description: "Data Authentication Code",
-						Enc:         encoding.ASCIIHexToBytes,
+						Enc:         encoding.Binary,
 						Pref:        prefix.BerTLV,
 					}),
 				},
@@ -306,18 +306,18 @@ type CompositeTestDataWithoutTagPaddingWithIndexTag struct {
 }
 
 type TLVTestData struct {
-	F9A   *String
-	F9F02 *String
+	F9A   *Hex
+	F9F02 *Hex
 }
 
 type ConstructedTLVTestData struct {
-	F82   *String
-	F9F36 *String
+	F82   *Hex
+	F9F36 *Hex
 	F9F3B *SubConstructedTLVTestData
 }
 
 type SubConstructedTLVTestData struct {
-	F9F45 *String
+	F9F45 *Hex
 }
 
 func TestComposite_SetData(t *testing.T) {
@@ -334,8 +334,8 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 		// we will do it by packing the field
 		composite := NewComposite(tlvTestSpec)
 		err := composite.SetData(&TLVTestData{
-			F9A:   NewStringValue("210720"),
-			F9F02: NewStringValue("000000000501"),
+			F9A:   NewHexValue("210720"),
+			F9F02: NewHexValue("000000000501"),
 		})
 		require.NoError(t, err)
 
@@ -353,10 +353,10 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 	t.Run("Unmarshal gets data for composite field (constructed)", func(t *testing.T) {
 		composite := NewComposite(constructedBERTLVTestSpec)
 		err := composite.SetData(&ConstructedTLVTestData{
-			F82:   NewStringValue("017F"),
-			F9F36: NewStringValue("027F"),
+			F82:   NewHexValue("017F"),
+			F9F36: NewHexValue("027F"),
 			F9F3B: &SubConstructedTLVTestData{
-				F9F45: NewStringValue("047F"),
+				F9F45: NewHexValue("047F"),
 			},
 		})
 		require.NoError(t, err)
@@ -375,15 +375,15 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 
 	t.Run("Unmarshal gets data for composite field using field tag `index`", func(t *testing.T) {
 		type tlvTestData struct {
-			Date          *String `index:"9A"`
-			TransactionID *String `index:"9F02"`
+			Date          *Hex `index:"9A"`
+			TransactionID *Hex `index:"9F02"`
 		}
 		// first, we need to populate fields of composite field
 		// we will do it by packing the field
 		composite := NewComposite(tlvTestSpec)
 		err := composite.SetData(&TLVTestData{
-			F9A:   NewStringValue("210720"),
-			F9F02: NewStringValue("000000000501"),
+			F9A:   NewHexValue("210720"),
+			F9F02: NewHexValue("000000000501"),
 		})
 		require.NoError(t, err)
 
@@ -402,8 +402,8 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 func TestTLVPacking(t *testing.T) {
 	t.Run("Pack correctly serializes data to bytes (general tlv)", func(t *testing.T) {
 		data := &TLVTestData{
-			F9A:   NewStringValue("210720"),
-			F9F02: NewStringValue("000000000501"),
+			F9A:   NewHexValue("210720"),
+			F9F02: NewHexValue("000000000501"),
 		}
 
 		composite := NewComposite(tlvTestSpec)
@@ -465,10 +465,10 @@ func TestTLVPacking(t *testing.T) {
 
 	t.Run("Pack correctly serializes data to bytes (constructed ber-tlv)", func(t *testing.T) {
 		data := &ConstructedTLVTestData{
-			F82:   NewStringValue("017f"),
-			F9F36: NewStringValue("027f"),
+			F82:   NewHexValue("017f"),
+			F9F36: NewHexValue("027f"),
 			F9F3B: &SubConstructedTLVTestData{
-				F9F45: NewStringValue("047f"),
+				F9F45: NewHexValue("047f"),
 			},
 		}
 
@@ -627,6 +627,64 @@ func TestCompositePacking(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, "ABCD12", string(packed))
+	})
+
+	t.Run("Pack and unpack data with BCD encoding", func(t *testing.T) {
+		var compositeSpecWithBCD = &Spec{
+			Length:      2, // always in bytes
+			Description: "Point of Service Entry Mode",
+			Pref:        prefix.BCD.Fixed,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
+			Subfields: map[string]Field{
+				"1": NewString(&Spec{
+					Length:      2,
+					Description: "PAN/Date Entry Mode",
+					Enc:         encoding.BCD,
+					Pref:        prefix.BCD.Fixed,
+				}),
+				"2": NewString(&Spec{
+					Length:      2,
+					Description: "PIN Entry Capability",
+					Enc:         encoding.BCD,
+					Pref:        prefix.BCD.Fixed,
+				}),
+			},
+		}
+
+		type data struct {
+			PANEntryMode *String `index:"1"`
+			PINEntryMode *String `index:"2"`
+		}
+
+		f := NewComposite(compositeSpecWithBCD)
+
+		d := &data{
+			PANEntryMode: NewStringValue("01"),
+			PINEntryMode: NewStringValue("02"),
+		}
+
+		err := f.Marshal(d)
+		require.NoError(t, err)
+
+		packed, err := f.Pack()
+		require.NoError(t, err)
+		require.Equal(t, []byte{0x01, 0x02}, packed)
+
+		// unpacking
+
+		f = NewComposite(compositeSpecWithBCD)
+		read, err := f.Unpack(packed)
+		require.NoError(t, err)
+		require.Equal(t, 2, read) // two bytes read
+
+		d = &data{}
+		err = f.Unmarshal(d)
+		require.NoError(t, err)
+
+		require.Equal(t, "01", d.PANEntryMode.Value())
+		require.Equal(t, "02", d.PINEntryMode.Value())
 	})
 
 	t.Run("Unpack returns an error on mismatch of subfield types", func(t *testing.T) {
@@ -1671,8 +1729,8 @@ func TestTLVJSONConversion(t *testing.T) {
 
 	t.Run("MarshalJSON TLV Data Ok", func(t *testing.T) {
 		data := &TLVTestData{
-			F9A:   NewStringValue("210720"),
-			F9F02: NewStringValue("000000000501"),
+			F9A:   NewHexValue("210720"),
+			F9F02: NewHexValue("000000000501"),
 		}
 
 		composite := NewComposite(tlvTestSpec)
