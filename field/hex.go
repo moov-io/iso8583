@@ -14,7 +14,11 @@ var _ Field = (*Hex)(nil)
 var _ json.Marshaler = (*Hex)(nil)
 var _ json.Unmarshaler = (*Hex)(nil)
 
-// Hex is a field that contains a hex string value, but is encoded as binary
+// Hex field allows working with hex strings but under the hood it's a binary
+// field. It's convenient to use when you need to work with hex strings, but
+// don't want to deal with converting them to bytes manually.
+// If provided value is not a valid hex string, it will return an error during
+// packing.
 type Hex struct {
 	value string
 	spec  *Spec
