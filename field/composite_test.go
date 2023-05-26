@@ -513,7 +513,7 @@ func TestTLVPacking(t *testing.T) {
 		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
 	})
 
-	t.Run("123Unpack correctly deserialises bytes to the data struct (constructed ber-tlv, unordered value)", func(t *testing.T) {
+	t.Run("Unpack correctly deserialises bytes to the data struct (constructed ber-tlv, unordered value)", func(t *testing.T) {
 		composite := NewComposite(constructedBERTLVTestSpec)
 
 		read, err := composite.Unpack([]byte{0x30, 0x31, 0x37, 0x9f, 0x36, 0x2, 0x2, 0x7f, 0x9f, 0x3b, 0x5, 0x9f, 0x45, 0x2, 0x4, 0x7f, 0x82, 0x2, 0x1, 0x7f})
