@@ -559,7 +559,6 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		tag := string(tagBytes)
 		if _, ok := f.spec.Subfields[tag]; !ok {
 			if f.skipUnknownTLVTags() {
-
 				// Obtain the length of the unknown tag and add it to the offset.
 				// Because *-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
 				var (
