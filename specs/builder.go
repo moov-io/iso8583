@@ -68,6 +68,7 @@ var (
 
 	EncodingsIntToExt = map[string]string{
 		"asciiEncoder":      "ASCII",
+		"asciiTLVTag":       "ASCII",
 		"bcdEncoder":        "BCD",
 		"ebcdicEncoder":     "EBCDIC",
 		"binaryEncoder":     "Binary",
