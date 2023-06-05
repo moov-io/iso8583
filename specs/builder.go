@@ -56,19 +56,26 @@ var (
 	}
 
 	EncodingsExtToInt = map[string]encoding.Encoder{
-		"ASCII":      encoding.ASCII,
-		"BCD":        encoding.BCD,
-		"EBCDIC":     encoding.EBCDIC,
-		"Binary":     encoding.Binary,
-		"HexToASCII": encoding.BytesToASCIIHex,
-		"ASCIIToHex": encoding.ASCIIHexToBytes,
-		"LBCD":       encoding.LBCD,
-		"BerTLVTag":  encoding.BerTLVTag,
+		"ASCII":           encoding.ASCII,
+		"ASCIITLVTagL":    encoding.AsciiTLVTagL,
+		"ASCIITLVTagLL":   encoding.AsciiTLVTagLL,
+		"ASCIITLVTagLLL":  encoding.AsciiTLVTagLLL,
+		"ASCIITLVTagLLLL": encoding.AsciiTLVTagLLLL,
+		"BCD":             encoding.BCD,
+		"EBCDIC":          encoding.EBCDIC,
+		"Binary":          encoding.Binary,
+		"HexToASCII":      encoding.BytesToASCIIHex,
+		"ASCIIToHex":      encoding.ASCIIHexToBytes,
+		"LBCD":            encoding.LBCD,
+		"BerTLVTag":       encoding.BerTLVTag,
 	}
 
 	EncodingsIntToExt = map[string]string{
 		"asciiEncoder":      "ASCII",
-		"asciiTLVTag":       "ASCII",
+		"asciiTLVTagL":      "ASCIITLVTagL",
+		"asciiTLVTagLL":     "ASCIITLVTagLL",
+		"asciiTLVTagLLL":    "ASCIITLVTagLLL",
+		"asciiTLVTagLLLL":   "ASCIITLVTagLLLL",
 		"bcdEncoder":        "BCD",
 		"ebcdicEncoder":     "EBCDIC",
 		"binaryEncoder":     "Binary",
