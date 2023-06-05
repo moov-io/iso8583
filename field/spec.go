@@ -17,7 +17,7 @@ import (
 type TagSpec struct {
 	// Length is defined for subfields and subelements whose tag
 	// lengths are fixed and can be defined statically.
-	// This field should not be populated in conjunction with the TLV Tag
+	// This field should not be populated in conjunction with the BerTLV Tag
 	// encoder as their lengths are determined dynamically.
 	Length int
 	// Enc defines the encoder used to marshal and unmarshal
