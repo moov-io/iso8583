@@ -16,7 +16,7 @@ type Bitmap struct {
 
 const defaultBitmapLength = 8
 
-const firstBitOn = 128 // 10000000 - big endian
+const firstBitOn = 0b10000000 // big endian
 
 func NewBitmap(spec *Spec) *Bitmap {
 	length := spec.Length

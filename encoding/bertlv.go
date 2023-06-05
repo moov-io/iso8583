@@ -53,7 +53,7 @@ func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
 		}
 		tagLenBytes++
 		// We read subsequent bytes to extract the tag by checking if
-		// the the most significant bit is set.
+		// the most significant bit is set.
 		if bits.LeadingZeros8(b) > 0 {
 			shouldReadSubsequentByte = false
 		}
