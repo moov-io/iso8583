@@ -57,10 +57,10 @@ var (
 
 	EncodingsExtToInt = map[string]encoding.Encoder{
 		"ASCII":           encoding.ASCII,
-		"ASCIITLVTagL":    encoding.AsciiTLVTagL,
-		"ASCIITLVTagLL":   encoding.AsciiTLVTagLL,
-		"ASCIITLVTagLLL":  encoding.AsciiTLVTagLLL,
-		"ASCIITLVTagLLLL": encoding.AsciiTLVTagLLLL,
+		"ASCIITLVTagL":    encoding.ASCIITLVTagL,
+		"ASCIITLVTagLL":   encoding.ASCIITLVTagLL,
+		"ASCIITLVTagLLL":  encoding.ASCIITLVTagLLL,
+		"ASCIITLVTagLLLL": encoding.ASCIITLVTagLLLL,
 		"BCD":             encoding.BCD,
 		"EBCDIC":          encoding.EBCDIC,
 		"Binary":          encoding.Binary,

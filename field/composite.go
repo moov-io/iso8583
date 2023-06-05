@@ -567,13 +567,13 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 					err         error
 				)
 				switch f.spec.Tag.Enc {
-				case encoding.AsciiTLVTagL:
+				case encoding.ASCIITLVTagL:
 					fieldLength, readed, err = prefix.ASCII.L.DecodeLength(ignoredMaxLen, data[offset:])
-				case encoding.AsciiTLVTagLL:
+				case encoding.ASCIITLVTagLL:
 					fieldLength, readed, err = prefix.ASCII.LL.DecodeLength(ignoredMaxLen, data[offset:])
-				case encoding.AsciiTLVTagLLL:
+				case encoding.ASCIITLVTagLLL:
 					fieldLength, readed, err = prefix.ASCII.LLL.DecodeLength(ignoredMaxLen, data[offset:])
-				case encoding.AsciiTLVTagLLLL:
+				case encoding.ASCIITLVTagLLLL:
 					fieldLength, readed, err = prefix.ASCII.LLLL.DecodeLength(ignoredMaxLen, data[offset:])
 				default:
 					fieldLength, readed, err = prefix.BerTLV.DecodeLength(ignoredMaxLen, data[offset:])
@@ -608,10 +608,10 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 
 func (f *Composite) skipUnknownTLVTags() bool {
 	return f.spec.Tag != nil && f.spec.Tag.SkipUnknownTLVTags && (f.spec.Tag.Enc == encoding.BerTLVTag ||
-		f.spec.Tag.Enc == encoding.AsciiTLVTagL ||
-		f.spec.Tag.Enc == encoding.AsciiTLVTagLL ||
-		f.spec.Tag.Enc == encoding.AsciiTLVTagLLL ||
-		f.spec.Tag.Enc == encoding.AsciiTLVTagLLLL)
+		f.spec.Tag.Enc == encoding.ASCIITLVTagL ||
+		f.spec.Tag.Enc == encoding.ASCIITLVTagLL ||
+		f.spec.Tag.Enc == encoding.ASCIITLVTagLLL ||
+		f.spec.Tag.Enc == encoding.ASCIITLVTagLLLL)
 }
 
 func validateCompositeSpec(spec *Spec) error {

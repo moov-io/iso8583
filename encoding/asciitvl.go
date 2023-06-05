@@ -1,10 +1,10 @@
 package encoding
 
 var (
-	AsciiTLVTagL    = &asciiTLVTagL{}
-	AsciiTLVTagLL   = &asciiTLVTagLL{}
-	AsciiTLVTagLLL  = &asciiTLVTagLLL{}
-	AsciiTLVTagLLLL = &asciiTLVTagLLLL{}
+	ASCIITLVTagL    = &asciiTLVTagL{}
+	ASCIITLVTagLL   = &asciiTLVTagLL{}
+	ASCIITLVTagLLL  = &asciiTLVTagLLL{}
+	ASCIITLVTagLLLL = &asciiTLVTagLLLL{}
 )
 
 type (
