@@ -10,7 +10,6 @@ import (
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -654,11 +653,11 @@ func TestTLVPacking(t *testing.T) {
 
 		v, err := composite.subfields["01"].String()
 		require.NoError(t, err)
-		assert.Equal(t, "34", v)
+		require.Equal(t, "34", v)
 
 		v, err = composite.subfields["02"].String()
 		require.NoError(t, err)
-		assert.Equal(t, "456", v)
+		require.Equal(t, "456", v)
 	})
 
 	t.Run("ASCII TLV LL:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
@@ -672,11 +671,11 @@ func TestTLVPacking(t *testing.T) {
 
 		v, err := composite.subfields["01"].String()
 		require.NoError(t, err)
-		assert.Equal(t, "34", v)
+		require.Equal(t, "34", v)
 
 		v, err = composite.subfields["02"].String()
 		require.NoError(t, err)
-		assert.Equal(t, "456", v)
+		require.Equal(t, "456", v)
 	})
 
 	t.Run("ASCII TLV LLL:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
@@ -690,11 +689,11 @@ func TestTLVPacking(t *testing.T) {
 
 		v, err := composite.subfields["01"].String()
 		require.NoError(t, err)
-		assert.Equal(t, "34", v)
+		require.Equal(t, "34", v)
 
 		v, err = composite.subfields["02"].String()
 		require.NoError(t, err)
-		assert.Equal(t, "456", v)
+		require.Equal(t, "456", v)
 	})
 
 	t.Run("ASCII TLV LLLL:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
@@ -708,11 +707,11 @@ func TestTLVPacking(t *testing.T) {
 
 		v, err := composite.subfields["01"].String()
 		require.NoError(t, err)
-		assert.Equal(t, "34", v)
+		require.Equal(t, "34", v)
 
 		v, err = composite.subfields["02"].String()
 		require.NoError(t, err)
-		assert.Equal(t, "456", v)
+		require.Equal(t, "456", v)
 	})
 }
 
