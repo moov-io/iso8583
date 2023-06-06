@@ -14,7 +14,7 @@ import (
 
 var defaultSpecName = "ISO 8583"
 
-// FieldContainer should be implemented by by the type to be described
+// FieldContainer should be implemented by the type to be described
 // we use GetSubfields() as a common method to get subfields
 // while Message doesn't implement FieldContainer interface directly
 // we use MessageWrapper to wrap Message and implement FieldContainer
@@ -72,6 +72,7 @@ func Describe(message *Message, w io.Writer, filters ...FieldFilter) error {
 	return nil
 }
 
+// DescribeFieldContainer describes the FieldContainer (e.g. Wrapped Message or CompositeField)
 func DescribeFieldContainer(container FieldContainer, w io.Writer, filters ...FieldFilter) error {
 	// making filter map
 	filterMap := make(map[string]FilterFunc)
