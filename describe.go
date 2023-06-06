@@ -51,12 +51,18 @@ func Describe(message *Message, w io.Writer, filters ...FieldFilter) error {
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, '.', 0)
 
+	mti, err := message.GetMTI()
+	if err != nil {
+		return fmt.Errorf("getting MTI: %w", err)
+	}
+	fmt.Fprintf(tw, "MTI\t: %s\n", mti)
+
 	// use default filter
 	if len(filters) == 0 {
 		filters = DefaultFilters()
 	}
 
-	err := DescribeFieldContainer(&MessageWrapper{message}, tw, filters...)
+	err = DescribeFieldContainer(&MessageWrapper{message}, tw, filters...)
 	if err != nil {
 		return fmt.Errorf("describing message: %w", err)
 	}
@@ -93,7 +99,7 @@ func DescribeFieldContainer(container FieldContainer, w io.Writer, filters ...Fi
 		if err != nil {
 			return fmt.Errorf("getting bitmap: %w", err)
 		}
-		fmt.Fprintf(w, "Bitmap bits\t: \n%s\n", splitAndAnnotate(bits))
+		fmt.Fprintf(w, "Bitmap bits\t:\n%s\n", splitAndAnnotate(bits))
 	}
 
 	fields := container.GetSubfields()
@@ -189,9 +195,14 @@ func splitAndAnnotate(bits string) string {
 		startBit := i*bitsCount + 1
 		endBit := (i + 1) * bitsCount
 		annotatedBits[i] = fmt.Sprintf("[%d-%d]%s", startBit, endBit, block)
-		if endBit%32 == 0 && i != len(bitBlocks)-1 {
+
+		// split by 32 bits and check if it's not the last block
+		isLastBlock := i == len(bitBlocks)-1
+		isEndOf32Bits := endBit%32 == 0
+
+		if isEndOf32Bits && !isLastBlock {
 			annotatedBits[i] += "\n"
-		} else {
+		} else if !isLastBlock {
 			annotatedBits[i] += " "
 		}
 	}

@@ -44,11 +44,13 @@ func TestDescribe(t *testing.T) {
 	})
 
 	expectedOutput := `ISO 8583 Message:
-MTI...........................: 0100
-Bitmap........................: 4000000000000000
-Bitmap bits...................: 01000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-F000 Message Type Indicator...: 0100
-F002 Primary Account Number...: 4242424242424242
+MTI..........: 0100
+Bitmap HEX...: 4000000000000000
+Bitmap bits..:
+[1-8]01000000 [9-16]00000000 [17-24]00000000 [25-32]00000000
+[33-40]00000000 [41-48]00000000 [49-56]00000000 [57-64]00000000
+F0   Message Type Indicator..: 0100
+F2   Primary Account Number..: 4242424242424242
 `
 	require.Equal(t, expectedOutput, out.String())
 }
