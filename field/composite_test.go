@@ -289,9 +289,10 @@ var (
 		Pref:        prefix.ASCII.LLL,
 		Tag: &TagSpec{
 			Length:             2,
-			Enc:                encoding.ASCIITLVTagL,
+			Enc:                encoding.ASCII,
 			Sort:               sort.Strings,
 			SkipUnknownTLVTags: true,
+			PrefUnknownTLV:     prefix.ASCII.L,
 		},
 		Subfields: map[string]Field{
 			"01": NewString(&Spec{
@@ -315,9 +316,10 @@ var (
 		Pref:        prefix.ASCII.LLL,
 		Tag: &TagSpec{
 			Length:             2,
-			Enc:                encoding.ASCIITLVTagLL,
+			Enc:                encoding.ASCII,
 			Sort:               sort.Strings,
 			SkipUnknownTLVTags: true,
+			PrefUnknownTLV:     prefix.ASCII.LL,
 		},
 		Subfields: map[string]Field{
 			"01": NewString(&Spec{
@@ -341,9 +343,10 @@ var (
 		Pref:        prefix.ASCII.LLL,
 		Tag: &TagSpec{
 			Length:             2,
-			Enc:                encoding.ASCIITLVTagLLL,
+			Enc:                encoding.ASCII,
 			Sort:               sort.Strings,
 			SkipUnknownTLVTags: true,
+			PrefUnknownTLV:     prefix.ASCII.LLL,
 		},
 		Subfields: map[string]Field{
 			"01": NewString(&Spec{
@@ -367,9 +370,10 @@ var (
 		Pref:        prefix.ASCII.LLLL,
 		Tag: &TagSpec{
 			Length:             2,
-			Enc:                encoding.ASCIITLVTagLLLL,
+			Enc:                encoding.ASCII,
 			Sort:               sort.Strings,
 			SkipUnknownTLVTags: true,
+			PrefUnknownTLV:     prefix.ASCII.LLLL,
 		},
 		Subfields: map[string]Field{
 			"01": NewString(&Spec{
