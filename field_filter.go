@@ -21,30 +21,30 @@ const (
 
 type FilterFunc func(in string, data field.Field) string
 
-type FieldFilter func(fieldFilters map[int]FilterFunc)
+type FieldFilter func(fieldFilters map[string]FilterFunc)
 
-func FilterField(id int, filterFn FilterFunc) FieldFilter {
-	return func(fieldFilters map[int]FilterFunc) {
+func FilterField(id string, filterFn FilterFunc) FieldFilter {
+	return func(fieldFilters map[string]FilterFunc) {
 		fieldFilters[id] = filterFn
 	}
 }
 
 var DefaultFilters = func() []FieldFilter {
 	filters := []FieldFilter{
-		FilterField(2, PANFilter),
-		FilterField(20, PANFilter),
-		FilterField(35, Track2Filter),
-		FilterField(36, Track3Filter),
-		FilterField(45, Track1Filter),
-		FilterField(52, PINFilter),
-		FilterField(55, EMVFilter),
+		FilterField("2", PANFilter),
+		FilterField("20", PANFilter),
+		FilterField("35", Track2Filter),
+		FilterField("36", Track3Filter),
+		FilterField("45", Track1Filter),
+		FilterField("52", PINFilter),
+		FilterField("55", EMVFilter),
 	}
 	return filters
 }
 
 var DoNotFilterFields = func() []FieldFilter {
 	filters := []FieldFilter{
-		FilterField(-1, NoOpFilter),
+		FilterField("-1", NoOpFilter),
 	}
 	return filters
 }
