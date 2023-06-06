@@ -184,10 +184,11 @@ func sortFieldIDs(fields map[string]field.Field) []string {
 // splitAndAnnotate splits bits blocks and annotates them with bit numbers
 // and splits them by 32 bits if needed
 func splitAndAnnotate(bits string) string {
-	bitBlocks := strings.Split(bits, " ")
-	if len(bitBlocks) == 0 {
+	if bits == "" {
 		return ""
 	}
+
+	bitBlocks := strings.Split(bits, " ")
 
 	annotatedBits := make([]string, len(bitBlocks))
 	bitsCount := len(bitBlocks[0])
