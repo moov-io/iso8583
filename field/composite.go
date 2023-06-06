@@ -565,7 +565,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 			if f.skipUnknownTLVTags() {
 				var (
 					pref   prefix.Prefixer
-					maxLen = 0
+					maxLen int
 				)
 				// to obtain the length of the unknown tag and add it to the offset we need to decode its length
 				if f.spec.Tag.Enc != encoding.BerTLVTag {
