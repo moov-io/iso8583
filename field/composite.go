@@ -563,19 +563,16 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		tag := string(tagBytes)
 		if _, ok := f.spec.Subfields[tag]; !ok {
 			if f.skipUnknownTLVTags() {
-				var (
-					pref   prefix.Prefixer
-					maxLen int
-				)
 				// to obtain the length of the unknown tag and add it to the offset we need to decode its length
-				if f.spec.Tag.Enc != encoding.BerTLVTag {
-					// if PrefUnknownTLV prefix is set, use it and hope that length of all unknown tags is encoded using this prefixer
+				// by default, we use BER-TVL prefix because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
+				var (
+					pref   prefix.Prefixer = prefix.BerTLV
+					maxLen                 = ignoredMaxLen
+				)
+				// but if PrefUnknownTLV prefix is set, use it and hope that length of all unknown tags is encoded using this prefixer
+				if f.spec.Tag.PrefUnknownTLV != nil {
 					pref = f.spec.Tag.PrefUnknownTLV
 					maxLen = maxLenOfUnknownTag
-				} else {
-					// or use BER-TVL prefix because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
-					pref = prefix.BerTLV
-					maxLen = ignoredMaxLen
 				}
 
 				fieldLength, readed, err := pref.DecodeLength(maxLen, data[offset:])
