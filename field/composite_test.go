@@ -285,7 +285,7 @@ var (
 
 	tlvASCIILSpec = &Spec{
 		Length:      999,
-		Description: "ASCII TLV L",
+		Description: "ASCII Unknown TLV with PrefUnknownTLV: prefix.ASCII.L",
 		Pref:        prefix.ASCII.LLL,
 		Tag: &TagSpec{
 			Length:             2,
@@ -306,87 +306,6 @@ var (
 				Description: "String Field",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.L,
-			}),
-		},
-	}
-
-	tlvASCIILLSpec = &Spec{
-		Length:      999,
-		Description: "ASCII TLV LL",
-		Pref:        prefix.ASCII.LLL,
-		Tag: &TagSpec{
-			Length:             2,
-			Enc:                encoding.ASCII,
-			Sort:               sort.Strings,
-			SkipUnknownTLVTags: true,
-			PrefUnknownTLV:     prefix.ASCII.LL,
-		},
-		Subfields: map[string]Field{
-			"01": NewString(&Spec{
-				Length:      99,
-				Description: "String Field",
-				Enc:         encoding.ASCII,
-				Pref:        prefix.ASCII.LL,
-			}),
-			"02": NewString(&Spec{
-				Length:      99,
-				Description: "String Field",
-				Enc:         encoding.ASCII,
-				Pref:        prefix.ASCII.LL,
-			}),
-		},
-	}
-
-	tlvASCIILLLSpec = &Spec{
-		Length:      999,
-		Description: "ASCII TLV LLL",
-		Pref:        prefix.ASCII.LLL,
-		Tag: &TagSpec{
-			Length:             2,
-			Enc:                encoding.ASCII,
-			Sort:               sort.Strings,
-			SkipUnknownTLVTags: true,
-			PrefUnknownTLV:     prefix.ASCII.LLL,
-		},
-		Subfields: map[string]Field{
-			"01": NewString(&Spec{
-				Length:      999,
-				Description: "String Field",
-				Enc:         encoding.ASCII,
-				Pref:        prefix.ASCII.LLL,
-			}),
-			"02": NewString(&Spec{
-				Length:      999,
-				Description: "String Field",
-				Enc:         encoding.ASCII,
-				Pref:        prefix.ASCII.LLL,
-			}),
-		},
-	}
-
-	tlvASCIILLLLSpec = &Spec{
-		Length:      9999,
-		Description: "ASCII TLV LLLL",
-		Pref:        prefix.ASCII.LLLL,
-		Tag: &TagSpec{
-			Length:             2,
-			Enc:                encoding.ASCII,
-			Sort:               sort.Strings,
-			SkipUnknownTLVTags: true,
-			PrefUnknownTLV:     prefix.ASCII.LLLL,
-		},
-		Subfields: map[string]Field{
-			"01": NewString(&Spec{
-				Length:      9999,
-				Description: "String Field",
-				Enc:         encoding.ASCII,
-				Pref:        prefix.ASCII.LLLL,
-			}),
-			"02": NewString(&Spec{
-				Length:      9999,
-				Description: "String Field",
-				Enc:         encoding.ASCII,
-				Pref:        prefix.ASCII.LLLL,
 			}),
 		},
 	}
@@ -646,65 +565,11 @@ func TestTLVPacking(t *testing.T) {
 		require.EqualError(t, err, "failed to unpack subfield 9F36: field not defined in Spec")
 	})
 
-	t.Run("ASCII TLV L:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
+	t.Run("ASCII Unknown TLV with PrefUnknownTLV: prefix.ASCII.L:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
 		// The field's specification contains the tags 9A and 9F02
 		composite := NewComposite(tlvASCIILSpec)
 
 		_, err := composite.Unpack([]byte{0x30, 0x31, 0x35, 0x30, 0x31, 0x32, 0x33, 0x34, 0x39, 0x39, 0x31, 0x30, 0x30, 0x32, 0x33, 0x34, 0x35, 0x36})
-		require.NoError(t, err)
-
-		require.Len(t, composite.subfields, 2)
-
-		v, err := composite.subfields["01"].String()
-		require.NoError(t, err)
-		require.Equal(t, "34", v)
-
-		v, err = composite.subfields["02"].String()
-		require.NoError(t, err)
-		require.Equal(t, "456", v)
-	})
-
-	t.Run("ASCII TLV LL:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
-		// The field's specification contains the tags 9A and 9F02
-		composite := NewComposite(tlvASCIILLSpec)
-
-		_, err := composite.Unpack([]byte{0x30, 0x31, 0x38, 0x30, 0x31, 0x30, 0x32, 0x33, 0x34, 0x39, 0x39, 0x30, 0x31, 0x30, 0x30, 0x32, 0x30, 0x33, 0x34, 0x35, 0x36})
-		require.NoError(t, err)
-
-		require.Len(t, composite.subfields, 2)
-
-		v, err := composite.subfields["01"].String()
-		require.NoError(t, err)
-		require.Equal(t, "34", v)
-
-		v, err = composite.subfields["02"].String()
-		require.NoError(t, err)
-		require.Equal(t, "456", v)
-	})
-
-	t.Run("ASCII TLV LLL:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
-		// The field's specification contains the tags 9A and 9F02
-		composite := NewComposite(tlvASCIILLLSpec)
-
-		_, err := composite.Unpack([]byte{0x30, 0x32, 0x31, 0x30, 0x31, 0x30, 0x30, 0x32, 0x33, 0x34, 0x39, 0x39, 0x30, 0x30, 0x31, 0x30, 0x30, 0x32, 0x30, 0x30, 0x33, 0x34, 0x35, 0x36})
-		require.NoError(t, err)
-
-		require.Len(t, composite.subfields, 2)
-
-		v, err := composite.subfields["01"].String()
-		require.NoError(t, err)
-		require.Equal(t, "34", v)
-
-		v, err = composite.subfields["02"].String()
-		require.NoError(t, err)
-		require.Equal(t, "456", v)
-	})
-
-	t.Run("ASCII TLV LLLL:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
-		// The field's specification contains the tags 9A and 9F02
-		composite := NewComposite(tlvASCIILLLLSpec)
-
-		_, err := composite.Unpack([]byte{0x30, 0x30, 0x32, 0x34, 0x30, 0x31, 0x30, 0x30, 0x30, 0x32, 0x33, 0x34, 0x39, 0x39, 0x30, 0x30, 0x30, 0x31, 0x30, 0x30, 0x32, 0x30, 0x30, 0x30, 0x33, 0x34, 0x35, 0x36})
 		require.NoError(t, err)
 
 		require.Len(t, composite.subfields, 2)
