@@ -44,11 +44,56 @@ func TestDescribe(t *testing.T) {
 	})
 
 	expectedOutput := `ISO 8583 Message:
-MTI...........................: 0100
-Bitmap........................: 4000000000000000
-Bitmap bits...................: 01000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-F000 Message Type Indicator...: 0100
-F002 Primary Account Number...: 4242424242424242
+MTI..........: 0100
+Bitmap HEX...: 4000000000000000
+Bitmap bits..:
+[1-8]01000000 [9-16]00000000 [17-24]00000000 [25-32]00000000
+[33-40]00000000 [41-48]00000000 [49-56]00000000 [57-64]00000000
+F0   Message Type Indicator..: 0100
+F2   Primary Account Number..: 4242424242424242
 `
 	require.Equal(t, expectedOutput, out.String())
+}
+
+func Test_splitAndAnnotate(t *testing.T) {
+	// test that splitAndAnnotate splits sequences of bits (0, 1) by spaces
+	// then annotates each bit with its position in the bitmap
+	// and adds a space or newline after every N bits (length of the sequence)
+	tt := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "empty",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "1 bit",
+			input:    "1",
+			expected: "[1-1]1",
+		},
+		{
+			name:     "8 bits",
+			input:    "11111111",
+			expected: "[1-8]11111111",
+		},
+		{
+			name:     "32 bits",
+			input:    "11111111 11111111 11111111 11111111",
+			expected: "[1-8]11111111 [9-16]11111111 [17-24]11111111 [25-32]11111111",
+		},
+		{
+			name:     "64 bits",
+			input:    "11111111 11111111 11111111 11111111 11111111 11111111 11111111 11111111",
+			expected: "[1-8]11111111 [9-16]11111111 [17-24]11111111 [25-32]11111111\n[33-40]11111111 [41-48]11111111 [49-56]11111111 [57-64]11111111",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expected, splitAndAnnotate(tc.input))
+		})
+	}
 }

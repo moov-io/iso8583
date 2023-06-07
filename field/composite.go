@@ -105,8 +105,8 @@ func (f *Composite) Spec() *Spec {
 	return f.spec
 }
 
-// getSubfields returns the map of set sub fields
-func (f *Composite) getSubfields() map[string]Field {
+// GetSubfields returns the map of set sub fields
+func (f *Composite) GetSubfields() map[string]Field {
 	fields := map[string]Field{}
 	for i := range f.setSubfields {
 		fields[i] = f.subfields[i]
@@ -346,7 +346,7 @@ func (f *Composite) String() (string, error) {
 
 // MarshalJSON implements the encoding/json.Marshaler interface.
 func (f *Composite) MarshalJSON() ([]byte, error) {
-	jsonData := OrderedMap(f.getSubfields())
+	jsonData := OrderedMap(f.GetSubfields())
 	bytes, err := json.Marshal(jsonData)
 	if err != nil {
 		return nil, utils.NewSafeError(err, "failed to JSON marshal map to bytes")
