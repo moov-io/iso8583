@@ -36,7 +36,7 @@ type TagSpec struct {
 	// By default, this flag is disabled and unexpected TLV tags will throw an error.
 	// This flag is only meant to be used in Composite fields with TLV encoding.
 	SkipUnknownTLVTags bool
-	// PrefUnknownTLV is used for skipping unknown TLV if Enc is not BerTLV
+	// PrefUnknownTLV is used for skipping unknown TLV if it is not nil
 	PrefUnknownTLV prefix.Prefixer
 }
 
