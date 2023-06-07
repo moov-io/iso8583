@@ -282,6 +282,33 @@ var (
 			}),
 		},
 	}
+
+	tlvASCIILSpec = &Spec{
+		Length:      999,
+		Description: "ASCII Unknown TLV with PrefUnknownTLV: prefix.ASCII.L",
+		Pref:        prefix.ASCII.LLL,
+		Tag: &TagSpec{
+			Length:             2,
+			Enc:                encoding.ASCII,
+			Sort:               sort.Strings,
+			SkipUnknownTLVTags: true,
+			PrefUnknownTLV:     prefix.ASCII.L,
+		},
+		Subfields: map[string]Field{
+			"01": NewString(&Spec{
+				Length:      9,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.L,
+			}),
+			"02": NewString(&Spec{
+				Length:      9,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.L,
+			}),
+		},
+	}
 )
 
 type CompositeTestData struct {
@@ -536,6 +563,24 @@ func TestTLVPacking(t *testing.T) {
 		_, err := composite.Unpack([]byte{0x30, 0x32, 0x36, 0x9f, 0x36, 0x2, 0x1, 0x57, 0x9a, 0x3, 0x21, 0x7, 0x20,
 			0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1, 0x9f, 0x37, 0x4, 0x9b, 0xad, 0xbc, 0xab})
 		require.EqualError(t, err, "failed to unpack subfield 9F36: field not defined in Spec")
+	})
+
+	t.Run("ASCII Unknown TLV with PrefUnknownTLV: prefix.ASCII.L:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
+		// The field's specification contains the tags 9A and 9F02
+		composite := NewComposite(tlvASCIILSpec)
+
+		_, err := composite.Unpack([]byte{0x30, 0x31, 0x35, 0x30, 0x31, 0x32, 0x33, 0x34, 0x39, 0x39, 0x31, 0x30, 0x30, 0x32, 0x33, 0x34, 0x35, 0x36})
+		require.NoError(t, err)
+
+		require.Len(t, composite.subfields, 2)
+
+		v, err := composite.subfields["01"].String()
+		require.NoError(t, err)
+		require.Equal(t, "34", v)
+
+		v, err = composite.subfields["02"].String()
+		require.NoError(t, err)
+		require.Equal(t, "456", v)
 	})
 }
 

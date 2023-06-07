@@ -17,7 +17,7 @@ import (
 type TagSpec struct {
 	// Length is defined for subfields and subelements whose tag
 	// lengths are fixed and can be defined statically.
-	// This field should not be populated in conjunction with the TLV Tag
+	// This field should not be populated in conjunction with the BerTLV Tag
 	// encoder as their lengths are determined dynamically.
 	Length int
 	// Enc defines the encoder used to marshal and unmarshal
@@ -36,6 +36,8 @@ type TagSpec struct {
 	// By default, this flag is disabled and unexpected TLV tags will throw an error.
 	// This flag is only meant to be used in Composite fields with TLV encoding.
 	SkipUnknownTLVTags bool
+	// PrefUnknownTLV is used for skipping unknown TLV if it is not nil
+	PrefUnknownTLV prefix.Prefixer
 }
 
 // Spec defines the structure of a field.

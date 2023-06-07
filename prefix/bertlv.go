@@ -32,7 +32,7 @@ type berTLVPrefixer struct{}
 // according to the rules defined above.
 // NOTE: Because BER-TLV lengths are encoded dynamically, the maxLen method
 // argument is ignored.
-func (p *berTLVPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
+func (p *berTLVPrefixer) EncodeLength(_, dataLen int) ([]byte, error) {
 	buf := big.NewInt(int64(dataLen)).Bytes()
 	if dataLen <= 127 {
 		return buf, nil
@@ -45,7 +45,7 @@ func (p *berTLVPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 // as well as the number bytes read to decode the length are returned.
 // NOTE: Because BER-TLV lengths are decoded dynamically, the maxLen method
 // argument is ignored.
-func (p *berTLVPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
+func (p *berTLVPrefixer) DecodeLength(_ int, data []byte) (int, int, error) {
 	r := bytes.NewReader(data)
 
 	firstByte, err := r.ReadByte()

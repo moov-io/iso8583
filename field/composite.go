@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -539,9 +540,13 @@ func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, error) {
 	return off, nil
 }
 
-// ignoredMaxLen is a constant meant to be used in encoders that don't use the maxLength argument during
-// length decoding.
-const ignoredMaxLen int = 0
+const (
+	// ignoredMaxLen is a constant meant to be used in encoders that don't use the maxLength argument during
+	// length decoding.
+	ignoredMaxLen int = 0
+	// maxLenOfUnknownTag is max int in order to never hit this limit.
+	maxLenOfUnknownTag = math.MaxInt
+)
 
 func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 	offset := 0
@@ -558,9 +563,19 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 		tag := string(tagBytes)
 		if _, ok := f.spec.Subfields[tag]; !ok {
 			if f.skipUnknownTLVTags() {
-				// Obtain the length of the unknown tag and add it to the offset.
-				// Because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
-				fieldLength, readed, err := prefix.BerTLV.DecodeLength(ignoredMaxLen, data[offset:])
+				// to obtain the length of the unknown tag and add it to the offset we need to decode its length
+				// by default, we use BER-TVL prefix because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
+				var (
+					pref   prefix.Prefixer = prefix.BerTLV
+					maxLen                 = ignoredMaxLen
+				)
+				// but if PrefUnknownTLV prefix is set, use it and hope that length of all unknown tags is encoded using this prefixer
+				if f.spec.Tag.PrefUnknownTLV != nil {
+					pref = f.spec.Tag.PrefUnknownTLV
+					maxLen = maxLenOfUnknownTag
+				}
+
+				fieldLength, readed, err := pref.DecodeLength(maxLen, data[offset:])
 				if err != nil {
 					return 0, err
 				}
@@ -589,7 +604,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 }
 
 func (f *Composite) skipUnknownTLVTags() bool {
-	return f.spec.Tag != nil && f.spec.Tag.SkipUnknownTLVTags && f.spec.Tag.Enc == encoding.BerTLVTag
+	return f.spec.Tag != nil && f.spec.Tag.SkipUnknownTLVTags && (f.spec.Tag.Enc == encoding.BerTLVTag || f.spec.Tag.PrefUnknownTLV != nil)
 }
 
 func validateCompositeSpec(spec *Spec) error {
