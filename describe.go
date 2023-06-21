@@ -193,11 +193,16 @@ func splitAndAnnotate(bits string) string {
 	annotatedBits := make([]string, len(bitBlocks))
 	bitsCount := len(bitBlocks[0])
 
+	pad := 0
+	if len(bitBlocks) > 4 { // if multiple rows
+		pad = 9 // pad to vertical align byte blocks
+	}
+
 	for i, block := range bitBlocks {
 		startBit := i*bitsCount + 1
 		endBit := (i + 1) * bitsCount
-		annotatedBits[i] = fmt.Sprintf("[%d-%d]%s", startBit, endBit, block)
-
+		pos := fmt.Sprintf("[%d-%d]", startBit, endBit)
+		annotatedBits[i] = fmt.Sprintf("%*s%s", pad, pos, block)
 		// split by 32 bits and check if it's not the last block
 		isLastBlock := i == len(bitBlocks)-1
 		isEndOf32Bits := endBit%32 == 0
