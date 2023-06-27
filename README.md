@@ -320,12 +320,11 @@ message.Field(4, "100")
 jsonMessage, err := json.Marshal(message)
 ```
 
-it will produce following JSON:
+it will produce the following JSON (bitmap is not included, as it's only used to unpack message from the binary representation):
 
 ```json
 {
    "0":"0100",
-   "1":"700000000000000000000000000000000000000000000000",
    "2":"4242424242424242",
    "3":123456,
    "4":"100"
@@ -335,7 +334,7 @@ it will produce following JSON:
 Also, you can unmarshal JSON into `iso8583.Message`:
 
 ```go
-input := `{"0":"0100","1":"500000000000000000000000000000000000000000000000","2":"4242424242424242","4":"100"}`
+input := `{"0":"0100","2":"4242424242424242","4":"100"}`
 
 message := NewMessage(spec)
 if err := json.Unmarshal([]byte(input), message); err != nil {
