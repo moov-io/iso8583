@@ -11,7 +11,7 @@ var _ Field = (*Bitmap)(nil)
 type Bitmap struct {
 	spec         *Spec
 	data         []byte
-	bitmapLenght int
+	bitmapLength int
 }
 
 const defaultBitmapLength = 8
@@ -27,7 +27,7 @@ func NewBitmap(spec *Spec) *Bitmap {
 	return &Bitmap{
 		spec:         spec,
 		data:         make([]byte, length),
-		bitmapLenght: length,
+		bitmapLength: length,
 	}
 }
 
@@ -81,7 +81,7 @@ func (f *Bitmap) Pack() ([]byte, error) {
 // If DisableAutoExpand is set, it will only read the first bitmap regardless
 // of the first bit being set.
 func (f *Bitmap) Unpack(data []byte) (int, error) {
-	minLen, _, err := f.spec.Pref.DecodeLength(f.bitmapLenght, data)
+	minLen, _, err := f.spec.Pref.DecodeLength(f.bitmapLength, data)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
@@ -153,9 +153,9 @@ func (f *Bitmap) Reset() {
 		length = defaultBitmapLength
 	}
 
-	f.bitmapLenght = length
+	f.bitmapLength = length
 	// this actually resets the bitmap
-	f.data = make([]byte, f.bitmapLenght)
+	f.data = make([]byte, f.bitmapLength)
 }
 
 // For auto expand mode if we expand bitmap we should set bit that shows the presence of the next bitmap
@@ -171,17 +171,17 @@ func (f *Bitmap) Set(n int) {
 		}
 
 		// calculate how many bitmaps we need to store n-th bit
-		bitmapIndex := (n - 1) / (f.bitmapLenght * 8)
+		bitmapIndex := (n - 1) / (f.bitmapLength * 8)
 		newBitmapsCount := (bitmapIndex + 1)
 
 		// set first bit of the first byte of the last bitmap in
 		// current data to 1 to show the presence of the next bitmap
-		f.data[len(f.data)-f.bitmapLenght] |= firstBitOn
+		f.data[len(f.data)-f.bitmapLength] |= firstBitOn
 
 		// add new empty bitmaps and for every new bitmap except the
 		// last one, set bit that shows the presence of the next bitmap
-		for i := newBitmapsCount - len(f.data)/f.bitmapLenght; i > 0; i-- {
-			newBitmap := make([]byte, f.bitmapLenght)
+		for i := newBitmapsCount - len(f.data)/f.bitmapLength; i > 0; i-- {
+			newBitmap := make([]byte, f.bitmapLength)
 			// set first bit of the first byte of the new bitmap to 1
 			// but only if it is not the last bitmap
 			if i > 1 {
