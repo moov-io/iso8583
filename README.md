@@ -58,7 +58,7 @@ go get github.com/moov-io/iso8583
 
 ### Define your specification
 
-Currently, we support following ISO 8583 specifications:
+Currently, we have defined the following ISO 8583 specifications:
 
 * [Spec87ASCII](./specs/spec87ascii.go) - 1987 version of the spec with ASCII encoding
 * [Spec87Hex](./specs/spec87hex.go) - 1987 version of the spec with Hex encoding
@@ -120,6 +120,56 @@ spec := &iso8583.MessageSpec{
 			Pref:        prefix.ASCII.Fixed,
 			Pad:         padding.Left('0'),
 		}),
+	},
+}
+```
+
+The following example creates a full specification with three individual fields (excluding MTI and Bitmap). It differs from the example above, by [showing the expandability of the bitmap field](https://github.com/moov-io/iso8583/blob/5b24f23a5a02206d59baa033ed040f79478b6ecb/field/bitmap.go#L94-L109). This is useful for specs that define both a primary and secondary bitmap.
+
+```go
+spec := &iso8583.MessageSpec{
+	Fields: map[int]field.Field{
+		0: field.NewString(&field.Spec{
+			Length:      4,
+			Description: "Message Type Indicator",
+			Enc:         encoding.ASCII,
+			Pref:        prefix.ASCII.Fixed,
+		}),
+		1: field.NewBitmap(&field.Spec{
+			Description: "Bitmap",
+			Enc:         encoding.Hex,
+			Pref:        prefix.Hex.Fixed,
+		}),
+
+		// Message fields:
+		2: field.NewString(&field.Spec{
+			Length:      19,
+			Description: "Primary Account Number",
+			Enc:         encoding.ASCII,
+			Pref:        prefix.ASCII.LL,
+		}),
+		3: field.NewNumeric(&field.Spec{
+			Length:      6,
+			Description: "Processing Code",
+			Enc:         encoding.ASCII,
+			Pref:        prefix.ASCII.Fixed,
+			Pad:         padding.Left('0'),
+		}),
+		4: field.NewString(&field.Spec{
+			Length:      12,
+			Description: "Transaction Amount",
+			Enc:         encoding.ASCII,
+			Pref:        prefix.ASCII.Fixed,
+			Pad:         padding.Left('0'),
+		}),
+        // Pulled from the 1993 spec
+        67: field.NewNumeric(&field.Spec{
+            Length: 2,
+            Description: "Extended Payment Data",
+            Enc: encoding.ASCII,
+            Pref: prefix.ASCII.Fixed,
+            Pad: padding.Left('0'),
+        }),
 	},
 }
 ```
