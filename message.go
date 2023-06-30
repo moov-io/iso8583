@@ -218,12 +218,6 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 	fieldMap := m.GetFields()
 	strFieldMap := map[string]field.Field{}
 	for id, field := range fieldMap {
-		// we don't wish to populate the bitmap in the final
-		// JSON since it is dynamically generated when packing
-		// and unpacking anyways.
-		if id == bitmapIdx {
-			continue
-		}
 		strFieldMap[fmt.Sprint(id)] = field
 	}
 

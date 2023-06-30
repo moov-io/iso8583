@@ -1,7 +1,10 @@
 package field
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -205,4 +208,27 @@ func (f *Bitmap) IsSet(n int) bool {
 
 func (f *Bitmap) Len() int {
 	return len(f.data) * 8
+}
+
+func (f *Bitmap) MarshalJSON() ([]byte, error) {
+	data, err := f.Bytes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve bytes: %v", err)
+	}
+	return json.Marshal(strings.ToUpper(hex.EncodeToString(data)))
+}
+
+// Takes in a HEX based string
+func (f *Bitmap) UnmarshalJSON(b []byte) error {
+	unqouted, err := strconv.Unquote(string(b))
+	if err != nil {
+		return fmt.Errorf("failed to unquote input: %w", err)
+	}
+
+	bs, err := hex.DecodeString(unqouted)
+	if err != nil {
+		return fmt.Errorf("failed to decode hex string: %w", err)
+	}
+
+	return f.SetBytes(bs)
 }
