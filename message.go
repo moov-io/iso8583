@@ -126,7 +126,18 @@ func (m *Message) GetFields() map[int]field.Field {
 	return fields
 }
 
+// Pack returns the packed message or an error if the message is invalid
+// error is of type *PackError
 func (m *Message) Pack() ([]byte, error) {
+	data, err := m.pack()
+	if err != nil {
+		return nil, &PackError{Err: err}
+	}
+
+	return data, nil
+}
+
+func (m *Message) pack() ([]byte, error) {
 	packed := []byte{}
 	m.Bitmap().Reset()
 
@@ -160,7 +171,19 @@ func (m *Message) Pack() ([]byte, error) {
 	return packed, nil
 }
 
+// Unpack unpacks the message from the given byte slice or returns an error
+// which is of type *UnpackError and contains the raw message
 func (m *Message) Unpack(src []byte) error {
+	if err := m.unpack(src); err != nil {
+		return &UnpackError{
+			Err:        err,
+			RawMessage: src,
+		}
+	}
+	return nil
+}
+
+func (m *Message) unpack(src []byte) error {
 	var off int
 
 	// reset fields that were set
