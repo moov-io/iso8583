@@ -535,12 +535,26 @@ func TestPackUnpack(t *testing.T) {
 		assert.Equal(t, "Another test text", data.F120.Value())
 	})
 
+	t.Run("Pack invalid message returns error of *PackError type", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.MTI("1")
+
+		_, err := message.Pack()
+		require.Error(t, err)
+
+		var packErr *PackError
+		require.ErrorAs(t, err, &packErr)
+	})
+
 	t.Run("Unpack nil", func(t *testing.T) {
 		message := NewMessage(spec)
 
 		err := message.Unpack(nil)
 
 		require.Error(t, err)
+
+		var unpackError *UnpackError
+		require.ErrorAs(t, err, &unpackError)
 	})
 
 	t.Run("Unpack short mti", func(t *testing.T) {
@@ -551,6 +565,10 @@ func TestPackUnpack(t *testing.T) {
 		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
+
+		var unpackError *UnpackError
+		require.ErrorAs(t, err, &unpackError)
+		require.Equal(t, rawMsg, unpackError.RawMessage)
 	})
 
 	// this test should check that BCD fields are packed and

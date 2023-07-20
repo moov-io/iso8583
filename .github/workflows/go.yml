@@ -28,9 +28,12 @@ jobs:
       run: choco install -y make mingw
 
     - name: Check
+      if: runner.os == 'Linux'
       run: make check
-      env:
-        GOLANGCI_LINTERS: gosec
+
+    - name: Go Tests
+      if: runner.os != 'Linux'
+      run: go test ./... -count 1 -short
 
     - name: Upload Code Coverage
       if: runner.os == 'Linux'
