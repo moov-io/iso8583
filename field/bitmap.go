@@ -232,3 +232,25 @@ func (f *Bitmap) UnmarshalJSON(b []byte) error {
 
 	return f.SetBytes(bs)
 }
+
+// IsBitmapPresenceBit checks if the bit at position n in the bitmap is an
+// indicator of the presence of an additional bitmap. For fixed-length bitmaps
+// (when DisableAutoExpand is set in the specification), this method will
+// always return false since additional bitmaps are not applicable.
+func (f *Bitmap) IsBitmapPresenceBit(n int) bool {
+	// there are not presence bits in fixed bitmaps
+	if f.spec.DisableAutoExpand {
+		return false
+	}
+
+	if n <= 0 {
+		return false
+	}
+
+	// check if n is the first bit of a bitmap
+	if n%(f.bitmapLength*8) == 1 {
+		return true
+	}
+
+	return false
+}
