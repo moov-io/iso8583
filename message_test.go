@@ -71,6 +71,12 @@ func TestMessage(t *testing.T) {
 				Pref:        prefix.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			}),
+			130: field.NewString(&field.Spec{
+				Length:      1,
+				Description: "Additional Data",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
 		},
 	}
 
@@ -89,7 +95,8 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, want, string(got))
 
 		message = NewMessage(spec)
-		message.Unpack([]byte(want))
+		err = message.Unpack([]byte(want))
+		require.NoError(t, err)
 
 		s, err := message.GetMTI()
 		require.NoError(t, err)
@@ -106,6 +113,33 @@ func TestMessage(t *testing.T) {
 		s, err = message.GetString(4)
 		require.NoError(t, err)
 		require.Equal(t, "100", s)
+	})
+
+	t.Run("Does not fail when packing and unpacking message with three bitmaps", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.MTI("0100")
+		require.NoError(t, message.Field(130, "1")) // field of third bitmap
+
+		got, err := message.Pack()
+
+		require.NoError(t, err)
+		require.NotNil(t, got)
+
+		want := "01008000000000000000800000000000000040000000000000001"
+		require.Equal(t, want, string(got))
+
+		message = NewMessage(spec)
+		err = message.Unpack([]byte(want))
+
+		require.NoError(t, err)
+
+		s, err := message.GetMTI()
+		require.NoError(t, err)
+		require.Equal(t, "0100", s)
+
+		s, err = message.GetString(130)
+		require.NoError(t, err)
+		require.Equal(t, "1", s)
 	})
 
 	t.Run("Test unpacking with typed fields", func(t *testing.T) {

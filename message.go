@@ -210,6 +210,11 @@ func (m *Message) unpack(src []byte) error {
 	off += read
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
+		// skip bitmap presence bits (for default bitmap length of 64 these are bits 1, 65, 129, 193, etc.)
+		if m.Bitmap().IsBitmapPresenceBit(i) {
+			continue
+		}
+
 		if m.Bitmap().IsSet(i) {
 			fl, ok := m.fields[i]
 			if !ok {
