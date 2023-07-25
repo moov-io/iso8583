@@ -68,6 +68,57 @@ func TestFixedBitmap(t *testing.T) {
 	require.False(t, bitmap.IsSet(17))
 }
 
+func TestBitmap_IsBitmapPresenceBit(t *testing.T) {
+	t.Run("no presence bits for fixed bitmap (without auto expand)", func(t *testing.T) {
+		bitmap := NewBitmap(&Spec{
+			Length:            2, // 2 bytes - 16 bits
+			Description:       "Bitmap",
+			Enc:               encoding.BytesToASCIIHex,
+			Pref:              prefix.Hex.Fixed,
+			DisableAutoExpand: true,
+		})
+
+		require.False(t, bitmap.IsBitmapPresenceBit(1))
+		require.False(t, bitmap.IsBitmapPresenceBit(17))
+	})
+
+	t.Run("presence bits for custom length auto expanded bitmap", func(t *testing.T) {
+		bitmap := NewBitmap(&Spec{
+			Length:      2, // 2 bytes - 16 bits
+			Description: "Bitmap",
+			Enc:         encoding.BytesToASCIIHex,
+			Pref:        prefix.Hex.Fixed,
+		})
+
+		require.True(t, bitmap.IsBitmapPresenceBit(1))
+		require.True(t, bitmap.IsBitmapPresenceBit(17))
+		require.True(t, bitmap.IsBitmapPresenceBit(33))
+
+		require.False(t, bitmap.IsBitmapPresenceBit(2))
+		require.False(t, bitmap.IsBitmapPresenceBit(18))
+		require.False(t, bitmap.IsBitmapPresenceBit(34))
+	})
+
+	t.Run("presence bits for default length auto expanded bitmap", func(t *testing.T) {
+		bitmap := NewBitmap(&Spec{
+			Description: "Bitmap",
+			Enc:         encoding.BytesToASCIIHex,
+			Pref:        prefix.Hex.Fixed,
+		})
+
+		// default length is 8 bytes - 64 bits
+		require.True(t, bitmap.IsBitmapPresenceBit(1))
+		require.True(t, bitmap.IsBitmapPresenceBit(65))
+		require.True(t, bitmap.IsBitmapPresenceBit(129))
+		require.True(t, bitmap.IsBitmapPresenceBit(193))
+
+		require.False(t, bitmap.IsBitmapPresenceBit(2))
+		require.False(t, bitmap.IsBitmapPresenceBit(66))
+		require.False(t, bitmap.IsBitmapPresenceBit(130))
+		require.False(t, bitmap.IsBitmapPresenceBit(194))
+	})
+}
+
 func TestHexBitmap(t *testing.T) {
 	t.Run("Read only first bitmap", func(t *testing.T) {
 		bitmap := NewBitmap(&Spec{
@@ -117,6 +168,7 @@ func TestHexBitmap(t *testing.T) {
 
 		require.True(t, bitmap.IsSet(10))
 		require.True(t, bitmap.IsSet(140))
+
 	})
 
 	t.Run("When not enough data to unpack", func(t *testing.T) {

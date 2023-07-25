@@ -395,41 +395,43 @@ func (f *Composite) pack() ([]byte, error) {
 func (f *Composite) packByBitmap() ([]byte, error) {
 	f.Bitmap().Reset()
 
-	// Set bitmap bits for all fields that are present.
-	for id := range f.setSubfields {
-		idInt, err := strconv.Atoi(id)
-		if err != nil {
-			return nil, fmt.Errorf("failed to pack composite: %w", err)
-		}
-
-		f.Bitmap().Set(idInt)
-	}
-
-	// pack bitmap.
-	packed, err := f.Bitmap().Pack()
-	if err != nil {
-		return nil, fmt.Errorf("failed to pack bitmap: %w", err)
-	}
+	var packedFields []byte
 
 	// pack fields
-	for _, i := range f.orderedSpecFieldTags {
+	for _, id := range f.orderedSpecFieldTags {
 		// If this ordered field is not set, continue to the next field.
-		if _, ok := f.setSubfields[i]; !ok {
+		if _, ok := f.setSubfields[id]; !ok {
 			continue
 		}
 
-		field, ok := f.subfields[i]
-		if !ok {
-			return nil, fmt.Errorf("failed to pack subfield %s: no specification found", i)
+		idInt, err := strconv.Atoi(id)
+		if err != nil {
+			return nil, fmt.Errorf("converting id %s to int: %w", id, err)
 		}
+
+		// set bitmap bit for this field
+		f.Bitmap().Set(idInt)
+
+		field, ok := f.subfields[id]
+		if !ok {
+			return nil, fmt.Errorf("failed to pack subfield %s: no specification found", id)
+		}
+
 		packedField, err := field.Pack()
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack subfield %s (%s): %w", i, field.Spec().Description, err)
+			return nil, fmt.Errorf("failed to pack subfield %s (%s): %w", id, field.Spec().Description, err)
 		}
-		packed = append(packed, packedField...)
+
+		packedFields = append(packedFields, packedField...)
 	}
 
-	return packed, nil
+	// pack bitmap.
+	packedBitmap, err := f.Bitmap().Pack()
+	if err != nil {
+		return nil, fmt.Errorf("packing bitmap: %w", err)
+	}
+
+	return append(packedBitmap, packedFields...), nil
 }
 
 func (f *Composite) packByTag() ([]byte, error) {

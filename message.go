@@ -149,7 +149,8 @@ func (m *Message) pack() ([]byte, error) {
 	for _, id := range ids {
 		// indexes 0 and 1 are for mti and bitmap
 		// regular field number startd from index 2
-		if id < 2 {
+		// do not pack presence bits as well
+		if id < 2 || m.Bitmap().IsBitmapPresenceBit(id) {
 			continue
 		}
 		m.Bitmap().Set(id)
@@ -157,6 +158,11 @@ func (m *Message) pack() ([]byte, error) {
 
 	// pack fields
 	for _, i := range ids {
+		// do not pack presence bits other than the first one as it's the bitmap itself
+		if i != 1 && m.Bitmap().IsBitmapPresenceBit(i) {
+			continue
+		}
+
 		field, ok := m.fields[i]
 		if !ok {
 			return nil, fmt.Errorf("failed to pack field %d: no specification found", i)
@@ -210,6 +216,11 @@ func (m *Message) unpack(src []byte) error {
 	off += read
 
 	for i := 2; i <= m.Bitmap().Len(); i++ {
+		// skip bitmap presence bits (for default bitmap length of 64 these are bits 1, 65, 129, 193, etc.)
+		if m.Bitmap().IsBitmapPresenceBit(i) {
+			continue
+		}
+
 		if m.Bitmap().IsSet(i) {
 			fl, ok := m.fields[i]
 			if !ok {
