@@ -71,6 +71,16 @@ func TestMessage(t *testing.T) {
 				Pref:        prefix.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			}),
+
+			// this field will be ignored when packing and
+			// unpacking, as bit 65 is a bitmap presence indicator
+			65: field.NewString(&field.Spec{
+				Length:      1,
+				Description: "Settlement Code",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			// this is a field of the third bitmap
 			130: field.NewString(&field.Spec{
 				Length:      1,
 				Description: "Additional Data",
@@ -113,6 +123,37 @@ func TestMessage(t *testing.T) {
 		s, err = message.GetString(4)
 		require.NoError(t, err)
 		require.Equal(t, "100", s)
+	})
+
+	t.Run("Do not pack fields that match the bitmap presence indicator", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.MTI("0100")
+		require.NoError(t, message.Field(65, "1"))
+		require.NoError(t, message.Field(130, "1")) // field of third bitmap
+
+		got, err := message.Pack()
+
+		want := "01008000000000000000800000000000000040000000000000001"
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.Equal(t, want, string(got))
+
+		message = NewMessage(spec)
+
+		err = message.Unpack([]byte(want))
+		require.NoError(t, err)
+
+		s, err := message.GetMTI()
+		require.NoError(t, err)
+		require.Equal(t, "0100", s)
+
+		s, err = message.GetString(65)
+		require.NoError(t, err)
+		require.Equal(t, "", s)
+
+		s, err = message.GetString(130)
+		require.NoError(t, err)
+		require.Equal(t, "1", s)
 	})
 
 	t.Run("Does not fail when packing and unpacking message with three bitmaps", func(t *testing.T) {
