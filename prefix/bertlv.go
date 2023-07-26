@@ -29,9 +29,9 @@ var BerTLV = &berTLVPrefixer{}
 type berTLVPrefixer struct{}
 
 // EncodeLength encodes the data length provided into a slice of bytes
-// according to the rules defined above.
-// NOTE: Because BER-TLV lengths are encoded dynamically, the maxLen method
-// argument is ignored.
+// according to the rules defined above. If you want to avoid the max length
+// check (e.g. for backwards compatibility), you can pass in 0 for maxLen (just
+// don't specify it in the `Length` field of the spec)
 func (p *berTLVPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	// checking maxLen for a 0 is a way to disable check and also support
 	// backwards compatibility with the old contract that didn't have maxLen
@@ -48,9 +48,10 @@ func (p *berTLVPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 
 // DecodeLength takes in a byte array and dynamically decodes its length based
 // on the rules described above. On success, both the length of the TLV value
-// as well as the number bytes read to decode the length are returned.
-// NOTE: Because BER-TLV lengths are decoded dynamically, the maxLen method
-// argument is ignored.
+// as well as the number bytes read to decode the length are returned.  If you
+// want to avoid the max length check (e.g. for backwards compatibility), you
+// can pass in 0 for maxLen (just don't specify it in the `Length` field of the
+// spec)
 func (p *berTLVPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	r := bytes.NewReader(data)
 
