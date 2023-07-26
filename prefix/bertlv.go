@@ -32,7 +32,13 @@ type berTLVPrefixer struct{}
 // according to the rules defined above.
 // NOTE: Because BER-TLV lengths are encoded dynamically, the maxLen method
 // argument is ignored.
-func (p *berTLVPrefixer) EncodeLength(_, dataLen int) ([]byte, error) {
+func (p *berTLVPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
+	// checking maxLen for a 0 is a way to disable check and also support
+	// backwards compatibility with the old contract that didn't have maxLen
+	if maxLen != 0 && dataLen > maxLen {
+		return nil, fmt.Errorf("field length: %d is larger than maximum: %d", dataLen, maxLen)
+	}
+
 	buf := big.NewInt(int64(dataLen)).Bytes()
 	if dataLen <= 127 {
 		return buf, nil
@@ -45,7 +51,7 @@ func (p *berTLVPrefixer) EncodeLength(_, dataLen int) ([]byte, error) {
 // as well as the number bytes read to decode the length are returned.
 // NOTE: Because BER-TLV lengths are decoded dynamically, the maxLen method
 // argument is ignored.
-func (p *berTLVPrefixer) DecodeLength(_ int, data []byte) (int, int, error) {
+func (p *berTLVPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	r := bytes.NewReader(data)
 
 	firstByte, err := r.ReadByte()
@@ -55,7 +61,15 @@ func (p *berTLVPrefixer) DecodeLength(_ int, data []byte) (int, int, error) {
 
 	read := 1
 	if bits.LeadingZeros8(firstByte) > 0 {
-		return int(firstByte), read, nil
+		dataLen := int(firstByte)
+
+		// checking maxLen for a 0 is a way to disable check and also support
+		// backwards compatibility with the old contract that didn't have maxLen
+		if maxLen != 0 && dataLen > maxLen {
+			return 0, read, fmt.Errorf("field length: %d is larger than maximum: %d", dataLen, maxLen)
+		}
+
+		return dataLen, read, nil
 	}
 
 	length := make([]byte, clearMSB(firstByte))
@@ -65,7 +79,15 @@ func (p *berTLVPrefixer) DecodeLength(_ int, data []byte) (int, int, error) {
 	}
 	read += len(length)
 
-	return int(new(big.Int).SetBytes(length).Int64()), read, nil
+	dataLen := int(new(big.Int).SetBytes(length).Int64())
+
+	// checking maxLen for a 0 is a way to disable check and also support
+	// backwards compatibility with the old contract that didn't have maxLen
+	if maxLen != 0 && dataLen > maxLen {
+		return 0, read, fmt.Errorf("field length: %d is larger than maximum: %d", dataLen, maxLen)
+	}
+
+	return dataLen, read, nil
 }
 
 // Inspect returns human readable information about length prefixer.
