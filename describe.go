@@ -153,30 +153,30 @@ func DescribeFieldContainer(container FieldContainer, w io.Writer, filters ...Fi
 }
 
 func sortFieldIDs(fields map[string]field.Field) []string {
-	numericKeys := make([]int, 0)
-	nonNumericKeys := make([]string, 0)
-
-	for k := range fields {
-		if id, err := strconv.Atoi(k); err == nil {
-			numericKeys = append(numericKeys, id)
-		} else {
-			nonNumericKeys = append(nonNumericKeys, k)
-		}
-	}
-
-	// Sorting numeric and non-numeric keys separately
-	sort.Ints(numericKeys)
-	sort.Strings(nonNumericKeys)
-
 	keys := make([]string, 0, len(fields))
-
-	// Appending numeric keys first (as strings)
-	for _, key := range numericKeys {
-		keys = append(keys, strconv.Itoa(key))
+	for k := range fields {
+		keys = append(keys, k)
 	}
 
-	// Appending non-numeric keys
-	keys = append(keys, nonNumericKeys...)
+	sort.Slice(keys, func(i, j int) bool {
+		// check if both keys are numeric
+		ni, ei := strconv.Atoi(keys[i])
+		nj, ej := strconv.Atoi(keys[j])
+		if ei == nil && ej == nil {
+			// if both keys are numeric, compare as integers
+			return ni < nj
+		}
+		if ei == nil {
+			// if only i is numeric, it goes first
+			return true
+		}
+		if ej == nil {
+			// if only j is numeric, it goes first
+			return false
+		}
+		// if neither key is numeric, compare as strings
+		return keys[i] < keys[j]
+	})
 
 	return keys
 }
