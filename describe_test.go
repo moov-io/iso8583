@@ -2,11 +2,13 @@ package iso8583
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/prefix"
+	"github.com/moov-io/iso8583/sort"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,12 +32,41 @@ func TestDescribe(t *testing.T) {
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LL,
 			}),
+			3: field.NewComposite(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
+				Subfields: map[string]field.Field{
+					"01": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"02": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "From Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"03": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "To Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
+			}),
 		},
 	}
 
 	message := NewMessage(spec)
 	message.MTI("0100")
 	message.Field(2, "4242424242424242")
+	message.Field(3, "123456")
 	message.Pack() // to generate bitmap
 
 	out := bytes.NewBuffer([]byte{})
@@ -43,14 +74,22 @@ func TestDescribe(t *testing.T) {
 		Describe(message, out, DoNotFilterFields()...)
 	})
 
+	fmt.Println(out.String())
+
 	expectedOutput := `ISO 8583 Message:
 MTI..........: 0100
-Bitmap HEX...: 4000000000000000
+Bitmap HEX...: 6000000000000000
 Bitmap bits..:
-    [1-8]01000000    [9-16]00000000   [17-24]00000000   [25-32]00000000
+    [1-8]01100000    [9-16]00000000   [17-24]00000000   [25-32]00000000
   [33-40]00000000   [41-48]00000000   [49-56]00000000   [57-64]00000000
 F0   Message Type Indicator..: 0100
 F2   Primary Account Number..: 4242424242424242
+F3   Processing Code SUBFIELDS:
+-------------------------------------------
+F01  Transaction Type..: 12
+F02  From Account......: 34
+F03  To Account........: 56
+------------------------------------------
 `
 	require.Equal(t, expectedOutput, out.String())
 }
