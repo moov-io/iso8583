@@ -44,7 +44,7 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 
 ## Project status
 
-Moov ISO8583 currently offers a Go package with plans for an API in the near future. Please star the project if you are interested in its progress. The project supports generating and parsing ISO8583 messages. Feedback on this early version of the project is appreciated and vital to its success. Please let us know if you encounter any bugs/unclear documentation or have feature suggestions by opening up an issue. Thanks!
+Moov ISO8583 is a Go package that's been **thoroughly tested and trusted in the real world**. The project has proven its reliability and robustness in real-world, high-stakes scenarios. Please let us know if you encounter any missing feature/bugs/unclear documentation by opening up [an issue](https://github.com/moov-io/iso8583/issues/new). Thanks!
 
 ## Go library
 
