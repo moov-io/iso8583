@@ -30,6 +30,8 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 
 - [Project status](#project-status)
 - [Go module](#go-library)
+- [Go version support policy](#go-version-support-policy)
+- [How to](#how-to)
 	- [Define specification](#define-your-specification)
 	- [Build message](#build-and-pack-the-message)
 	- [Parse message](#parse-the-message-and-access-the-data)
@@ -76,6 +78,8 @@ To ensure our promise of support for these versions, we've configured our GitHub
 ```
 go get github.com/moov-io/iso8583
 ```
+
+## How to
 
 ### Define your specification
 
