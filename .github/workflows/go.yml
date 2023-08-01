@@ -17,7 +17,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
-        go-version: stable
+        go-version: oldstable
       id: go
 
     - name: Check out code into the Go module directory
