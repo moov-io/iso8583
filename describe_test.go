@@ -2,7 +2,6 @@ package iso8583
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -73,8 +72,6 @@ func TestDescribe(t *testing.T) {
 	require.NotPanics(t, func() {
 		Describe(message, out, DoNotFilterFields()...)
 	})
-
-	fmt.Println(out.String())
 
 	expectedOutput := `ISO 8583 Message:
 MTI..........: 0100
