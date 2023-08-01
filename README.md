@@ -48,7 +48,32 @@ Moov ISO8583 currently offers a Go package with plans for an API in the near fut
 
 ## Go library
 
-This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.18 or newer. See [Golang's install instructions](https://golang.org/doc/install) for help in setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
+This project uses [Go Modules](https://go.dev/blog/using-go-modules). See [Golang's install instructions](https://golang.org/doc/install) for help in setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
+
+## Go version support policy
+
+### Always Up-to-Date, Never Left Behind
+
+While we strive to embrace the latest language enhancements, we also appreciate the need for a certain degree of backward compatibility. We understand that not everyone can update to the latest version immediately. Our philosophy is to move forward and embrace the new, but without leaving anyone immediately behind.
+
+#### Which versions do we support now?
+
+As of today, we are supporting:
+
+1. Go 1.20 (current version)
+2. Go 1.19 (previous version)
+
+#### What does this mean for you?
+
+Whenever a new version of Go is released, we will update our systems and ensure that our project remains fully compatible with it. At the same time, we will continue to support the previous version. However, once a new version is released, the 'previous previous' version will no longer be officially supported. 
+
+#### Continuous Integration and Version Support
+
+To ensure our promise of support for these versions, we've configured our GitHub CI actions to test our code with both the current and previous versions of Go. This means you can feel confident that the project will work as expected if you're using either of these versions.
+
+#### Updates and Changes
+
+We recommend that you keep an eye on our repository for any updates or changes to our version support policy. We'll always make sure to announce any upcoming changes in advance to give you plenty of time to update your Go version, if necessary.
 
 ### Installation
 
