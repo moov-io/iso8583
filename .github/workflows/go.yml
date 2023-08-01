@@ -18,15 +18,11 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
-        go-version: $${{ matrix.version }}
+        go-version: ${{ matrix.version }}
       id: go
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
-
-    # - name: Install make (Windows)
-    #   if: runner.os == 'Windows'
-    #   run: choco install -y make mingw
 
     - name: Check
       if: runner.os == 'Linux'
