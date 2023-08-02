@@ -59,10 +59,12 @@ While we strive to embrace the latest language enhancements, we also appreciate 
 
 #### Which versions do we support now?
 
-As of today, we are supporting:
+As of today, we are supporting the following versions as referenced in the [setup-go action step](https://github.com/actions/setup-go#using-stableoldstable-aliases):
 
-1. Go 1.20 (current version)
-2. Go 1.19 (previous version)
+* `stable` (which points to the current Go version)
+* `oldstable` (which points to the previous Go version)
+
+The [setup-go](https://github.com/actions/setup-go) action automatically manages versioning, allowing us to always stay aligned with the latest and preceding Go releases.
 
 #### What does this mean for you?
 
