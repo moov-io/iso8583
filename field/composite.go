@@ -11,7 +11,6 @@ import (
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
-	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
 
 	"github.com/moov-io/iso8583/utils"
@@ -289,7 +288,7 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	if dataLen != read {
+	if (isVariableLength == false) && (dataLen != read) {
 		return 0, fmt.Errorf("data length: %v does not match aggregate data read from decoded subfields: %v", dataLen, read)
 	}
 
@@ -473,9 +472,7 @@ func (f *Composite) unpack(data []byte, isVariableLength bool) (int, error) {
 	if f.Bitmap() != nil {
 		return f.unpackSubfieldsByBitmap(data)
 	}
-	if f.spec.Tag.Enc != nil {
-		return f.unpackSubfieldsByTag(data)
-	}
+
 	return f.unpackSubfields(data, isVariableLength)
 }
 
@@ -487,6 +484,7 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, er
 			continue
 		}
 
+		offset += len(tag)
 		read, err := field.Unpack(data[offset:])
 		if err != nil {
 			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
@@ -551,58 +549,60 @@ const (
 )
 
 func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
-	offset := 0
-	for offset < len(data) {
-		tagBytes, read, err := f.spec.Tag.Enc.Decode(data[offset:], f.spec.Tag.Length)
-		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield Tag: %w", err)
-		}
-		offset += read
+	// offset := 0
+	// for offset < len(data) {
+	// 	tagBytes, read, err := f.spec.Tag.Enc.Decode(data[offset:], f.spec.Tag.Length)
+	// 	if err != nil {
+	// 		return 0, fmt.Errorf("failed to unpack subfield Tag: %w", err)
+	// 	}
+	// 	offset += read
 
-		if f.spec.Tag.Pad != nil {
-			tagBytes = f.spec.Tag.Pad.Unpad(tagBytes)
-		}
-		tag := string(tagBytes)
-		if _, ok := f.spec.Subfields[tag]; !ok {
-			if f.skipUnknownTLVTags() {
-				// to obtain the length of the unknown tag and add it to the offset we need to decode its length
-				// by default, we use BER-TVL prefix because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
-				var (
-					pref   prefix.Prefixer = prefix.BerTLV
-					maxLen                 = ignoredMaxLen
-				)
-				// but if PrefUnknownTLV prefix is set, use it and hope that length of all unknown tags is encoded using this prefixer
-				if f.spec.Tag.PrefUnknownTLV != nil {
-					pref = f.spec.Tag.PrefUnknownTLV
-					maxLen = maxLenOfUnknownTag
-				}
+	// 	if f.spec.Tag.Pad != nil {
+	// 		tagBytes = f.spec.Tag.Pad.Unpad(tagBytes)
+	// 	}
+	// 	tag := string(tagBytes)
+	// 	if _, ok := f.spec.Subfields[tag]; !ok {
+	// 		if f.skipUnknownTLVTags() {
+	// 			// to obtain the length of the unknown tag and add it to the offset we need to decode its length
+	// 			// by default, we use BER-TVL prefix because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
+	// 			var (
+	// 				pref   prefix.Prefixer = prefix.BerTLV
+	// 				maxLen                 = ignoredMaxLen
+	// 			)
+	// 			// but if PrefUnknownTLV prefix is set, use it and hope that length of all unknown tags is encoded using this prefixer
+	// 			if f.spec.Tag.PrefUnknownTLV != nil {
+	// 				pref = f.spec.Tag.PrefUnknownTLV
+	// 				maxLen = maxLenOfUnknownTag
+	// 			}
 
-				fieldLength, readed, err := pref.DecodeLength(maxLen, data[offset:])
-				if err != nil {
-					return 0, err
-				}
-				offset += fieldLength + readed
-				continue
-			}
+	// 			fieldLength, readed, err := pref.DecodeLength(maxLen, data[offset:])
+	// 			if err != nil {
+	// 				return 0, err
+	// 			}
+	// 			offset += fieldLength + readed
+	// 			continue
+	// 		}
 
-			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
-		}
+	// 		return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
+	// 	}
 
-		field, ok := f.subfields[tag]
-		if !ok {
-			continue
-		}
+	// 	field, ok := f.subfields[tag]
+	// 	if !ok {
+	// 		continue
+	// 	}
 
-		read, err = field.Unpack(data[offset:])
-		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
-		}
+	// 	read, err = field.Unpack(data[offset:])
+	// 	if err != nil {
+	// 		return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
+	// 	}
 
-		f.setSubfields[tag] = struct{}{}
+	// 	f.setSubfields[tag] = struct{}{}
 
-		offset += read
-	}
-	return offset, nil
+	// 	offset += read
+	// }
+	// return offset, nil
+
+	return 0, nil
 }
 
 func (f *Composite) skipUnknownTLVTags() bool {

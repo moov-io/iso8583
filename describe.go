@@ -117,7 +117,7 @@ func DescribeFieldContainer(container FieldContainer, w io.Writer, filters ...Fi
 
 		// check if field has subfields (e.g. CompositeField)
 		if container, ok := f.(FieldContainer); ok {
-			fmt.Fprintf(w, "F%-3s %s SUBFIELDS:\n", i, desc)
+			fmt.Fprintf(w, "DE%-3s %s SUBFIELDS:\n", i, desc)
 			fmt.Fprintln(w, "-------------------------------------------")
 			DescribeFieldContainer(container, w, filters...)
 			fmt.Fprintln(w, "------------------------------------------")
@@ -137,7 +137,7 @@ func DescribeFieldContainer(container FieldContainer, w io.Writer, filters ...Fi
 			str = filter(str, fields[i])
 		}
 
-		fmt.Fprintf(w, "F%-3s %s\t: %s\n", i, desc, str)
+		fmt.Fprintf(w, "DE%-3s %s\t: %s\n", i, desc, str)
 	}
 
 	if len(errorList) > 0 {

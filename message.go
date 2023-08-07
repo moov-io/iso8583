@@ -189,6 +189,15 @@ func (m *Message) Unpack(src []byte) error {
 	return nil
 }
 
+func CountDigits(num int) int {
+	var count int = 0
+	for num > 0 {
+		num = num / 10
+		count++
+	}
+	return count
+}
+
 func (m *Message) unpack(src []byte) error {
 	var off int
 
@@ -226,6 +235,9 @@ func (m *Message) unpack(src []byte) error {
 			if !ok {
 				return fmt.Errorf("failed to unpack field %d: no specification found", i)
 			}
+
+			numberDigitsInDE := CountDigits(i)
+			off += numberDigitsInDE
 
 			read, err = fl.Unpack(src[off:])
 			if err != nil {
