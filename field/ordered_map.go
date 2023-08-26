@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -17,8 +18,7 @@ func (om OrderedMap) MarshalJSON() ([]byte, error) {
 	for k := range om {
 		keys = append(keys, k)
 	}
-
-	sort.Strings(keys)
+	sort.Sort(sortImpl(keys))
 
 	buf := &bytes.Buffer{}
 	buf.Write([]byte{'{'})
@@ -40,4 +40,20 @@ func (om OrderedMap) MarshalJSON() ([]byte, error) {
 	buf.Write([]byte{'}'})
 
 	return buf.Bytes(), nil
+}
+
+type sortImpl []string
+
+func (a sortImpl) Len() int      { return len(a) }
+func (a sortImpl) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a sortImpl) Less(i, j int) bool {
+	numLeft, err := strconv.ParseUint(a[i], 10, 0)
+	if err != nil {
+		return a[i] < a[j]
+	}
+	numRight, err := strconv.ParseUint(a[j], 10, 0)
+	if err != nil {
+		return a[i] < a[j]
+	}
+	return numLeft < numRight
 }
