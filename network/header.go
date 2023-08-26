@@ -55,7 +55,7 @@ This is how you can write header into the net.Conn:
 
 */
 
-// Header is network header interface to write/read encoded message legnth
+// Header is network header interface to write/read encoded message length
 type Header interface {
 	// WriteTo encoded length into Writer
 	WriteTo(w io.Writer) (int, error)
@@ -68,4 +68,7 @@ type Header interface {
 
 	// Length returns the length of the message
 	Length() int
+
+	// Name returns the name of the message header
+	Name() string
 }

@@ -25,6 +25,10 @@ func (h *ASCII4BytesHeader) Length() int {
 	return h.Len
 }
 
+func (h *ASCII4BytesHeader) Name() string {
+	return "4 bytes ASCII"
+}
+
 func (h *ASCII4BytesHeader) WriteTo(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "%04d", h.Len)
 }

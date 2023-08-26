@@ -27,6 +27,10 @@ func (h *BCD2BytesHeader) Length() int {
 	return h.Len
 }
 
+func (h *BCD2BytesHeader) Name() string {
+	return "2 bytes BCD"
+}
+
 func (h *BCD2BytesHeader) WriteTo(w io.Writer) (int, error) {
 	strLen := fmt.Sprintf("%04d", h.Len)
 	res, err := encoding.BCD.Encode([]byte(strLen))
