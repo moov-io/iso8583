@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io"
 	"sort"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/moov-io/iso8583/field"
+	"github.com/moov-io/iso8583/utils"
 )
 
 var defaultSpecName = "ISO 8583"
@@ -158,25 +158,7 @@ func sortFieldIDs(fields map[string]field.Field) []string {
 		keys = append(keys, k)
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
-		// check if both keys are numeric
-		ni, ei := strconv.Atoi(keys[i])
-		nj, ej := strconv.Atoi(keys[j])
-		if ei == nil && ej == nil {
-			// if both keys are numeric, compare as integers
-			return ni < nj
-		}
-		if ei == nil {
-			// if only i is numeric, it goes first
-			return true
-		}
-		if ej == nil {
-			// if only j is numeric, it goes first
-			return false
-		}
-		// if neither key is numeric, compare as strings
-		return keys[i] < keys[j]
-	})
+	sort.Sort(utils.NumericSort(keys))
 
 	return keys
 }

@@ -7,14 +7,14 @@ import (
 
 var (
 	testOrderedMap = OrderedMap{
+		"z":   &String{value: "555"},
 		"0":   &String{value: "0100"},
 		"1":   &String{value: "D00080000000000000000000002000000000000000000000"},
 		"107": &String{value: "102"},
+		"a":   &String{value: "555"},
 		"17":  &String{value: "101"},
 		"2":   &String{value: "4242424242424242"},
 		"4":   &String{value: "100"},
-		"a":   &String{value: "555"},
-		"z":   &String{value: "555"},
 	}
 )
 
