@@ -9,7 +9,7 @@ import (
 	"github.com/moov-io/iso8583/encoding"
 )
 
-// Strings is a function type used to sort a slice of strings in increasing
+// StringSlice is a function type used to sort a slice of strings in increasing
 // order. Any errors which arise from sorting the slice will raise a panic.
 type StringSlice func(x []string)
 
@@ -23,11 +23,11 @@ func StringsByInt(x []string) {
 	sort.Slice(x, func(i, j int) bool {
 		valI, err := strconv.Atoi(x[i])
 		if err != nil {
-			panic("failed to sort strings by int: failed to convert string to int")
+			return x[i] < x[j]
 		}
 		valJ, err := strconv.Atoi(x[j])
 		if err != nil {
-			panic("failed to sort strings by int: failed to convert string to int")
+			return x[i] < x[j]
 		}
 		return valI < valJ
 	})

@@ -4,12 +4,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"sort"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/moov-io/iso8583/field"
-	"github.com/moov-io/iso8583/internal/sorting"
+	moovsort "github.com/moov-io/iso8583/sort"
 )
 
 var defaultSpecName = "ISO 8583"
@@ -158,7 +157,7 @@ func sortFieldIDs(fields map[string]field.Field) []string {
 		keys = append(keys, k)
 	}
 
-	sort.Sort(sorting.Numeric(keys))
+	moovsort.StringsByInt(keys)
 
 	return keys
 }
