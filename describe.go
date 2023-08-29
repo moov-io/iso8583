@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/moov-io/iso8583/field"
-	"github.com/moov-io/iso8583/utils"
+	"github.com/moov-io/iso8583/internal/sorting"
 )
 
 var defaultSpecName = "ISO 8583"
@@ -158,7 +158,7 @@ func sortFieldIDs(fields map[string]field.Field) []string {
 		keys = append(keys, k)
 	}
 
-	sort.Sort(utils.NumericSort(keys))
+	sort.Sort(sorting.Numeric(keys))
 
 	return keys
 }

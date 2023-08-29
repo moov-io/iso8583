@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/moov-io/iso8583/internal/sorting"
 	"github.com/moov-io/iso8583/utils"
 )
 
@@ -17,7 +18,7 @@ func (om OrderedMap) MarshalJSON() ([]byte, error) {
 	for k := range om {
 		keys = append(keys, k)
 	}
-	sort.Sort(utils.NumericSort(keys))
+	sort.Sort(sorting.Numeric(keys))
 
 	buf := &bytes.Buffer{}
 	buf.Write([]byte{'{'})
