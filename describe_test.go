@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -131,5 +132,23 @@ func Test_splitAndAnnotate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			require.Equal(t, tc.expected, splitAndAnnotate(tc.input))
 		})
+	}
+}
+
+func TestSortFieldIDs(t *testing.T) {
+	var fields = map[string]field.Field{
+		"z":   field.NewString(nil),
+		"0":   field.NewString(nil),
+		"1":   field.NewString(nil),
+		"107": field.NewString(nil),
+		"a":   field.NewString(nil),
+		"17":  field.NewString(nil),
+		"2":   field.NewString(nil),
+		"4":   field.NewString(nil),
+	}
+	order := sortFieldIDs(fields)
+	expected := []string{"0", "1", "2", "4", "17", "107", "a", "z"}
+	if !reflect.DeepEqual(order, expected) {
+		t.Errorf("Marshalled value should be \n\t%v\ninstead of \n\t%v", expected, order)
 	}
 }
