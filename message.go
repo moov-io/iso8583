@@ -376,7 +376,9 @@ func (m *Message) Marshal(v interface{}) error {
 			continue
 		}
 
-		err = messageField.Marshal(dataField.Interface())
+		err = messageField.Marshal(dataField)
+
+		// err = messageField.Marshal(dataField.Interface())
 		if err != nil {
 			return fmt.Errorf("failed to set value to field %d: %w", fieldIndex, err)
 		}

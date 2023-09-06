@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
@@ -143,6 +144,31 @@ func (f *Numeric) Unmarshal(v interface{}) error {
 }
 
 func (f *Numeric) SetData(data interface{}) error {
+	if v, ok := data.(reflect.Value); ok {
+		switch v.Kind() {
+		case reflect.Int:
+			f.value = int(v.Int())
+		case reflect.String:
+			val, err := strconv.Atoi(v.String())
+			if err != nil {
+				return utils.NewSafeError(err, "failed to convert into number")
+			}
+			f.value = val
+		default:
+			return fmt.Errorf("data does not match required *Numeric type")
+		}
+		return nil
+	}
+
+	// if v.Kind() == reflect.Int {
+	// }
+	// if v, ok := data.(reflect.Value); ok {
+	// 	if v.CanSet() {
+	// 		v.Set(reflect.ValueOf(f.value))
+	// 		return nil
+	// 	}
+	// }
+
 	if data == nil {
 		return nil
 	}

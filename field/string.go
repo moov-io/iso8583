@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -129,6 +130,20 @@ func (f *String) Unmarshal(v interface{}) error {
 }
 
 func (f *String) SetData(data interface{}) error {
+	if v, ok := data.(reflect.Value); ok {
+		switch v.Kind() {
+		case reflect.String:
+			f.value = v.String()
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			f.value = fmt.Sprintf("%d", v.Int())
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			f.value = fmt.Sprintf("%d", v.Uint())
+		default:
+			return fmt.Errorf("unsupported type %v", v.Kind())
+		}
+		return nil
+	}
+
 	if data == nil {
 		return nil
 	}
