@@ -14,6 +14,7 @@ var EBCDIC1047 = Prefixers{
 	LL:    &ebcdic1047Prefixer{2},
 	LLL:   &ebcdic1047Prefixer{3},
 	LLLL:  &ebcdic1047Prefixer{4},
+	LLLLL: &ebcdic1047Prefixer{5},
 }
 
 type ebcdic1047Prefixer struct {

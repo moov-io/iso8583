@@ -19,6 +19,7 @@ var BCD = Prefixers{
 	LL:    &bcdVarPrefixer{2},
 	LLL:   &bcdVarPrefixer{3},
 	LLLL:  &bcdVarPrefixer{4},
+	LLLLL: &bcdVarPrefixer{5},
 }
 
 func (p *bcdVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {

@@ -18,6 +18,7 @@ var EBCDIC = Prefixers{
 	LL:    &ebcdicVarPrefixer{2},
 	LLL:   &ebcdicVarPrefixer{3},
 	LLLL:  &ebcdicVarPrefixer{4},
+	LLLLL: &ebcdicVarPrefixer{5},
 }
 
 func (p *ebcdicVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {

@@ -13,6 +13,7 @@ var Binary = Prefixers{
 	LL:    &binaryVarPrefixer{2},
 	LLL:   &binaryVarPrefixer{3},
 	LLLL:  &binaryVarPrefixer{4},
+	LLLLL: &binaryVarPrefixer{5},
 }
 
 type binaryFixedPrefixer struct {

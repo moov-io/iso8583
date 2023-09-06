@@ -24,6 +24,7 @@ type Prefixers struct {
 	LL    Prefixer
 	LLL   Prefixer
 	LLLL  Prefixer
+	LLLLL Prefixer
 }
 
 type PrefixerBuilder func(int) Prefixer

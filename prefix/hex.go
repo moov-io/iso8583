@@ -13,6 +13,7 @@ var Hex = Prefixers{
 	LL:    &hexVarPrefixer{2},
 	LLL:   &hexVarPrefixer{3},
 	LLLL:  &hexVarPrefixer{4},
+	LLLLL: &hexVarPrefixer{5},
 }
 
 type hexFixedPrefixer struct {

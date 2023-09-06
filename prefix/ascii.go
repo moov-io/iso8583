@@ -16,6 +16,7 @@ var ASCII = Prefixers{
 	LL:    &asciiVarPrefixer{2},
 	LLL:   &asciiVarPrefixer{3},
 	LLLL:  &asciiVarPrefixer{4},
+	LLLLL: &asciiVarPrefixer{5},
 }
 
 func (p *asciiVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
