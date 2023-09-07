@@ -33,26 +33,18 @@ type Message struct {
 }
 
 func NewMessage(spec *MessageSpec) *Message {
-	// validate the spec
+	// Validate the spec
 	if err := spec.Validate(); err != nil {
 		panic(err) //nolint // as specs moslty static, we panic on spec validation errors
 	}
 
 	fields := spec.CreateMessageFields()
 
-	m := &Message{
+	return &Message{
 		fields:    fields,
 		spec:      spec,
 		fieldsMap: map[int]struct{}{},
 	}
-
-	// we validate the presence and type of the bitmap field
-	// in spec.Validate() so we can safely assume it exists
-	// and is of the correct type
-	m.bitmap, _ = m.fields[bitmapIdx].(*field.Bitmap)
-	m.fieldsMap[bitmapIdx] = struct{}{}
-
-	return m
 }
 
 // Deprecated. Use Marshal intead.
@@ -61,6 +53,17 @@ func (m *Message) SetData(data interface{}) error {
 }
 
 func (m *Message) Bitmap() *field.Bitmap {
+	if m.bitmap != nil {
+		return m.bitmap
+	}
+
+	// We validate the presence and type of the bitmap field in
+	// spec.Validate() when we create the message so we can safely assume
+	// it exists and is of the correct type
+	m.bitmap, _ = m.fields[bitmapIdx].(*field.Bitmap)
+	m.bitmap.Reset()
+	m.fieldsMap[bitmapIdx] = struct{}{}
+
 	return m.bitmap
 }
 
