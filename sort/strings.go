@@ -1,7 +1,6 @@
 package sort
 
 import (
-	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
@@ -33,19 +32,21 @@ func StringsByInt(x []string) {
 	})
 }
 
-// StringsByHex sorts a slice of strings according to their big-endian Hex value.
-// This function panics in the event that an element in the slice cannot be
-// converted to a Hex slice. Each string representation of a hex value must be
-// of even length.
+// StringsByHex sorts a slice of strings according to their big-endian Hex
+// value. This function compares values as a regular strings in the event that
+// an element in the slice cannot be converted to a Hex slice. Each string
+// representation of a hex value must be of even length.
 func StringsByHex(x []string) {
 	sort.Slice(x, func(i, j int) bool {
 		valI, err := encoding.ASCIIHexToBytes.Encode([]byte(x[i]))
 		if err != nil {
-			panic(fmt.Sprintf("failed to encode ascii hex %s to bytes : %v", x[i], err))
+			// we will ignore the error and sort the strings as normal
+			return x[i] < x[j]
 		}
 		valJ, err := encoding.ASCIIHexToBytes.Encode([]byte(x[j]))
 		if err != nil {
-			panic(fmt.Sprintf("failed to sort strings by hex: %v", err))
+			// we will ignore the error and sort the strings as normal
+			return x[i] < x[j]
 		}
 		return new(big.Int).SetBytes(valI).Int64() < new(big.Int).SetBytes(valJ).Int64()
 	})

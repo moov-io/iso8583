@@ -1,7 +1,9 @@
 package field
 
 import (
+	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
@@ -87,6 +89,50 @@ func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer
 		Enc:         enc,
 		Pref:        pref,
 	}
+}
+
+// Validate validates the spec.
+func (s *Spec) Validate() error {
+	if s.Enc != nil {
+		return fmt.Errorf("Composite spec only supports a nil Enc value")
+	}
+	if s.Pad != nil && s.Pad != padding.None {
+		return fmt.Errorf("Composite spec only supports nil or None spec padding values")
+	}
+	if (s.Bitmap == nil && s.Tag == nil) || (s.Bitmap != nil && s.Tag != nil) {
+		return fmt.Errorf("Composite spec only supports a definition of Bitmap or Tag, can't stand both or neither")
+	}
+
+	// If bitmap is defined, validates subfields keys.
+	// spec.Tag is not validated.
+	if s.Bitmap != nil {
+		if !s.Bitmap.spec.DisableAutoExpand {
+			return fmt.Errorf("Composite spec only supports a bitmap with 'DisableAutoExpand = true'")
+		}
+
+		for key := range s.Subfields {
+			parsedKey, err := strconv.Atoi(key)
+			if err != nil {
+				return fmt.Errorf("error parsing key from bitmapped subfield definition: %w", err)
+			}
+
+			if parsedKey <= 0 {
+				return fmt.Errorf("Composite spec only supports integers greater than 0 as keys for bitmapped subfields definition")
+			}
+		}
+
+		return nil
+	}
+
+	// Validate spec.Tag.
+	if s.Tag.Sort == nil {
+		return fmt.Errorf("Composite spec requires a Tag.Sort function to define a Tag")
+	}
+	if s.Tag.Enc == nil && s.Tag.Length > 0 {
+		return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
+	}
+
+	return nil
 }
 
 // CreateSubfield creates a new instance of a field based on the input
