@@ -151,18 +151,9 @@ func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
 }
 
 func TestNumericSetBytesSetsDataOntoDataStruct(t *testing.T) {
-	numeric := NewNumeric(&Spec{
-		Length:      1,
-		Description: "Field",
-		Enc:         encoding.ASCII,
-		Pref:        prefix.ASCII.Fixed,
-	})
-
 	data := &Numeric{}
-	err := numeric.SetData(data)
-	require.NoError(t, err)
 
-	err = numeric.SetBytes([]byte("9"))
+	err := data.SetBytes([]byte("9"))
 	require.NoError(t, err)
 
 	require.Equal(t, 9, data.Value())
