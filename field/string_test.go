@@ -43,24 +43,8 @@ func TestStringField(t *testing.T) {
 	require.Equal(t, "     hello", string(packed))
 
 	str = NewString(spec)
-	data := NewStringValue("")
-	str.SetData(data)
-	length, err = str.Unpack([]byte("     olleh"))
-	require.NoError(t, err)
-	require.Equal(t, 10, length)
-	require.Equal(t, "olleh", data.Value())
-
-	str = NewString(spec)
-	data = &String{}
-	str.SetData(data)
-	err = str.SetBytes([]byte("hello"))
-	require.NoError(t, err)
-	require.Equal(t, "hello", data.Value())
-
-	str = NewString(spec)
-
 	str.SetValue("hello")
-	require.Equal(t, "hello", data.Value())
+	require.Equal(t, "hello", str.Value())
 }
 
 func TestStringNil(t *testing.T) {

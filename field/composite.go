@@ -623,11 +623,16 @@ var fieldNameTagRe = regexp.MustCompile(`^F.+$`)
 // field name. If it does not match F.+ pattern, it checks value of `index`
 // tag.  If empty string, then index/tag was not found for the field.
 func getFieldIndexOrTag(field reflect.StructField) (string, error) {
-	dataFieldName := field.Name
-
-	if fieldIndex := field.Tag.Get("index"); fieldIndex != "" {
-		return fieldIndex, nil
+	var fieldIndex string
+	// keep the order of tags for now, when index tag is deprecated we can
+	// change the order
+	for _, tag := range []string{"index", "iso8583"} {
+		if fieldIndex = field.Tag.Get(tag); fieldIndex != "" {
+			return fieldIndex, nil
+		}
 	}
+
+	dataFieldName := field.Name
 
 	if len(dataFieldName) > 0 && fieldNameTagRe.MatchString(dataFieldName) {
 		return dataFieldName[1:], nil

@@ -13,6 +13,7 @@ func TestStructWithTypes(t *testing.T) {
 		MTI                  string `index:"0"`
 		PrimaryAccountNumber string `index:"2"`
 		ProcessingCode       int    `index:"3"`
+		TransactionAmount    int    `index:"4,keepzero"` // we will set message field value to 0
 	}
 
 	t.Run("pack", func(t *testing.T) {
@@ -29,6 +30,6 @@ func TestStructWithTypes(t *testing.T) {
 		packed, err := message.Pack()
 		require.NoError(t, err)
 
-		require.Equal(t, "011060000000000000000000000000000000164242424242424242200000", string(packed))
+		require.Equal(t, "011070000000000000000000000000000000164242424242424242200000000000000000", string(packed))
 	})
 }

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
+	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -16,7 +16,6 @@ var _ json.Unmarshaler = (*String)(nil)
 type String struct {
 	value string
 	spec  *Spec
-	data  *String
 }
 
 func NewString(spec *Spec) *String {
@@ -41,9 +40,6 @@ func (f *String) SetSpec(spec *Spec) {
 
 func (f *String) SetBytes(b []byte) error {
 	f.value = string(b)
-	if f.data != nil {
-		*(f.data) = *f
-	}
 	return nil
 }
 
@@ -130,33 +126,27 @@ func (f *String) Unmarshal(v interface{}) error {
 }
 
 func (f *String) SetData(data interface{}) error {
-	if v, ok := data.(reflect.Value); ok {
-		switch v.Kind() {
-		case reflect.String:
-			f.value = v.String()
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			f.value = fmt.Sprintf("%d", v.Int())
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			f.value = fmt.Sprintf("%d", v.Uint())
-		default:
-			return fmt.Errorf("unsupported type %v", v.Kind())
+	switch v := data.(type) {
+	case *String:
+		if v == nil {
+			return nil
 		}
-		return nil
+		f.value = v.value
+	case string:
+		if v == "" {
+			return nil
+		}
+		f.value = v
+	case int:
+		f.value = strconv.FormatInt(int64(v), 10)
+	case int32:
+		f.value = strconv.FormatInt(int64(v), 10)
+	case int64:
+		f.value = strconv.FormatInt(v, 10)
+	default:
+		return fmt.Errorf("data does not match required *String or string type")
 	}
 
-	if data == nil {
-		return nil
-	}
-
-	str, ok := data.(*String)
-	if !ok {
-		return fmt.Errorf("data does not match required *String type")
-	}
-
-	f.data = str
-	if str.value != "" {
-		f.value = str.value
-	}
 	return nil
 }
 

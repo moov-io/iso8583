@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
+	"math"
 	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
@@ -17,7 +17,6 @@ var _ json.Unmarshaler = (*Numeric)(nil)
 type Numeric struct {
 	value int
 	spec  *Spec
-	data  *Numeric
 }
 
 func NewNumeric(spec *Spec) *Numeric {
@@ -55,9 +54,6 @@ func (f *Numeric) SetBytes(b []byte) error {
 		f.value = val
 	}
 
-	if f.data != nil {
-		*(f.data) = *f
-	}
 	return nil
 }
 
@@ -144,44 +140,32 @@ func (f *Numeric) Unmarshal(v interface{}) error {
 }
 
 func (f *Numeric) SetData(data interface{}) error {
-	if v, ok := data.(reflect.Value); ok {
-		switch v.Kind() {
-		case reflect.Int:
-			f.value = int(v.Int())
-		case reflect.String:
-			val, err := strconv.Atoi(v.String())
-			if err != nil {
-				return utils.NewSafeError(err, "failed to convert into number")
-			}
-			f.value = val
-		default:
-			return fmt.Errorf("data does not match required *Numeric type")
+	switch v := data.(type) {
+	case *Numeric:
+		if v == nil {
+			return nil
 		}
-		return nil
+		f.value = v.value
+	case int:
+		f.value = v
+	case int32:
+		if v >= math.MinInt32 && v <= math.MaxInt32 {
+			f.value = int(v)
+		} else {
+			return fmt.Errorf("int32 value out of range for int")
+		}
+	case int64:
+		if v >= math.MinInt64 && v <= math.MaxInt64 {
+			f.value = int(v)
+		} else {
+			return fmt.Errorf("int64 value out of range for int")
+		}
+	case []byte:
+		return f.SetBytes(v)
+	default:
+		return fmt.Errorf("data does not match require *Numeric or supported numeric types (int, int32, int64)")
 	}
 
-	// if v.Kind() == reflect.Int {
-	// }
-	// if v, ok := data.(reflect.Value); ok {
-	// 	if v.CanSet() {
-	// 		v.Set(reflect.ValueOf(f.value))
-	// 		return nil
-	// 	}
-	// }
-
-	if data == nil {
-		return nil
-	}
-
-	num, ok := data.(*Numeric)
-	if !ok {
-		return fmt.Errorf("data does not match required *Numeric type")
-	}
-
-	f.data = num
-	if num.value != 0 {
-		f.value = num.value
-	}
 	return nil
 }
 

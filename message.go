@@ -354,36 +354,41 @@ func (m *Message) Marshal(v interface{}) error {
 
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
-		fieldIndex, err := getFieldIndex(dataStruct.Type().Field(i))
-		if err != nil {
-			return fmt.Errorf("getting field %d index: %w", i, err)
-		}
+		fieldTag := NewFieldTag(dataStruct.Type().Field(i))
 
-		// skip field without index
-		if fieldIndex < 0 {
+		// skip field without index or if index in tag is not defined
+		if fieldTag.Id < 0 {
 			continue
 		}
 
-		messageField := m.GetField(fieldIndex)
+		messageField := m.GetField(fieldTag.Id)
 		// if struct field we are usgin to populate value expects to
 		// set index of the field that is not described by spec
 		if messageField == nil {
-			return fmt.Errorf("no message field defined by spec with index: %d", fieldIndex)
+			return fmt.Errorf("no message field defined by spec with index: %d", fieldTag.Id)
 		}
 
 		dataField := dataStruct.Field(i)
-		if dataField.IsNil() {
+
+		// for pointer fields we need to check if they are nil
+		// and if they are we need to skip them, to not set bitmap bit
+		// and not to set value to the field
+		if dataField.Kind() == reflect.Pointer && dataField.IsZero() {
 			continue
 		}
 
-		err = messageField.Marshal(dataField)
-
-		// err = messageField.Marshal(dataField.Interface())
-		if err != nil {
-			return fmt.Errorf("failed to set value to field %d: %w", fieldIndex, err)
+		// for non pointer fields we need to check if they are zero
+		// and we want to skip them (as specified in the field tag)
+		if dataField.IsZero() && !fieldTag.KeepZero {
+			continue
 		}
 
-		m.fieldsMap[fieldIndex] = struct{}{}
+		err := messageField.Marshal(dataField.Interface())
+		if err != nil {
+			return fmt.Errorf("failed to set value to field %d: %w", fieldTag.Id, err)
+		}
+
+		m.fieldsMap[fieldTag.Id] = struct{}{}
 	}
 
 	return nil
