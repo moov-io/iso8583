@@ -14,11 +14,13 @@ type bcdVarPrefixer struct {
 }
 
 var BCD = Prefixers{
-	Fixed: &bcdFixedPrefixer{},
-	L:     &bcdVarPrefixer{1},
-	LL:    &bcdVarPrefixer{2},
-	LLL:   &bcdVarPrefixer{3},
-	LLLL:  &bcdVarPrefixer{4},
+	Fixed:  &bcdFixedPrefixer{},
+	L:      &bcdVarPrefixer{1},
+	LL:     &bcdVarPrefixer{2},
+	LLL:    &bcdVarPrefixer{3},
+	LLLL:   &bcdVarPrefixer{4},
+	LLLLL:  &bcdVarPrefixer{5},
+	LLLLLL: &bcdVarPrefixer{6},
 }
 
 func (p *bcdVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {

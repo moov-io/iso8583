@@ -9,11 +9,13 @@ import (
 )
 
 var EBCDIC1047 = Prefixers{
-	Fixed: &ebcdic1047FixedPrefixer{},
-	L:     &ebcdic1047Prefixer{1},
-	LL:    &ebcdic1047Prefixer{2},
-	LLL:   &ebcdic1047Prefixer{3},
-	LLLL:  &ebcdic1047Prefixer{4},
+	Fixed:  &ebcdic1047FixedPrefixer{},
+	L:      &ebcdic1047Prefixer{1},
+	LL:     &ebcdic1047Prefixer{2},
+	LLL:    &ebcdic1047Prefixer{3},
+	LLLL:   &ebcdic1047Prefixer{4},
+	LLLLL:  &ebcdic1047Prefixer{5},
+	LLLLLL: &ebcdic1047Prefixer{6},
 }
 
 type ebcdic1047Prefixer struct {
