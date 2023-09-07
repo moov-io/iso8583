@@ -13,12 +13,13 @@ type ebcdicVarPrefixer struct {
 }
 
 var EBCDIC = Prefixers{
-	Fixed: &ebcdicFixedPrefixer{},
-	L:     &ebcdicVarPrefixer{1},
-	LL:    &ebcdicVarPrefixer{2},
-	LLL:   &ebcdicVarPrefixer{3},
-	LLLL:  &ebcdicVarPrefixer{4},
-	LLLLL: &ebcdicVarPrefixer{5},
+	Fixed:  &ebcdicFixedPrefixer{},
+	L:      &ebcdicVarPrefixer{1},
+	LL:     &ebcdicVarPrefixer{2},
+	LLL:    &ebcdicVarPrefixer{3},
+	LLLL:   &ebcdicVarPrefixer{4},
+	LLLLL:  &ebcdicVarPrefixer{5},
+	LLLLLL: &ebcdicVarPrefixer{6},
 }
 
 func (p *ebcdicVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {

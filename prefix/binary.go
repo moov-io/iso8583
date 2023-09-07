@@ -8,12 +8,13 @@ import (
 )
 
 var Binary = Prefixers{
-	Fixed: &binaryFixedPrefixer{},
-	L:     &binaryVarPrefixer{1},
-	LL:    &binaryVarPrefixer{2},
-	LLL:   &binaryVarPrefixer{3},
-	LLLL:  &binaryVarPrefixer{4},
-	LLLLL: &binaryVarPrefixer{5},
+	Fixed:  &binaryFixedPrefixer{},
+	L:      &binaryVarPrefixer{1},
+	LL:     &binaryVarPrefixer{2},
+	LLL:    &binaryVarPrefixer{3},
+	LLLL:   &binaryVarPrefixer{4},
+	LLLLL:  &binaryVarPrefixer{5},
+	LLLLLL: &binaryVarPrefixer{6},
 }
 
 type binaryFixedPrefixer struct {

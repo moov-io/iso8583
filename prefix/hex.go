@@ -8,12 +8,13 @@ import (
 )
 
 var Hex = Prefixers{
-	Fixed: &hexFixedPrefixer{},
-	L:     &hexVarPrefixer{1},
-	LL:    &hexVarPrefixer{2},
-	LLL:   &hexVarPrefixer{3},
-	LLLL:  &hexVarPrefixer{4},
-	LLLLL: &hexVarPrefixer{5},
+	Fixed:  &hexFixedPrefixer{},
+	L:      &hexVarPrefixer{1},
+	LL:     &hexVarPrefixer{2},
+	LLL:    &hexVarPrefixer{3},
+	LLLL:   &hexVarPrefixer{4},
+	LLLLL:  &hexVarPrefixer{5},
+	LLLLLL: &hexVarPrefixer{6},
 }
 
 type hexFixedPrefixer struct {

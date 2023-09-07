@@ -19,12 +19,13 @@ type Prefixer interface {
 }
 
 type Prefixers struct {
-	Fixed Prefixer
-	L     Prefixer
-	LL    Prefixer
-	LLL   Prefixer
-	LLLL  Prefixer
-	LLLLL Prefixer
+	Fixed  Prefixer
+	L      Prefixer
+	LL     Prefixer
+	LLL    Prefixer
+	LLLL   Prefixer
+	LLLLL  Prefixer
+	LLLLLL Prefixer
 }
 
 type PrefixerBuilder func(int) Prefixer

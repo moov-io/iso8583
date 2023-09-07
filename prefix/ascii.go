@@ -11,12 +11,13 @@ type asciiVarPrefixer struct {
 }
 
 var ASCII = Prefixers{
-	Fixed: &asciiFixedPrefixer{},
-	L:     &asciiVarPrefixer{1},
-	LL:    &asciiVarPrefixer{2},
-	LLL:   &asciiVarPrefixer{3},
-	LLLL:  &asciiVarPrefixer{4},
-	LLLLL: &asciiVarPrefixer{5},
+	Fixed:  &asciiFixedPrefixer{},
+	L:      &asciiVarPrefixer{1},
+	LL:     &asciiVarPrefixer{2},
+	LLL:    &asciiVarPrefixer{3},
+	LLLL:   &asciiVarPrefixer{4},
+	LLLLL:  &asciiVarPrefixer{5},
+	LLLLLL: &asciiVarPrefixer{6},
 }
 
 func (p *asciiVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
