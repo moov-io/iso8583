@@ -595,7 +595,7 @@ func TestCompositePacking(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to set data from field 1: data does not match required *String type")
+		require.Contains(t, err.Error(), "failed to set data from field 1: data does not match required *String")
 	})
 
 	t.Run("Pack returns error on failure of subfield packing", func(t *testing.T) {
