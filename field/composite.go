@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/moov-io/iso8583/encoding"
-	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
 
@@ -120,8 +119,8 @@ func (f *Composite) GetSubfields() map[string]Field {
 // should only pass None or nil values for ths type. Passing any other value
 // will result in a panic.
 func (f *Composite) SetSpec(spec *Spec) {
-	if err := validateCompositeSpec(spec); err != nil {
-		panic(err)
+	if err := spec.Validate(); err != nil {
+		panic(err) //nolint // as specs moslty static, we panic on spec validation errors
 	}
 	f.spec = spec
 
@@ -607,49 +606,6 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 
 func (f *Composite) skipUnknownTLVTags() bool {
 	return f.spec.Tag != nil && f.spec.Tag.SkipUnknownTLVTags && (f.spec.Tag.Enc == encoding.BerTLVTag || f.spec.Tag.PrefUnknownTLV != nil)
-}
-
-func validateCompositeSpec(spec *Spec) error {
-	if spec.Enc != nil {
-		return fmt.Errorf("Composite spec only supports a nil Enc value")
-	}
-	if spec.Pad != nil && spec.Pad != padding.None {
-		return fmt.Errorf("Composite spec only supports nil or None spec padding values")
-	}
-	if (spec.Bitmap == nil && spec.Tag == nil) || (spec.Bitmap != nil && spec.Tag != nil) {
-		return fmt.Errorf("Composite spec only supports a definition of Bitmap or Tag, can't stand both or neither")
-	}
-
-	// If bitmap is defined, validates subfields keys.
-	// spec.Tag is not validated.
-	if spec.Bitmap != nil {
-		if !spec.Bitmap.spec.DisableAutoExpand {
-			return fmt.Errorf("Composite spec only supports a bitmap with 'DisableAutoExpand = true'")
-		}
-
-		for key := range spec.Subfields {
-			parsedKey, err := strconv.Atoi(key)
-			if err != nil {
-				return fmt.Errorf("error parsing key from bitmapped subfield definition: %w", err)
-			}
-
-			if parsedKey <= 0 {
-				return fmt.Errorf("Composite spec only supports integers greater than 0 as keys for bitmapped subfields definition")
-			}
-		}
-
-		return nil
-	}
-
-	// Validate spec.Tag.
-	if spec.Tag.Sort == nil {
-		return fmt.Errorf("Composite spec requires a Tag.Sort function to define a Tag")
-	}
-	if spec.Tag.Enc == nil && spec.Tag.Length > 0 {
-		return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
-	}
-
-	return nil
 }
 
 func orderedKeys(kvs map[string]Field, sorter sort.StringSlice) []string {
