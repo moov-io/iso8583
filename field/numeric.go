@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
@@ -148,22 +147,35 @@ func (f *Numeric) SetData(data interface{}) error {
 		f.value = v.value
 	case int:
 		f.value = v
-	case int32:
-		if v >= math.MinInt32 && v <= math.MaxInt32 {
-			f.value = int(v)
-		} else {
-			return fmt.Errorf("int32 value out of range for int")
+	case *int:
+		if v == nil {
+			f.value = 0
+			return nil
 		}
-	case int64:
-		if v >= math.MinInt64 && v <= math.MaxInt64 {
-			f.value = int(v)
-		} else {
-			return fmt.Errorf("int64 value out of range for int")
+		f.value = *v
+	case string:
+		if v == "" {
+			f.value = 0
+			return nil
 		}
-	case []byte:
-		return f.SetBytes(v)
+		val, err := strconv.Atoi(v)
+		if err != nil {
+			return utils.NewSafeError(err, "failed to convert sting value into number")
+		}
+		f.value = val
+	case *string:
+		if v == nil {
+			f.value = 0
+			return nil
+		}
+
+		val, err := strconv.Atoi(*v)
+		if err != nil {
+			return utils.NewSafeError(err, "failed to convert sting value into number")
+		}
+		f.value = val
 	default:
-		return fmt.Errorf("data does not match require *Numeric or supported numeric types (int, int32, int64)")
+		return fmt.Errorf("data does not match require *Numeric or supported numeric types (int, *int, string, *string)")
 	}
 
 	return nil

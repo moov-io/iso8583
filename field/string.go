@@ -137,14 +137,18 @@ func (f *String) SetData(data interface{}) error {
 			return nil
 		}
 		f.value = v
+	case *string:
+		if v == nil {
+			f.value = ""
+			return nil
+		}
+		f.value = *v
 	case int:
 		f.value = strconv.FormatInt(int64(v), 10)
-	case int32:
-		f.value = strconv.FormatInt(int64(v), 10)
-	case int64:
-		f.value = strconv.FormatInt(v, 10)
+	case *int:
+		f.value = strconv.FormatInt(int64(*v), 10)
 	default:
-		return fmt.Errorf("data does not match required *String or string type")
+		return fmt.Errorf("data does not match required *String or (string, *string, int, *int) type")
 	}
 
 	return nil
