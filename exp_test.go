@@ -9,13 +9,6 @@ import (
 )
 
 func TestStructWithTypes(t *testing.T) {
-	type authRequestData struct {
-		MTI                  string `index:"0"`
-		PrimaryAccountNumber string `index:"2"`
-		ProcessingCode       int    `index:"3"`
-		TransactionAmount    *int   `index:"4,keepzero"` // we will set message field value to 0
-	}
-
 	t.Run("pack", func(t *testing.T) {
 		panInt := 4242424242424242
 		panStr := "4242424242424242"
