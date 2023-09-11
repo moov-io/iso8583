@@ -433,11 +433,19 @@ func (m *Message) Unmarshal(v interface{}) error {
 		}
 
 		dataField := dataStruct.Field(i)
-		if dataField.IsNil() {
-			dataField.Set(reflect.New(dataField.Type().Elem()))
-		}
 
-		err = messageField.Unmarshal(dataField.Interface())
+		// if field is pointer we will pass pointer to the field
+		if dataField.Kind() == reflect.Ptr {
+			if dataField.IsZero() {
+				fmt.Println("is zero")
+				dataField.Set(reflect.New(dataField.Type().Elem()))
+			}
+
+			err = messageField.Unmarshal(dataField.Interface())
+		} else {
+			// if field is not pointer we will pass the field as reflect.Value
+			err = messageField.Unmarshal(dataField)
+		}
 		if err != nil {
 			return fmt.Errorf("failed to get value from field %d: %w", fieldIndex, err)
 		}

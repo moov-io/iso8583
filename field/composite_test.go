@@ -745,7 +745,7 @@ func TestCompositePacking(t *testing.T) {
 		err = composite.Unmarshal(data)
 
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to get data from field 1: data does not match required *String type")
+		require.Contains(t, err.Error(), "failed to get data from field 1: data does not match required *String")
 	})
 
 	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/moov-io/iso8583"
+	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/specs"
 	"github.com/stretchr/testify/require"
 )
@@ -163,5 +164,43 @@ func TestStructWithTypes(t *testing.T) {
 				require.Equal(t, tt.expectedPackedString, string(packed))
 			})
 		}
+	})
+
+	t.Run("unpack", func(t *testing.T) {
+		type authRequest struct {
+			MTI                  string `index:"0"`
+			PrimaryAccountNumber string `index:"2"`
+		}
+
+		packed := []byte("011040000000000000000000000000000000164242424242424242")
+
+		message := iso8583.NewMessage(specs.Spec87ASCII)
+		err := message.Unpack(packed)
+		require.NoError(t, err)
+
+		data := authRequest{}
+		err = message.Unmarshal(&data)
+		require.NoError(t, err)
+		require.Equal(t, "0110", data.MTI)
+		require.Equal(t, "4242424242424242", data.PrimaryAccountNumber)
+	})
+
+	t.Run("unpack2", func(t *testing.T) {
+		type authRequest struct {
+			MTI                  *string       `index:"0"`
+			PrimaryAccountNumber *field.String `index:"2"`
+		}
+
+		packed := []byte("011040000000000000000000000000000000164242424242424242")
+
+		message := iso8583.NewMessage(specs.Spec87ASCII)
+		err := message.Unpack(packed)
+		require.NoError(t, err)
+
+		data := authRequest{}
+		err = message.Unmarshal(&data)
+		require.NoError(t, err)
+		require.Equal(t, "0110", *data.MTI)
+		require.Equal(t, "4242424242424242", data.PrimaryAccountNumber.Value())
 	})
 }

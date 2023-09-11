@@ -2,8 +2,8 @@ package field
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
@@ -111,16 +111,33 @@ func (f *String) Unpack(data []byte) (int, error) {
 }
 
 func (f *String) Unmarshal(v interface{}) error {
-	if v == nil {
-		return nil
+	switch val := v.(type) {
+	case reflect.Value:
+		switch val.Kind() {
+		case reflect.String:
+			val.SetString(f.value)
+		case reflect.Int:
+			i, err := strconv.Atoi(f.value)
+			if err != nil {
+				return fmt.Errorf("failed to convert string to int: %w", err)
+			}
+			val.SetInt(int64(i))
+		default:
+			return fmt.Errorf("data does not match required reflect.Value type")
+		}
+	case *string:
+		*val = f.value
+	case *int:
+		i, err := strconv.Atoi(f.value)
+		if err != nil {
+			return fmt.Errorf("failed to convert string to int: %w", err)
+		}
+		*val = i
+	case *String:
+		val.value = f.value
+	default:
+		return fmt.Errorf("data does not match required *String or *string type")
 	}
-
-	str, ok := v.(*String)
-	if !ok {
-		return errors.New("data does not match required *String type")
-	}
-
-	str.value = f.value
 
 	return nil
 }
