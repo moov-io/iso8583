@@ -3,7 +3,10 @@ package iso8583
 import (
 	"encoding/hex"
 	"encoding/json"
+	"log"
+	"net/http"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,9 +17,15 @@ import (
 	"github.com/moov-io/iso8583/sort"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	_ "net/http/pprof"
 )
 
 func TestMessage(t *testing.T) {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
 			0: field.NewString(&field.Spec{
@@ -89,6 +98,27 @@ func TestMessage(t *testing.T) {
 			}),
 		},
 	}
+
+	// this test most probably will fail in regular mode,
+	// and should fail when is run with -race flag
+	t.Run("No data race when accessing fields concurrently", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		var wg sync.WaitGroup
+
+		for i := 0; i < 1000; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				// calling GetString writes into the map of the
+				// set fields
+				message.GetString(0)
+			}()
+		}
+
+		wg.Wait()
+	})
 
 	t.Run("Test packing and unpacking untyped fields", func(t *testing.T) {
 		message := NewMessage(spec)
