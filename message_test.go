@@ -3,8 +3,6 @@ package iso8583
 import (
 	"encoding/hex"
 	"encoding/json"
-	"log"
-	"net/http"
 	"reflect"
 	"sync"
 	"testing"
@@ -17,15 +15,9 @@ import (
 	"github.com/moov-io/iso8583/sort"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	_ "net/http/pprof"
 )
 
 func TestMessage(t *testing.T) {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
-
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
 			0: field.NewString(&field.Spec{
