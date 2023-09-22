@@ -92,6 +92,9 @@ type CompositeWithSubfields interface {
 	ConstructSubfields()
 }
 
+// ConstructSubfields creates subfields according to the spec
+// this method is used when composite field is created without
+// calling NewComposite (when we create message spec and composite spec)
 func (f *Composite) ConstructSubfields() {
 	if f.subfields == nil {
 		f.subfields = CreateSubfields(f.spec)
@@ -120,7 +123,7 @@ func (f *Composite) GetSubfields() map[string]Field {
 // will result in a panic.
 func (f *Composite) SetSpec(spec *Spec) {
 	if err := spec.Validate(); err != nil {
-		panic(err) //nolint // as specs moslty static, we panic on spec validation errors
+		panic(err) // as specs moslty static, we panic on spec validation errors
 	}
 	f.spec = spec
 
