@@ -140,7 +140,7 @@ func (f *Composite) getSubfields() map[string]Field {
 // will result in a panic.
 func (f *Composite) SetSpec(spec *Spec) {
 	if err := spec.Validate(); err != nil {
-		panic(err) // as specs moslty static, we panic on spec validation errors
+		panic(err) //nolint:forbidigo,nolintlint // as specs moslty static, we panic on spec validation errors
 	}
 	f.spec = spec
 

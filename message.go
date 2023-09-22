@@ -39,7 +39,7 @@ type Message struct {
 func NewMessage(spec *MessageSpec) *Message {
 	// Validate the spec
 	if err := spec.Validate(); err != nil {
-		panic(err) // as specs moslty static, we panic on spec validation errors
+		panic(err) //nolint:forbidigo,nolintlint // as specs moslty static, we panic on spec validation errors
 	}
 
 	fields := spec.CreateMessageFields()
