@@ -302,7 +302,6 @@ func (m *Message) unpack(src []byte) error {
 	return nil
 }
 
-// TODO: protect against concurrent access
 func (m *Message) MarshalJSON() ([]byte, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

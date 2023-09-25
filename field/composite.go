@@ -359,8 +359,6 @@ func (f *Composite) Bitmap() *Bitmap {
 }
 
 func (f *Composite) bitmap() *Bitmap {
-	// TODO: protect against concurrent access
-
 	if f.cachedBitmap != nil {
 		return f.cachedBitmap
 	}

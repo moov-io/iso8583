@@ -1906,9 +1906,9 @@ func TestComposit_concurrency(t *testing.T) {
 		composite := NewComposite(tlvTestSpec)
 
 		wg := sync.WaitGroup{}
-		wg.Add(5)
 
 		for i := 0; i < 5; i++ {
+			wg.Add(1)
 			go func() {
 				defer wg.Done()
 
