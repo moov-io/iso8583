@@ -114,31 +114,33 @@ type MessageSpecBuilder interface {
 type messageSpecBuilder struct{}
 
 type specDummy struct {
-	Name   string          `json:"name,omitempty" xml:"name,omitempty"`
+	Name   string          `json:"name,omitempty"   xml:"name,omitempty"`
 	Fields orderedFieldMap `json:"fields,omitempty" xml:"fields,omitempty"`
 }
 
 type fieldDummy struct {
-	Type        string                 `json:"type,omitempty" xml:"type,omitempty"`
-	Length      int                    `json:"length,omitempty" xml:"length,omitempty"`
-	Description string                 `json:"description,omitempty" xml:"description,omitempty"`
-	Enc         string                 `json:"enc,omitempty" xml:"enc,omitempty"`
-	Prefix      string                 `json:"prefix,omitempty" xml:"prefix,omitempty"`
-	Padding     *paddingDummy          `json:"padding,omitempty" xml:"padding,omitempty"`
-	Tag         *tagDummy              `json:"tag,omitempty" xml:"tag,omitempty"`
-	Subfields   map[string]*fieldDummy `json:"subfields,omitempty" xml:"subfields:omitempty"`
+	Type              string                 `json:"type,omitempty"              xml:"type,omitempty"`
+	Length            int                    `json:"length,omitempty"            xml:"length,omitempty"`
+	Description       string                 `json:"description,omitempty"       xml:"description,omitempty"`
+	Enc               string                 `json:"enc,omitempty"               xml:"enc,omitempty"`
+	Prefix            string                 `json:"prefix,omitempty"            xml:"prefix,omitempty"`
+	Padding           *paddingDummy          `json:"padding,omitempty"           xml:"padding,omitempty"`
+	Tag               *tagDummy              `json:"tag,omitempty"               xml:"tag,omitempty"`
+	Subfields         map[string]*fieldDummy `json:"subfields,omitempty"         xml:"subfields:omitempty"`
+	Bitmap            *fieldDummy            `json:"bitmap,omitempty"            xml:"bitmap,omitempty"`
+	DisableAutoExpand bool                   `json:"disableautoexpand,omitempty" xml:"disableautoexpand,omitempty"`
 }
 
 type paddingDummy struct {
 	Type string `json:"type" xml:"type"`
-	Pad  string `json:"pad" xml:"pad"`
+	Pad  string `json:"pad"  xml:"pad"`
 }
 
 type tagDummy struct {
-	Length  int           `json:"length,omitempty" xml:"length,omitempty"`
-	Enc     string        `json:"enc,omitempty" xml:"enc,omitempty"`
+	Length  int           `json:"length,omitempty"  xml:"length,omitempty"`
+	Enc     string        `json:"enc,omitempty"     xml:"enc,omitempty"`
 	Padding *paddingDummy `json:"padding,omitempty" xml:"padding,omitempty"`
-	Sort    string        `json:"sort,omitempty" xml:"sort,omitempty"`
+	Sort    string        `json:"sort,omitempty"    xml:"sort,omitempty"`
 }
 
 func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
@@ -177,17 +179,30 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 			fieldSpec.Subfields[key] = constructor(subfieldSpec)
 		}
 
-		fieldSpec.Tag = &field.TagSpec{
-			Length: dummyField.Tag.Length,
-		}
-		fieldSpec.Tag.Enc = EncodingsExtToInt[dummyField.Tag.Enc]
-		if dummyField.Tag.Padding != nil {
-			if padderConstructor := PaddersExtToInt[dummyField.Tag.Padding.Type]; padderConstructor != nil {
-				fieldSpec.Tag.Pad = padderConstructor(dummyField.Tag.Padding.Pad)
+		if dummyField.Tag != nil {
+			fieldSpec.Tag = &field.TagSpec{
+				Length: dummyField.Tag.Length,
 			}
+			fieldSpec.Tag.Enc = EncodingsExtToInt[dummyField.Tag.Enc]
+			if dummyField.Tag.Padding != nil {
+				if padderConstructor := PaddersExtToInt[dummyField.Tag.Padding.Type]; padderConstructor != nil {
+					fieldSpec.Tag.Pad = padderConstructor(dummyField.Tag.Padding.Pad)
+				}
+			}
+			fieldSpec.Tag.Sort = SortExtToInt[dummyField.Tag.Sort]
 		}
-		fieldSpec.Tag.Sort = SortExtToInt[dummyField.Tag.Sort]
+
+		if dummyField.Bitmap != nil {
+			bitmapSpec, err := importField(dummyField.Bitmap, "field bitmap")
+			if err != nil {
+				return nil, err
+			}
+
+			fieldSpec.Bitmap = field.NewBitmap(bitmapSpec)
+		}
+
 	}
+	fieldSpec.DisableAutoExpand = dummyField.DisableAutoExpand
 	return fieldSpec, nil
 }
 
@@ -218,7 +233,11 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 		}
 		constructor := FieldConstructor[dummyField.Type]
 		if constructor == nil {
-			return nil, fmt.Errorf("no constructor for filed type: %s for field: %d", dummyField.Type, index)
+			return nil, fmt.Errorf(
+				"no constructor for filed type: %s for field: %d",
+				dummyField.Type,
+				index,
+			)
 		}
 		spec.Fields[index] = constructor(fieldSpec)
 	}
@@ -278,7 +297,16 @@ func exportField(internalField field.Field) (*fieldDummy, error) {
 			}
 			dummyField.Tag = tag
 		}
+
+		if spec.Bitmap != nil {
+			bitmap, err := exportField(spec.Bitmap)
+			if err != nil {
+				return nil, err
+			}
+			dummyField.Bitmap = bitmap
+		}
 	}
+	dummyField.DisableAutoExpand = spec.DisableAutoExpand
 
 	return dummyField, nil
 }
@@ -304,7 +332,6 @@ func exportTag(tag *field.TagSpec) (*tagDummy, error) {
 		dummy.Sort = getFunctionName(tag.Sort)
 	}
 	return dummy, nil
-
 }
 
 func exportPad(pad padding.Padder) (*paddingDummy, error) {
@@ -317,6 +344,7 @@ func exportPad(pad padding.Padder) (*paddingDummy, error) {
 	}
 	return nil, fmt.Errorf("unknown padding type: %s", paddingType)
 }
+
 func exportEnc(enc encoding.Encoder) (string, error) {
 	// set encoding
 	encType := reflect.TypeOf(enc).Elem().Name()
