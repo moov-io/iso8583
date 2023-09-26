@@ -1,9 +1,11 @@
 package field
 
 import (
+	"encoding/hex"
 	"fmt"
 	"reflect"
 	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -1890,5 +1892,62 @@ func TestComposite_getFieldIndexOrTag(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Empty(t, index)
+	})
+}
+
+func TestComposit_concurrency(t *testing.T) {
+	t.Run("Pack and Marshal", func(t *testing.T) {
+		// packing and marshaling
+		data := &TLVTestData{
+			F9A:   NewHexValue("210720"),
+			F9F02: NewHexValue("000000000501"),
+		}
+
+		composite := NewComposite(tlvTestSpec)
+
+		wg := sync.WaitGroup{}
+
+		for i := 0; i < 5; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				err := composite.Marshal(data)
+				require.NoError(t, err)
+
+				_, err = composite.Pack()
+				require.NoError(t, err)
+			}()
+		}
+
+		wg.Wait()
+	})
+
+	t.Run("Unpack and Unmarshal", func(t *testing.T) {
+		packed, err := hex.DecodeString("3031349A032107209F0206000000000501")
+		require.NoError(t, err)
+
+		composite := NewComposite(tlvTestSpec)
+
+		wg := sync.WaitGroup{}
+		wg.Add(5)
+
+		for i := 0; i < 5; i++ {
+			go func() {
+				defer wg.Done()
+
+				data := &TLVTestData{}
+				_, err := composite.Unpack(packed)
+				require.NoError(t, err)
+
+				err = composite.Unmarshal(data)
+				require.NoError(t, err)
+
+				require.Equal(t, "210720", data.F9A.Value())
+				require.Equal(t, "000000000501", data.F9F02.Value())
+			}()
+		}
+
+		wg.Wait()
 	})
 }

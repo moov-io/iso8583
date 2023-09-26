@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"sync"
 
 	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/utils"
@@ -22,11 +23,14 @@ const (
 )
 
 type Message struct {
-	spec   *MessageSpec
-	bitmap *field.Bitmap
+	spec         *MessageSpec
+	cachedBitmap *field.Bitmap
 
 	// stores all fields according to the spec
 	fields map[int]field.Field
+
+	// to guard fieldsMap
+	mu sync.Mutex
 
 	// tracks which fields were set
 	fieldsMap map[int]struct{}
@@ -35,7 +39,7 @@ type Message struct {
 func NewMessage(spec *MessageSpec) *Message {
 	// Validate the spec
 	if err := spec.Validate(); err != nil {
-		panic(err) //nolint // as specs moslty static, we panic on spec validation errors
+		panic(err) //nolint:forbidigo,nolintlint // as specs moslty static, we panic on spec validation errors
 	}
 
 	fields := spec.CreateMessageFields()
@@ -53,21 +57,34 @@ func (m *Message) SetData(data interface{}) error {
 }
 
 func (m *Message) Bitmap() *field.Bitmap {
-	if m.bitmap != nil {
-		return m.bitmap
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.bitmap()
+}
+
+// bitmap creates and returns the bitmap field, it's not thread safe
+// and should be called from a thread safe function
+func (m *Message) bitmap() *field.Bitmap {
+	if m.cachedBitmap != nil {
+		return m.cachedBitmap
 	}
 
 	// We validate the presence and type of the bitmap field in
 	// spec.Validate() when we create the message so we can safely assume
 	// it exists and is of the correct type
-	m.bitmap, _ = m.fields[bitmapIdx].(*field.Bitmap)
-	m.bitmap.Reset()
+	m.cachedBitmap, _ = m.fields[bitmapIdx].(*field.Bitmap)
+	m.cachedBitmap.Reset()
+
 	m.fieldsMap[bitmapIdx] = struct{}{}
 
-	return m.bitmap
+	return m.cachedBitmap
 }
 
 func (m *Message) MTI(val string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.fieldsMap[mtiIdx] = struct{}{}
 	m.fields[mtiIdx].SetBytes([]byte(val))
 }
@@ -77,6 +94,9 @@ func (m *Message) GetSpec() *MessageSpec {
 }
 
 func (m *Message) Field(id int, val string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if f, ok := m.fields[id]; ok {
 		m.fieldsMap[id] = struct{}{}
 		return f.SetBytes([]byte(val))
@@ -85,6 +105,9 @@ func (m *Message) Field(id int, val string) error {
 }
 
 func (m *Message) BinaryField(id int, val []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if f, ok := m.fields[id]; ok {
 		m.fieldsMap[id] = struct{}{}
 		return f.SetBytes(val)
@@ -93,13 +116,15 @@ func (m *Message) BinaryField(id int, val []byte) error {
 }
 
 func (m *Message) GetMTI() (string, error) {
-	// check index
+	// we validate the presence and type of the mti field in
+	// spec.Validate() when we create the message so we can safely assume
+	// it exists
 	return m.fields[mtiIdx].String()
 }
 
 func (m *Message) GetString(id int) (string, error) {
 	if f, ok := m.fields[id]; ok {
-		m.fieldsMap[id] = struct{}{}
+		// m.fieldsMap[id] = struct{}{}
 		return f.String()
 	}
 	return "", fmt.Errorf("failed to get string for field %d. ID does not exist", id)
@@ -107,7 +132,7 @@ func (m *Message) GetString(id int) (string, error) {
 
 func (m *Message) GetBytes(id int) ([]byte, error) {
 	if f, ok := m.fields[id]; ok {
-		m.fieldsMap[id] = struct{}{}
+		// m.fieldsMap[id] = struct{}{}
 		return f.Bytes()
 	}
 	return nil, fmt.Errorf("failed to get bytes for field %d. ID does not exist", id)
@@ -119,6 +144,15 @@ func (m *Message) GetField(id int) field.Field {
 
 // Fields returns the map of the set fields
 func (m *Message) GetFields() map[int]field.Field {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.getFields()
+}
+
+// getFields returns the map of the set fields. It assumes that the mutex
+// is already locked by the caller.
+func (m *Message) getFields() map[int]field.Field {
 	fields := map[int]field.Field{}
 	for i := range m.fieldsMap {
 		fields[i] = m.GetField(i)
@@ -126,9 +160,20 @@ func (m *Message) GetFields() map[int]field.Field {
 	return fields
 }
 
-// Pack returns the packed message or an error if the message is invalid
-// error is of type *PackError
+// Pack locks the message, packs its fields, and then unlocks it.
+// If any errors are encountered during packing, they will be wrapped
+// in a *PackError before being returned.
 func (m *Message) Pack() ([]byte, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.wrapErrorPack()
+
+}
+
+// wrapErrorPack calls the core packing logic and wraps any errors in a
+// *PackError. It assumes that the mutex is already locked by the caller.
+func (m *Message) wrapErrorPack() ([]byte, error) {
 	data, err := m.pack()
 	if err != nil {
 		return nil, &PackError{Err: err}
@@ -137,9 +182,12 @@ func (m *Message) Pack() ([]byte, error) {
 	return data, nil
 }
 
+// pack contains the core logic for packing the message. This method does not
+// handle locking or error wrapping and should typically be used internally
+// after ensuring concurrency safety.
 func (m *Message) pack() ([]byte, error) {
 	packed := []byte{}
-	m.Bitmap().Reset()
+	m.bitmap().Reset()
 
 	ids, err := m.packableFieldIDs()
 	if err != nil {
@@ -150,16 +198,16 @@ func (m *Message) pack() ([]byte, error) {
 		// indexes 0 and 1 are for mti and bitmap
 		// regular field number startd from index 2
 		// do not pack presence bits as well
-		if id < 2 || m.Bitmap().IsBitmapPresenceBit(id) {
+		if id < 2 || m.bitmap().IsBitmapPresenceBit(id) {
 			continue
 		}
-		m.Bitmap().Set(id)
+		m.bitmap().Set(id)
 	}
 
 	// pack fields
 	for _, i := range ids {
 		// do not pack presence bits other than the first one as it's the bitmap itself
-		if i != 1 && m.Bitmap().IsBitmapPresenceBit(i) {
+		if i != 1 && m.bitmap().IsBitmapPresenceBit(i) {
 			continue
 		}
 
@@ -180,6 +228,16 @@ func (m *Message) pack() ([]byte, error) {
 // Unpack unpacks the message from the given byte slice or returns an error
 // which is of type *UnpackError and contains the raw message
 func (m *Message) Unpack(src []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.wrappErrorUnpack(src)
+}
+
+// wrappErrorUnpack calls the core unpacking logic and wraps any
+// errors in a *UnpackError. It assumes that the mutex is already
+// locked by the caller.
+func (m *Message) wrappErrorUnpack(src []byte) error {
 	if err := m.unpack(src); err != nil {
 		return &UnpackError{
 			Err:        err,
@@ -189,6 +247,9 @@ func (m *Message) Unpack(src []byte) error {
 	return nil
 }
 
+// unpack contains the core logic for unpacking the message. This method does
+// not handle locking or error wrapping and should typically be used internally
+// after ensuring concurrency safety.
 func (m *Message) unpack(src []byte) error {
 	var off int
 
@@ -196,7 +257,7 @@ func (m *Message) unpack(src []byte) error {
 	m.fieldsMap = map[int]struct{}{}
 
 	// This method implicitly also sets m.fieldsMap[bitmapIdx]
-	m.Bitmap().Reset()
+	m.bitmap().Reset()
 
 	read, err := m.fields[mtiIdx].Unpack(src)
 	if err != nil {
@@ -215,13 +276,13 @@ func (m *Message) unpack(src []byte) error {
 
 	off += read
 
-	for i := 2; i <= m.Bitmap().Len(); i++ {
+	for i := 2; i <= m.bitmap().Len(); i++ {
 		// skip bitmap presence bits (for default bitmap length of 64 these are bits 1, 65, 129, 193, etc.)
-		if m.Bitmap().IsBitmapPresenceBit(i) {
+		if m.bitmap().IsBitmapPresenceBit(i) {
 			continue
 		}
 
-		if m.Bitmap().IsSet(i) {
+		if m.bitmap().IsSet(i) {
 			fl, ok := m.fields[i]
 			if !ok {
 				return fmt.Errorf("failed to unpack field %d: no specification found", i)
@@ -242,14 +303,17 @@ func (m *Message) unpack(src []byte) error {
 }
 
 func (m *Message) MarshalJSON() ([]byte, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	// by packing the message we will generate bitmap
 	// create HEX representation
 	// and validate message against the spec
-	if _, err := m.Pack(); err != nil {
+	if _, err := m.wrapErrorPack(); err != nil {
 		return nil, err
 	}
 
-	fieldMap := m.GetFields()
+	fieldMap := m.getFields()
 	strFieldMap := map[string]field.Field{}
 	for id, field := range fieldMap {
 		strFieldMap[fmt.Sprint(id)] = field
@@ -264,6 +328,9 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 }
 
 func (m *Message) UnmarshalJSON(b []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	var data map[string]json.RawMessage
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -311,9 +378,12 @@ func (m *Message) packableFieldIDs() ([]int, error) {
 // Clone clones the message by creating a new message from the binary
 // representation of the original message
 func (m *Message) Clone() (*Message, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	newMessage := NewMessage(m.spec)
 
-	bytes, err := m.Pack()
+	bytes, err := m.wrapErrorPack()
 	if err != nil {
 		return nil, err
 	}
@@ -338,6 +408,9 @@ func (m *Message) Clone() (*Message, error) {
 // through the message fields and calls Unmarshal(...) on them setting the v If
 // v is not a struct or not a pointer to struct then it returns error.
 func (m *Message) Marshal(v interface{}) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if v == nil {
 		return nil
 	}
@@ -391,6 +464,9 @@ func (m *Message) Marshal(v interface{}) error {
 // through the message fields and calls Unmarshal(...) on them setting the v If
 // v  is nil or not a pointer it returns error.
 func (m *Message) Unmarshal(v interface{}) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("data is not a pointer or nil")

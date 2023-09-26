@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -89,6 +90,27 @@ func TestMessage(t *testing.T) {
 			}),
 		},
 	}
+
+	// this test most probably will fail in regular mode,
+	// and should fail when is run with -race flag
+	t.Run("No data race when accessing fields concurrently", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		var wg sync.WaitGroup
+
+		for i := 0; i < 1000; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				// calling GetString writes into the map of the
+				// set fields
+				message.GetString(0)
+			}()
+		}
+
+		wg.Wait()
+	})
 
 	t.Run("Test packing and unpacking untyped fields", func(t *testing.T) {
 		message := NewMessage(spec)
