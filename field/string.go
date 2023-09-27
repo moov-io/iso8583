@@ -137,7 +137,6 @@ func (f *String) Unmarshal(v interface{}) error {
 
 			val.SetInt(int64(i))
 		default:
-			fmt.Println(val.Kind())
 			return fmt.Errorf("data does not match required reflect.Value type")
 		}
 	case *string:
