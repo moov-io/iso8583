@@ -3,8 +3,8 @@ package field
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/moov-io/iso8583/utils"
@@ -22,7 +22,6 @@ var _ json.Unmarshaler = (*Hex)(nil)
 type Hex struct {
 	value string
 	spec  *Spec
-	data  *Hex
 }
 
 func NewHex(spec *Spec) *Hex {
@@ -50,9 +49,6 @@ func (f *Hex) SetSpec(spec *Spec) {
 
 func (f *Hex) SetBytes(b []byte) error {
 	f.value = strings.ToUpper(hex.EncodeToString(b))
-	if f.data != nil {
-		*(f.data) = *f
-	}
 	return nil
 }
 
@@ -126,40 +122,80 @@ func (f *Hex) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *Hex) Unmarshal(v interface{}) error {
-	if v == nil {
-		return nil
-	}
-
-	str, ok := v.(*Hex)
-	if !ok {
-		return errors.New("data does not match required *Hex type")
-	}
-
-	str.value = f.value
-
-	return nil
-}
-
+// Deprecated. Use Marshal intead.
 func (f *Hex) SetData(data interface{}) error {
-	if data == nil {
-		return nil
+	return f.Marshal(data)
+}
+
+func (f *Hex) Unmarshal(v interface{}) error {
+	switch val := v.(type) {
+	case reflect.Value:
+		switch val.Kind() {
+		case reflect.String:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
+
+			str, _ := f.String()
+			val.SetString(str)
+		case reflect.Slice:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
+
+			buf, _ := f.Bytes()
+			val.SetBytes(buf)
+		default:
+			return fmt.Errorf("data does not match required reflect.Value type")
+		}
+	case *string:
+		*val, _ = f.String()
+	case *[]byte:
+		*val, _ = f.Bytes()
+	case *Hex:
+		val.value = f.value
+	default:
+		return fmt.Errorf("data does not match required *Hex or (*string, *[]byte) type")
 	}
 
-	str, ok := data.(*Hex)
-	if !ok {
-		return fmt.Errorf("data does not match required *Hex type")
-	}
-
-	f.data = str
-	if str.value != "" {
-		f.value = str.value
-	}
 	return nil
 }
 
-func (f *Hex) Marshal(data interface{}) error {
-	return f.SetData(data)
+func (f *Hex) Marshal(v interface{}) error {
+	switch v := v.(type) {
+	case *Hex:
+		if v == nil {
+			return nil
+		}
+		f.value = v.value
+	case string:
+		if v == "" {
+			f.value = ""
+			return nil
+		}
+
+		f.value = v
+		hex.EncodeToString([]byte(v))
+	case *string:
+		if v == nil {
+			f.value = ""
+			return nil
+		}
+
+		f.value = *v
+	case []byte:
+		f.SetBytes(v)
+	case *[]byte:
+		if v == nil {
+			f.value = ""
+			return nil
+		}
+		f.SetBytes(*v)
+	default:
+		return fmt.Errorf("data does not match required *Hex or (string, *string, []byte, *[]byte) type")
+	}
+
+	return nil
 }
 
 func (f *Hex) MarshalJSON() ([]byte, error) {

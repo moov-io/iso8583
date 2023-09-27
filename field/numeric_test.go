@@ -1,6 +1,7 @@
 package field
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -37,18 +38,18 @@ func TestNumericField(t *testing.T) {
 	require.Equal(t, 9876, numeric.Value())
 
 	numeric = NewNumeric(spec)
-	numeric.SetData(NewNumericValue(9876))
+	numeric.Marshal(NewNumericValue(9876))
 	packed, err = numeric.Pack()
 	require.NoError(t, err)
 	require.Equal(t, "      9876", string(packed))
 
 	numeric = NewNumeric(spec)
 	data := NewNumericValue(0)
-	numeric.SetData(data)
+	numeric.Marshal(data)
 	length, err = numeric.Unpack([]byte("      9876"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
-	require.Equal(t, 9876, data.Value())
+	require.Equal(t, 9876, numeric.Value())
 
 	numeric = NewNumeric(spec)
 	numeric.SetValue(9876)
@@ -88,14 +89,74 @@ func TestNumericPack(t *testing.T) {
 }
 
 func TestNumericFieldUnmarshal(t *testing.T) {
-	str := NewNumericValue(9876)
+	str := NewNumericValue(123456)
 
-	val := &Numeric{}
-
-	err := str.Unmarshal(val)
-
+	val1 := &Numeric{}
+	err := str.Unmarshal(val1)
 	require.NoError(t, err)
-	require.Equal(t, 9876, val.Value())
+	require.Equal(t, 123456, val1.Value())
+
+	var val2 string
+	err = str.Unmarshal(&val2)
+	require.NoError(t, err)
+	require.Equal(t, "123456", val2)
+
+	var val3 int
+	err = str.Unmarshal(&val3)
+	require.NoError(t, err)
+	require.Equal(t, 123456, val3)
+
+	val4 := reflect.ValueOf(&val2).Elem()
+	err = str.Unmarshal(val4)
+	require.NoError(t, err)
+	require.Equal(t, "123456", val4.String())
+
+	val5 := reflect.ValueOf(&val3).Elem()
+	err = str.Unmarshal(val5)
+	require.NoError(t, err)
+	require.Equal(t, 123456, int(val5.Int()))
+
+	val6 := reflect.ValueOf(val2)
+	err = str.Unmarshal(val6)
+	require.Error(t, err)
+	require.Equal(t, "reflect.Value of the data can not be change", err.Error())
+
+	val7 := reflect.ValueOf(&val2)
+	err = str.Unmarshal(val7)
+	require.Error(t, err)
+	require.Equal(t, "data does not match required reflect.Value type", err.Error())
+
+	err = str.Unmarshal(nil)
+	require.Error(t, err)
+	require.Equal(t, "data does not match required *Numeric or *int type", err.Error())
+}
+
+func TestNumericFieldMarshal(t *testing.T) {
+	str := NewNumericValue(0)
+	vNumeric := NewNumericValue(123456)
+	str.Marshal(vNumeric)
+	require.Equal(t, 123456, vNumeric.Value())
+
+	str.Marshal(&vNumeric)
+	require.Equal(t, 123456, vNumeric.Value())
+
+	vstring := "123456"
+	str.Marshal(vstring)
+	require.Equal(t, 123456, vNumeric.Value())
+
+	str.Marshal(&vstring)
+	require.Equal(t, 123456, vNumeric.Value())
+
+	vint := 123456
+	str.Marshal(vint)
+	require.Equal(t, 123456, vNumeric.Value())
+
+	str.Marshal(&vint)
+	require.Equal(t, 123456, vNumeric.Value())
+
+	err := str.Marshal(nil)
+	require.Error(t, err)
+	require.Equal(t, "data does not match require *Numeric or (int, *int, string, *string) type", err.Error())
 }
 
 func TestNumericFieldWithNotANumber(t *testing.T) {
@@ -159,13 +220,13 @@ func TestNumericSetBytesSetsDataOntoDataStruct(t *testing.T) {
 	})
 
 	data := &Numeric{}
-	err := numeric.SetData(data)
+	err := numeric.Marshal(data)
 	require.NoError(t, err)
 
 	err = numeric.SetBytes([]byte("9"))
 	require.NoError(t, err)
 
-	require.Equal(t, 9, data.Value())
+	require.Equal(t, 9, numeric.Value())
 }
 
 func TestNumericJSONMarshal(t *testing.T) {

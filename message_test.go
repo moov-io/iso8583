@@ -250,6 +250,53 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, "100", data.F4.Value())
 	})
 
+	t.Run("Test unpacking with untyped fields", func(t *testing.T) {
+		type TestISOF3Data struct {
+			F1 *string
+			F2 string
+			F3 string
+		}
+
+		type ISO87Data struct {
+			F0 *string
+			F2 string
+			F3 *TestISOF3Data
+			F4 string
+		}
+
+		message := NewMessage(spec)
+
+		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
+		err := message.Unpack([]byte(rawMsg))
+
+		require.NoError(t, err)
+
+		s, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", s)
+
+		s, err = message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "123456", s)
+
+		s, err = message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", s)
+
+		data := &ISO87Data{}
+
+		require.NoError(t, message.Unmarshal(data))
+
+		require.NotNil(t, data.F0)
+		require.Equal(t, "0100", *data.F0)
+		require.Equal(t, "4242424242424242", data.F2)
+		require.NotNil(t, data.F3.F1)
+		require.Equal(t, "12", *data.F3.F1)
+		require.Equal(t, "34", data.F3.F2)
+		require.Equal(t, "56", data.F3.F3)
+		require.Equal(t, "100", data.F4)
+	})
+
 	t.Run("Test packing with typed fields", func(t *testing.T) {
 		type TestISOF3Data struct {
 			F1 *field.String
@@ -265,7 +312,7 @@ func TestMessage(t *testing.T) {
 		}
 
 		message := NewMessage(spec)
-		err := message.SetData(&ISO87Data{
+		err := message.Marshal(&ISO87Data{
 			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
 			F3: &TestISOF3Data{
@@ -274,6 +321,41 @@ func TestMessage(t *testing.T) {
 				F3: field.NewStringValue("56"),
 			},
 			F4: field.NewStringValue("100"),
+		})
+		require.NoError(t, err)
+
+		rawMsg, err := message.Pack()
+		require.NoError(t, err)
+
+		wantMsg := []byte("01007000000000000000164242424242424242123456000000000100")
+		require.Equal(t, wantMsg, rawMsg)
+	})
+
+	t.Run("Test packing with untyped fields", func(t *testing.T) {
+		type TestISOF3Data struct {
+			F1 string
+			F2 string
+			F3 string
+		}
+
+		type ISO87Data struct {
+			F0 *string
+			F2 string
+			F3 *TestISOF3Data
+			F4 string
+		}
+
+		messageCode := "0100"
+		message := NewMessage(spec)
+		err := message.Marshal(&ISO87Data{
+			F0: &messageCode,
+			F2: "4242424242424242",
+			F3: &TestISOF3Data{
+				F1: "12",
+				F2: "34",
+				F3: "56",
+			},
+			F4: "100",
 		})
 		require.NoError(t, err)
 
@@ -535,7 +617,7 @@ func TestPackUnpack(t *testing.T) {
 
 	t.Run("Pack data", func(t *testing.T) {
 		message := NewMessage(spec)
-		err := message.SetData(&TestISOData{
+		err := message.Marshal(&TestISOData{
 			F2: field.NewStringValue("4276555555555555"),
 			F3: &TestISOF3Data{
 				F1: field.NewStringValue("00"),
@@ -815,7 +897,7 @@ func TestMessageJSON(t *testing.T) {
 		require.NoError(t, err)
 
 		message := NewMessage(spec)
-		err = message.SetData(&TestISOData{
+		err = message.Marshal(&TestISOData{
 			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
 			F3: &TestISOF3Data{
@@ -873,7 +955,7 @@ func TestMessageJSON(t *testing.T) {
 		want := `{"0":"0100","1":"7000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
 
 		message := NewMessage(spec)
-		message.SetData(&ISO87Data{})
+		message.Marshal(&ISO87Data{})
 
 		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
 		require.NoError(t, message.Unpack([]byte(rawMsg)))
@@ -1228,7 +1310,7 @@ func TestMessageClone(t *testing.T) {
 		},
 		F120: field.NewStringValue("Another test text"),
 	}
-	require.NoError(t, message.SetData(data2))
+	require.NoError(t, message.Marshal(data2))
 
 	message.MTI("0100")
 

@@ -352,7 +352,7 @@ type SubConstructedTLVTestData struct {
 func TestComposite_SetData(t *testing.T) {
 	t.Run("SetData returns an error on provision of primitive type data", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpec)
-		err := composite.SetData("primitive str")
+		err := composite.Marshal("primitive str")
 		require.EqualError(t, err, "data is not a pointer or nil")
 	})
 }
@@ -362,7 +362,7 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 		// first, we need to populate fields of composite field
 		// we will do it by packing the field
 		composite := NewComposite(tlvTestSpec)
-		err := composite.SetData(&TLVTestData{
+		err := composite.Marshal(&TLVTestData{
 			F9A:   NewHexValue("210720"),
 			F9F02: NewHexValue("000000000501"),
 		})
@@ -381,7 +381,7 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 
 	t.Run("Unmarshal gets data for composite field (constructed)", func(t *testing.T) {
 		composite := NewComposite(constructedBERTLVTestSpec)
-		err := composite.SetData(&ConstructedTLVTestData{
+		err := composite.Marshal(&ConstructedTLVTestData{
 			F82:   NewHexValue("017F"),
 			F9F36: NewHexValue("027F"),
 			F9F3B: &SubConstructedTLVTestData{
@@ -410,7 +410,7 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 		// first, we need to populate fields of composite field
 		// we will do it by packing the field
 		composite := NewComposite(tlvTestSpec)
-		err := composite.SetData(&TLVTestData{
+		err := composite.Marshal(&TLVTestData{
 			F9A:   NewHexValue("210720"),
 			F9F02: NewHexValue("000000000501"),
 		})
@@ -436,7 +436,7 @@ func TestTLVPacking(t *testing.T) {
 		}
 
 		composite := NewComposite(tlvTestSpec)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -502,7 +502,7 @@ func TestTLVPacking(t *testing.T) {
 		}
 
 		composite := NewComposite(constructedBERTLVTestSpec)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -592,12 +592,12 @@ func TestCompositePacking(t *testing.T) {
 			F1 *Numeric
 		}
 		composite := NewComposite(compositeTestSpec)
-		err := composite.SetData(&TestDataIncorrectType{
+		err := composite.Marshal(&TestDataIncorrectType{
 			F1: NewNumericValue(1),
 		})
 
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to set data from field 1: data does not match required *String type")
+		require.EqualError(t, err, "failed to set data from field 1: data does not match required *String or (string, *string, int, *int) type")
 	})
 
 	t.Run("Pack returns error on failure of subfield packing", func(t *testing.T) {
@@ -610,7 +610,7 @@ func TestCompositePacking(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpec)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		_, err = composite.Pack()
@@ -666,7 +666,7 @@ func TestCompositePacking(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpec)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -747,14 +747,14 @@ func TestCompositePacking(t *testing.T) {
 		err = composite.Unmarshal(data)
 
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to get data from field 1: data does not match required *String type")
+		require.EqualError(t, err, "failed to get data from field 1: data does not match required *String or *string type")
 	})
 
 	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpec)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// Last two characters must be an integer type. F3 fails to unpack.
@@ -793,7 +793,7 @@ func TestCompositePacking(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(spec)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// Length of denoted by prefix is too long, causing failure to decode length.
@@ -831,7 +831,7 @@ func TestCompositePacking(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(spec)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// There is data only for first subfield
@@ -947,7 +947,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		}
 
 		composite := NewComposite(invalidSpec)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		b, err := composite.Pack()
@@ -1010,7 +1010,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -1026,7 +1026,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -1043,7 +1043,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpecWithoutTagPadding)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -1056,7 +1056,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// F3 fails to unpack - it requires len to be defined instead of AB.
@@ -1070,7 +1070,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// Index 2-3 should have '01' rather than '12'.
@@ -1083,7 +1083,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// Index 0, 1 should have '01' rather than 'ID'.
@@ -1199,7 +1199,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		}
 
 		composite := NewComposite(invalidSpec)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		b, err := composite.Pack()
@@ -1262,7 +1262,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -1278,7 +1278,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -1299,7 +1299,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpecWithSizedBitmap)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -1315,7 +1315,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpecWithSizedBitmap)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		packed, err := composite.Pack()
@@ -1329,7 +1329,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// F1 fails to unpack - it requires length to be defined instead of AB.
@@ -1343,7 +1343,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithDefaultBitmap)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// Index 2-3 = 70 indicates the presence of field 4. This field is not defined on spec.
@@ -1408,7 +1408,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithSizedBitmap)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// F1 fails to unpack - it requires length to be defined instead of AB.
@@ -1422,7 +1422,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithSizedBitmap)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		// Index 2-3 = 70 indicates the presence of field 4. This field is not defined on spec.
@@ -1722,7 +1722,7 @@ func TestCompositeJSONConversion(t *testing.T) {
 		}
 
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		require.NoError(t, composite.SetData(data))
+		require.NoError(t, composite.Marshal(data))
 
 		actual, err := composite.MarshalJSON()
 		require.NoError(t, err)
@@ -1734,7 +1734,7 @@ func TestCompositeJSONConversion(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		err := composite.SetData(data)
+		err := composite.Marshal(data)
 		require.NoError(t, err)
 
 		require.NoError(t, composite.UnmarshalJSON([]byte(json)))
@@ -1761,7 +1761,7 @@ func TestCompositeJSONConversion(t *testing.T) {
 		data := &CompositeTestData{}
 
 		composite := NewComposite(compositeTestSpecWithTagPadding)
-		require.NoError(t, composite.SetData(data))
+		require.NoError(t, composite.Marshal(data))
 
 		require.NoError(t, composite.UnmarshalJSON([]byte(json)))
 

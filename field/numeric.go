@@ -2,8 +2,8 @@ package field
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
@@ -16,7 +16,6 @@ var _ json.Unmarshaler = (*Numeric)(nil)
 type Numeric struct {
 	value int
 	spec  *Spec
-	data  *Numeric
 }
 
 func NewNumeric(spec *Spec) *Numeric {
@@ -54,9 +53,6 @@ func (f *Numeric) SetBytes(b []byte) error {
 		f.value = val
 	}
 
-	if f.data != nil {
-		*(f.data) = *f
-	}
 	return nil
 }
 
@@ -128,39 +124,87 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *Numeric) Unmarshal(v interface{}) error {
-	if v == nil {
-		return nil
-	}
-	num, ok := v.(*Numeric)
-	if !ok {
-		return errors.New("data does not match required *Numeric type")
-	}
-
-	num.value = f.value
-
-	return nil
+// Deprecated. Use Marshal intead.
+func (f *Numeric) SetData(data interface{}) error {
+	return f.Marshal(data)
 }
 
-func (f *Numeric) SetData(data interface{}) error {
-	if data == nil {
-		return nil
+func (f *Numeric) Unmarshal(v interface{}) error {
+	switch val := v.(type) {
+	case reflect.Value:
+		switch val.Kind() {
+		case reflect.String:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
+
+			str := strconv.Itoa(f.value)
+			val.SetString(str)
+		case reflect.Int:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
+
+			val.SetInt(int64(f.value))
+		default:
+			return fmt.Errorf("data does not match required reflect.Value type")
+		}
+	case *string:
+		str := strconv.Itoa(f.value)
+		*val = str
+	case *int:
+		*val = f.value
+	case *Numeric:
+		val.value = f.value
+	default:
+		return fmt.Errorf("data does not match required *Numeric or *int type")
 	}
 
-	num, ok := data.(*Numeric)
-	if !ok {
-		return fmt.Errorf("data does not match required *Numeric type")
-	}
-
-	f.data = num
-	if num.value != 0 {
-		f.value = num.value
-	}
 	return nil
 }
 
 func (f *Numeric) Marshal(data interface{}) error {
-	return f.SetData(data)
+	switch v := data.(type) {
+	case *Numeric:
+		if v == nil {
+			f.value = 0
+			return nil
+		}
+		f.value = v.value
+	case int:
+		f.value = v
+	case *int:
+		if v == nil {
+			f.value = 0
+			return nil
+		}
+		f.value = *v
+	case string:
+		if v == "" {
+			f.value = 0
+			return nil
+		}
+		val, err := strconv.Atoi(v)
+		if err != nil {
+			return utils.NewSafeError(err, "failed to convert sting value into number")
+		}
+		f.value = val
+	case *string:
+		if v == nil {
+			f.value = 0
+			return nil
+		}
+
+		val, err := strconv.Atoi(*v)
+		if err != nil {
+			return utils.NewSafeError(err, "failed to convert sting value into number")
+		}
+		f.value = val
+	default:
+		return fmt.Errorf("data does not match require *Numeric or (int, *int, string, *string) type")
+	}
+
+	return nil
 }
 
 func (f *Numeric) MarshalJSON() ([]byte, error) {

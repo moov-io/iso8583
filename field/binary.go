@@ -1,9 +1,10 @@
 package field
 
 import (
+	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/utils"
@@ -16,7 +17,6 @@ var _ json.Unmarshaler = (*Binary)(nil)
 type Binary struct {
 	value []byte
 	spec  *Spec
-	data  *Binary
 }
 
 func NewBinary(spec *Spec) *Binary {
@@ -41,9 +41,6 @@ func (f *Binary) SetSpec(spec *Spec) {
 
 func (f *Binary) SetBytes(b []byte) error {
 	f.value = b
-	if f.data != nil {
-		*(f.data) = *f
-	}
 	return nil
 }
 
@@ -114,40 +111,89 @@ func (f *Binary) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *Binary) Unmarshal(v interface{}) error {
-	if v == nil {
-		return nil
-	}
-
-	bin, ok := v.(*Binary)
-	if !ok {
-		return errors.New("data does not match required *Binary type")
-	}
-
-	bin.value = f.value
-
-	return nil
-}
-
+// Deprecated. Use Marshal intead.
 func (f *Binary) SetData(data interface{}) error {
-	if data == nil {
-		return nil
+	return f.Marshal(data)
+}
+
+func (f *Binary) Unmarshal(v interface{}) error {
+	switch val := v.(type) {
+	case reflect.Value:
+		switch val.Kind() {
+		case reflect.String:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
+
+			str := hex.EncodeToString(f.value)
+			val.SetString(str)
+		case reflect.Slice:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
+
+			val.SetBytes(f.value)
+		default:
+			return fmt.Errorf("data does not match required reflect.Value type")
+		}
+	case *string:
+		str := hex.EncodeToString(f.value)
+		*val = str
+	case *[]byte:
+		*val = f.value
+	case *Binary:
+		val.value = f.value
+	default:
+		return fmt.Errorf("data does not match required *Binary or (*string, *[]byte) type")
 	}
 
-	bin, ok := data.(*Binary)
-	if !ok {
-		return errors.New("data does not match required *Binary type")
-	}
-
-	f.data = bin
-	if bin.value != nil {
-		f.value = bin.value
-	}
 	return nil
 }
 
-func (f *Binary) Marshal(data interface{}) error {
-	return f.SetData(data)
+func (f *Binary) Marshal(v interface{}) error {
+	switch v := v.(type) {
+	case *Binary:
+		if v == nil {
+			return nil
+		}
+		f.value = v.value
+	case string:
+		if v == "" {
+			f.value = nil
+			return nil
+		}
+
+		buf, err := hex.DecodeString(v)
+		if err != nil {
+			return fmt.Errorf("failed to convert string to byte: %w", err)
+		}
+
+		f.value = buf
+	case *string:
+		if v == nil {
+			f.value = nil
+			return nil
+		}
+
+		buf, err := hex.DecodeString(*v)
+		if err != nil {
+			return fmt.Errorf("failed to convert string to byte: %w", err)
+		}
+
+		f.value = buf
+	case []byte:
+		f.SetBytes(v)
+	case *[]byte:
+		if v == nil {
+			f.value = nil
+			return nil
+		}
+		f.SetBytes(*v)
+	default:
+		return fmt.Errorf("data does not match required *Binary or (string, *string, []byte, *[]byte) type")
+	}
+
+	return nil
 }
 
 func (f *Binary) MarshalJSON() ([]byte, error) {

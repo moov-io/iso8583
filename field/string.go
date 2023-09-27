@@ -2,8 +2,9 @@ package field
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -15,7 +16,6 @@ var _ json.Unmarshaler = (*String)(nil)
 type String struct {
 	value string
 	spec  *Spec
-	data  *String
 }
 
 func NewString(spec *Spec) *String {
@@ -40,9 +40,6 @@ func (f *String) SetSpec(spec *Spec) {
 
 func (f *String) SetBytes(b []byte) error {
 	f.value = string(b)
-	if f.data != nil {
-		*(f.data) = *f
-	}
 	return nil
 }
 
@@ -113,40 +110,82 @@ func (f *String) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
-func (f *String) Unmarshal(v interface{}) error {
-	if v == nil {
-		return nil
-	}
-
-	str, ok := v.(*String)
-	if !ok {
-		return errors.New("data does not match required *String type")
-	}
-
-	str.value = f.value
-
-	return nil
-}
-
+// Deprecated. Use Marshal intead.
 func (f *String) SetData(data interface{}) error {
-	if data == nil {
-		return nil
+	return f.Marshal(data)
+}
+
+func (f *String) Unmarshal(v interface{}) error {
+	switch val := v.(type) {
+	case reflect.Value:
+		switch val.Kind() {
+		case reflect.String:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
+
+			val.SetString(f.value)
+		case reflect.Int:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
+
+			i, err := strconv.Atoi(f.value)
+			if err != nil {
+				return fmt.Errorf("failed to convert string to int: %w", err)
+			}
+
+			val.SetInt(int64(i))
+		default:
+			fmt.Println(val.Kind())
+			return fmt.Errorf("data does not match required reflect.Value type")
+		}
+	case *string:
+		*val = f.value
+	case *int:
+		i, err := strconv.Atoi(f.value)
+		if err != nil {
+			return fmt.Errorf("failed to convert string to int: %w", err)
+		}
+		*val = i
+	case *String:
+		val.value = f.value
+	default:
+		return fmt.Errorf("data does not match required *String or *string type")
 	}
 
-	str, ok := data.(*String)
-	if !ok {
-		return fmt.Errorf("data does not match required *String type")
-	}
-
-	f.data = str
-	if str.value != "" {
-		f.value = str.value
-	}
 	return nil
 }
 
-func (f *String) Marshal(data interface{}) error {
-	return f.SetData(data)
+func (f *String) Marshal(v interface{}) error {
+	switch v := v.(type) {
+	case *String:
+		if v == nil {
+			f.value = ""
+			return nil
+		}
+		f.value = v.value
+	case string:
+		if v == "" {
+			f.value = ""
+			return nil
+		}
+		f.value = v
+	case *string:
+		if v == nil {
+			f.value = ""
+			return nil
+		}
+		f.value = *v
+	case int:
+		f.value = strconv.FormatInt(int64(v), 10)
+	case *int:
+		f.value = strconv.FormatInt(int64(*v), 10)
+	default:
+		return fmt.Errorf("data does not match required *String or (string, *string, int, *int) type")
+	}
+
+	return nil
 }
 
 func (f *String) MarshalJSON() ([]byte, error) {

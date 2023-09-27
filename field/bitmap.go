@@ -114,6 +114,11 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 	return read, nil
 }
 
+// Deprecated. Use Marshal intead.
+func (f *Bitmap) SetData(data interface{}) error {
+	return f.Marshal(data)
+}
+
 func (f *Bitmap) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
@@ -129,7 +134,7 @@ func (f *Bitmap) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *Bitmap) SetData(data interface{}) error {
+func (f *Bitmap) Marshal(data interface{}) error {
 	if data == nil {
 		return nil
 	}
@@ -141,10 +146,6 @@ func (f *Bitmap) SetData(data interface{}) error {
 
 	f.data = bmap.data
 	return nil
-}
-
-func (f *Bitmap) Marshal(data interface{}) error {
-	return f.SetData(data)
 }
 
 // Reset resets the bitmap to its initial state because of how message works,

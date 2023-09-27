@@ -1,6 +1,7 @@
 package field
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -50,7 +51,7 @@ func TestBinaryField(t *testing.T) {
 
 	t.Run("SetData sets data to the field", func(t *testing.T) {
 		bin := NewBinary(spec)
-		bin.SetData(NewBinaryValue(in))
+		bin.Marshal(NewBinaryValue(in))
 
 		packed, err := bin.Pack()
 
@@ -71,12 +72,12 @@ func TestBinaryField(t *testing.T) {
 	t.Run("SetBytes sets data to the data field", func(t *testing.T) {
 		bin := NewBinary(spec)
 		data := &Binary{}
-		bin.SetData(data)
+		bin.Marshal(data)
 
 		err := bin.SetBytes(in)
 		require.NoError(t, err)
 
-		require.Equal(t, in, data.value)
+		require.Equal(t, in, bin.value)
 	})
 
 	// SetValue sets data to the data field
@@ -90,13 +91,13 @@ func TestBinaryField(t *testing.T) {
 	t.Run("Unpack sets data to data value", func(t *testing.T) {
 		bin := NewBinary(spec)
 		data := NewBinaryValue([]byte{})
-		bin.SetData(data)
+		bin.Marshal(data)
 
 		n, err := bin.Unpack(in)
 
 		require.NoError(t, err)
 		require.Equal(t, len(in), n)
-		require.Equal(t, in, data.value)
+		require.Equal(t, in, bin.value)
 	})
 
 	t.Run("UnmarshalJSON unquotes input before handling it", func(t *testing.T) {
@@ -139,4 +140,74 @@ func TestBinaryNil(t *testing.T) {
 
 	bs = str.Value()
 	require.Nil(t, bs)
+}
+
+func TestBinaryFieldUnmarshal(t *testing.T) {
+	testValue := []byte{0x12, 0x34, 0x56}
+	str := NewBinaryValue(testValue)
+
+	val1 := &Binary{}
+	err := str.Unmarshal(val1)
+	require.NoError(t, err)
+	require.Equal(t, testValue, val1.Value())
+
+	var val2 string
+	err = str.Unmarshal(&val2)
+	require.NoError(t, err)
+	require.Equal(t, "123456", val2)
+
+	var val3 []byte
+	err = str.Unmarshal(&val3)
+	require.NoError(t, err)
+	require.Equal(t, testValue, val3)
+
+	val4 := reflect.ValueOf(&val2).Elem()
+	err = str.Unmarshal(val4)
+	require.NoError(t, err)
+	require.Equal(t, "123456", val4.String())
+
+	val5 := reflect.ValueOf(&val3).Elem()
+	err = str.Unmarshal(val5)
+	require.NoError(t, err)
+	require.Equal(t, testValue, val5.Bytes())
+
+	val6 := reflect.ValueOf(val2)
+	err = str.Unmarshal(val6)
+	require.Error(t, err)
+	require.Equal(t, "reflect.Value of the data can not be change", err.Error())
+
+	val7 := reflect.ValueOf(&val2)
+	err = str.Unmarshal(val7)
+	require.Error(t, err)
+	require.Equal(t, "data does not match required reflect.Value type", err.Error())
+
+	err = str.Unmarshal(nil)
+	require.Error(t, err)
+	require.Equal(t, "data does not match required *Binary or (*string, *[]byte) type", err.Error())
+}
+
+func TestBinaryFieldMarshal(t *testing.T) {
+	testValue := []byte{0x12, 0x34, 0x56}
+	str := NewBinaryValue(nil)
+
+	vstring := "123456"
+	err := str.Marshal(vstring)
+	require.NoError(t, err)
+	require.Equal(t, testValue, str.Value())
+
+	err = str.Marshal(&vstring)
+	require.NoError(t, err)
+	require.Equal(t, testValue, str.Value())
+
+	err = str.Marshal(testValue)
+	require.NoError(t, err)
+	require.Equal(t, testValue, str.Value())
+
+	err = str.Marshal(&testValue)
+	require.NoError(t, err)
+	require.Equal(t, testValue, str.Value())
+
+	err = str.Marshal(nil)
+	require.Error(t, err)
+	require.Equal(t, "data does not match required *Binary or (string, *string, []byte, *[]byte) type", err.Error())
 }

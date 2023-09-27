@@ -195,13 +195,23 @@ func (f *Composite) Unmarshal(v interface{}) error {
 		}
 
 		dataField := dataStruct.Field(i)
-		if dataField.IsNil() {
-			dataField.Set(reflect.New(dataField.Type().Elem()))
-		}
+		switch dataField.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
+			if dataField.IsNil() {
+				dataField.Set(reflect.New(dataField.Type().Elem()))
+			}
 
-		err = messageField.Unmarshal(dataField.Interface())
-		if err != nil {
-			return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
+			err = messageField.Unmarshal(dataField.Interface())
+			if err != nil {
+				return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
+			}
+		default: // Native types
+			vv := reflect.New(dataField.Type()).Elem()
+			err = messageField.Unmarshal(vv)
+			if err != nil {
+				return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
+			}
+			dataField.Set(vv)
 		}
 	}
 
@@ -259,7 +269,7 @@ func (f *Composite) Marshal(v interface{}) error {
 		}
 
 		dataField := dataStruct.Field(i)
-		if dataField.IsNil() {
+		if dataField.IsZero() {
 			continue
 		}
 

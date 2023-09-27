@@ -445,7 +445,7 @@ func (m *Message) Marshal(v interface{}) error {
 		}
 
 		dataField := dataStruct.Field(i)
-		if dataField.IsNil() {
+		if dataField.IsZero() {
 			continue
 		}
 
@@ -502,13 +502,23 @@ func (m *Message) Unmarshal(v interface{}) error {
 		}
 
 		dataField := dataStruct.Field(i)
-		if dataField.IsNil() {
-			dataField.Set(reflect.New(dataField.Type().Elem()))
-		}
+		switch dataField.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
+			if dataField.IsNil() {
+				dataField.Set(reflect.New(dataField.Type().Elem()))
+			}
 
-		err = messageField.Unmarshal(dataField.Interface())
-		if err != nil {
-			return fmt.Errorf("failed to get value from field %d: %w", fieldIndex, err)
+			err = messageField.Unmarshal(dataField.Interface())
+			if err != nil {
+				return fmt.Errorf("failed to get value from field %d: %w", fieldIndex, err)
+			}
+		default: // Native types
+			vv := reflect.New(dataField.Type()).Elem()
+			err = messageField.Unmarshal(vv)
+			if err != nil {
+				return fmt.Errorf("failed to get value from field %d: %w", fieldIndex, err)
+			}
+			dataField.Set(vv)
 		}
 	}
 

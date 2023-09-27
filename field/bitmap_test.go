@@ -327,7 +327,7 @@ func TestBitmap_SetData(t *testing.T) {
 
 	t.Run("Nil data causes no side effects", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
-		err := bitmap.SetData(nil)
+		err := bitmap.Marshal(nil)
 		require.NoError(t, err)
 		require.Equal(t, NewBitmap(spec), bitmap)
 	})
@@ -339,7 +339,7 @@ func TestBitmap_SetData(t *testing.T) {
 			a string
 		}{"left"}
 
-		err := bitmap.SetData(str)
+		err := bitmap.Marshal(str)
 		require.Error(t, err)
 	})
 
