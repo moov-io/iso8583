@@ -132,22 +132,18 @@ func (f *Numeric) SetData(data interface{}) error {
 func (f *Numeric) Unmarshal(v interface{}) error {
 	switch val := v.(type) {
 	case reflect.Value:
+		if !val.CanSet() {
+			return fmt.Errorf("cannot set reflect.Value of type %s", val.Kind())
+		}
+
 		switch val.Kind() { //nolint:exhaustive
 		case reflect.String:
-			if !val.CanSet() {
-				return fmt.Errorf("reflect.Value of the data can not be change")
-			}
-
 			str := strconv.Itoa(f.value)
 			val.SetString(str)
 		case reflect.Int:
-			if !val.CanSet() {
-				return fmt.Errorf("reflect.Value of the data can not be change")
-			}
-
 			val.SetInt(int64(f.value))
 		default:
-			return fmt.Errorf("data does not match required reflect.Value type")
+			return fmt.Errorf("unsupported reflect.Value type: %s", val.Kind())
 		}
 	case *string:
 		str := strconv.Itoa(f.value)
@@ -157,7 +153,7 @@ func (f *Numeric) Unmarshal(v interface{}) error {
 	case *Numeric:
 		val.value = f.value
 	default:
-		return fmt.Errorf("data does not match required *Numeric or *int type")
+		return fmt.Errorf("unsupported type: expected *Numeric, *int, or reflect.Value, got %T", v)
 	}
 
 	return nil

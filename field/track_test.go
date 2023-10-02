@@ -138,7 +138,7 @@ func TestTrack1(t *testing.T) {
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack1(track1Spec)
 			err := track.Marshal(NewStringValue("hello"))
-			require.EqualError(t, err, "data does not match required *Track type")
+			require.EqualError(t, err, "unsupported type: expected *Track1, got *field.String")
 		})
 
 		t.Run("Unmarshal gets track values into data parameter", func(t *testing.T) {
@@ -305,7 +305,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack2(track2Spec)
 			err := track.Marshal(NewStringValue("hello"))
-			require.EqualError(t, err, "data does not match required *Track type")
+			require.EqualError(t, err, "unsupported type: expected *Track2, got *field.String")
 		})
 
 		t.Run("Unmarshal gets track values into data parameter", func(t *testing.T) {
@@ -516,7 +516,7 @@ func TestTrack3TypedAPI(t *testing.T) {
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack3(track3Spec)
 			err := track.Marshal(NewStringValue("hello"))
-			require.EqualError(t, err, "data does not match required *Track type")
+			require.EqualError(t, err, "unsupported type: expected *Track3, got *field.String")
 		})
 
 		t.Run("Unmarshal gets track values into data parameter", func(t *testing.T) {

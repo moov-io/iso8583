@@ -119,16 +119,16 @@ func TestNumericFieldUnmarshal(t *testing.T) {
 	val6 := reflect.ValueOf(val2)
 	err = str.Unmarshal(val6)
 	require.Error(t, err)
-	require.Equal(t, "reflect.Value of the data can not be change", err.Error())
+	require.Equal(t, "cannot set reflect.Value of type string", err.Error())
 
 	val7 := reflect.ValueOf(&val2)
 	err = str.Unmarshal(val7)
 	require.Error(t, err)
-	require.Equal(t, "data does not match required reflect.Value type", err.Error())
+	require.Equal(t, "cannot set reflect.Value of type ptr", err.Error())
 
 	err = str.Unmarshal(nil)
 	require.Error(t, err)
-	require.Equal(t, "data does not match required *Numeric or *int type", err.Error())
+	require.Equal(t, "unsupported type: expected *Numeric, *int, or reflect.Value, got <nil>", err.Error())
 }
 
 func TestNumericFieldMarshal(t *testing.T) {

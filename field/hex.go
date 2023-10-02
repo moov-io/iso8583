@@ -130,23 +130,19 @@ func (f *Hex) SetData(data interface{}) error {
 func (f *Hex) Unmarshal(v interface{}) error {
 	switch val := v.(type) {
 	case reflect.Value:
+		if !val.CanSet() {
+			return fmt.Errorf("cannot set reflect.Value of type %s", val.Kind())
+		}
+
 		switch val.Kind() { //nolint:exhaustive
 		case reflect.String:
-			if !val.CanSet() {
-				return fmt.Errorf("reflect.Value of the data can not be change")
-			}
-
 			str, _ := f.String()
 			val.SetString(str)
 		case reflect.Slice:
-			if !val.CanSet() {
-				return fmt.Errorf("reflect.Value of the data can not be change")
-			}
-
 			buf, _ := f.Bytes()
 			val.SetBytes(buf)
 		default:
-			return fmt.Errorf("data does not match required reflect.Value type")
+			return fmt.Errorf("unsupported reflect.Value type: %s", val.Kind())
 		}
 	case *string:
 		*val, _ = f.String()
@@ -155,7 +151,7 @@ func (f *Hex) Unmarshal(v interface{}) error {
 	case *Hex:
 		val.value = f.value
 	default:
-		return fmt.Errorf("data does not match required *Hex or (*string, *[]byte) type")
+		return fmt.Errorf("unsupported type: expected *Hex, *string, *[]byte, or reflect.Value, got %T", v)
 	}
 
 	return nil
@@ -175,7 +171,6 @@ func (f *Hex) Marshal(v interface{}) error {
 		}
 
 		f.value = v
-		hex.EncodeToString([]byte(v))
 	case *string:
 		if v == nil {
 			f.value = ""
@@ -184,6 +179,11 @@ func (f *Hex) Marshal(v interface{}) error {
 
 		f.value = *v
 	case []byte:
+		if v == nil || len(v) == 0 {
+			f.value = ""
+			return nil
+		}
+
 		f.SetBytes(v)
 	case *[]byte:
 		if v == nil {
