@@ -208,6 +208,9 @@ func TestBinaryFieldMarshal(t *testing.T) {
 	require.Equal(t, testValue, str.Value())
 
 	err = str.Marshal(nil)
+	require.NoError(t, err)
+
+	err = str.Marshal(123456)
 	require.Error(t, err)
 	require.Equal(t, "data does not match required *Binary or (string, *string, []byte, *[]byte) type", err.Error())
 }

@@ -220,6 +220,9 @@ func TestHexFieldMarshal(t *testing.T) {
 	require.Equal(t, testValue, buf)
 
 	err = str.Marshal(nil)
+	require.NoError(t, err)
+
+	err = str.Marshal(123456)
 	require.Error(t, err)
 	require.Equal(t, "data does not match required *Hex or (string, *string, []byte, *[]byte) type", err.Error())
 }
