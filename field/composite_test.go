@@ -597,7 +597,7 @@ func TestCompositePacking(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to set data from field 1: data does not match required *String type")
+		require.EqualError(t, err, "failed to set data from field 1: data does not match required *String or (string, *string, int, *int) type")
 	})
 
 	t.Run("Pack returns error on failure of subfield packing", func(t *testing.T) {
@@ -747,7 +747,7 @@ func TestCompositePacking(t *testing.T) {
 		err = composite.Unmarshal(data)
 
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to get data from field 1: data does not match required *String type")
+		require.EqualError(t, err, "failed to get data from field 1: data does not match required *String or *string type")
 	})
 
 	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
