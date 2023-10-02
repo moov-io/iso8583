@@ -123,7 +123,7 @@ func (f *Track1) Unmarshal(v interface{}) error {
 
 	track, ok := v.(*Track1)
 	if !ok {
-		return fmt.Errorf("data does not match required *Track1 type")
+		return fmt.Errorf("unsupported type: expected *Track1, got %T", v)
 	}
 
 	track.FixedLength = f.FixedLength
@@ -144,7 +144,7 @@ func (f *Track1) Marshal(v interface{}) error {
 
 	track, ok := v.(*Track1)
 	if !ok {
-		return fmt.Errorf("data does not match required *Track type")
+		return fmt.Errorf("unsupported type: expected *Track1, got %T", v)
 	}
 
 	f.FixedLength = track.FixedLength

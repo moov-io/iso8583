@@ -126,7 +126,7 @@ func (f *Bitmap) Unmarshal(v interface{}) error {
 
 	bmap, ok := v.(*Bitmap)
 	if !ok {
-		return fmt.Errorf("data does not match required *Bitmap type")
+		return fmt.Errorf("unsupported type: expected *Bitmap, got %T", v)
 	}
 
 	bmap.data = f.data

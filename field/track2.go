@@ -121,7 +121,7 @@ func (f *Track2) Unmarshal(v interface{}) error {
 
 	track, ok := v.(*Track2)
 	if !ok {
-		return fmt.Errorf("data does not match required *Track2 type")
+		return fmt.Errorf("unsupported type: expected *Track2, got %T", v)
 	}
 
 	track.PrimaryAccountNumber = f.PrimaryAccountNumber
@@ -140,7 +140,7 @@ func (f *Track2) Marshal(v interface{}) error {
 
 	track, ok := v.(*Track2)
 	if !ok {
-		return fmt.Errorf("data does not match required *Track type")
+		return fmt.Errorf("unsupported type: expected *Track2, got %T", v)
 	}
 
 	f.PrimaryAccountNumber = track.PrimaryAccountNumber

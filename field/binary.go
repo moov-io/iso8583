@@ -125,17 +125,8 @@ func (f *Binary) Unmarshal(v interface{}) error {
 
 		switch val.Kind() { //nolint:exhaustive
 		case reflect.String:
-			if !val.CanSet() {
-				return fmt.Errorf("reflect.Value of the data can not be change")
-			}
-
-			str := hex.EncodeToString(f.value)
-			val.SetString(str)
+			val.SetString(hex.EncodeToString(f.value))
 		case reflect.Slice:
-			if !val.CanSet() {
-				return fmt.Errorf("reflect.Value of the data can not be change")
-			}
-
 			val.SetBytes(f.value)
 		default:
 			return fmt.Errorf("unsupported reflect.Value type: %s", val.Kind())
@@ -185,12 +176,18 @@ func (f *Binary) Marshal(v interface{}) error {
 
 		f.value = buf
 	case []byte:
+		if v == nil || len(v) == 0 {
+			f.value = nil
+			return nil
+		}
+
 		f.SetBytes(v)
 	case *[]byte:
 		if v == nil {
 			f.value = nil
 			return nil
 		}
+
 		f.SetBytes(*v)
 	default:
 		return fmt.Errorf("data does not match required *Binary or (string, *string, []byte, *[]byte) type")
