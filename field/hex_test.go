@@ -2,6 +2,7 @@ package field
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -141,4 +142,84 @@ func TestHexPack(t *testing.T) {
 
 		require.EqualError(t, err, "failed to encode length: field length: 0 should be fixed: 10")
 	})
+}
+
+func TestHexFieldUnmarshal(t *testing.T) {
+	testValue := []byte{0x12, 0x34, 0x56}
+	str := NewHexValue("123456")
+
+	val1 := &Hex{}
+	err := str.Unmarshal(val1)
+	require.NoError(t, err)
+	require.Equal(t, "123456", val1.Value())
+	buf, _ := val1.Bytes()
+	require.Equal(t, testValue, buf)
+
+	var val2 string
+	err = str.Unmarshal(&val2)
+	require.NoError(t, err)
+	require.Equal(t, "123456", val2)
+
+	var val3 []byte
+	err = str.Unmarshal(&val3)
+	require.NoError(t, err)
+	require.Equal(t, testValue, val3)
+
+	val4 := reflect.ValueOf(&val2).Elem()
+	err = str.Unmarshal(val4)
+	require.NoError(t, err)
+	require.Equal(t, "123456", val4.String())
+
+	val5 := reflect.ValueOf(&val3).Elem()
+	err = str.Unmarshal(val5)
+	require.NoError(t, err)
+	require.Equal(t, testValue, val5.Bytes())
+
+	val6 := reflect.ValueOf(val2)
+	err = str.Unmarshal(val6)
+	require.Error(t, err)
+	require.Equal(t, "reflect.Value of the data can not be change", err.Error())
+
+	val7 := reflect.ValueOf(&val2)
+	err = str.Unmarshal(val7)
+	require.Error(t, err)
+	require.Equal(t, "data does not match required reflect.Value type", err.Error())
+
+	err = str.Unmarshal(nil)
+	require.Error(t, err)
+	require.Equal(t, "data does not match required *Hex or (*string, *[]byte) type", err.Error())
+}
+
+func TestHexFieldMarshal(t *testing.T) {
+	testValue := []byte{0x12, 0x34, 0x56}
+	str := NewHexValue("")
+
+	vstring := "123456"
+	err := str.Marshal(vstring)
+	require.NoError(t, err)
+	require.Equal(t, "123456", str.Value())
+	buf, _ := str.Bytes()
+	require.Equal(t, testValue, buf)
+
+	err = str.Marshal(&vstring)
+	require.NoError(t, err)
+	require.Equal(t, "123456", str.Value())
+	buf, _ = str.Bytes()
+	require.Equal(t, testValue, buf)
+
+	err = str.Marshal(testValue)
+	require.NoError(t, err)
+	require.Equal(t, "123456", str.Value())
+	buf, _ = str.Bytes()
+	require.Equal(t, testValue, buf)
+
+	err = str.Marshal(&testValue)
+	require.NoError(t, err)
+	require.Equal(t, "123456", str.Value())
+	buf, _ = str.Bytes()
+	require.Equal(t, testValue, buf)
+
+	err = str.Marshal(nil)
+	require.Error(t, err)
+	require.Equal(t, "data does not match required *Hex or (string, *string, []byte, *[]byte) type", err.Error())
 }

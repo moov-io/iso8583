@@ -2,8 +2,8 @@ package field
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/moov-io/iso8583/utils"
@@ -16,7 +16,6 @@ var _ json.Unmarshaler = (*Numeric)(nil)
 type Numeric struct {
 	value int
 	spec  *Spec
-	data  *Numeric
 }
 
 func NewNumeric(spec *Spec) *Numeric {
@@ -54,9 +53,6 @@ func (f *Numeric) SetBytes(b []byte) error {
 		f.value = val
 	}
 
-	if f.data != nil {
-		*(f.data) = *f
-	}
 	return nil
 }
 
@@ -134,33 +130,80 @@ func (f *Numeric) SetData(data interface{}) error {
 }
 
 func (f *Numeric) Unmarshal(v interface{}) error {
-	if v == nil {
-		return nil
-	}
-	num, ok := v.(*Numeric)
-	if !ok {
-		return errors.New("data does not match required *Numeric type")
-	}
+	switch val := v.(type) {
+	case reflect.Value:
+		switch val.Kind() { //nolint:exhaustive
+		case reflect.String:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
 
-	num.value = f.value
+			str := strconv.Itoa(f.value)
+			val.SetString(str)
+		case reflect.Int:
+			if !val.CanSet() {
+				return fmt.Errorf("reflect.Value of the data can not be change")
+			}
+
+			val.SetInt(int64(f.value))
+		default:
+			return fmt.Errorf("data does not match required reflect.Value type")
+		}
+	case *string:
+		str := strconv.Itoa(f.value)
+		*val = str
+	case *int:
+		*val = f.value
+	case *Numeric:
+		val.value = f.value
+	default:
+		return fmt.Errorf("data does not match required *Numeric or *int type")
+	}
 
 	return nil
 }
 
-func (f *Numeric) Marshal(v interface{}) error {
-	if v == nil {
-		return nil
+func (f *Numeric) Marshal(data interface{}) error {
+	switch v := data.(type) {
+	case *Numeric:
+		if v == nil {
+			f.value = 0
+			return nil
+		}
+		f.value = v.value
+	case int:
+		f.value = v
+	case *int:
+		if v == nil {
+			f.value = 0
+			return nil
+		}
+		f.value = *v
+	case string:
+		if v == "" {
+			f.value = 0
+			return nil
+		}
+		val, err := strconv.Atoi(v)
+		if err != nil {
+			return utils.NewSafeError(err, "failed to convert sting value into number")
+		}
+		f.value = val
+	case *string:
+		if v == nil {
+			f.value = 0
+			return nil
+		}
+
+		val, err := strconv.Atoi(*v)
+		if err != nil {
+			return utils.NewSafeError(err, "failed to convert sting value into number")
+		}
+		f.value = val
+	default:
+		return fmt.Errorf("data does not match require *Numeric or (int, *int, string, *string) type")
 	}
 
-	num, ok := v.(*Numeric)
-	if !ok {
-		return fmt.Errorf("data does not match required *Numeric type")
-	}
-
-	f.data = num
-	if num.value != 0 {
-		f.value = num.value
-	}
 	return nil
 }
 
