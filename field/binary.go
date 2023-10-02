@@ -144,7 +144,7 @@ func (f *Binary) Unmarshal(v interface{}) error {
 	case *Binary:
 		val.value = f.value
 	default:
-		return fmt.Errorf("data does not match required *Binary or (*string, *[]byte) type")
+		return fmt.Errorf("unsupported type: expected *Binary, *string, *[]byte, or reflect.Value, got %T", v)
 	}
 
 	return nil
