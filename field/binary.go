@@ -119,6 +119,10 @@ func (f *Binary) SetData(data interface{}) error {
 func (f *Binary) Unmarshal(v interface{}) error {
 	switch val := v.(type) {
 	case reflect.Value:
+		if !val.CanSet() {
+			return fmt.Errorf("cannot set reflect.Value of type %s", val.Kind())
+		}
+
 		switch val.Kind() { //nolint:exhaustive
 		case reflect.String:
 			if !val.CanSet() {
