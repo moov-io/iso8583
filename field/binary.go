@@ -134,7 +134,7 @@ func (f *Binary) Unmarshal(v interface{}) error {
 
 			val.SetBytes(f.value)
 		default:
-			return fmt.Errorf("data does not match required reflect.Value type")
+			return fmt.Errorf("unsupported reflect.Value type: %s", val.Kind())
 		}
 	case *string:
 		str := hex.EncodeToString(f.value)
