@@ -158,38 +158,21 @@ func (f *Hex) Unmarshal(v interface{}) error {
 }
 
 func (f *Hex) Marshal(v interface{}) error {
+	if v == nil || reflect.ValueOf(v).IsZero() {
+		f.value = ""
+		return nil
+	}
+
 	switch v := v.(type) {
 	case *Hex:
-		if v == nil {
-			return nil
-		}
 		f.value = v.value
 	case string:
-		if v == "" {
-			f.value = ""
-			return nil
-		}
-
 		f.value = v
 	case *string:
-		if v == nil {
-			f.value = ""
-			return nil
-		}
-
 		f.value = *v
 	case []byte:
-		if v == nil || len(v) == 0 {
-			f.value = ""
-			return nil
-		}
-
 		f.SetBytes(v)
 	case *[]byte:
-		if v == nil {
-			f.value = ""
-			return nil
-		}
 		f.SetBytes(*v)
 	default:
 		return fmt.Errorf("data does not match required *Hex or (string, *string, []byte, *[]byte) type")

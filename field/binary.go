@@ -145,18 +145,15 @@ func (f *Binary) Unmarshal(v interface{}) error {
 }
 
 func (f *Binary) Marshal(v interface{}) error {
+	if v == nil || reflect.ValueOf(v).IsZero() {
+		f.value = nil
+		return nil
+	}
+
 	switch v := v.(type) {
 	case *Binary:
-		if v == nil {
-			return nil
-		}
 		f.value = v.value
 	case string:
-		if v == "" {
-			f.value = nil
-			return nil
-		}
-
 		buf, err := hex.DecodeString(v)
 		if err != nil {
 			return fmt.Errorf("failed to convert string to byte: %w", err)
@@ -164,11 +161,6 @@ func (f *Binary) Marshal(v interface{}) error {
 
 		f.value = buf
 	case *string:
-		if v == nil {
-			f.value = nil
-			return nil
-		}
-
 		buf, err := hex.DecodeString(*v)
 		if err != nil {
 			return fmt.Errorf("failed to convert string to byte: %w", err)
@@ -176,18 +168,8 @@ func (f *Binary) Marshal(v interface{}) error {
 
 		f.value = buf
 	case []byte:
-		if v == nil || len(v) == 0 {
-			f.value = nil
-			return nil
-		}
-
 		f.SetBytes(v)
 	case *[]byte:
-		if v == nil {
-			f.value = nil
-			return nil
-		}
-
 		f.SetBytes(*v)
 	default:
 		return fmt.Errorf("data does not match required *Binary or (string, *string, []byte, *[]byte) type")

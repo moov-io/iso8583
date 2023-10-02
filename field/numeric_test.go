@@ -155,6 +155,9 @@ func TestNumericFieldMarshal(t *testing.T) {
 	require.Equal(t, 123456, vNumeric.Value())
 
 	err := str.Marshal(nil)
+	require.NoError(t, err)
+
+	err = str.Marshal([]byte("123456"))
 	require.Error(t, err)
 	require.Equal(t, "data does not match require *Numeric or (int, *int, string, *string) type", err.Error())
 }

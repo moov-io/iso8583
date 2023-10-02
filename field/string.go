@@ -153,24 +153,17 @@ func (f *String) Unmarshal(v interface{}) error {
 }
 
 func (f *String) Marshal(v interface{}) error {
+	if v == nil || reflect.ValueOf(v).IsZero() {
+		f.value = ""
+		return nil
+	}
+
 	switch v := v.(type) {
 	case *String:
-		if v == nil {
-			f.value = ""
-			return nil
-		}
 		f.value = v.value
 	case string:
-		if v == "" {
-			f.value = ""
-			return nil
-		}
 		f.value = v
 	case *string:
-		if v == nil {
-			f.value = ""
-			return nil
-		}
 		f.value = *v
 	case int:
 		f.value = strconv.FormatInt(int64(v), 10)

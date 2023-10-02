@@ -159,38 +159,26 @@ func (f *Numeric) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *Numeric) Marshal(data interface{}) error {
-	switch v := data.(type) {
+func (f *Numeric) Marshal(v interface{}) error {
+	if v == nil || reflect.ValueOf(v).IsZero() {
+		f.value = 0
+		return nil
+	}
+
+	switch v := v.(type) {
 	case *Numeric:
-		if v == nil {
-			f.value = 0
-			return nil
-		}
 		f.value = v.value
 	case int:
 		f.value = v
 	case *int:
-		if v == nil {
-			f.value = 0
-			return nil
-		}
 		f.value = *v
 	case string:
-		if v == "" {
-			f.value = 0
-			return nil
-		}
 		val, err := strconv.Atoi(v)
 		if err != nil {
 			return utils.NewSafeError(err, "failed to convert sting value into number")
 		}
 		f.value = val
 	case *string:
-		if v == nil {
-			f.value = 0
-			return nil
-		}
-
 		val, err := strconv.Atoi(*v)
 		if err != nil {
 			return utils.NewSafeError(err, "failed to convert sting value into number")
