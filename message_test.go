@@ -265,7 +265,7 @@ func TestMessage(t *testing.T) {
 		}
 
 		message := NewMessage(spec)
-		err := message.SetData(&ISO87Data{
+		err := message.Marshal(&ISO87Data{
 			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
 			F3: &TestISOF3Data{
@@ -535,7 +535,7 @@ func TestPackUnpack(t *testing.T) {
 
 	t.Run("Pack data", func(t *testing.T) {
 		message := NewMessage(spec)
-		err := message.SetData(&TestISOData{
+		err := message.Marshal(&TestISOData{
 			F2: field.NewStringValue("4276555555555555"),
 			F3: &TestISOF3Data{
 				F1: field.NewStringValue("00"),
@@ -815,7 +815,7 @@ func TestMessageJSON(t *testing.T) {
 		require.NoError(t, err)
 
 		message := NewMessage(spec)
-		err = message.SetData(&TestISOData{
+		err = message.Marshal(&TestISOData{
 			F0: field.NewStringValue("0100"),
 			F2: field.NewStringValue("4242424242424242"),
 			F3: &TestISOF3Data{
@@ -873,7 +873,7 @@ func TestMessageJSON(t *testing.T) {
 		want := `{"0":"0100","1":"7000000000000000","2":"4242424242424242","3":{"1":"12","2":"34","3":"56"},"4":"100"}`
 
 		message := NewMessage(spec)
-		message.SetData(&ISO87Data{})
+		message.Marshal(&ISO87Data{})
 
 		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
 		require.NoError(t, message.Unpack([]byte(rawMsg)))
@@ -1228,7 +1228,7 @@ func TestMessageClone(t *testing.T) {
 		},
 		F120: field.NewStringValue("Another test text"),
 	}
-	require.NoError(t, message.SetData(data2))
+	require.NoError(t, message.Marshal(data2))
 
 	message.MTI("0100")
 

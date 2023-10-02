@@ -114,6 +114,11 @@ func (f *Bitmap) Unpack(data []byte) (int, error) {
 	return read, nil
 }
 
+// Deprecated. Use Marshal instead
+func (f *Bitmap) SetData(data interface{}) error {
+	return f.Marshal(data)
+}
+
 func (f *Bitmap) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
@@ -129,22 +134,18 @@ func (f *Bitmap) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *Bitmap) SetData(data interface{}) error {
-	if data == nil {
+func (f *Bitmap) Marshal(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	bmap, ok := data.(*Bitmap)
+	bmap, ok := v.(*Bitmap)
 	if !ok {
 		return fmt.Errorf("data does not match required *Bitmap type")
 	}
 
 	f.data = bmap.data
 	return nil
-}
-
-func (f *Bitmap) Marshal(data interface{}) error {
-	return f.SetData(data)
 }
 
 // Reset resets the bitmap to its initial state because of how message works,

@@ -317,7 +317,7 @@ func TestBitmap_Unmarshal(t *testing.T) {
 	})
 }
 
-func TestBitmap_SetData(t *testing.T) {
+func TestBitmap_Marshal(t *testing.T) {
 	spec := &Spec{
 		Description: "Bitmap",
 		Enc:         encoding.BytesToASCIIHex,
@@ -327,7 +327,7 @@ func TestBitmap_SetData(t *testing.T) {
 
 	t.Run("Nil data causes no side effects", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
-		err := bitmap.SetData(nil)
+		err := bitmap.Marshal(nil)
 		require.NoError(t, err)
 		require.Equal(t, NewBitmap(spec), bitmap)
 	})
@@ -339,11 +339,11 @@ func TestBitmap_SetData(t *testing.T) {
 			a string
 		}{"left"}
 
-		err := bitmap.SetData(str)
+		err := bitmap.Marshal(str)
 		require.Error(t, err)
 	})
 
-	t.Run("Unpack sets the data field with the correct bitmap provided using SetData", func(t *testing.T) {
+	t.Run("Unpack sets the data field with the correct bitmap provided using Marshal", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
 		// set bit: 10
@@ -361,7 +361,7 @@ func TestBitmap_SetData(t *testing.T) {
 		require.Equal(t, bitmapBytes, dataBytes)
 	})
 
-	t.Run("Pack returns bytes using the bitmap provided using SetData", func(t *testing.T) {
+	t.Run("Pack returns bytes using the bitmap provided using Marshal", func(t *testing.T) {
 		bitmap := NewBitmap(spec)
 
 		data := NewBitmap(&Spec{})

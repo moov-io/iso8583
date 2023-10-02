@@ -126,6 +126,11 @@ func (f *Hex) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
+// Deprecated. Use Marshal instead
+func (f *Hex) SetData(data interface{}) error {
+	return f.Marshal(data)
+}
+
 func (f *Hex) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
@@ -141,12 +146,12 @@ func (f *Hex) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *Hex) SetData(data interface{}) error {
-	if data == nil {
+func (f *Hex) Marshal(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	str, ok := data.(*Hex)
+	str, ok := v.(*Hex)
 	if !ok {
 		return fmt.Errorf("data does not match required *Hex type")
 	}
@@ -156,10 +161,6 @@ func (f *Hex) SetData(data interface{}) error {
 		f.value = str.value
 	}
 	return nil
-}
-
-func (f *Hex) Marshal(data interface{}) error {
-	return f.SetData(data)
 }
 
 func (f *Hex) MarshalJSON() ([]byte, error) {
