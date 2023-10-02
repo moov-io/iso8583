@@ -128,6 +128,11 @@ func (f *Numeric) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
+// Deprecated. Use Marshal instead
+func (f *Numeric) SetData(data interface{}) error {
+	return f.Marshal(data)
+}
+
 func (f *Numeric) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
@@ -142,12 +147,12 @@ func (f *Numeric) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *Numeric) SetData(data interface{}) error {
-	if data == nil {
+func (f *Numeric) Marshal(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	num, ok := data.(*Numeric)
+	num, ok := v.(*Numeric)
 	if !ok {
 		return fmt.Errorf("data does not match required *Numeric type")
 	}
@@ -157,10 +162,6 @@ func (f *Numeric) SetData(data interface{}) error {
 		f.value = num.value
 	}
 	return nil
-}
-
-func (f *Numeric) Marshal(data interface{}) error {
-	return f.SetData(data)
 }
 
 func (f *Numeric) MarshalJSON() ([]byte, error) {

@@ -111,6 +111,11 @@ func (f *Track1) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
+// Deprecated. Use Marshal instead
+func (f *Track1) SetData(data interface{}) error {
+	return f.Marshal(data)
+}
+
 func (f *Track1) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
@@ -132,12 +137,12 @@ func (f *Track1) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *Track1) SetData(data interface{}) error {
-	if data == nil {
+func (f *Track1) Marshal(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	track, ok := data.(*Track1)
+	track, ok := v.(*Track1)
 	if !ok {
 		return fmt.Errorf("data does not match required *Track type")
 	}
@@ -153,10 +158,6 @@ func (f *Track1) SetData(data interface{}) error {
 	f.data = track
 
 	return nil
-}
-
-func (f *Track1) Marshal(data interface{}) error {
-	return f.SetData(data)
 }
 
 func (f *Track1) unpack(raw []byte) error {

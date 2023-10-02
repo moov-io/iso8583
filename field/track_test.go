@@ -137,7 +137,7 @@ func TestTrack1(t *testing.T) {
 
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack1(track1Spec)
-			err := track.SetData(NewStringValue("hello"))
+			err := track.Marshal(NewStringValue("hello"))
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 
@@ -146,7 +146,7 @@ func TestTrack1(t *testing.T) {
 			require.NoError(t, err)
 
 			track := NewTrack1(track1Spec)
-			err = track.SetData(&Track1{
+			err = track.Marshal(&Track1{
 				FixedLength:          true,
 				FormatCode:           "B",
 				PrimaryAccountNumber: "1234567890123445",
@@ -185,7 +185,7 @@ func TestTrack1(t *testing.T) {
 			}
 
 			track := NewTrack1(track1Spec)
-			err = track.SetData(data)
+			err = track.Marshal(data)
 			require.NoError(t, err)
 
 			// test assigned fields
@@ -208,7 +208,7 @@ func TestTrack1(t *testing.T) {
 			data := &Track1{}
 
 			track := NewTrack1(track1Spec)
-			err = track.SetData(data)
+			err = track.Marshal(data)
 			require.NoError(t, err)
 
 			_, err = track.Unpack(rawWithPrefix)
@@ -230,7 +230,7 @@ func TestTrack1(t *testing.T) {
 			data := &Track1{}
 
 			track := NewTrack1(track1Spec)
-			err = track.SetData(data)
+			err = track.Marshal(data)
 			require.NoError(t, err)
 
 			err = track.SetBytes(raw)
@@ -304,7 +304,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 	t.Run("Track 2 typed", func(t *testing.T) {
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack2(track2Spec)
-			err := track.SetData(NewStringValue("hello"))
+			err := track.Marshal(NewStringValue("hello"))
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 
@@ -313,7 +313,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 			require.NoError(t, err)
 
 			track := NewTrack2(track2Spec)
-			err = track.SetData(&Track2{
+			err = track.Marshal(&Track2{
 				PrimaryAccountNumber: "4000340000000506",
 				Separator:            "D",
 				ServiceCode:          "111",
@@ -366,7 +366,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 				}
 
 				track := NewTrack2(track2Spec)
-				err = track.SetData(data)
+				err = track.Marshal(data)
 				require.NoError(t, err)
 
 				// test assigned fields
@@ -404,7 +404,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 				data := &Track2{}
 
 				track := NewTrack2(track2Spec)
-				err = track.SetData(data)
+				err = track.Marshal(data)
 				require.NoError(t, err)
 
 				_, err = track.Unpack(tc.Bytes)
@@ -441,7 +441,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 				data := &Track2{}
 
 				track := NewTrack2(track2Spec)
-				err = track.SetData(data)
+				err = track.Marshal(data)
 				require.NoError(t, err)
 
 				err = track.SetBytes(tc.TrackData)
@@ -515,13 +515,13 @@ func TestTrack3TypedAPI(t *testing.T) {
 		)
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
 			track := NewTrack3(track3Spec)
-			err := track.SetData(NewStringValue("hello"))
+			err := track.Marshal(NewStringValue("hello"))
 			require.EqualError(t, err, "data does not match required *Track type")
 		})
 
 		t.Run("Unmarshal gets track values into data parameter", func(t *testing.T) {
 			track := NewTrack3(track3Spec)
-			err := track.SetData(&Track3{
+			err := track.Marshal(&Track3{
 				FormatCode:           `01`,
 				PrimaryAccountNumber: `1234567890123445`,
 				DiscretionaryData:    `724724000000000****00300XXXX020200099010=********************==1=100000000000000000**`,
@@ -546,7 +546,7 @@ func TestTrack3TypedAPI(t *testing.T) {
 			}
 
 			track := NewTrack3(track3Spec)
-			err := track.SetData(data)
+			err := track.Marshal(data)
 			require.NoError(t, err)
 
 			// test assigned fields
@@ -563,7 +563,7 @@ func TestTrack3TypedAPI(t *testing.T) {
 			data := &Track3{}
 
 			track := NewTrack3(track3Spec)
-			err := track.SetData(data)
+			err := track.Marshal(data)
 			require.NoError(t, err)
 
 			_, err = track.Unpack(rawWithPrefix)
@@ -579,7 +579,7 @@ func TestTrack3TypedAPI(t *testing.T) {
 			data := &Track3{}
 
 			track := NewTrack3(track3Spec)
-			err := track.SetData(data)
+			err := track.Marshal(data)
 			require.NoError(t, err)
 
 			err = track.SetBytes(raw)

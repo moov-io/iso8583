@@ -37,14 +37,14 @@ func TestNumericField(t *testing.T) {
 	require.Equal(t, 9876, numeric.Value())
 
 	numeric = NewNumeric(spec)
-	numeric.SetData(NewNumericValue(9876))
+	numeric.Marshal(NewNumericValue(9876))
 	packed, err = numeric.Pack()
 	require.NoError(t, err)
 	require.Equal(t, "      9876", string(packed))
 
 	numeric = NewNumeric(spec)
 	data := NewNumericValue(0)
-	numeric.SetData(data)
+	numeric.Marshal(data)
 	length, err = numeric.Unpack([]byte("      9876"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
@@ -159,7 +159,7 @@ func TestNumericSetBytesSetsDataOntoDataStruct(t *testing.T) {
 	})
 
 	data := &Numeric{}
-	err := numeric.SetData(data)
+	err := numeric.Marshal(data)
 	require.NoError(t, err)
 
 	err = numeric.SetBytes([]byte("9"))

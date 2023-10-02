@@ -37,14 +37,14 @@ func TestStringField(t *testing.T) {
 	require.Equal(t, "olleh", str.Value())
 
 	str = NewString(spec)
-	str.SetData(NewStringValue("hello"))
+	str.Marshal(NewStringValue("hello"))
 	packed, err = str.Pack()
 	require.NoError(t, err)
 	require.Equal(t, "     hello", string(packed))
 
 	str = NewString(spec)
 	data := NewStringValue("")
-	str.SetData(data)
+	str.Marshal(data)
 	length, err = str.Unpack([]byte("     olleh"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
@@ -52,7 +52,7 @@ func TestStringField(t *testing.T) {
 
 	str = NewString(spec)
 	data = &String{}
-	str.SetData(data)
+	str.Marshal(data)
 	err = str.SetBytes([]byte("hello"))
 	require.NoError(t, err)
 	require.Equal(t, "hello", data.Value())

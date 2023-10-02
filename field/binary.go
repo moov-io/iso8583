@@ -114,6 +114,11 @@ func (f *Binary) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
+// Deprecated. Use Marshal instead
+func (f *Binary) SetData(data interface{}) error {
+	return f.Marshal(data)
+}
+
 func (f *Binary) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
@@ -129,12 +134,12 @@ func (f *Binary) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *Binary) SetData(data interface{}) error {
-	if data == nil {
+func (f *Binary) Marshal(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	bin, ok := data.(*Binary)
+	bin, ok := v.(*Binary)
 	if !ok {
 		return errors.New("data does not match required *Binary type")
 	}
@@ -144,10 +149,6 @@ func (f *Binary) SetData(data interface{}) error {
 		f.value = bin.value
 	}
 	return nil
-}
-
-func (f *Binary) Marshal(data interface{}) error {
-	return f.SetData(data)
 }
 
 func (f *Binary) MarshalJSON() ([]byte, error) {

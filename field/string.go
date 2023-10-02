@@ -113,6 +113,11 @@ func (f *String) Unpack(data []byte) (int, error) {
 	return read + prefBytes, nil
 }
 
+// Deprecated. Use Marshal instead
+func (f *String) SetData(data interface{}) error {
+	return f.Marshal(data)
+}
+
 func (f *String) Unmarshal(v interface{}) error {
 	if v == nil {
 		return nil
@@ -128,12 +133,12 @@ func (f *String) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *String) SetData(data interface{}) error {
-	if data == nil {
+func (f *String) Marshal(v interface{}) error {
+	if v == nil {
 		return nil
 	}
 
-	str, ok := data.(*String)
+	str, ok := v.(*String)
 	if !ok {
 		return fmt.Errorf("data does not match required *String type")
 	}
@@ -143,10 +148,6 @@ func (f *String) SetData(data interface{}) error {
 		f.value = str.value
 	}
 	return nil
-}
-
-func (f *String) Marshal(data interface{}) error {
-	return f.SetData(data)
 }
 
 func (f *String) MarshalJSON() ([]byte, error) {
