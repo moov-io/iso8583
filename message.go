@@ -51,7 +51,7 @@ func NewMessage(spec *MessageSpec) *Message {
 	}
 }
 
-// Deprecated. Use Marshal intead.
+// Deprecated. Use Marshal instead.
 func (m *Message) SetData(data interface{}) error {
 	return m.Marshal(data)
 }
