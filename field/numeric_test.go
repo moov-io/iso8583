@@ -89,75 +89,76 @@ func TestNumericPack(t *testing.T) {
 }
 
 func TestNumericFieldUnmarshal(t *testing.T) {
-	str := NewNumericValue(123456)
+	numericField := NewNumericValue(123456)
 
-	val1 := &Numeric{}
-	err := str.Unmarshal(val1)
+	vNumeric := &Numeric{}
+	err := numericField.Unmarshal(vNumeric)
 	require.NoError(t, err)
-	require.Equal(t, 123456, val1.Value())
+	require.Equal(t, 123456, vNumeric.Value())
 
-	var val2 string
-	err = str.Unmarshal(&val2)
+	var s string
+	err = numericField.Unmarshal(&s)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val2)
+	require.Equal(t, "123456", s)
 
-	var val3 int
-	err = str.Unmarshal(&val3)
+	var b int
+	err = numericField.Unmarshal(&b)
 	require.NoError(t, err)
-	require.Equal(t, 123456, val3)
+	require.Equal(t, 123456, b)
 
-	val4 := reflect.ValueOf(&val2).Elem()
-	err = str.Unmarshal(val4)
+	refStrValue := reflect.ValueOf(&s).Elem()
+	err = numericField.Unmarshal(refStrValue)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val4.String())
+	require.Equal(t, "123456", refStrValue.String())
 
-	val5 := reflect.ValueOf(&val3).Elem()
-	err = str.Unmarshal(val5)
+	refIntValue := reflect.ValueOf(&b).Elem()
+	err = numericField.Unmarshal(refIntValue)
 	require.NoError(t, err)
-	require.Equal(t, 123456, int(val5.Int()))
+	require.Equal(t, 123456, int(refIntValue.Int()))
 
-	val6 := reflect.ValueOf(val2)
-	err = str.Unmarshal(val6)
+	refStr := reflect.ValueOf(s)
+	err = numericField.Unmarshal(refStr)
 	require.Error(t, err)
 	require.Equal(t, "cannot set reflect.Value of type string", err.Error())
 
-	val7 := reflect.ValueOf(&val2)
-	err = str.Unmarshal(val7)
+	refStrPointer := reflect.ValueOf(&s)
+	err = numericField.Unmarshal(refStrPointer)
 	require.Error(t, err)
 	require.Equal(t, "cannot set reflect.Value of type ptr", err.Error())
 
-	err = str.Unmarshal(nil)
+	err = numericField.Unmarshal(nil)
 	require.Error(t, err)
 	require.Equal(t, "unsupported type: expected *Numeric, *int, or reflect.Value, got <nil>", err.Error())
 }
 
 func TestNumericFieldMarshal(t *testing.T) {
-	str := NewNumericValue(0)
-	vNumeric := NewNumericValue(123456)
-	str.Marshal(vNumeric)
-	require.Equal(t, 123456, vNumeric.Value())
+	numericField := NewNumericValue(0)
 
-	str.Marshal(&vNumeric)
-	require.Equal(t, 123456, vNumeric.Value())
+	inputNumeric := NewNumericValue(123456)
+	numericField.Marshal(inputNumeric)
+	require.Equal(t, 123456, numericField.Value())
 
-	vstring := "123456"
-	str.Marshal(vstring)
-	require.Equal(t, 123456, vNumeric.Value())
+	numericField.Marshal(&inputNumeric)
+	require.Equal(t, 123456, numericField.Value())
 
-	str.Marshal(&vstring)
-	require.Equal(t, 123456, vNumeric.Value())
+	inputStr := "123456"
+	numericField.Marshal(inputStr)
+	require.Equal(t, 123456, numericField.Value())
 
-	vint := 123456
-	str.Marshal(vint)
-	require.Equal(t, 123456, vNumeric.Value())
+	numericField.Marshal(&inputStr)
+	require.Equal(t, 123456, numericField.Value())
 
-	str.Marshal(&vint)
-	require.Equal(t, 123456, vNumeric.Value())
+	inputInt := 123456
+	numericField.Marshal(inputInt)
+	require.Equal(t, 123456, numericField.Value())
 
-	err := str.Marshal(nil)
+	numericField.Marshal(&inputInt)
+	require.Equal(t, 123456, numericField.Value())
+
+	err := numericField.Marshal(nil)
 	require.NoError(t, err)
 
-	err = str.Marshal([]byte("123456"))
+	err = numericField.Marshal([]byte("123456"))
 	require.Error(t, err)
 	require.Equal(t, "data does not match require *Numeric or (int, *int, string, *string) type", err.Error())
 }

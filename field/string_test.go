@@ -90,75 +90,76 @@ func TestStringPack(t *testing.T) {
 }
 
 func TestStringFieldUnmarshal(t *testing.T) {
-	str := NewStringValue("123456")
+	stringField := NewStringValue("123456")
 
-	val1 := &String{}
-	err := str.Unmarshal(val1)
+	vString := &String{}
+	err := stringField.Unmarshal(vString)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val1.Value())
+	require.Equal(t, "123456", vString.Value())
 
-	var val2 string
-	err = str.Unmarshal(&val2)
+	var s string
+	err = stringField.Unmarshal(&s)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val2)
+	require.Equal(t, "123456", s)
 
-	var val3 int
-	err = str.Unmarshal(&val3)
+	var b int
+	err = stringField.Unmarshal(&b)
 	require.NoError(t, err)
-	require.Equal(t, 123456, val3)
+	require.Equal(t, 123456, b)
 
-	val4 := reflect.ValueOf(&val2).Elem()
-	err = str.Unmarshal(val4)
+	refStrValue := reflect.ValueOf(&s).Elem()
+	err = stringField.Unmarshal(refStrValue)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val4.String())
+	require.Equal(t, "123456", refStrValue.String())
 
-	val5 := reflect.ValueOf(&val3).Elem()
-	err = str.Unmarshal(val5)
+	refIntValue := reflect.ValueOf(&b).Elem()
+	err = stringField.Unmarshal(refIntValue)
 	require.NoError(t, err)
-	require.Equal(t, 123456, int(val5.Int()))
+	require.Equal(t, 123456, int(refIntValue.Int()))
 
-	val6 := reflect.ValueOf(val2)
-	err = str.Unmarshal(val6)
+	refStr := reflect.ValueOf(s)
+	err = stringField.Unmarshal(refStr)
 	require.Error(t, err)
 	require.Equal(t, "cannot set reflect.Value of type string", err.Error())
 
-	val7 := reflect.ValueOf(&val2)
-	err = str.Unmarshal(val7)
+	refStrPointer := reflect.ValueOf(&s)
+	err = stringField.Unmarshal(refStrPointer)
 	require.Error(t, err)
 	require.Equal(t, "cannot set reflect.Value of type ptr", err.Error())
 
-	err = str.Unmarshal(nil)
+	err = stringField.Unmarshal(nil)
 	require.Error(t, err)
 	require.Equal(t, "unsupported type: expected *String, *string, or reflect.Value, got <nil>", err.Error())
 }
 
 func TestStringFieldMarshal(t *testing.T) {
-	str := NewStringValue("")
-	vString := NewStringValue("123456")
-	str.Marshal(vString)
-	require.Equal(t, "123456", str.Value())
+	stringField := NewStringValue("")
 
-	str.Marshal(&vString)
-	require.Equal(t, "123456", str.Value())
+	inputString := NewStringValue("123456")
+	stringField.Marshal(inputString)
+	require.Equal(t, "123456", stringField.Value())
 
-	vstring := "123456"
-	str.Marshal(vstring)
-	require.Equal(t, "123456", str.Value())
+	stringField.Marshal(&inputString)
+	require.Equal(t, "123456", stringField.Value())
 
-	str.Marshal(&vstring)
-	require.Equal(t, "123456", str.Value())
+	inputStr := "123456"
+	stringField.Marshal(inputStr)
+	require.Equal(t, "123456", stringField.Value())
 
-	vint := 123456
-	str.Marshal(vint)
-	require.Equal(t, "123456", str.Value())
+	stringField.Marshal(&inputStr)
+	require.Equal(t, "123456", stringField.Value())
 
-	str.Marshal(&vint)
-	require.Equal(t, "123456", str.Value())
+	inputInt := 123456
+	stringField.Marshal(inputInt)
+	require.Equal(t, "123456", stringField.Value())
 
-	err := str.Marshal(nil)
+	stringField.Marshal(&inputInt)
+	require.Equal(t, "123456", stringField.Value())
+
+	err := stringField.Marshal(nil)
 	require.NoError(t, err)
 
-	err = str.Marshal([]byte("123456"))
+	err = stringField.Marshal([]byte("123456"))
 	require.Error(t, err)
 	require.Equal(t, "data does not match required *String or (string, *string, int, *int) type", err.Error())
 }

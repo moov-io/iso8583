@@ -144,73 +144,73 @@ func TestBinaryNil(t *testing.T) {
 
 func TestBinaryFieldUnmarshal(t *testing.T) {
 	testValue := []byte{0x12, 0x34, 0x56}
-	str := NewBinaryValue(testValue)
+	binaryField := NewBinaryValue(testValue)
 
-	val1 := &Binary{}
-	err := str.Unmarshal(val1)
+	vBinary := &Binary{}
+	err := binaryField.Unmarshal(vBinary)
 	require.NoError(t, err)
-	require.Equal(t, testValue, val1.Value())
+	require.Equal(t, testValue, vBinary.Value())
 
-	var val2 string
-	err = str.Unmarshal(&val2)
+	var s string
+	err = binaryField.Unmarshal(&s)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val2)
+	require.Equal(t, "123456", s)
 
-	var val3 []byte
-	err = str.Unmarshal(&val3)
+	var b []byte
+	err = binaryField.Unmarshal(&b)
 	require.NoError(t, err)
-	require.Equal(t, testValue, val3)
+	require.Equal(t, testValue, b)
 
-	val4 := reflect.ValueOf(&val2).Elem()
-	err = str.Unmarshal(val4)
+	refStrValue := reflect.ValueOf(&s).Elem()
+	err = binaryField.Unmarshal(refStrValue)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val4.String())
+	require.Equal(t, "123456", refStrValue.String())
 
-	val5 := reflect.ValueOf(&val3).Elem()
-	err = str.Unmarshal(val5)
+	refBytesValue := reflect.ValueOf(&b).Elem()
+	err = binaryField.Unmarshal(refBytesValue)
 	require.NoError(t, err)
-	require.Equal(t, testValue, val5.Bytes())
+	require.Equal(t, testValue, refBytesValue.Bytes())
 
-	val6 := reflect.ValueOf(val2)
-	err = str.Unmarshal(val6)
+	refStr := reflect.ValueOf(s)
+	err = binaryField.Unmarshal(refStr)
 	require.Error(t, err)
 	require.Equal(t, "cannot set reflect.Value of type string", err.Error())
 
-	val7 := reflect.ValueOf(&val2)
-	err = str.Unmarshal(val7)
+	refStrPointer := reflect.ValueOf(&s)
+	err = binaryField.Unmarshal(refStrPointer)
 	require.Error(t, err)
 	require.Equal(t, "cannot set reflect.Value of type ptr", err.Error())
 
-	err = str.Unmarshal(nil)
+	err = binaryField.Unmarshal(nil)
 	require.Error(t, err)
 	require.Equal(t, "unsupported type: expected *Binary, *string, *[]byte, or reflect.Value, got <nil>", err.Error())
 }
 
 func TestBinaryFieldMarshal(t *testing.T) {
 	testValue := []byte{0x12, 0x34, 0x56}
-	str := NewBinaryValue(nil)
+	binaryField := NewBinaryValue(nil)
 
-	vstring := "123456"
-	err := str.Marshal(vstring)
+	inputStr := "123456"
+	err := binaryField.Marshal(inputStr)
 	require.NoError(t, err)
-	require.Equal(t, testValue, str.Value())
+	require.Equal(t, testValue, binaryField.Value())
 
-	err = str.Marshal(&vstring)
+	err = binaryField.Marshal(&inputStr)
 	require.NoError(t, err)
-	require.Equal(t, testValue, str.Value())
+	require.Equal(t, testValue, binaryField.Value())
 
-	err = str.Marshal(testValue)
+	err = binaryField.Marshal(testValue)
 	require.NoError(t, err)
-	require.Equal(t, testValue, str.Value())
+	require.Equal(t, testValue, binaryField.Value())
 
-	err = str.Marshal(&testValue)
+	err = binaryField.Marshal(&testValue)
 	require.NoError(t, err)
-	require.Equal(t, testValue, str.Value())
+	require.Equal(t, testValue, binaryField.Value())
 
-	err = str.Marshal(nil)
+	err = binaryField.Marshal(nil)
 	require.NoError(t, err)
 
-	err = str.Marshal(123456)
+	err = binaryField.Marshal(123456)
 	require.Error(t, err)
 	require.Equal(t, "data does not match required *Binary or (string, *string, []byte, *[]byte) type", err.Error())
 }
