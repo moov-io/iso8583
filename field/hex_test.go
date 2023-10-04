@@ -146,83 +146,83 @@ func TestHexPack(t *testing.T) {
 
 func TestHexFieldUnmarshal(t *testing.T) {
 	testValue := []byte{0x12, 0x34, 0x56}
-	str := NewHexValue("123456")
+	hexField := NewHexValue("123456")
 
-	val1 := &Hex{}
-	err := str.Unmarshal(val1)
+	vHex := &Hex{}
+	err := hexField.Unmarshal(vHex)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val1.Value())
-	buf, _ := val1.Bytes()
+	require.Equal(t, "123456", vHex.Value())
+	buf, _ := vHex.Bytes()
 	require.Equal(t, testValue, buf)
 
-	var val2 string
-	err = str.Unmarshal(&val2)
+	var s string
+	err = hexField.Unmarshal(&s)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val2)
+	require.Equal(t, "123456", s)
 
-	var val3 []byte
-	err = str.Unmarshal(&val3)
+	var b []byte
+	err = hexField.Unmarshal(&b)
 	require.NoError(t, err)
-	require.Equal(t, testValue, val3)
+	require.Equal(t, testValue, b)
 
-	val4 := reflect.ValueOf(&val2).Elem()
-	err = str.Unmarshal(val4)
+	refStrValue := reflect.ValueOf(&s).Elem()
+	err = hexField.Unmarshal(refStrValue)
 	require.NoError(t, err)
-	require.Equal(t, "123456", val4.String())
+	require.Equal(t, "123456", refStrValue.String())
 
-	val5 := reflect.ValueOf(&val3).Elem()
-	err = str.Unmarshal(val5)
+	refBytesValue := reflect.ValueOf(&b).Elem()
+	err = hexField.Unmarshal(refBytesValue)
 	require.NoError(t, err)
-	require.Equal(t, testValue, val5.Bytes())
+	require.Equal(t, testValue, refBytesValue.Bytes())
 
-	val6 := reflect.ValueOf(val2)
-	err = str.Unmarshal(val6)
+	refStr := reflect.ValueOf(s)
+	err = hexField.Unmarshal(refStr)
 	require.Error(t, err)
 	require.Equal(t, "cannot set reflect.Value of type string", err.Error())
 
-	val7 := reflect.ValueOf(&val2)
-	err = str.Unmarshal(val7)
+	refStrPointer := reflect.ValueOf(&s)
+	err = hexField.Unmarshal(refStrPointer)
 	require.Error(t, err)
 	require.Equal(t, "cannot set reflect.Value of type ptr", err.Error())
 
-	err = str.Unmarshal(nil)
+	err = hexField.Unmarshal(nil)
 	require.Error(t, err)
 	require.Equal(t, "unsupported type: expected *Hex, *string, *[]byte, or reflect.Value, got <nil>", err.Error())
 }
 
 func TestHexFieldMarshal(t *testing.T) {
 	testValue := []byte{0x12, 0x34, 0x56}
-	str := NewHexValue("")
+	hexField := NewHexValue("")
 
-	vstring := "123456"
-	err := str.Marshal(vstring)
+	inputStr := "123456"
+	err := hexField.Marshal(inputStr)
 	require.NoError(t, err)
-	require.Equal(t, "123456", str.Value())
-	buf, _ := str.Bytes()
+	require.Equal(t, "123456", hexField.Value())
+	buf, _ := hexField.Bytes()
 	require.Equal(t, testValue, buf)
 
-	err = str.Marshal(&vstring)
+	err = hexField.Marshal(&inputStr)
 	require.NoError(t, err)
-	require.Equal(t, "123456", str.Value())
-	buf, _ = str.Bytes()
+	require.Equal(t, "123456", hexField.Value())
+	buf, _ = hexField.Bytes()
 	require.Equal(t, testValue, buf)
 
-	err = str.Marshal(testValue)
+	err = hexField.Marshal(testValue)
 	require.NoError(t, err)
-	require.Equal(t, "123456", str.Value())
-	buf, _ = str.Bytes()
+	require.Equal(t, "123456", hexField.Value())
+	buf, _ = hexField.Bytes()
 	require.Equal(t, testValue, buf)
 
-	err = str.Marshal(&testValue)
+	err = hexField.Marshal(&testValue)
 	require.NoError(t, err)
-	require.Equal(t, "123456", str.Value())
-	buf, _ = str.Bytes()
+	require.Equal(t, "123456", hexField.Value())
+	buf, _ = hexField.Bytes()
 	require.Equal(t, testValue, buf)
 
-	err = str.Marshal(nil)
+	err = hexField.Marshal(nil)
 	require.NoError(t, err)
 
-	err = str.Marshal(123456)
+	err = hexField.Marshal(123456)
 	require.Error(t, err)
 	require.Equal(t, "data does not match required *Hex or (string, *string, []byte, *[]byte) type", err.Error())
 }
