@@ -250,7 +250,7 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, "100", data.F4.Value())
 	})
 
-	t.Run("Test unpacking message with untyped fields", func(t *testing.T) {
+	t.Run("Test unpacking message with fields that have native types", func(t *testing.T) {
 		type TestISOF3Data struct {
 			F1 *string
 			F2 string
@@ -331,7 +331,7 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, wantMsg, rawMsg)
 	})
 
-	t.Run("Test packing message with untyped fields", func(t *testing.T) {
+	t.Run("Test packing message with fields that have native types", func(t *testing.T) {
 		type TestISOF3Data struct {
 			F1 string
 			F2 string
