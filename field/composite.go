@@ -206,12 +206,14 @@ func (f *Composite) Unmarshal(v interface{}) error {
 				return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
 			}
 		default: // Native types
-			vv := reflect.New(dataField.Type()).Elem()
-			err = messageField.Unmarshal(vv)
+			// using new reflect value that has pointer instead of input data field
+			dummy := reflect.New(dataField.Type()).Elem()
+			err = messageField.Unmarshal(dummy)
 			if err != nil {
 				return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
 			}
-			dataField.Set(vv)
+
+			dataField.Set(dummy)
 		}
 	}
 
