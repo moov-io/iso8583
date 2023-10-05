@@ -130,7 +130,7 @@ func TestSpecWithCompositeBitmapedFields(t *testing.T) {
 					"description": "Bitmap",
 					"enc": "HexToASCII",
 					"prefix": "Hex.Fixed",
-					"disableautoexpand": true
+					"disableAutoExpand": true
 			},
 			"subfields": {
 				"1": {
