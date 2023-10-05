@@ -1,10 +1,13 @@
-package iso8583
+package field
 
 import (
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+var fieldNameIndexRe = regexp.MustCompile(`^F.+$`)
 
 type IndexTag struct {
 	Id int // is -1 if index is not a number

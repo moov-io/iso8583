@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"math"
 	"reflect"
-	"regexp"
 	"strconv"
 	"sync"
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
-
 	"github.com/moov-io/iso8583/utils"
 )
 
@@ -676,21 +674,9 @@ func orderedKeys(kvs map[string]Field, sorter sort.StringSlice) []string {
 	return keys
 }
 
-var fieldNameTagRe = regexp.MustCompile(`^F.+$`)
-
 // getFieldIndexOrTag returns index or tag of the field. First, it checks the
 // field name. If it does not match F.+ pattern, it checks value of `index`
 // tag.  If empty string, then index/tag was not found for the field.
 func getFieldIndexOrTag(field reflect.StructField) (string, error) {
-	dataFieldName := field.Name
-
-	if fieldIndex := field.Tag.Get("index"); fieldIndex != "" {
-		return fieldIndex, nil
-	}
-
-	if len(dataFieldName) > 0 && fieldNameTagRe.MatchString(dataFieldName) {
-		return dataFieldName[1:], nil
-	}
-
-	return "", nil
+	return NewIndexTag(field).Tag, nil
 }

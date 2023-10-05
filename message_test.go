@@ -1415,10 +1415,8 @@ func Test_getFieldIndex(t *testing.T) {
 			F1 string
 		}{}).Elem()
 
-		index, err := getFieldIndex(st.Type().Field(0))
-
-		require.NoError(t, err)
-		require.Equal(t, 1, index)
+		indexTag := field.NewIndexTag(st.Type().Field(0))
+		require.Equal(t, 1, indexTag.Id)
 	})
 
 	t.Run("returns index from field tag instead of field name when both match", func(t *testing.T) {
@@ -1426,10 +1424,8 @@ func Test_getFieldIndex(t *testing.T) {
 			F1 string `index:"2"`
 		}{}).Elem()
 
-		index, err := getFieldIndex(st.Type().Field(0))
-
-		require.NoError(t, err)
-		require.Equal(t, 2, index)
+		indexTag := field.NewIndexTag(st.Type().Field(0))
+		require.Equal(t, 2, indexTag.Id)
 	})
 
 	t.Run("returns index from field tag", func(t *testing.T) {
@@ -1440,22 +1436,16 @@ func Test_getFieldIndex(t *testing.T) {
 		}{}).Elem()
 
 		// get index from field Name
-		_, err := getFieldIndex(st.Type().Field(0))
-
-		require.Error(t, err)
-		require.EqualError(t, err, "converting field index into int: strconv.Atoi: parsing \"abcd\": invalid syntax")
+		indexTag := field.NewIndexTag(st.Type().Field(0))
+		require.Equal(t, -1, indexTag.Id)
 
 		// get index from field F
-		index, err := getFieldIndex(st.Type().Field(1))
-
-		require.NoError(t, err)
-		require.Equal(t, 2, index)
+		indexTag = field.NewIndexTag(st.Type().Field(1))
+		require.Equal(t, 2, indexTag.Id)
 
 		// get index from field Amount
-		index, err = getFieldIndex(st.Type().Field(2))
-
-		require.NoError(t, err)
-		require.Equal(t, 3, index)
+		indexTag = field.NewIndexTag(st.Type().Field(2))
+		require.Equal(t, 3, indexTag.Id)
 	})
 
 	t.Run("returns empty string when no tag and field name does not match the pattern", func(t *testing.T) {
@@ -1463,20 +1453,16 @@ func Test_getFieldIndex(t *testing.T) {
 			Name string
 		}{}).Elem()
 
-		index, err := getFieldIndex(st.Type().Field(0))
-
-		require.NoError(t, err)
-		require.Equal(t, -1, index)
+		indexTag := field.NewIndexTag(st.Type().Field(0))
+		require.Equal(t, -1, indexTag.Id)
 
 		// single letter field without tag is ignored
 		st = reflect.ValueOf(&struct {
 			F string
 		}{}).Elem()
 
-		index, err = getFieldIndex(st.Type().Field(0))
-
-		require.NoError(t, err)
-		require.Equal(t, -1, index)
+		indexTag = field.NewIndexTag(st.Type().Field(0))
+		require.Equal(t, -1, indexTag.Id)
 	})
 }
 
