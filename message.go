@@ -513,14 +513,10 @@ func (m *Message) Unmarshal(v interface{}) error {
 				return fmt.Errorf("failed to get value from field %d: %w", fieldIndex, err)
 			}
 		default: // Native types
-			// using new reflect value that has pointer instead of input data field
-			dummy := reflect.New(dataField.Type()).Elem()
-			err = messageField.Unmarshal(dummy)
+			err = messageField.Unmarshal(dataField)
 			if err != nil {
 				return fmt.Errorf("failed to get value from field %d: %w", fieldIndex, err)
 			}
-
-			dataField.Set(dummy)
 		}
 	}
 
