@@ -128,7 +128,7 @@ type fieldDummy struct {
 	Tag               *tagDummy              `json:"tag,omitempty"               xml:"tag,omitempty"`
 	Subfields         map[string]*fieldDummy `json:"subfields,omitempty"         xml:"subfields:omitempty"`
 	Bitmap            *fieldDummy            `json:"bitmap,omitempty"            xml:"bitmap,omitempty"`
-	DisableAutoExpand bool                   `json:"disableautoexpand,omitempty" xml:"disableautoexpand,omitempty"`
+	DisableAutoExpand bool                   `json:"disableAutoExpand,omitempty" xml:"disableAutoExpand,omitempty"`
 }
 
 type paddingDummy struct {
