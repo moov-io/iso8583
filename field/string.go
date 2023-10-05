@@ -153,7 +153,7 @@ func (f *String) Unmarshal(v interface{}) error {
 }
 
 func (f *String) Marshal(v interface{}) error {
-	if v == nil || reflect.ValueOf(v).IsZero() {
+	if v == nil || (!reflect.ValueOf(v).CanInt() && reflect.ValueOf(v).IsZero()) {
 		f.value = ""
 		return nil
 	}
