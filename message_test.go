@@ -3,7 +3,6 @@ package iso8583
 import (
 	"encoding/hex"
 	"encoding/json"
-	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -1407,63 +1406,6 @@ func TestMessageClone(t *testing.T) {
 	require.Equal(t, message2Data.F55.F9A.Value(), message3Data.F55.F9A.Value())
 	require.Equal(t, message2Data.F55.F9F02.Value(), message3Data.F55.F9F02.Value())
 	require.Equal(t, message2Data.F120.Value(), message3Data.F120.Value())
-}
-
-func Test_getFieldIndex(t *testing.T) {
-	t.Run("returns index from field name", func(t *testing.T) {
-		st := reflect.ValueOf(&struct {
-			F1 string
-		}{}).Elem()
-
-		indexTag := field.NewIndexTag(st.Type().Field(0))
-		require.Equal(t, 1, indexTag.Id)
-	})
-
-	t.Run("returns index from field tag instead of field name when both match", func(t *testing.T) {
-		st := reflect.ValueOf(&struct {
-			F1 string `index:"2"`
-		}{}).Elem()
-
-		indexTag := field.NewIndexTag(st.Type().Field(0))
-		require.Equal(t, 2, indexTag.Id)
-	})
-
-	t.Run("returns index from field tag", func(t *testing.T) {
-		st := reflect.ValueOf(&struct {
-			Name   string `index:"abcd"`
-			F      string `index:"02"`
-			Amount string `index:"3"`
-		}{}).Elem()
-
-		// get index from field Name
-		indexTag := field.NewIndexTag(st.Type().Field(0))
-		require.Equal(t, -1, indexTag.Id)
-
-		// get index from field F
-		indexTag = field.NewIndexTag(st.Type().Field(1))
-		require.Equal(t, 2, indexTag.Id)
-
-		// get index from field Amount
-		indexTag = field.NewIndexTag(st.Type().Field(2))
-		require.Equal(t, 3, indexTag.Id)
-	})
-
-	t.Run("returns empty string when no tag and field name does not match the pattern", func(t *testing.T) {
-		st := reflect.ValueOf(&struct {
-			Name string
-		}{}).Elem()
-
-		indexTag := field.NewIndexTag(st.Type().Field(0))
-		require.Equal(t, -1, indexTag.Id)
-
-		// single letter field without tag is ignored
-		st = reflect.ValueOf(&struct {
-			F string
-		}{}).Elem()
-
-		indexTag = field.NewIndexTag(st.Type().Field(0))
-		require.Equal(t, -1, indexTag.Id)
-	})
 }
 
 func TestMessageMarshaling(t *testing.T) {
