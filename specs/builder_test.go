@@ -15,7 +15,6 @@ import (
 )
 
 func TestBuilder(t *testing.T) {
-
 	asciiJson, err := Builder.ExportJSON(Spec87ASCII)
 	require.NoError(t, err)
 
@@ -31,7 +30,6 @@ func TestBuilder(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Exactly(t, Spec87Hex.Name, hexSpec.Name)
-
 }
 
 func TestExampleJSONSpec(t *testing.T) {
@@ -87,7 +85,8 @@ func TestSpecWithCompositeFields(t *testing.T) {
 						Pref:        prefix.EBCDIC.Fixed,
 						Pad:         padding.Left('0'),
 					}),
-				}}),
+				},
+			}),
 			30: field.NewNumeric(&field.Spec{
 				Length:      5,
 				Description: "field key that is not next number",
@@ -113,4 +112,139 @@ func TestSpecWithCompositeFields(t *testing.T) {
 	importedSpec.Fields[1].Spec().Subfields["1"].Spec().Tag.Sort = nil
 
 	require.Exactly(t, testSpec, importedSpec)
+}
+
+func TestSpecWithCompositeBitmapedFields(t *testing.T) {
+	specJSON := []byte(`
+{
+	"name": "TEST Spec",
+	"fields": {
+		"1": {
+			"type": "Composite",
+			"length": 255,
+			"description": "Private use field",
+			"prefix": "ASCII.LL",
+			"bitmap": {
+					"type": "Bitmap",
+					"length": 8,
+					"description": "Bitmap",
+					"enc": "HexToASCII",
+					"prefix": "Hex.Fixed",
+					"disableAutoExpand": true
+			},
+			"subfields": {
+				"1": {
+					"type": "String",
+					"length": 2,
+					"description": "Cardholder certificate Serial Number",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				},
+				"2": {
+					"type": "String",
+					"length": 2,
+					"description": "Merchant certificate Serial Number",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				},
+				"3": {
+					"type": "String",
+					"length": 2,
+					"description": "Transaction ID",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				},
+				"4": {
+					"type": "String",
+					"length": 20,
+					"description": "CAVV",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				},
+				"5": {
+					"type": "String",
+					"length": 20,
+					"description": "CAVV",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				},
+				"6": {
+					"type": "String",
+					"length": 2,
+					"description": "Cardholder certificate Serial Number",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				},
+				"7": {
+					"type": "String",
+					"length": 2,
+					"description": "Merchant certificate Serial Number",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				},
+				"8": {
+					"type": "String",
+					"length": 2,
+					"description": "Transaction ID",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				},
+				"9": {
+					"type": "String",
+					"length": 20,
+					"description": "CAVV",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				},
+				"10": {
+					"type": "String",
+					"length": 6,
+					"description": "CVV2",
+					"enc": "ASCII",
+					"prefix": "ASCII.Fixed"
+				}
+			}
+		}
+	}
+}`)
+
+	spec, err := Builder.ImportJSON(specJSON)
+	require.NoError(t, err)
+
+	data := struct {
+		F1  *field.String
+		F2  *field.String
+		F3  *field.String
+		F4  *field.String
+		F5  *field.String
+		F6  *field.String
+		F7  *field.String
+		F8  *field.String
+		F9  *field.String
+		F10 *field.String
+	}{
+		F10: field.NewStringValue("11 456"),
+	}
+
+	compositeRestored := field.NewComposite(spec.Fields[1].Spec())
+	err = compositeRestored.Marshal(&data)
+	require.NoError(t, err)
+
+	packed, err := compositeRestored.Pack()
+	require.NoError(t, err)
+	require.Equal(t, "22004000000000000011 456", string(packed))
+
+	exportedJSON, err := Builder.ExportJSON(spec)
+	require.NoError(t, err)
+
+	spec, err = Builder.ImportJSON(exportedJSON)
+	require.NoError(t, err)
+
+	compositeRestored = field.NewComposite(spec.Fields[1].Spec())
+	err = compositeRestored.Marshal(&data)
+	require.NoError(t, err)
+
+	packed, err = compositeRestored.Pack()
+	require.NoError(t, err)
+	require.Equal(t, "22004000000000000011 456", string(packed))
 }
