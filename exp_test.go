@@ -203,4 +203,26 @@ func TestStructWithTypes(t *testing.T) {
 		require.Equal(t, "0110", *data.MTI)
 		require.Equal(t, "4242424242424242", data.PrimaryAccountNumber.Value())
 	})
+
+	t.Run("zero value using keepzero tag", func(t *testing.T) {
+		type DataWithoutKeepZero struct {
+			ProcessingCode int `index:"2"` // field.String in the spec
+		}
+
+		type DataWithKeepZero struct {
+			ProcessingCode int `index:"2,keepzero"` // field.String in the spec
+		}
+
+		message := iso8583.NewMessage(specs.Spec87ASCII)
+
+		message.Marshal(&DataWithoutKeepZero{})
+		s, err := message.GetField(2).String()
+		require.NoError(t, err)
+		require.Equal(t, "", s)
+
+		message.Marshal(&DataWithKeepZero{})
+		s, err = message.GetField(2).String()
+		require.NoError(t, err)
+		require.Equal(t, "0", s)
+	})
 }
