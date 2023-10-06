@@ -1831,16 +1831,14 @@ func TestTLVJSONConversion(t *testing.T) {
 	})
 }
 
-func TestComposite_getFieldIndexOrTag(t *testing.T) {
+func TestComposite_getFieldIndexTag(t *testing.T) {
 	t.Run("returns index from field name", func(t *testing.T) {
 		st := reflect.ValueOf(&struct {
 			F1 string
 		}{}).Elem()
 
-		index, err := getFieldIndexOrTag(st.Type().Field(0))
-
-		require.NoError(t, err)
-		require.Equal(t, "1", index)
+		indexTag := NewIndexTag(st.Type().Field(0))
+		require.Equal(t, "1", indexTag.Tag)
 	})
 
 	t.Run("returns index from field tag instead of field name when both match", func(t *testing.T) {
@@ -1848,10 +1846,8 @@ func TestComposite_getFieldIndexOrTag(t *testing.T) {
 			F1 string `index:"AB"`
 		}{}).Elem()
 
-		index, err := getFieldIndexOrTag(st.Type().Field(0))
-
-		require.NoError(t, err)
-		require.Equal(t, "AB", index)
+		indexTag := NewIndexTag(st.Type().Field(0))
+		require.Equal(t, "AB", indexTag.Tag)
 	})
 
 	t.Run("returns index from field tag", func(t *testing.T) {
@@ -1861,16 +1857,12 @@ func TestComposite_getFieldIndexOrTag(t *testing.T) {
 		}{}).Elem()
 
 		// get index from field Name
-		index, err := getFieldIndexOrTag(st.Type().Field(0))
-
-		require.NoError(t, err)
-		require.Equal(t, "abcd", index)
+		indexTag := NewIndexTag(st.Type().Field(0))
+		require.Equal(t, "abcd", indexTag.Tag)
 
 		// get index from field F
-		index, err = getFieldIndexOrTag(st.Type().Field(1))
-
-		require.NoError(t, err)
-		require.Equal(t, "02", index)
+		indexTag = NewIndexTag(st.Type().Field(1))
+		require.Equal(t, "02", indexTag.Tag)
 	})
 
 	t.Run("returns empty string when no tag and field name does not match the pattern", func(t *testing.T) {
@@ -1878,20 +1870,16 @@ func TestComposite_getFieldIndexOrTag(t *testing.T) {
 			Name string
 		}{}).Elem()
 
-		index, err := getFieldIndexOrTag(st.Type().Field(0))
-
-		require.NoError(t, err)
-		require.Empty(t, index)
+		indexTag := NewIndexTag(st.Type().Field(0))
+		require.Empty(t, indexTag.Tag)
 
 		// single letter field without tag is ignored
 		st = reflect.ValueOf(&struct {
 			F string
 		}{}).Elem()
 
-		index, err = getFieldIndexOrTag(st.Type().Field(0))
-
-		require.NoError(t, err)
-		require.Empty(t, index)
+		indexTag = NewIndexTag(st.Type().Field(0))
+		require.Empty(t, indexTag.Tag)
 	})
 }
 

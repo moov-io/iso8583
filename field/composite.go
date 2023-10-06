@@ -172,23 +172,18 @@ func (f *Composite) Unmarshal(v interface{}) error {
 
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
-		indexOrTag, err := getFieldIndexOrTag(dataStruct.Type().Field(i))
-		if err != nil {
-			return fmt.Errorf("getting field %d index: %w", i, err)
+		indexTag := NewIndexTag(dataStruct.Type().Field(i))
+		if indexTag.Tag == "" {
+			return fmt.Errorf("getting field %d index error", i)
 		}
 
-		// skip field without index
-		if indexOrTag == "" {
-			continue
-		}
-
-		messageField, ok := f.subfields[indexOrTag]
+		messageField, ok := f.subfields[indexTag.Tag]
 		if !ok {
 			continue
 		}
 
 		// unmarshal only subfield that has the value set
-		if _, set := f.setSubfields[indexOrTag]; !set {
+		if _, set := f.setSubfields[indexTag.Tag]; !set {
 			continue
 		}
 
@@ -199,14 +194,14 @@ func (f *Composite) Unmarshal(v interface{}) error {
 				dataField.Set(reflect.New(dataField.Type().Elem()))
 			}
 
-			err = messageField.Unmarshal(dataField.Interface())
+			err := messageField.Unmarshal(dataField.Interface())
 			if err != nil {
-				return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
+				return fmt.Errorf("failed to get data from field %s: %w", indexTag.Tag, err)
 			}
 		default: // Native types
-			err = messageField.Unmarshal(dataField)
+			err := messageField.Unmarshal(dataField)
 			if err != nil {
-				return fmt.Errorf("failed to get data from field %s: %w", indexOrTag, err)
+				return fmt.Errorf("failed to get data from field %s: %w", indexTag.Tag, err)
 			}
 		}
 	}
@@ -249,17 +244,12 @@ func (f *Composite) Marshal(v interface{}) error {
 
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
-		indexOrTag, err := getFieldIndexOrTag(dataStruct.Type().Field(i))
-		if err != nil {
-			return fmt.Errorf("getting field %d index: %w", i, err)
+		indexTag := NewIndexTag(dataStruct.Type().Field(i))
+		if indexTag.Tag == "" {
+			return fmt.Errorf("getting field %d index error", i)
 		}
 
-		// skip field without index
-		if indexOrTag == "" {
-			continue
-		}
-
-		messageField, ok := f.subfields[indexOrTag]
+		messageField, ok := f.subfields[indexTag.Tag]
 		if !ok {
 			continue
 		}
@@ -269,12 +259,12 @@ func (f *Composite) Marshal(v interface{}) error {
 			continue
 		}
 
-		err = messageField.Marshal(dataField.Interface())
+		err := messageField.Marshal(dataField.Interface())
 		if err != nil {
-			return fmt.Errorf("failed to set data from field %s: %w", indexOrTag, err)
+			return fmt.Errorf("failed to set data from field %s: %w", indexTag.Tag, err)
 		}
 
-		f.setSubfields[indexOrTag] = struct{}{}
+		f.setSubfields[indexTag.Tag] = struct{}{}
 	}
 
 	return nil
@@ -672,11 +662,4 @@ func orderedKeys(kvs map[string]Field, sorter sort.StringSlice) []string {
 	}
 	sorter(keys)
 	return keys
-}
-
-// getFieldIndexOrTag returns index or tag of the field. First, it checks the
-// field name. If it does not match F.+ pattern, it checks value of `index`
-// tag.  If empty string, then index/tag was not found for the field.
-func getFieldIndexOrTag(field reflect.StructField) (string, error) {
-	return NewIndexTag(field).Tag, nil
 }
