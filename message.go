@@ -441,13 +441,6 @@ func (m *Message) Marshal(v interface{}) error {
 		}
 
 		dataField := dataStruct.Field(i)
-		// for pointer fields we need to check if they are nil
-		// and if they are we need to skip them, to not set bitmap bit
-		// and not to set value to the field
-		if dataField.Kind() == reflect.Pointer && dataField.IsZero() {
-			continue
-		}
-
 		// for non pointer fields we need to check if they are zero
 		// and we want to skip them (as specified in the field tag)
 		if dataField.IsZero() && !indexTag.KeepZero {
@@ -503,8 +496,8 @@ func (m *Message) Unmarshal(v interface{}) error {
 
 		dataField := dataStruct.Field(i)
 		switch dataField.Kind() { //nolint:exhaustive
-		case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
-			if dataField.IsNil() || dataField.IsZero() {
+		case reflect.Pointer, reflect.Interface, reflect.Slice:
+			if dataField.IsNil() {
 				dataField.Set(reflect.New(dataField.Type().Elem()))
 			}
 			err := messageField.Unmarshal(dataField.Interface())

@@ -1,15 +1,47 @@
-package iso8583_test
+package iso8583
 
 import (
+	"reflect"
 	"testing"
 
-	"github.com/moov-io/iso8583"
+	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
-	"github.com/moov-io/iso8583/specs"
+	"github.com/moov-io/iso8583/padding"
+	"github.com/moov-io/iso8583/prefix"
 	"github.com/stretchr/testify/require"
 )
 
-func TestStructWithTypes(t *testing.T) {
+func TestStructWithStringType(t *testing.T) {
+	spec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Length:      16,
+				Description: "Bitmap",
+				Enc:         encoding.BytesToASCIIHex,
+				Pref:        prefix.Hex.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			3: field.NewNumeric(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+		},
+	}
+
 	t.Run("pack", func(t *testing.T) {
 		panInt := 4242424242424242
 		panStr := "4242424242424242"
@@ -82,7 +114,7 @@ func TestStructWithTypes(t *testing.T) {
 				}{
 					MTI: "0110",
 				},
-				expectedPackedString: "011000000000000000000000000000000000",
+				expectedPackedString: "01104000000000000000000000000000000000",
 			},
 
 			// Tests for int type
@@ -148,13 +180,13 @@ func TestStructWithTypes(t *testing.T) {
 				}{
 					MTI: "0110",
 				},
-				expectedPackedString: "011000000000000000000000000000000000",
+				expectedPackedString: "011040000000000000000000000000000000010",
 			},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				message := iso8583.NewMessage(specs.Spec87ASCII)
+				message := NewMessage(spec)
 				err := message.Marshal(tt.input)
 				require.NoError(t, err)
 
@@ -167,62 +199,127 @@ func TestStructWithTypes(t *testing.T) {
 	})
 
 	t.Run("unpack", func(t *testing.T) {
-		type authRequest struct {
-			MTI                  string `index:"0"`
-			PrimaryAccountNumber string `index:"2"`
-		}
+		tests := []struct {
+			name  string
+			input any
+		}{
+			// Tests for string type
+			{
+				name: "struct with string type and value set",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber string `index:"2"`
+				}{},
+			},
+			{
+				name: "struct with string type and no value",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber string `index:"2"`
+				}{},
+			},
+			{
+				name: "struct with string type, no value and keepzero tag - length prefix is set to 0 and no value is following",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber string `index:"2,keepzero"`
+				}{},
+			},
 
+			// Tests for *string type
+			{
+				name: "struct with *string type and value set",
+				input: &struct {
+					MTI                  string  `index:"0"`
+					PrimaryAccountNumber *string `index:"2"`
+				}{},
+			},
+			{
+				name: "struct with *string type and no value",
+				input: &struct {
+					MTI                  string  `index:"0"`
+					PrimaryAccountNumber *string `index:"2"`
+				}{},
+			},
+			{
+				name: "struct with *string type, no value and keepzero tag",
+				input: &struct {
+					MTI                  string  `index:"0"`
+					PrimaryAccountNumber *string `index:"2,keepzero"`
+				}{},
+			},
+
+			// Tests for int type
+			{
+				name: "struct with int type and value set",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber int    `index:"2"`
+				}{},
+			},
+			{
+				name: "struct with int type and no value",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber int    `index:"2"`
+				}{},
+			},
+			{
+				name: "struct with int type, no value and keepzero tag",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber int    `index:"2,keepzero"`
+				}{},
+			},
+
+			// Tests for *int type
+			{
+				name: "struct with *int type and value set",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber *int   `index:"2"`
+				}{},
+			},
+			{
+				name: "struct with *int type and no value",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber *int   `index:"2"`
+				}{},
+			},
+			{
+				name: "struct with *int type, no value and keepzero tag",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber *int   `index:"2,keepzero"`
+				}{},
+			},
+		}
 		packed := []byte("011040000000000000000000000000000000164242424242424242")
 
-		message := iso8583.NewMessage(specs.Spec87ASCII)
-		err := message.Unpack(packed)
-		require.NoError(t, err)
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				message := NewMessage(spec)
+				err := message.Unpack(packed)
 
-		data := authRequest{}
-		err = message.Unmarshal(&data)
-		require.NoError(t, err)
-		require.Equal(t, "0110", data.MTI)
-		require.Equal(t, "4242424242424242", data.PrimaryAccountNumber)
-	})
+				err = message.Unmarshal(tt.input)
+				require.NoError(t, err)
 
-	t.Run("unpack2", func(t *testing.T) {
-		type authRequest struct {
-			MTI                  *string       `index:"0"`
-			PrimaryAccountNumber *field.String `index:"2"`
+				val := reflect.Indirect(reflect.ValueOf(tt.input))
+				require.Equal(t, "0110", val.Field(0).String())
+
+				tStr := val.Field(1).Type().String()
+				switch tStr {
+				case "int":
+					require.Equal(t, int64(4242424242424242), val.Field(1).Int())
+				case "*int":
+					require.Equal(t, int64(4242424242424242), val.Field(1).Elem().Int())
+				case "string":
+					require.Equal(t, "4242424242424242", val.Field(1).String())
+				case "*string":
+					require.Equal(t, "4242424242424242", val.Field(1).Elem().String())
+				}
+			})
 		}
-
-		packed := []byte("011040000000000000000000000000000000164242424242424242")
-
-		message := iso8583.NewMessage(specs.Spec87ASCII)
-		err := message.Unpack(packed)
-		require.NoError(t, err)
-
-		data := authRequest{}
-		err = message.Unmarshal(&data)
-		require.NoError(t, err)
-		require.Equal(t, "0110", *data.MTI)
-		require.Equal(t, "4242424242424242", data.PrimaryAccountNumber.Value())
-	})
-
-	t.Run("zero value using keepzero tag", func(t *testing.T) {
-		type DataWithoutKeepZero struct {
-			ProcessingCode int `index:"2"` // field.String in the spec
-		}
-
-		type DataWithKeepZero struct {
-			ProcessingCode int `index:"2,keepzero"` // field.String in the spec
-		}
-
-		message := iso8583.NewMessage(specs.Spec87ASCII)
-
-		message.Marshal(&DataWithoutKeepZero{})
-		s, err := message.GetField(2).String()
-		require.NoError(t, err)
-		require.Equal(t, "", s)
-
-		message.Marshal(&DataWithKeepZero{})
-		s, err = message.GetField(2).String()
-		require.NoError(t, err)
-		require.Equal(t, "0", s)
 	})
 }
