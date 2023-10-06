@@ -52,6 +52,10 @@ var (
 		"EBCDIC.LLL":   prefix.EBCDIC.LLL,
 		"EBCDIC.LLLL":  prefix.EBCDIC.LLLL,
 		"Binary.Fixed": prefix.Binary.Fixed,
+		"Binary.L":     prefix.Binary.L,
+		"Binary.LL":    prefix.Binary.LL,
+		"Binary.LLL":   prefix.Binary.LLL,
+		"Binary.LLLL":  prefix.Binary.LLLL,
 		"BerTLV":       prefix.BerTLV,
 	}
 
