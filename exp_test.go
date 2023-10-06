@@ -300,16 +300,17 @@ func TestStructWithStringType(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				message := NewMessage(spec)
+
 				err := message.Unpack(packed)
+				require.NoError(t, err)
 
 				err = message.Unmarshal(tt.input)
 				require.NoError(t, err)
 
 				val := reflect.Indirect(reflect.ValueOf(tt.input))
-				require.Equal(t, "0110", val.Field(0).String())
 
-				tStr := val.Field(1).Type().String()
-				switch tStr {
+				require.Equal(t, "0110", val.Field(0).String())
+				switch val.Field(1).Type().String() {
 				case "int":
 					require.Equal(t, int64(4242424242424242), val.Field(1).Int())
 				case "*int":
