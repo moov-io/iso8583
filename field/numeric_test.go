@@ -21,7 +21,7 @@ func TestNumericField(t *testing.T) {
 	numeric := NewNumeric(spec)
 
 	numeric.SetBytes([]byte("100"))
-	require.Equal(t, 100, numeric.Value())
+	require.Equal(t, int64(100), numeric.Value())
 
 	packed, err := numeric.Pack()
 	require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestNumericField(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "9876", string(b))
 
-	require.Equal(t, 9876, numeric.Value())
+	require.Equal(t, int64(9876), numeric.Value())
 
 	numeric = NewNumeric(spec)
 	numeric.Marshal(NewNumericValue(9876))
@@ -49,12 +49,12 @@ func TestNumericField(t *testing.T) {
 	length, err = numeric.Unpack([]byte("      9876"))
 	require.NoError(t, err)
 	require.Equal(t, 10, length)
-	require.Equal(t, 9876, numeric.Value())
+	require.Equal(t, int64(9876), numeric.Value())
 
 	numeric = NewNumeric(spec)
 	numeric.SetValue(9876)
 
-	require.Equal(t, 9876, numeric.Value())
+	require.Equal(t, int64(9876), numeric.Value())
 }
 
 func TestNumericNil(t *testing.T) {
@@ -69,7 +69,7 @@ func TestNumericNil(t *testing.T) {
 	require.Equal(t, "", value)
 
 	n := str.Value()
-	require.Equal(t, 0, n)
+	require.Equal(t, int64(0), n)
 }
 
 func TestNumericPack(t *testing.T) {
@@ -94,17 +94,17 @@ func TestNumericFieldUnmarshal(t *testing.T) {
 	vNumeric := &Numeric{}
 	err := numericField.Unmarshal(vNumeric)
 	require.NoError(t, err)
-	require.Equal(t, 123456, vNumeric.Value())
+	require.Equal(t, int64(123456), vNumeric.Value())
 
 	var s string
 	err = numericField.Unmarshal(&s)
 	require.NoError(t, err)
 	require.Equal(t, "123456", s)
 
-	var b int
+	var b int64
 	err = numericField.Unmarshal(&b)
 	require.NoError(t, err)
-	require.Equal(t, 123456, b)
+	require.Equal(t, int64(123456), b)
 
 	refStrValue := reflect.ValueOf(&s).Elem()
 	err = numericField.Unmarshal(refStrValue)
@@ -114,7 +114,7 @@ func TestNumericFieldUnmarshal(t *testing.T) {
 	refIntValue := reflect.ValueOf(&b).Elem()
 	err = numericField.Unmarshal(refIntValue)
 	require.NoError(t, err)
-	require.Equal(t, 123456, int(refIntValue.Int()))
+	require.Equal(t, int64(123456), int64(refIntValue.Int()))
 
 	refStr := reflect.ValueOf(s)
 	err = numericField.Unmarshal(refStr)
@@ -136,24 +136,24 @@ func TestNumericFieldMarshal(t *testing.T) {
 
 	inputNumeric := NewNumericValue(123456)
 	numericField.Marshal(inputNumeric)
-	require.Equal(t, 123456, numericField.Value())
+	require.Equal(t, int64(123456), numericField.Value())
 
 	numericField.Marshal(&inputNumeric)
-	require.Equal(t, 123456, numericField.Value())
+	require.Equal(t, int64(123456), numericField.Value())
 
 	inputStr := "123456"
 	numericField.Marshal(inputStr)
-	require.Equal(t, 123456, numericField.Value())
+	require.Equal(t, int64(123456), numericField.Value())
 
 	numericField.Marshal(&inputStr)
-	require.Equal(t, 123456, numericField.Value())
+	require.Equal(t, int64(123456), numericField.Value())
 
-	inputInt := 123456
-	numericField.Marshal(inputInt)
-	require.Equal(t, 123456, numericField.Value())
+	var inputInt64 int64 = 123456
+	numericField.Marshal(inputInt64)
+	require.Equal(t, int64(123456), numericField.Value())
 
-	numericField.Marshal(&inputInt)
-	require.Equal(t, 123456, numericField.Value())
+	numericField.Marshal(&inputInt64)
+	require.Equal(t, int64(123456), numericField.Value())
 
 	err := numericField.Marshal(nil)
 	require.NoError(t, err)
@@ -175,7 +175,7 @@ func TestNumericFieldWithNotANumber(t *testing.T) {
 	err := numeric.SetBytes([]byte("hello"))
 	require.Error(t, err)
 	require.EqualError(t, err, "failed to convert into number")
-	require.Equal(t, 0, numeric.Value())
+	require.Equal(t, int64(0), numeric.Value())
 
 	packed, err := numeric.Pack()
 	require.NoError(t, err)
@@ -196,7 +196,7 @@ func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
 	})
 
 	numeric.SetBytes([]byte("0"))
-	require.Equal(t, 0, numeric.Value())
+	require.Equal(t, int64(0), numeric.Value())
 
 	packed, err := numeric.Pack()
 
@@ -212,7 +212,7 @@ func TestNumericFieldZeroLeftPaddedZero(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "0", string(bs))
 
-	require.Equal(t, 0, numeric.Value())
+	require.Equal(t, int64(0), numeric.Value())
 }
 
 func TestNumericSetBytesSetsDataOntoDataStruct(t *testing.T) {
@@ -230,7 +230,7 @@ func TestNumericSetBytesSetsDataOntoDataStruct(t *testing.T) {
 	err = numeric.SetBytes([]byte("9"))
 	require.NoError(t, err)
 
-	require.Equal(t, 9, numeric.Value())
+	require.Equal(t, int64(9), numeric.Value())
 }
 
 func TestNumericJSONMarshal(t *testing.T) {
@@ -251,5 +251,26 @@ func TestNumericJSONUnmarshal(t *testing.T) {
 	})
 
 	require.NoError(t, numeric.UnmarshalJSON(input))
-	require.Equal(t, 4000, numeric.Value())
+	require.Equal(t, int64(4000), numeric.Value())
+}
+
+func TestNumericJSONMarshalInt64(t *testing.T) {
+	numeric := NewNumericValue(9223372036854775807)
+	marshalledJSON, err := numeric.MarshalJSON()
+	require.NoError(t, err)
+	require.Equal(t, "9223372036854775807", string(marshalledJSON))
+}
+
+func TestNumericJSONUnmarshalInt64(t *testing.T) {
+	input := []byte(`9223372036854775807`)
+
+	numeric := NewNumeric(&Spec{
+		Length:      4,
+		Description: "Field",
+		Enc:         encoding.ASCII,
+		Pref:        prefix.ASCII.Fixed,
+	})
+
+	require.NoError(t, numeric.UnmarshalJSON(input))
+	require.Equal(t, int64(9223372036854775807), numeric.Value())
 }

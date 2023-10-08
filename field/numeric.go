@@ -14,7 +14,7 @@ var _ json.Marshaler = (*Numeric)(nil)
 var _ json.Unmarshaler = (*Numeric)(nil)
 
 type Numeric struct {
-	value int
+	value int64
 	spec  *Spec
 }
 
@@ -24,7 +24,7 @@ func NewNumeric(spec *Spec) *Numeric {
 	}
 }
 
-func NewNumericValue(val int) *Numeric {
+func NewNumericValue(val int64) *Numeric {
 	return &Numeric{
 		value: val,
 	}
@@ -46,7 +46,7 @@ func (f *Numeric) SetBytes(b []byte) error {
 		f.value = 0
 	} else {
 		// otherwise parse the raw to an int
-		val, err := strconv.Atoi(string(b))
+		val, err := strconv.ParseInt(string(b), 10, 64)
 		if err != nil {
 			return utils.NewSafeError(err, "failed to convert into number")
 		}
@@ -60,29 +60,29 @@ func (f *Numeric) Bytes() ([]byte, error) {
 	if f == nil {
 		return nil, nil
 	}
-	return []byte(strconv.Itoa(f.value)), nil
+	return []byte(strconv.FormatInt(f.value, 10)), nil
 }
 
 func (f *Numeric) String() (string, error) {
 	if f == nil {
 		return "", nil
 	}
-	return strconv.Itoa(f.value), nil
+	return strconv.FormatInt(f.value, 10), nil
 }
 
-func (f *Numeric) Value() int {
+func (f *Numeric) Value() int64 {
 	if f == nil {
 		return 0
 	}
 	return f.value
 }
 
-func (f *Numeric) SetValue(v int) {
+func (f *Numeric) SetValue(v int64) {
 	f.value = v
 }
 
 func (f *Numeric) Pack() ([]byte, error) {
-	data := []byte(strconv.Itoa(f.value))
+	data := []byte(strconv.FormatInt(f.value, 10))
 
 	if f.spec.Pad != nil {
 		data = f.spec.Pad.Pad(data, f.spec.Length)
@@ -138,17 +138,17 @@ func (f *Numeric) Unmarshal(v interface{}) error {
 
 		switch val.Kind() { //nolint:exhaustive
 		case reflect.String:
-			str := strconv.Itoa(f.value)
+			str := strconv.FormatInt(f.value, 10)
 			val.SetString(str)
-		case reflect.Int:
+		case reflect.Int64:
 			val.SetInt(int64(f.value))
 		default:
 			return fmt.Errorf("unsupported reflect.Value type: %s", val.Kind())
 		}
 	case *string:
-		str := strconv.Itoa(f.value)
+		str := strconv.FormatInt(f.value, 10)
 		*val = str
-	case *int:
+	case *int64:
 		*val = f.value
 	case *Numeric:
 		val.value = f.value
@@ -159,7 +159,7 @@ func (f *Numeric) Unmarshal(v interface{}) error {
 	return nil
 }
 
-func (f *Numeric) Marshal(v interface{}) error {
+func (f *Numeric) Marshal(v any) error {
 	if v == nil || reflect.ValueOf(v).IsZero() {
 		f.value = 0
 		return nil
@@ -168,18 +168,18 @@ func (f *Numeric) Marshal(v interface{}) error {
 	switch v := v.(type) {
 	case *Numeric:
 		f.value = v.value
-	case int:
+	case int64:
 		f.value = v
-	case *int:
+	case *int64:
 		f.value = *v
 	case string:
-		val, err := strconv.Atoi(v)
+		val, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			return utils.NewSafeError(err, "failed to convert sting value into number")
 		}
 		f.value = val
 	case *string:
-		val, err := strconv.Atoi(*v)
+		val, err := strconv.ParseInt(*v, 10, 64)
 		if err != nil {
 			return utils.NewSafeError(err, "failed to convert sting value into number")
 		}
