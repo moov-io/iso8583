@@ -889,7 +889,7 @@ func TestCompositePacking(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Equal(t, "CD", data.F2.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Nil(t, data.F11)
 	})
 
@@ -904,7 +904,7 @@ func TestCompositePacking(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Equal(t, "CD", data.F2.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Nil(t, data.F11)
 	})
 }
@@ -1105,7 +1105,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Equal(t, "CD", data.F2.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Equal(t, "YZ", data.F11.F1.Value())
 	})
 
@@ -1138,7 +1138,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Nil(t, data.F2)
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 	})
 
 	t.Run("Unpack correctly ignores excess bytes in excess of the length described by the prefix", func(t *testing.T) {
@@ -1156,7 +1156,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Equal(t, "CD", data.F2.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Nil(t, data.F11)
 	})
 }
@@ -1365,7 +1365,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Equal(t, "CD", data.F2.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Equal(t, "YZ", data.F11.F1.Value())
 	})
 
@@ -1381,7 +1381,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Nil(t, data.F11)
 	})
 
@@ -1400,7 +1400,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Equal(t, "CD", data.F2.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Nil(t, data.F11)
 	})
 
@@ -1444,7 +1444,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Equal(t, "CD", data.F2.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Equal(t, "YZ", data.F11.F1.Value())
 	})
 
@@ -1460,7 +1460,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		require.NoError(t, composite.Unmarshal(data))
 
 		require.Equal(t, "AB", data.F1.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Nil(t, data.F11)
 	})
 
@@ -1479,7 +1479,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Equal(t, "CD", data.F2.Value())
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Nil(t, data.F11)
 	})
 }
@@ -1743,7 +1743,7 @@ func TestCompositeJSONConversion(t *testing.T) {
 
 		require.Equal(t, "AB", data.F1.Value())
 		require.Nil(t, data.F2)
-		require.Equal(t, 12, data.F3.Value())
+		require.Equal(t, int64(12), data.F3.Value())
 		require.Equal(t, "YZ", data.F11.F1.Value())
 	})
 

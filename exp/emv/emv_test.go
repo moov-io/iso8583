@@ -28,9 +28,9 @@ func TestEmv(t *testing.T) {
 	err = emvField.Unmarshal(data)
 	require.NoError(t, err)
 
-	require.Equal(t, 6300, data.AmountAuthorisedNumeric.Value())
+	require.Equal(t, int64(6300), data.AmountAuthorisedNumeric.Value())
 	require.Equal(t, "5800", data.ApplicationInterchangeProfile.Value())
-	require.Equal(t, 2, data.ApplicationTransactionCounter.Value())
+	require.Equal(t, int64(2), data.ApplicationTransactionCounter.Value())
 	require.Equal(t, "B9B2B58202D37033", data.ApplicationCryptogram.Value())
 
 }
