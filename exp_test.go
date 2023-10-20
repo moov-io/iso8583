@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStructWithStringType(t *testing.T) {
+func TestStructWithTypes(t *testing.T) {
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
 			0: field.NewString(&field.Spec{
@@ -45,11 +45,14 @@ func TestStructWithStringType(t *testing.T) {
 	t.Run("pack", func(t *testing.T) {
 		panInt := 4242424242424242
 		panStr := "4242424242424242"
+		panByte := []byte("4242424242424242")
 
 		tests := []struct {
 			name                 string
 			input                interface{}
 			expectedPackedString string
+			isError              bool
+			errorString          string
 		}{
 			// Tests for string type
 			{
@@ -182,12 +185,93 @@ func TestStructWithStringType(t *testing.T) {
 				},
 				expectedPackedString: "011040000000000000000000000000000000010",
 			},
+
+			// Tests for []byte type
+			{
+				name: "struct with []byte type and value set",
+				input: struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber []byte `index:"2"`
+				}{
+					MTI:                  "0110",
+					PrimaryAccountNumber: panByte,
+				},
+				expectedPackedString: "011040000000000000000000000000000000164242424242424242",
+				isError:              true,
+				errorString:          "failed to set value to field 2: data does not match required *String or (string, *string, int, *int) type",
+			},
+			{
+				name: "struct with []byte type and no value",
+				input: struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber []byte `index:"2"`
+				}{
+					MTI: "0110",
+				},
+				expectedPackedString: "011000000000000000000000000000000000",
+			},
+			{
+				name: "struct with []byte type, no value and keepzero tag",
+				input: struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber []byte `index:"2,keepzero"`
+				}{
+					MTI: "0110",
+				},
+				expectedPackedString: "011040000000000000000000000000000000010",
+				isError:              true,
+				errorString:          "failed to set value to field 2: data does not match required *String or (string, *string, int, *int) type",
+			},
+
+			// Tests for *[]byte type
+			{
+				name: "struct with *[]byte type and value set",
+				input: struct {
+					MTI                  string  `index:"0"`
+					PrimaryAccountNumber *[]byte `index:"2"`
+				}{
+					MTI:                  "0110",
+					PrimaryAccountNumber: &panByte,
+				},
+				expectedPackedString: "011040000000000000000000000000000000164242424242424242",
+				isError:              true,
+				errorString:          "failed to set value to field 2: data does not match required *String or (string, *string, int, *int) type",
+			},
+			{
+				name: "struct with *[]byte type and no value",
+				input: struct {
+					MTI                  string  `index:"0"`
+					PrimaryAccountNumber *[]byte `index:"2"`
+				}{
+					MTI: "0110",
+				},
+				expectedPackedString: "011000000000000000000000000000000000",
+				isError:              false, // there is not any modification
+			},
+			{
+				name: "struct with *[]byte type, no value and keepzero tag",
+				input: struct {
+					MTI                  string  `index:"0"`
+					PrimaryAccountNumber *[]byte `index:"2,keepzero"`
+				}{
+					MTI: "0110",
+				},
+				expectedPackedString: "011040000000000000000000000000000000010",
+				isError:              true,
+				errorString:          "failed to set value to field 2: data does not match required *String or (string, *string, int, *int) type",
+			},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				message := NewMessage(spec)
 				err := message.Marshal(tt.input)
+				if tt.isError {
+					require.Error(t, err)
+					require.Equal(t, tt.errorString, err.Error())
+					return
+				}
+
 				require.NoError(t, err)
 
 				packed, err := message.Pack()
@@ -200,17 +284,12 @@ func TestStructWithStringType(t *testing.T) {
 
 	t.Run("unpack", func(t *testing.T) {
 		tests := []struct {
-			name  string
-			input any
+			name        string
+			input       any
+			isError     bool
+			errorString string
 		}{
 			// Tests for string type
-			{
-				name: "struct with string type and value set",
-				input: &struct {
-					MTI                  string `index:"0"`
-					PrimaryAccountNumber string `index:"2"`
-				}{},
-			},
 			{
 				name: "struct with string type and no value",
 				input: &struct {
@@ -228,13 +307,6 @@ func TestStructWithStringType(t *testing.T) {
 
 			// Tests for *string type
 			{
-				name: "struct with *string type and value set",
-				input: &struct {
-					MTI                  string  `index:"0"`
-					PrimaryAccountNumber *string `index:"2"`
-				}{},
-			},
-			{
 				name: "struct with *string type and no value",
 				input: &struct {
 					MTI                  string  `index:"0"`
@@ -250,13 +322,6 @@ func TestStructWithStringType(t *testing.T) {
 			},
 
 			// Tests for int type
-			{
-				name: "struct with int type and value set",
-				input: &struct {
-					MTI                  string `index:"0"`
-					PrimaryAccountNumber int    `index:"2"`
-				}{},
-			},
 			{
 				name: "struct with int type and no value",
 				input: &struct {
@@ -274,13 +339,6 @@ func TestStructWithStringType(t *testing.T) {
 
 			// Tests for *int type
 			{
-				name: "struct with *int type and value set",
-				input: &struct {
-					MTI                  string `index:"0"`
-					PrimaryAccountNumber *int   `index:"2"`
-				}{},
-			},
-			{
 				name: "struct with *int type and no value",
 				input: &struct {
 					MTI                  string `index:"0"`
@@ -294,6 +352,126 @@ func TestStructWithStringType(t *testing.T) {
 					PrimaryAccountNumber *int   `index:"2,keepzero"`
 				}{},
 			},
+
+			// Tests for []byte type
+			{
+				name: "struct with []byte type and no value",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber []byte `index:"2"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []uint8",
+			},
+			{
+				name: "struct with []byte type, no value and keepzero tag",
+				input: &struct {
+					MTI                  string `index:"0"`
+					PrimaryAccountNumber []byte `index:"2,keepzero"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []uint8",
+			},
+
+			// Tests for *[]byte type
+			{
+				name: "struct with []byte type and no value",
+				input: &struct {
+					MTI                  string  `index:"0"`
+					PrimaryAccountNumber *[]byte `index:"2"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got *[]uint8",
+			},
+			{
+				name: "struct with []byte type, no value and keepzero tag",
+				input: &struct {
+					MTI                  string  `index:"0"`
+					PrimaryAccountNumber *[]byte `index:"2,keepzero"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got *[]uint8",
+			},
+
+			// Tests for []string type
+			{
+				name: "struct with []string type and no value",
+				input: &struct {
+					MTI                  string   `index:"0"`
+					PrimaryAccountNumber []string `index:"2"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []string",
+			},
+			{
+				name: "struct with []string type, no value and keepzero tag",
+				input: &struct {
+					MTI                  string   `index:"0"`
+					PrimaryAccountNumber []string `index:"2,keepzero"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []string",
+			},
+
+			// Tests for *[]string type
+			{
+				name: "struct with *[]string type and no value",
+				input: &struct {
+					MTI                  string    `index:"0"`
+					PrimaryAccountNumber *[]string `index:"2"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got *[]string",
+			},
+			{
+				name: "struct with *[]string type, no value and keepzero tag",
+				input: &struct {
+					MTI                  string    `index:"0"`
+					PrimaryAccountNumber *[]string `index:"2,keepzero"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got *[]string",
+			},
+
+			// Tests for map[string]string type
+			{
+				name: "struct with map[string]string type and no value",
+				input: &struct {
+					MTI                  string            `index:"0"`
+					PrimaryAccountNumber map[string]string `index:"2"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported reflect.Value type: map",
+			},
+			{
+				name: "struct with map[string]string type, no value and keepzero tag",
+				input: &struct {
+					MTI                  string            `index:"0"`
+					PrimaryAccountNumber map[string]string `index:"2,keepzero"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported reflect.Value type: map",
+			},
+
+			// Tests for *map[string]string type
+			{
+				name: "struct with *map[string]string type and no value",
+				input: &struct {
+					MTI                  string             `index:"0"`
+					PrimaryAccountNumber *map[string]string `index:"2"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got *map[string]string",
+			},
+			{
+				name: "struct with *map[string]string type, no value and keepzero tag",
+				input: &struct {
+					MTI                  string             `index:"0"`
+					PrimaryAccountNumber *map[string]string `index:"2,keepzero"`
+				}{},
+				isError:     true,
+				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got *map[string]string",
+			},
 		}
 		packed := []byte("011040000000000000000000000000000000164242424242424242")
 
@@ -305,6 +483,12 @@ func TestStructWithStringType(t *testing.T) {
 				require.NoError(t, err)
 
 				err = message.Unmarshal(tt.input)
+				if tt.isError {
+					require.Error(t, err)
+					require.Equal(t, tt.errorString, err.Error())
+					return
+				}
+
 				require.NoError(t, err)
 
 				val := reflect.Indirect(reflect.ValueOf(tt.input))

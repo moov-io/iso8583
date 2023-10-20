@@ -190,7 +190,7 @@ func (f *Composite) Unmarshal(v interface{}) error {
 		dataField := dataStruct.Field(i)
 		switch dataField.Kind() { //nolint:exhaustive
 		case reflect.Pointer, reflect.Interface, reflect.Slice:
-			if dataField.IsNil() {
+			if dataField.IsNil() && dataField.Kind() != reflect.Slice {
 				dataField.Set(reflect.New(dataField.Type().Elem()))
 			}
 
