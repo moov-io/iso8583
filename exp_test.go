@@ -291,14 +291,14 @@ func TestStructWithTypes(t *testing.T) {
 		}{
 			// Tests for string type
 			{
-				name: "struct with string type and no value",
+				name: "struct with string type",
 				input: &struct {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber string `index:"2"`
 				}{},
 			},
 			{
-				name: "struct with string type, no value and keepzero tag - length prefix is set to 0 and no value is following",
+				name: "struct with string type with keepzero tag",
 				input: &struct {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber string `index:"2,keepzero"`
@@ -307,14 +307,14 @@ func TestStructWithTypes(t *testing.T) {
 
 			// Tests for *string type
 			{
-				name: "struct with *string type and no value",
+				name: "struct with *string type",
 				input: &struct {
 					MTI                  string  `index:"0"`
 					PrimaryAccountNumber *string `index:"2"`
 				}{},
 			},
 			{
-				name: "struct with *string type, no value and keepzero tag",
+				name: "struct with *string type with keepzero tag",
 				input: &struct {
 					MTI                  string  `index:"0"`
 					PrimaryAccountNumber *string `index:"2,keepzero"`
@@ -323,14 +323,14 @@ func TestStructWithTypes(t *testing.T) {
 
 			// Tests for int type
 			{
-				name: "struct with int type and no value",
+				name: "struct with int type",
 				input: &struct {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber int    `index:"2"`
 				}{},
 			},
 			{
-				name: "struct with int type, no value and keepzero tag",
+				name: "struct with int type with keepzero tag",
 				input: &struct {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber int    `index:"2,keepzero"`
@@ -339,14 +339,14 @@ func TestStructWithTypes(t *testing.T) {
 
 			// Tests for *int type
 			{
-				name: "struct with *int type and no value",
+				name: "struct with *int type",
 				input: &struct {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber *int   `index:"2"`
 				}{},
 			},
 			{
-				name: "struct with *int type, no value and keepzero tag",
+				name: "struct with *int type with keepzero tag",
 				input: &struct {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber *int   `index:"2,keepzero"`
@@ -355,7 +355,7 @@ func TestStructWithTypes(t *testing.T) {
 
 			// Tests for []byte type
 			{
-				name: "struct with []byte type and no value",
+				name: "struct with []byte type",
 				input: &struct {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber []byte `index:"2"`
@@ -364,7 +364,7 @@ func TestStructWithTypes(t *testing.T) {
 				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []uint8",
 			},
 			{
-				name: "struct with []byte type, no value and keepzero tag",
+				name: "struct with []byte type with keepzero tag",
 				input: &struct {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber []byte `index:"2,keepzero"`
@@ -375,7 +375,7 @@ func TestStructWithTypes(t *testing.T) {
 
 			// Tests for *[]byte type
 			{
-				name: "struct with []byte type and no value",
+				name: "struct with []byte type",
 				input: &struct {
 					MTI                  string  `index:"0"`
 					PrimaryAccountNumber *[]byte `index:"2"`
@@ -384,7 +384,7 @@ func TestStructWithTypes(t *testing.T) {
 				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got *[]uint8",
 			},
 			{
-				name: "struct with []byte type, no value and keepzero tag",
+				name: "struct with []byte type with keepzero tag",
 				input: &struct {
 					MTI                  string  `index:"0"`
 					PrimaryAccountNumber *[]byte `index:"2,keepzero"`
@@ -395,7 +395,7 @@ func TestStructWithTypes(t *testing.T) {
 
 			// Tests for []string type
 			{
-				name: "struct with []string type and no value",
+				name: "struct with []string type",
 				input: &struct {
 					MTI                  string   `index:"0"`
 					PrimaryAccountNumber []string `index:"2"`
@@ -404,7 +404,7 @@ func TestStructWithTypes(t *testing.T) {
 				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []string",
 			},
 			{
-				name: "struct with []string type, no value and keepzero tag",
+				name: "struct with []string type with keepzero tag",
 				input: &struct {
 					MTI                  string   `index:"0"`
 					PrimaryAccountNumber []string `index:"2,keepzero"`
@@ -415,7 +415,7 @@ func TestStructWithTypes(t *testing.T) {
 
 			// Tests for *[]string type
 			{
-				name: "struct with *[]string type and no value",
+				name: "struct with *[]string type",
 				input: &struct {
 					MTI                  string    `index:"0"`
 					PrimaryAccountNumber *[]string `index:"2"`
@@ -424,7 +424,7 @@ func TestStructWithTypes(t *testing.T) {
 				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got *[]string",
 			},
 			{
-				name: "struct with *[]string type, no value and keepzero tag",
+				name: "struct with *[]string type with keepzero tag",
 				input: &struct {
 					MTI                  string    `index:"0"`
 					PrimaryAccountNumber *[]string `index:"2,keepzero"`
@@ -435,7 +435,7 @@ func TestStructWithTypes(t *testing.T) {
 
 			// Tests for map[string]string type
 			{
-				name: "struct with map[string]string type and no value",
+				name: "struct with map[string]string type",
 				input: &struct {
 					MTI                  string            `index:"0"`
 					PrimaryAccountNumber map[string]string `index:"2"`
@@ -444,7 +444,7 @@ func TestStructWithTypes(t *testing.T) {
 				errorString: "failed to get value from field 2: unsupported reflect.Value type: map",
 			},
 			{
-				name: "struct with map[string]string type, no value and keepzero tag",
+				name: "struct with map[string]string type with keepzero tag",
 				input: &struct {
 					MTI                  string            `index:"0"`
 					PrimaryAccountNumber map[string]string `index:"2,keepzero"`
@@ -455,7 +455,7 @@ func TestStructWithTypes(t *testing.T) {
 
 			// Tests for *map[string]string type
 			{
-				name: "struct with *map[string]string type and no value",
+				name: "struct with *map[string]string type",
 				input: &struct {
 					MTI                  string             `index:"0"`
 					PrimaryAccountNumber *map[string]string `index:"2"`
@@ -464,7 +464,7 @@ func TestStructWithTypes(t *testing.T) {
 				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got *map[string]string",
 			},
 			{
-				name: "struct with *map[string]string type, no value and keepzero tag",
+				name: "struct with *map[string]string type with keepzero tag",
 				input: &struct {
 					MTI                  string             `index:"0"`
 					PrimaryAccountNumber *map[string]string `index:"2,keepzero"`
