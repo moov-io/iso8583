@@ -53,6 +53,7 @@ func TestFieldIndex(t *testing.T) {
 
 		indexTag := NewIndexTag(st.Type().Field(0))
 		require.Equal(t, -1, indexTag.Id)
+		require.Empty(t, indexTag.Tag)
 
 		// single letter field without tag is ignored
 		st = reflect.ValueOf(&struct {
@@ -61,6 +62,7 @@ func TestFieldIndex(t *testing.T) {
 
 		indexTag = NewIndexTag(st.Type().Field(0))
 		require.Equal(t, -1, indexTag.Id)
+		require.Empty(t, indexTag.Tag)
 	})
 }
 
@@ -72,6 +74,7 @@ func TestFieldIndexTag(t *testing.T) {
 
 		indexTag := NewIndexTag(st.Type().Field(0))
 		require.Equal(t, "1", indexTag.Tag)
+		require.Equal(t, 1, indexTag.Id)
 	})
 
 	t.Run("returns index from field tag instead of field name when both match", func(t *testing.T) {
@@ -96,6 +99,7 @@ func TestFieldIndexTag(t *testing.T) {
 		// get index from field F
 		indexTag = NewIndexTag(st.Type().Field(1))
 		require.Equal(t, "02", indexTag.Tag)
+		require.Equal(t, 2, indexTag.Id)
 	})
 
 	t.Run("returns empty string when no tag and field name does not match the pattern", func(t *testing.T) {
