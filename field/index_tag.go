@@ -10,7 +10,7 @@ import (
 var fieldNameIndexRe = regexp.MustCompile(`^F.+$`)
 
 type IndexTag struct {
-	Id int // is -1 if index is not a number
+	ID int // is -1 if index is not a number
 
 	Tag string
 	// KeepZero tells the marshaler to use zero value and set bitmap bit to
@@ -43,7 +43,7 @@ func NewIndexTag(field reflect.StructField) IndexTag {
 		}
 
 		return IndexTag{
-			Id:       id,
+			ID:       id,
 			Tag:      tag,
 			KeepZero: opts.Contains("keepzero"),
 		}
@@ -55,19 +55,19 @@ func NewIndexTag(field reflect.StructField) IndexTag {
 		fieldIndex, err := strconv.Atoi(indexStr)
 		if err != nil {
 			return IndexTag{
-				Id:  -1,
+				ID:  -1,
 				Tag: indexStr,
 			}
 		}
 
 		return IndexTag{
-			Id:  fieldIndex,
+			ID:  fieldIndex,
 			Tag: indexStr,
 		}
 	}
 
 	return IndexTag{
-		Id: -1,
+		ID: -1,
 	}
 }
 
