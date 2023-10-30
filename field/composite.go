@@ -174,7 +174,7 @@ func (f *Composite) Unmarshal(v interface{}) error {
 	for i := 0; i < dataStruct.NumField(); i++ {
 		indexTag := NewIndexTag(dataStruct.Type().Field(i))
 		if indexTag.Tag == "" {
-			return fmt.Errorf("getting field %d index error", i)
+			continue
 		}
 
 		messageField, ok := f.subfields[indexTag.Tag]
@@ -196,12 +196,12 @@ func (f *Composite) Unmarshal(v interface{}) error {
 
 			err := messageField.Unmarshal(dataField.Interface())
 			if err != nil {
-				return fmt.Errorf("failed to get data from field %s: %w", indexTag.Tag, err)
+				return fmt.Errorf("unmarshalling field %s: %w", indexTag.Tag, err)
 			}
 		default: // Native types
 			err := messageField.Unmarshal(dataField)
 			if err != nil {
-				return fmt.Errorf("failed to get data from field %s: %w", indexTag.Tag, err)
+				return fmt.Errorf("unmarshalling field %s: %w", indexTag.Tag, err)
 			}
 		}
 	}
@@ -246,7 +246,7 @@ func (f *Composite) Marshal(v interface{}) error {
 	for i := 0; i < dataStruct.NumField(); i++ {
 		indexTag := NewIndexTag(dataStruct.Type().Field(i))
 		if indexTag.Tag == "" {
-			return fmt.Errorf("getting field %d index error", i)
+			continue
 		}
 
 		messageField, ok := f.subfields[indexTag.Tag]
@@ -261,7 +261,7 @@ func (f *Composite) Marshal(v interface{}) error {
 
 		err := messageField.Marshal(dataField.Interface())
 		if err != nil {
-			return fmt.Errorf("failed to set data from field %s: %w", indexTag.Tag, err)
+			return fmt.Errorf("marshalling field %s: %w", indexTag.Tag, err)
 		}
 
 		f.setSubfields[indexTag.Tag] = struct{}{}

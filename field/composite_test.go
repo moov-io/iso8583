@@ -348,15 +348,30 @@ type SubConstructedTLVTestData struct {
 	F9F45 *Hex
 }
 
-func TestComposite_Marshal(t *testing.T) {
+func TestCompositeField_Marshal(t *testing.T) {
 	t.Run("Marshal returns an error on provision of primitive type data", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpec)
 		err := composite.Marshal("primitive str")
 		require.EqualError(t, err, "data is not a pointer or nil")
 	})
+
+	t.Run("Marshal skips fields without index tag", func(t *testing.T) {
+		// the following data contains 2 fields with proper types but
+		// without index tag
+		type tlvTestData struct {
+			Date          *Hex
+			TransactionID *Hex
+		}
+		composite := NewComposite(tlvTestSpec)
+		err := composite.Marshal(&tlvTestData{
+			Date:          NewHexValue("210720"),
+			TransactionID: NewHexValue("000000000501"),
+		})
+		require.NoError(t, err)
+	})
 }
 
-func TestCompositeFieldUnmarshal(t *testing.T) {
+func TestCompositeField_Unmarshal(t *testing.T) {
 	t.Run("Unmarshal gets data for composite field", func(t *testing.T) {
 		// first, we need to populate fields of composite field
 		// we will do it by packing the field
@@ -424,6 +439,30 @@ func TestCompositeFieldUnmarshal(t *testing.T) {
 
 		require.Equal(t, "210720", data.Date.Value())
 		require.Equal(t, "000000000501", data.TransactionID.Value())
+	})
+
+	t.Run("Unmarshal skips fields without index tag", func(t *testing.T) {
+		// the following data contains 2 fields with proper types but
+		// without index tag
+		type tlvTestData struct {
+			Date          *Hex
+			TransactionID *Hex
+		}
+		// first, we need to populate fields of composite field
+		// we will do it by packing the field
+		composite := NewComposite(tlvTestSpec)
+		err := composite.Marshal(&TLVTestData{
+			F9A:   NewHexValue("210720"),
+			F9F02: NewHexValue("000000000501"),
+		})
+		require.NoError(t, err)
+
+		_, err = composite.Pack()
+		require.NoError(t, err)
+
+		data := &tlvTestData{}
+		err = composite.Unmarshal(data)
+		require.NoError(t, err)
 	})
 }
 
@@ -596,7 +635,7 @@ func TestCompositePacking(t *testing.T) {
 		})
 
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to set data from field 1: data does not match required *String or (string, *string, int, *int) type")
+		require.EqualError(t, err, "marshalling field 1: data does not match required *String or (string, *string, int, *int) type")
 	})
 
 	t.Run("Pack returns error on failure of subfield packing", func(t *testing.T) {
@@ -746,7 +785,7 @@ func TestCompositePacking(t *testing.T) {
 		err = composite.Unmarshal(data)
 
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to get data from field 1: unsupported type: expected *String, *string, or reflect.Value, got *field.Numeric")
+		require.EqualError(t, err, "unmarshalling field 1: unsupported type: expected *String, *string, or reflect.Value, got *field.Numeric")
 	})
 
 	t.Run("Unpack returns an error on failure of subfield to unpack bytes", func(t *testing.T) {
