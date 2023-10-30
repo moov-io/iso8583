@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -143,6 +144,12 @@ func (f *String) Unmarshal(v interface{}) error {
 			return fmt.Errorf("failed to convert string to int: %w", err)
 		}
 		*val = i
+	case *int64:
+		i, err := strconv.ParseInt(f.value, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to convert string to int64: %w", err)
+		}
+		*val = i
 	case *String:
 		val.value = f.value
 	default:
@@ -153,9 +160,14 @@ func (f *String) Unmarshal(v interface{}) error {
 }
 
 func (f *String) Marshal(v interface{}) error {
-	if v == nil || (!reflect.ValueOf(v).CanInt() && reflect.ValueOf(v).IsZero()) {
+	if v == nil {
 		f.value = ""
 		return nil
+	} else if reflect.ValueOf(v).IsZero() {
+		if !strings.Contains(reflect.ValueOf(v).Type().String(), "int") {
+			f.value = ""
+			return nil
+		}
 	}
 
 	switch v := v.(type) {
@@ -167,8 +179,20 @@ func (f *String) Marshal(v interface{}) error {
 		f.value = *v
 	case int:
 		f.value = strconv.FormatInt(int64(v), 10)
+	case int64:
+		f.value = strconv.FormatInt(v, 10)
 	case *int:
-		f.value = strconv.FormatInt(int64(*v), 10)
+		if v == nil {
+			f.value = strconv.FormatInt(0, 10)
+		} else {
+			f.value = strconv.FormatInt(int64(*v), 10)
+		}
+	case *int64:
+		if v == nil {
+			f.value = strconv.FormatInt(0, 10)
+		} else {
+			f.value = strconv.FormatInt(*v, 10)
+		}
 	default:
 		return fmt.Errorf("data does not match required *String or (string, *string, int, *int) type")
 	}

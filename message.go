@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"sort"
 	"strconv"
 	"sync"
@@ -427,34 +426,32 @@ func (m *Message) Marshal(v interface{}) error {
 
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
-		fieldIndex, err := getFieldIndex(dataStruct.Type().Field(i))
-		if err != nil {
-			return fmt.Errorf("getting field %d index: %w", i, err)
-		}
+		indexTag := field.NewIndexTag(dataStruct.Type().Field(i))
 
-		// skip field without index
-		if fieldIndex < 0 {
+		// skip field without index or if index in tag is not defined
+		if indexTag.ID < 0 {
 			continue
 		}
 
-		messageField := m.GetField(fieldIndex)
+		messageField := m.GetField(indexTag.ID)
 		// if struct field we are usgin to populate value expects to
 		// set index of the field that is not described by spec
 		if messageField == nil {
-			return fmt.Errorf("no message field defined by spec with index: %d", fieldIndex)
+			return fmt.Errorf("no message field defined by spec with index: %d", indexTag.ID)
 		}
 
 		dataField := dataStruct.Field(i)
-		if dataField.IsZero() {
+		// for non pointer fields we need to check if they are zero
+		// and we want to skip them (as specified in the field tag)
+		if dataField.IsZero() && !indexTag.KeepZero {
 			continue
 		}
 
-		err = messageField.Marshal(dataField.Interface())
-		if err != nil {
-			return fmt.Errorf("failed to set value to field %d: %w", fieldIndex, err)
+		if err := messageField.Marshal(dataField.Interface()); err != nil {
+			return fmt.Errorf("failed to set value to field %d: %w", indexTag.ID, err)
 		}
 
-		m.fieldsMap[fieldIndex] = struct{}{}
+		m.fieldsMap[indexTag.ID] = struct{}{}
 	}
 
 	return nil
@@ -481,74 +478,39 @@ func (m *Message) Unmarshal(v interface{}) error {
 
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
-		fieldIndex, err := getFieldIndex(dataStruct.Type().Field(i))
-		if err != nil {
-			return fmt.Errorf("getting field %d index: %w", i, err)
-		}
-
-		// skip field without index
-		if fieldIndex < 0 {
+		indexTag := field.NewIndexTag(dataStruct.Type().Field(i))
+		// skip field without index or if index in tag is not defined
+		if indexTag.ID < 0 {
 			continue
 		}
 
 		// we can get data only if field value is set
-		messageField := m.GetField(fieldIndex)
+		messageField := m.GetField(indexTag.ID)
 		if messageField == nil {
 			continue
 		}
 
-		if _, set := m.fieldsMap[fieldIndex]; !set {
+		if _, set := m.fieldsMap[indexTag.ID]; !set {
 			continue
 		}
 
 		dataField := dataStruct.Field(i)
 		switch dataField.Kind() { //nolint:exhaustive
-		case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
-			if dataField.IsNil() {
+		case reflect.Pointer, reflect.Interface, reflect.Slice:
+			if dataField.IsNil() && dataField.Kind() != reflect.Slice {
 				dataField.Set(reflect.New(dataField.Type().Elem()))
 			}
-
-			err = messageField.Unmarshal(dataField.Interface())
+			err := messageField.Unmarshal(dataField.Interface())
 			if err != nil {
-				return fmt.Errorf("failed to get value from field %d: %w", fieldIndex, err)
+				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
 			}
 		default: // Native types
-			err = messageField.Unmarshal(dataField)
+			err := messageField.Unmarshal(dataField)
 			if err != nil {
-				return fmt.Errorf("failed to get value from field %d: %w", fieldIndex, err)
+				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
 			}
 		}
 	}
 
 	return nil
-}
-
-var fieldNameIndexRe = regexp.MustCompile(`^F\d+$`)
-
-// fieldIndex returns index of the field. First, it checks field name. If it
-// does not match FNN (when NN is digits), it checks value of `index` tag.  If
-// negative value returned (-1) then index was not found for the field.
-func getFieldIndex(field reflect.StructField) (int, error) {
-	dataFieldName := field.Name
-
-	if indexStr := field.Tag.Get("index"); indexStr != "" {
-		fieldIndex, err := strconv.Atoi(indexStr)
-		if err != nil {
-			return -1, fmt.Errorf("converting field index into int: %w", err)
-		}
-
-		return fieldIndex, nil
-	}
-
-	if len(dataFieldName) > 0 && fieldNameIndexRe.MatchString(dataFieldName) {
-		indexStr := dataFieldName[1:]
-		fieldIndex, err := strconv.Atoi(indexStr)
-		if err != nil {
-			return -1, fmt.Errorf("converting field index into int: %w", err)
-		}
-
-		return fieldIndex, nil
-	}
-
-	return -1, nil
 }
