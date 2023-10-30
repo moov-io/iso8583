@@ -429,15 +429,15 @@ func (m *Message) Marshal(v interface{}) error {
 		indexTag := field.NewIndexTag(dataStruct.Type().Field(i))
 
 		// skip field without index or if index in tag is not defined
-		if indexTag.Id < 0 {
+		if indexTag.ID < 0 {
 			continue
 		}
 
-		messageField := m.GetField(indexTag.Id)
+		messageField := m.GetField(indexTag.ID)
 		// if struct field we are usgin to populate value expects to
 		// set index of the field that is not described by spec
 		if messageField == nil {
-			return fmt.Errorf("no message field defined by spec with index: %d", indexTag.Id)
+			return fmt.Errorf("no message field defined by spec with index: %d", indexTag.ID)
 		}
 
 		dataField := dataStruct.Field(i)
@@ -448,10 +448,10 @@ func (m *Message) Marshal(v interface{}) error {
 		}
 
 		if err := messageField.Marshal(dataField.Interface()); err != nil {
-			return fmt.Errorf("failed to set value to field %d: %w", indexTag.Id, err)
+			return fmt.Errorf("failed to set value to field %d: %w", indexTag.ID, err)
 		}
 
-		m.fieldsMap[indexTag.Id] = struct{}{}
+		m.fieldsMap[indexTag.ID] = struct{}{}
 	}
 
 	return nil
@@ -480,17 +480,17 @@ func (m *Message) Unmarshal(v interface{}) error {
 	for i := 0; i < dataStruct.NumField(); i++ {
 		indexTag := field.NewIndexTag(dataStruct.Type().Field(i))
 		// skip field without index or if index in tag is not defined
-		if indexTag.Id < 0 {
-			return fmt.Errorf("getting field %d index error", i)
+		if indexTag.ID < 0 {
+			continue
 		}
 
 		// we can get data only if field value is set
-		messageField := m.GetField(indexTag.Id)
+		messageField := m.GetField(indexTag.ID)
 		if messageField == nil {
 			continue
 		}
 
-		if _, set := m.fieldsMap[indexTag.Id]; !set {
+		if _, set := m.fieldsMap[indexTag.ID]; !set {
 			continue
 		}
 
@@ -502,12 +502,12 @@ func (m *Message) Unmarshal(v interface{}) error {
 			}
 			err := messageField.Unmarshal(dataField.Interface())
 			if err != nil {
-				return fmt.Errorf("failed to get value from field %d: %w", indexTag.Id, err)
+				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
 			}
 		default: // Native types
 			err := messageField.Unmarshal(dataField)
 			if err != nil {
-				return fmt.Errorf("failed to get value from field %d: %w", indexTag.Id, err)
+				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
 			}
 		}
 	}

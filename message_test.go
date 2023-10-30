@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -1553,6 +1554,28 @@ func TestMessageMarshaling(t *testing.T) {
 		require.Equal(t, expected, rawMsg)
 	})
 
+	t.Run("Marshal when no idex is set for the fields", func(t *testing.T) {
+		type ISO87Data struct {
+			MTI                  *field.String
+			PrimaryAccountNumber *field.String
+			Amount               *field.String
+		}
+
+		data := &ISO87Data{
+			MTI:                  field.NewStringValue("0100"),
+			PrimaryAccountNumber: field.NewStringValue("4242424242424242"),
+			Amount:               field.NewStringValue("100"),
+		}
+
+		message := NewMessage(spec)
+		require.NoError(t, message.Marshal(data))
+
+		rawMsg, err := message.Pack()
+		require.NoError(t, err)
+		// only bitmap is packed => 8 zero bytes in hex
+		require.Equal(t, strings.Repeat("0", 16), string(rawMsg))
+	})
+
 	t.Run("Unmarshal after unpacking", func(t *testing.T) {
 		type TestISOF3Data struct {
 			F1 *field.String
@@ -1625,6 +1648,24 @@ func TestMessageMarshaling(t *testing.T) {
 		require.Equal(t, "34", data.AdditionalData.Two.Value())
 		require.Equal(t, "56", data.AdditionalData.Three.Value())
 		require.Equal(t, "100", data.Amount.Value())
+	})
+
+	t.Run("Unmarshal skips fields with no index", func(t *testing.T) {
+		type ISO87Data struct {
+			MTI                  *field.String
+			PrimaryAccountNumber *field.String
+			Amount               *field.String
+		}
+
+		message := NewMessage(spec)
+
+		rawMsg := []byte("01007000000000000000164242424242424242123456000000000100")
+		err := message.Unpack([]byte(rawMsg))
+
+		require.NoError(t, err)
+
+		data := &ISO87Data{}
+		require.NoError(t, message.Unmarshal(data))
 	})
 }
 
