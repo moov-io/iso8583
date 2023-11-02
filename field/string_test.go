@@ -59,6 +59,60 @@ func TestStringField(t *testing.T) {
 	require.Equal(t, "hello", str.Value())
 }
 
+func TestStringWithNonUTF8Encoding(t *testing.T) {
+	spec := &Spec{
+		Length:      10,
+		Description: "Field",
+		Enc:         encoding.EBCDIC1047,
+		Pref:        prefix.EBCDIC1047.Fixed,
+		Pad:         padding.Left(' '),
+	}
+	str := NewString(spec)
+
+	hullo := []byte{0x88, 0xDC, 0x93, 0x93, 0x96}
+	olluh := []byte{0x96, 0x93, 0x93, 0xDC, 0x88}
+
+	// SetBytes takes UTF-8 encoded bytes
+	str.SetBytes([]byte("hüllo"))
+	require.Equal(t, "hüllo", str.Value())
+
+	packed, err := str.Pack()
+	require.NoError(t, err)
+	require.Equal(t, append([]byte{0x40, 0x40, 0x40, 0x40, 0x40}, hullo...), packed)
+
+	length, err := str.Unpack(append([]byte{0x40, 0x40, 0x40, 0x40, 0x40}, olluh...))
+	require.NoError(t, err)
+	require.Equal(t, 10, length)
+
+	// Bytes returns the UTF-8 encoding of the value
+	b, err := str.Bytes()
+	require.NoError(t, err)
+	require.Equal(t, []byte("ollüh"), b)
+
+	require.Equal(t, "ollüh", str.Value())
+
+	str = NewString(spec)
+	str.Marshal(NewStringValue("hüllo"))
+	packed, err = str.Pack()
+	require.NoError(t, err)
+	require.Equal(t, append([]byte{0x40, 0x40, 0x40, 0x40, 0x40}, hullo...), packed)
+
+	str = NewString(spec)
+	length, err = str.Unpack(append([]byte{0x40, 0x40, 0x40, 0x40, 0x40}, olluh...))
+	require.NoError(t, err)
+	require.Equal(t, 10, length)
+	require.Equal(t, "ollüh", str.Value())
+
+	str = NewString(spec)
+	err = str.SetBytes([]byte("hüllo"))
+	require.NoError(t, err)
+	require.Equal(t, "hüllo", str.Value())
+
+	str = NewString(spec)
+	str.SetValue("hüllo")
+	require.Equal(t, "hüllo", str.Value())
+}
+
 func TestStringNil(t *testing.T) {
 	var str *String = nil
 

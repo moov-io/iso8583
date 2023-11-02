@@ -70,18 +70,28 @@ func (f *String) SetValue(v string) {
 }
 
 func (f *String) Pack() ([]byte, error) {
-	data := []byte(f.value)
+	utf8Data := []byte(f.value)
 
 	if f.spec.Pad != nil {
-		data = f.spec.Pad.Pad(data, f.spec.Length)
+		// The length of the encoded data may differ from the UTF-8 encoded length.
+		// Use the difference to ensure the correct padded length.
+		unpaddedPacked, err := f.spec.Enc.Encode(utf8Data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode content: %w", err)
+		}
+		diff := len(utf8Data) - len(unpaddedPacked)
+		if diff < 0 {
+			diff = -diff
+		}
+		utf8Data = f.spec.Pad.Pad(utf8Data, diff+f.spec.Length)
 	}
 
-	packed, err := f.spec.Enc.Encode(data)
+	packed, err := f.spec.Enc.Encode(utf8Data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(data))
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(packed))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
@@ -95,18 +105,15 @@ func (f *String) Unpack(data []byte) (int, error) {
 		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
-	raw, read, err := f.spec.Enc.Decode(data[prefBytes:], dataLen)
+	utf8Bytes, read, err := f.spec.Enc.Decode(data[prefBytes:], dataLen)
 	if err != nil {
 		return 0, fmt.Errorf("failed to decode content: %w", err)
 	}
 
 	if f.spec.Pad != nil {
-		raw = f.spec.Pad.Unpad(raw)
+		utf8Bytes = f.spec.Pad.Unpad(utf8Bytes)
 	}
-
-	if err := f.SetBytes(raw); err != nil {
-		return 0, fmt.Errorf("failed to set bytes: %w", err)
-	}
+	f.value = string(utf8Bytes)
 
 	return read + prefBytes, nil
 }
@@ -214,5 +221,6 @@ func (f *String) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return utils.NewSafeError(err, "failed to JSON unmarshal bytes to string")
 	}
-	return f.SetBytes([]byte(v))
+	f.value = v
+	return nil
 }
