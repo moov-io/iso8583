@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -81,7 +82,9 @@ func (f *String) Pack() ([]byte, error) {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(data))
+	runeCount := utf8.RuneCountInString(string(data))
+
+	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, runeCount)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
