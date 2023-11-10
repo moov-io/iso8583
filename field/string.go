@@ -82,7 +82,7 @@ func (f *String) Pack() ([]byte, error) {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
-	runeCount := utf8.RuneCountInString(string(data))
+	runeCount := utf8.RuneCount(data)
 
 	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, runeCount)
 	if err != nil {
