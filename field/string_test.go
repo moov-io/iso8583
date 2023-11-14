@@ -7,6 +7,7 @@ import (
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,6 +58,28 @@ func TestStringField(t *testing.T) {
 	str = NewString(spec)
 	str.SetValue("hello")
 	require.Equal(t, "hello", str.Value())
+}
+
+func TestStringWithUTF8Encoding(t *testing.T) {
+	spec := &Spec{
+		Length:      10,
+		Description: "Field",
+		Enc:         encoding.Binary,
+		Pref:        prefix.Binary.Fixed,
+		Pad:         padding.Left(' '),
+	}
+	str := NewStringValue("hüllo")
+	str.SetSpec(spec)
+	packed, err := str.Pack()
+	require.NoError(t, err)
+
+	assert.Len(t, packed, 10)
+
+	str2 := NewString(spec)
+	_, err = str2.Unpack(packed)
+	require.NoError(t, err)
+
+	assert.Equal(t, "hüllo", str2.Value())
 }
 
 func TestStringWithNonUTF8Encoding(t *testing.T) {
