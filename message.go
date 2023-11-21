@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/moov-io/iso8583/field"
@@ -238,10 +237,10 @@ func (m *Message) Unpack(src []byte) error {
 // errors in a *UnpackError. It assumes that the mutex is already
 // locked by the caller.
 func (m *Message) wrappErrorUnpack(src []byte) error {
-	if fields, err := m.unpack(src); err != nil {
+	if field, err := m.unpack(src); err != nil {
 		return &UnpackError{
 			Err:        err,
-			Fields:     fields,
+			Field:      field,
 			RawMessage: src,
 		}
 	}
@@ -251,10 +250,8 @@ func (m *Message) wrappErrorUnpack(src []byte) error {
 // unpack contains the core logic for unpacking the message. This method does
 // not handle locking or error wrapping and should typically be used internally
 // after ensuring concurrency safety.
-func (m *Message) unpack(src []byte) ([]string, error) {
+func (m *Message) unpack(src []byte) (string, error) {
 	var off int
-	fields := []string{}
-	var fieldError error
 
 	// reset fields that were set
 	m.fieldsMap = map[int]struct{}{}
@@ -264,7 +261,7 @@ func (m *Message) unpack(src []byte) ([]string, error) {
 
 	read, err := m.fields[mtiIdx].Unpack(src)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unpack MTI: %w", err)
+		return "", fmt.Errorf("failed to unpack MTI: %w", err)
 	}
 
 	m.fieldsMap[mtiIdx] = struct{}{}
@@ -274,7 +271,7 @@ func (m *Message) unpack(src []byte) ([]string, error) {
 	// unpack Bitmap
 	read, err = m.fields[bitmapIdx].Unpack(src[off:])
 	if err != nil {
-		return nil, fmt.Errorf("failed to unpack bitmap: %w", err)
+		return "", fmt.Errorf("failed to unpack bitmap: %w", err)
 	}
 
 	off += read
@@ -288,18 +285,12 @@ func (m *Message) unpack(src []byte) ([]string, error) {
 		if m.bitmap().IsSet(i) {
 			fl, ok := m.fields[i]
 			if !ok {
-				fieldError = fmt.Errorf("failed to unpack field %d: no specification found", i)
-				fields = append(fields, strconv.Itoa(i))
-				return fields, fieldError
+				return strconv.Itoa(i), fmt.Errorf("failed to unpack field %d: no specification found", i)
 			}
 
 			read, err = fl.Unpack(src[off:])
 			if err != nil {
-				fieldError = fmt.Errorf("failed to unpack field %d (%s): len %d, %w", i, fl.Spec().Description, read, err)
-				fields = append(fields, fl.Spec().Description)
-				if read == 0 {
-					return fields, fieldError
-				}
+				return strconv.Itoa(i), fmt.Errorf("failed to unpack field %d (%s): %w", i, fl.Spec().Description, err)
 			}
 
 			m.fieldsMap[i] = struct{}{}
@@ -308,7 +299,7 @@ func (m *Message) unpack(src []byte) ([]string, error) {
 		}
 	}
 
-	return fields, fieldError
+	return "", nil
 }
 
 func (m *Message) MarshalJSON() ([]byte, error) {
@@ -486,9 +477,6 @@ func (m *Message) Unmarshal(v interface{}) error {
 		return errors.New("data is not a struct")
 	}
 
-	var err error
-	fields := []string{}
-
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
 		indexTag := field.NewIndexTag(dataStruct.Type().Field(i))
@@ -513,24 +501,15 @@ func (m *Message) Unmarshal(v interface{}) error {
 			if dataField.IsNil() && dataField.Kind() != reflect.Slice {
 				dataField.Set(reflect.New(dataField.Type().Elem()))
 			}
-			fieldErr := messageField.Unmarshal(dataField.Interface())
-			if fieldErr != nil {
-				fields = append(fields, strconv.Itoa(indexTag.ID))
-				err = fieldErr
+			if err := messageField.Unmarshal(dataField.Interface()); err != nil {
+				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
 			}
 		default: // Native types
-			fieldErr := messageField.Unmarshal(dataField)
-			if fieldErr != nil {
-				fields = append(fields, strconv.Itoa(indexTag.ID))
-				err = fieldErr
+			if err := messageField.Unmarshal(dataField); err != nil {
+				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
 			}
 		}
 	}
 
-	if len(fields) > 0 {
-		fieldStr := strings.Join(fields, ", ")
-		return fmt.Errorf("failed to get value from field %s: %w", fieldStr, err)
-	}
-
-	return err
+	return nil
 }

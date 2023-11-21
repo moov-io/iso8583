@@ -4,7 +4,7 @@ package iso8583
 // connection failed to unpack message
 type UnpackError struct {
 	Err        error
-	Fields     []string
+	Field      string
 	RawMessage []byte
 }
 
@@ -17,8 +17,7 @@ func (e *UnpackError) Unwrap() error {
 }
 
 type PackError struct {
-	Fields []string
-	Err    error
+	Err error
 }
 
 func (e *PackError) Error() string {

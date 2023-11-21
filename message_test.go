@@ -751,7 +751,7 @@ func TestPackUnpack(t *testing.T) {
 		require.Equal(t, rawMsg, unpackError.RawMessage)
 	})
 
-	t.Run("Unpack data field error on final field returns partial message", func(t *testing.T) {
+	t.Run("Unpack data field error on field returns partial message", func(t *testing.T) {
 		message := NewMessage(spec)
 
 		rawMsg := []byte{0x30, 0x31, 0x30, 0x30, 0xf2, 0x3c, 0x24, 0x81, 0x28, 0xe0, 0x9a, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x31, 0x36, 0x34, 0x32, 0x37, 0x36, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x37, 0x37, 0x37, 0x30, 0x30, 0x30, 0x37, 0x30, 0x31, 0x31, 0x31, 0x31, 0x38, 0x34, 0x34, 0x30, 0x30, 0x30, 0x31, 0x32, 0x33, 0x31, 0x33, 0x31, 0x38, 0x34, 0x34, 0x30, 0x37, 0x30, 0x31, 0x31, 0x39, 0x30, 0x32, 0x6, 0x43, 0x39, 0x30, 0x31, 0x30, 0x32, 0x30, 0x36, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x33, 0x37, 0x34, 0x32, 0x37, 0x36, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x3d, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x39, 0x38, 0x37, 0x36, 0x35, 0x34, 0x33, 0x32, 0x31, 0x30, 0x30, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x33, 0x32, 0x31, 0x31, 0x32, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x33, 0x34, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x54, 0x65, 0x73, 0x74, 0x20, 0x74, 0x65, 0x78, 0x74, 0x64, 0x30, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x31, 0x32, 0x33, 0x34, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x32, 0x33, 0x9a, 0x6, 0x32, 0x31, 0x30, 0x37, 0x32, 0x30, 0x9f, 0x2, 0xc, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x35, 0x30, 0x31, 0x30, 0x31, 0x37, 0x41, 0x6e, 0x6f, 0x74, 0x68, 0x65, 0x72, 0x20, 0x74, 0x65, 0x73, 0x74, 0x20, 0x74, 0x65, 0x78}
@@ -761,7 +761,7 @@ func TestPackUnpack(t *testing.T) {
 		require.Error(t, err)
 		var unpackError *UnpackError
 		require.ErrorAs(t, err, &unpackError)
-		assert.ElementsMatch(t, unpackError.Fields, []string{"Field 120"})
+		assert.Equal(t, unpackError.Field, "120")
 
 		s, err := message.GetString(2)
 		require.NoError(t, err)
@@ -804,130 +804,6 @@ func TestPackUnpack(t *testing.T) {
 		assert.Equal(t, "210720", data.F55.F9A.Value())
 		assert.Equal(t, "000000000501", data.F55.F9F02.Value())
 		assert.Empty(t, data.F120)
-	})
-
-	t.Run("Unpack data field error on middle field with fixed prefix returns partial message", func(t *testing.T) {
-		corruptSpecOut := &MessageSpec{
-			Fields: map[int]field.Field{
-				0: field.NewString(&field.Spec{
-					Length:      4,
-					Description: "Message Type Indicator",
-					Enc:         encoding.ASCII,
-					Pref:        prefix.ASCII.Fixed,
-				}),
-				1: field.NewBitmap(&field.Spec{
-					Description: "Bitmap",
-					Enc:         encoding.Binary,
-					Pref:        prefix.ASCII.Fixed,
-				}),
-				2: field.NewString(&field.Spec{
-					Length:      19,
-					Description: "Primary Account Number",
-					Enc:         encoding.ASCII,
-					Pref:        prefix.ASCII.LL,
-				}),
-				3: field.NewNumeric(&field.Spec{
-					Length:      3,
-					Description: "Dodgy field",
-					Enc:         encoding.ASCII,
-					Pref:        prefix.ASCII.Fixed,
-				}),
-				4: field.NewString(&field.Spec{
-					Length:      6,
-					Description: "Anything",
-					Enc:         encoding.ASCII,
-					Pref:        prefix.ASCII.LL,
-				}),
-			},
-		}
-
-		corruptSpecIn := &MessageSpec{
-			Fields: map[int]field.Field{
-				0: field.NewString(&field.Spec{
-					Length:      4,
-					Description: "Message Type Indicator",
-					Enc:         encoding.ASCII,
-					Pref:        prefix.ASCII.Fixed,
-				}),
-				1: field.NewBitmap(&field.Spec{
-					Description: "Bitmap",
-					Enc:         encoding.Binary,
-					Pref:        prefix.ASCII.Fixed,
-				}),
-				2: field.NewString(&field.Spec{
-					Length:      19,
-					Description: "Primary Account Number",
-					Enc:         encoding.ASCII,
-					Pref:        prefix.ASCII.LL,
-				}),
-				3: field.NewString(&field.Spec{
-					Length:      3,
-					Description: "Dodgy field",
-					Enc:         encoding.ASCII,
-					Pref:        prefix.ASCII.Fixed,
-				}),
-				4: field.NewString(&field.Spec{
-					Length:      6,
-					Description: "Anything",
-					Enc:         encoding.ASCII,
-					Pref:        prefix.ASCII.LL,
-				}),
-			},
-		}
-
-		type TestCorruptISODataIn struct {
-			F2 *field.String
-			F3 *field.String
-			F4 *field.String
-		}
-
-		type TestCorruptISODataOut struct {
-			F2 *field.String
-			F3 *field.Numeric
-			F4 *field.String
-		}
-
-		message := NewMessage(corruptSpecIn)
-		err := message.Marshal(&TestCorruptISODataIn{
-			F2: field.NewStringValue("4276555555555555"),
-			F3: field.NewStringValue("ABC"),
-			F4: field.NewStringValue("123"),
-		})
-		require.NoError(t, err)
-
-		message.MTI("0100")
-
-		rawMsg, err := message.Pack()
-		require.NoError(t, err)
-
-		receivedMessage := NewMessage(corruptSpecOut)
-
-		err = receivedMessage.Unpack([]byte(rawMsg))
-
-		require.Error(t, err)
-		var unpackErr *UnpackError
-		require.ErrorAs(t, err, &unpackErr)
-		require.Equal(t, []string{"Dodgy field"}, unpackErr.Fields)
-
-		s, err := receivedMessage.GetString(2)
-		require.NoError(t, err)
-		require.Equal(t, "4276555555555555", s)
-
-		s, err = receivedMessage.GetString(3)
-		require.NoError(t, err)
-		require.Equal(t, "0", s)
-
-		s, err = receivedMessage.GetString(4)
-		require.NoError(t, err)
-		require.Equal(t, "123", s)
-
-		data := &TestCorruptISODataOut{}
-		err = message.Unmarshal(data)
-		require.Error(t, err)
-
-		assert.Equal(t, "4276555555555555", data.F2.Value())
-		assert.Equal(t, int64(0), data.F3.Value())
-		assert.Equal(t, "123", data.F4.Value())
 	})
 
 	// this test should check that BCD fields are packed and

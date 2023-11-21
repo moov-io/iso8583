@@ -97,7 +97,7 @@ func (f *String) Unpack(data []byte) (int, error) {
 
 	raw, read, err := f.spec.Enc.Decode(data[prefBytes:], dataLen)
 	if err != nil {
-		return dataLen, fmt.Errorf("failed to decode content: %w", err)
+		return 0, fmt.Errorf("failed to decode content: %w", err)
 	}
 
 	if f.spec.Pad != nil {
@@ -105,7 +105,7 @@ func (f *String) Unpack(data []byte) (int, error) {
 	}
 
 	if err := f.SetBytes(raw); err != nil {
-		return dataLen, fmt.Errorf("failed to set bytes: %w", err)
+		return 0, fmt.Errorf("failed to set bytes: %w", err)
 	}
 
 	return read + prefBytes, nil
