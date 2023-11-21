@@ -503,11 +503,13 @@ func (m *Message) Unmarshal(v interface{}) error {
 			if dataField.IsNil() && dataField.Kind() != reflect.Slice {
 				dataField.Set(reflect.New(dataField.Type().Elem()))
 			}
-			if err := messageField.Unmarshal(dataField.Interface()); err != nil {
+			err := messageField.Unmarshal(dataField.Interface())
+			if err != nil {
 				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
 			}
 		default: // Native types
-			if err := messageField.Unmarshal(dataField); err != nil {
+			err := messageField.Unmarshal(dataField)
+			if err != nil {
 				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
 			}
 		}
