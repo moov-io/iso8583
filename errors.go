@@ -4,6 +4,7 @@ package iso8583
 // connection failed to unpack message
 type UnpackError struct {
 	Err        error
+	FieldID    string
 	RawMessage []byte
 }
 

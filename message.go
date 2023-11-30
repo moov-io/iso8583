@@ -230,16 +230,17 @@ func (m *Message) Unpack(src []byte) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return m.wrappErrorUnpack(src)
+	return m.wrapErrorUnpack(src)
 }
 
-// wrappErrorUnpack calls the core unpacking logic and wraps any
+// wrapErrorUnpack calls the core unpacking logic and wraps any
 // errors in a *UnpackError. It assumes that the mutex is already
 // locked by the caller.
-func (m *Message) wrappErrorUnpack(src []byte) error {
-	if err := m.unpack(src); err != nil {
+func (m *Message) wrapErrorUnpack(src []byte) error {
+	if fieldID, err := m.unpack(src); err != nil {
 		return &UnpackError{
 			Err:        err,
+			FieldID:    fieldID,
 			RawMessage: src,
 		}
 	}
@@ -249,7 +250,7 @@ func (m *Message) wrappErrorUnpack(src []byte) error {
 // unpack contains the core logic for unpacking the message. This method does
 // not handle locking or error wrapping and should typically be used internally
 // after ensuring concurrency safety.
-func (m *Message) unpack(src []byte) error {
+func (m *Message) unpack(src []byte) (string, error) {
 	var off int
 
 	// reset fields that were set
@@ -260,7 +261,7 @@ func (m *Message) unpack(src []byte) error {
 
 	read, err := m.fields[mtiIdx].Unpack(src)
 	if err != nil {
-		return fmt.Errorf("failed to unpack MTI: %w", err)
+		return strconv.Itoa(mtiIdx), fmt.Errorf("failed to unpack MTI: %w", err)
 	}
 
 	m.fieldsMap[mtiIdx] = struct{}{}
@@ -270,7 +271,7 @@ func (m *Message) unpack(src []byte) error {
 	// unpack Bitmap
 	read, err = m.fields[bitmapIdx].Unpack(src[off:])
 	if err != nil {
-		return fmt.Errorf("failed to unpack bitmap: %w", err)
+		return strconv.Itoa(bitmapIdx), fmt.Errorf("failed to unpack bitmap: %w", err)
 	}
 
 	off += read
@@ -284,12 +285,12 @@ func (m *Message) unpack(src []byte) error {
 		if m.bitmap().IsSet(i) {
 			fl, ok := m.fields[i]
 			if !ok {
-				return fmt.Errorf("failed to unpack field %d: no specification found", i)
+				return strconv.Itoa(i), fmt.Errorf("failed to unpack field %d: no specification found", i)
 			}
 
 			read, err = fl.Unpack(src[off:])
 			if err != nil {
-				return fmt.Errorf("failed to unpack field %d (%s): %w", i, fl.Spec().Description, err)
+				return strconv.Itoa(i), fmt.Errorf("failed to unpack field %d (%s): %w", i, fl.Spec().Description, err)
 			}
 
 			m.fieldsMap[i] = struct{}{}
@@ -298,7 +299,7 @@ func (m *Message) unpack(src []byte) error {
 		}
 	}
 
-	return nil
+	return "", nil
 }
 
 func (m *Message) MarshalJSON() ([]byte, error) {
