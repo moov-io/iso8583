@@ -249,7 +249,7 @@ func (m *Message) unpack(src []byte) error {
 	if err != nil {
 		return &UnpackError{
 			Err:        fmt.Errorf("failed to unpack MTI: %w", err),
-			Field:      strconv.Itoa(mtiIdx),
+			FieldID:    strconv.Itoa(mtiIdx),
 			RawMessage: src,
 		}
 	}
@@ -263,7 +263,7 @@ func (m *Message) unpack(src []byte) error {
 	if err != nil {
 		return &UnpackError{
 			Err:        fmt.Errorf("failed to unpack bitmap: %w", err),
-			Field:      strconv.Itoa(bitmapIdx),
+			FieldID:    strconv.Itoa(bitmapIdx),
 			RawMessage: src,
 		}
 	}
@@ -281,7 +281,7 @@ func (m *Message) unpack(src []byte) error {
 			if !ok {
 				return &UnpackError{
 					Err:        fmt.Errorf("failed to unpack field %d: no specification found", i),
-					Field:      strconv.Itoa(i),
+					FieldID:    strconv.Itoa(i),
 					RawMessage: src,
 				}
 			}
@@ -290,7 +290,7 @@ func (m *Message) unpack(src []byte) error {
 			if err != nil {
 				return &UnpackError{
 					Err:        fmt.Errorf("failed to unpack field %d (%s): %w", i, fl.Spec().Description, err),
-					Field:      strconv.Itoa(i),
+					FieldID:    strconv.Itoa(i),
 					RawMessage: src,
 				}
 			}
