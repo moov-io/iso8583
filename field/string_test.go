@@ -107,6 +107,16 @@ func TestStringFieldUnmarshal(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 123456, b)
 
+	var i64 int64
+	err = stringField.Unmarshal(&i64)
+	require.NoError(t, err)
+	require.Equal(t, int64(123456), i64)
+
+	el := reflect.ValueOf(&i64).Elem()
+	err = stringField.Unmarshal(el)
+	require.NoError(t, err)
+	require.Equal(t, int64(123456), el.Int())
+
 	refStrValue := reflect.ValueOf(&s).Elem()
 	err = stringField.Unmarshal(refStrValue)
 	require.NoError(t, err)

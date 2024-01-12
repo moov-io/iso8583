@@ -126,7 +126,7 @@ func (f *String) Unmarshal(v interface{}) error {
 		switch val.Kind() { //nolint:exhaustive
 		case reflect.String:
 			val.SetString(f.value)
-		case reflect.Int:
+		case reflect.Int, reflect.Int64:
 			i, err := strconv.Atoi(f.value)
 			if err != nil {
 				return fmt.Errorf("failed to convert string to int: %w", err)
@@ -150,6 +150,7 @@ func (f *String) Unmarshal(v interface{}) error {
 			return fmt.Errorf("failed to convert string to int64: %w", err)
 		}
 		*val = i
+
 	case *String:
 		val.value = f.value
 	default:
