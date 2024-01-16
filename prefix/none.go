@@ -12,7 +12,7 @@ func (p *nonePrefixer) EncodeLength(int, int) ([]byte, error) {
 }
 
 func (p *nonePrefixer) DecodeLength(fixLen int, data []byte) (int, int, error) {
-	return len(data), 0, nil
+	return fixLen, 0, nil
 }
 
 func (p *nonePrefixer) Inspect() string {

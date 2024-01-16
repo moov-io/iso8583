@@ -185,7 +185,7 @@ func (f *Numeric) Marshal(v any) error {
 		}
 		f.value = val
 	default:
-		return fmt.Errorf("data does not match require *Numeric or (int, *int, string, *string) type")
+		return fmt.Errorf("data does not match require *Numeric or (int64, *int64, string, *string) type")
 	}
 
 	return nil
