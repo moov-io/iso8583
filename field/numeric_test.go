@@ -160,7 +160,7 @@ func TestNumericFieldMarshal(t *testing.T) {
 
 	err = numericField.Marshal([]byte("123456"))
 	require.Error(t, err)
-	require.Equal(t, "data does not match require *Numeric or (int64, *int64, string, *string) type", err.Error())
+	require.Equal(t, "data does not match require *Numeric or (int, *int, string, *string) type", err.Error())
 }
 
 func TestNumericFieldWithNotANumber(t *testing.T) {
