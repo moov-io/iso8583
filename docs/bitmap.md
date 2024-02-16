@@ -6,4 +6,4 @@ An ISO 8583 message contains at least one bitmap, called the "primary bitmap", w
 
 Bitmaps are often represented by hex characters. For example, `0x4210000000000000` in hex corresponds to fields 2, 7, and 12 being present. The equivalent binary bitmap would be `0b0100001000010000000000000000000000000000000000000000000000000000`.
 
-Similarly, let's look an at example with a secondary bitmap. Say the primary bitmap is `0xF000000000000000` and the secondary bitmap is `0x3000000000000000`. We can conclude that fields 1 (the secondary bitmap itself), 2, 3, 4, 67, and 68 are present.
+Similarly, let's look at an example with a secondary bitmap. Say the primary bitmap is `0xF000000000000000` and the secondary bitmap is `0x3000000000000000`. We can conclude that fields 1 (the secondary bitmap itself), 2, 3, 4, 67, and 68 are present.
