@@ -64,8 +64,8 @@ func TestStringWithUTF8Encoding(t *testing.T) {
 	spec := &Spec{
 		Length:      10,
 		Description: "Field",
-		Enc:         encoding.Binary,
-		Pref:        prefix.Binary.Fixed,
+		Enc:         encoding.EBCDIC1047,
+		Pref:        prefix.EBCDIC1047.Fixed,
 		Pad:         padding.Left(' '),
 	}
 	str := NewStringValue("hüllo")
