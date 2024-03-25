@@ -19,11 +19,12 @@ func NewLeftPadder(pad rune) Padder {
 }
 
 func (p *leftPadder) Pad(data []byte, length int) []byte {
-	if len(data) >= length {
+	runeCount := utf8.RuneCount(data)
+	if runeCount >= length {
 		return data
 	}
 
-	padding := bytes.Repeat(p.pad, length-len(data))
+	padding := bytes.Repeat(p.pad, length-runeCount)
 	return append(padding, data...)
 }
 
