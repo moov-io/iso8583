@@ -80,6 +80,22 @@ type Spec struct {
 	// Bitmap defines a bitmap field that is used only by a composite field type.
 	// It defines the way that the composite will determine its subflieds existence.
 	Bitmap *Bitmap
+	// Packer is the packer used to pack the field. Default is DefaultPacker.
+	Packer Packer
+	// Unpacker is the unpacker used to unpack the field. Default is DefaultUnpacker.
+	Unpacker Unpacker
+}
+
+// Packer is the interface that wraps the Pack method.
+type Packer interface {
+	Pack(data []byte, spec *Spec) ([]byte, error)
+}
+
+// Unpacker is the interface that wraps the Unpack method.
+type Unpacker interface {
+	// Unpack unpacks the data according to the spec and returns the
+	// unpacked data and the number of bytes read.
+	Unpack(data []byte, spec *Spec) ([]byte, int, error)
 }
 
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {
@@ -89,6 +105,20 @@ func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer
 		Enc:         enc,
 		Pref:        pref,
 	}
+}
+
+func (spec *Spec) getPacker() Packer {
+	if spec.Packer == nil {
+		return DefaultPacker{}
+	}
+	return spec.Packer
+}
+
+func (spec *Spec) getUnpacker() Unpacker {
+	if spec.Unpacker == nil {
+		return DefaultUnpacker{}
+	}
+	return spec.Unpacker
 }
 
 // Validate validates the spec.

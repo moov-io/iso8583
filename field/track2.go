@@ -27,9 +27,7 @@ const (
 	defaultSeparator = "="
 )
 
-var (
-	track2Regex = regexp.MustCompile(`^([0-9]{1,19})(=|D)([0-9]{4})([0-9]{3})([^?]+)$`)
-)
+var track2Regex = regexp.MustCompile(`^([0-9]{1,19})(=|D)([0-9]{4})([0-9]{3})([^?]+)$`)
 
 func NewTrack2(spec *Spec) *Track2 {
 	return &Track2{
@@ -67,37 +65,18 @@ func (f *Track2) Pack() ([]byte, error) {
 		return nil, err
 	}
 
-	if f.spec.Pad != nil {
-		data = f.spec.Pad.Pad(data, f.spec.Length)
-	}
+	packer := f.spec.getPacker()
 
-	packed, err := f.spec.Enc.Encode(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %w", err)
-	}
-
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(data))
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %w", err)
-	}
-
-	return append(packedLength, packed...), nil
+	return packer.Pack(data, f.spec)
 }
 
 // returns number of bytes was read
 func (f *Track2) Unpack(data []byte) (int, error) {
-	dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
-	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %w", err)
-	}
+	unpacker := f.spec.getUnpacker()
 
-	raw, read, err := f.spec.Enc.Decode(data[prefBytes:], dataLen)
+	raw, bytesRead, err := unpacker.Unpack(data, f.spec)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode content: %w", err)
-	}
-
-	if f.spec.Pad != nil {
-		raw = f.spec.Pad.Unpad(raw)
+		return 0, err
 	}
 
 	if len(raw) > 0 {
@@ -106,7 +85,8 @@ func (f *Track2) Unpack(data []byte) (int, error) {
 			return 0, err
 		}
 	}
-	return read + prefBytes, nil
+
+	return bytesRead, nil
 }
 
 // Deprecated. Use Marshal instead
