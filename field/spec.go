@@ -98,6 +98,18 @@ type Unpacker interface {
 	Unpack(data []byte, spec *Spec) ([]byte, int, error)
 }
 
+type PackerFunc func(data []byte, spec *Spec) ([]byte, error)
+
+func (f PackerFunc) Pack(data []byte, spec *Spec) ([]byte, error) {
+	return f(data, spec)
+}
+
+type UnpackerFunc func(data []byte, spec *Spec) ([]byte, int, error)
+
+func (f UnpackerFunc) Unpack(data []byte, spec *Spec) ([]byte, int, error) {
+	return f(data, spec)
+}
+
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {
 	return &Spec{
 		Length:      length,
