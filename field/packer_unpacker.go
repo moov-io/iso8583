@@ -2,42 +2,50 @@ package field
 
 import "fmt"
 
-type DefaultPacker struct{}
+type defaultPacker struct{}
 
-func (p DefaultPacker) Pack(data []byte, spec *Spec) ([]byte, error) {
+// Pack packs the data according to the spec
+func (p defaultPacker) Pack(value []byte, spec *Spec) ([]byte, error) {
+	// pad the value if needed
 	if spec.Pad != nil {
-		data = spec.Pad.Pad(data, spec.Length)
+		value = spec.Pad.Pad(value, spec.Length)
 	}
 
-	packed, err := spec.Enc.Encode(data)
+	// encode the value
+	encodedValue, err := spec.Enc.Encode(value)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode content: %w", err)
 	}
 
-	packedLength, err := spec.Pref.EncodeLength(spec.Length, len(data))
+	// encode the length
+	lengthPrefix, err := spec.Pref.EncodeLength(spec.Length, len(value))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
 
-	return append(packedLength, packed...), nil
+	return append(lengthPrefix, encodedValue...), nil
 }
 
-type DefaultUnpacker struct{}
+type defaultUnpacker struct{}
 
-func (u DefaultUnpacker) Unpack(data []byte, spec *Spec) ([]byte, int, error) {
-	dataLen, prefBytes, err := spec.Pref.DecodeLength(spec.Length, data)
+// Unpack unpacks the data according to the spec
+func (u defaultUnpacker) Unpack(packedFieldValue []byte, spec *Spec) ([]byte, int, error) {
+	// decode the length
+	valueLength, prefBytes, err := spec.Pref.DecodeLength(spec.Length, packedFieldValue)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
-	raw, read, err := spec.Enc.Decode(data[prefBytes:], dataLen)
+	// decode the value
+	value, read, err := spec.Enc.Decode(packedFieldValue[prefBytes:], valueLength)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to decode content: %w", err)
 	}
 
+	// unpad the value if needed
 	if spec.Pad != nil {
-		raw = spec.Pad.Unpad(raw)
+		value = spec.Pad.Unpad(value)
 	}
 
-	return raw, read + prefBytes, nil
+	return value, read + prefBytes, nil
 }
