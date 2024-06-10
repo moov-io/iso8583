@@ -46,51 +46,56 @@ func TestCustomPackerAndUnpacker(t *testing.T) {
 	// that will pack the field value as BCD and the length prefix as the length
 	// of the encoded field value.
 	fc := field.NewNumeric(&field.Spec{
-		Length:      5, // now, this field indicates the max length of the encoded field value 9/2+1 = 5
+		Length:      9, // max length of the field value (9 digits)
 		Description: "Amount",
 		Enc:         encoding.BCD,
 		Pref:        prefix.Binary.L,
-		// we define a custom packer here, which will encode the length of the packed data
-		Packer: field.PackerFunc(func(data []byte, spec *field.Spec) ([]byte, error) {
+		// Define a custom packer to encode the length of the packed data
+		Packer: field.PackerFunc(func(value []byte, spec *field.Spec) ([]byte, error) {
 			if spec.Pad != nil {
-				data = spec.Pad.Pad(data, spec.Length)
+				value = spec.Pad.Pad(value, spec.Length)
 			}
 
-			packed, err := spec.Enc.Encode(data)
+			encodedValue, err := spec.Enc.Encode(value)
 			if err != nil {
 				return nil, fmt.Errorf("failed to encode content: %w", err)
 			}
 
-			// here is where we encode the length of the packed data, not the length of the value
-			packedLength, err := spec.Pref.EncodeLength(spec.Length, len(packed))
+			// Encode the length of the packed data, not the length of the value
+			maxLength := spec.Length/2 + 1
+
+			// Encode the length of the encoded value
+			lengthPrefix, err := spec.Pref.EncodeLength(maxLength, len(encodedValue))
 			if err != nil {
 				return nil, fmt.Errorf("failed to encode length: %w", err)
 			}
 
-			return append(packedLength, packed...), nil
+			return append(lengthPrefix, encodedValue...), nil
 		}),
-		// we define a custom unpacker here, which will decode the length of the packed data
-		Unpacker: field.UnpackerFunc(func(data []byte, spec *field.Spec) ([]byte, int, error) {
-			dataLen, prefBytes, err := spec.Pref.DecodeLength(spec.Length, data)
+
+		// Define a custom unpacker to decode the length of the packed data
+		Unpacker: field.UnpackerFunc(func(packedFieldValue []byte, spec *field.Spec) ([]byte, int, error) {
+			maxEncodedValueLength := spec.Length/2 + 1
+
+			encodedValueLength, prefBytes, err := spec.Pref.DecodeLength(maxEncodedValueLength, packedFieldValue)
 			if err != nil {
 				return nil, 0, fmt.Errorf("failed to decode length: %w", err)
 			}
 
-			// dataLen here is the length of the packed data, not the length of the value
-			// as we use BCD decoding, we have to multiply it by 2, as each BCD byte
-			// represents 2 digits. If the number of digits is even, it will be prepended
-			// with a 0. As the type of the field is Numeric, leading 0 will be removed
-			// so we will have exactly the number of digits we need.
-			raw, read, err := spec.Enc.Decode(data[prefBytes:], dataLen*2)
+			// for BCD encoding, the length of the packed data is twice the length of the encoded value
+			valueLength := encodedValueLength * 2
+
+			// Decode the packed data length
+			value, read, err := spec.Enc.Decode(packedFieldValue[prefBytes:], valueLength)
 			if err != nil {
 				return nil, 0, fmt.Errorf("failed to decode content: %w", err)
 			}
 
 			if spec.Pad != nil {
-				raw = spec.Pad.Unpad(raw)
+				value = spec.Pad.Unpad(value)
 			}
 
-			return raw, read + prefBytes, nil
+			return value, read + prefBytes, nil
 		}),
 	})
 
