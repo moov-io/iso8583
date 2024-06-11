@@ -44,12 +44,12 @@ type TagSpec struct {
 
 // Spec defines the structure of a field.
 type Spec struct {
-	// Length defines the maximum length of field (bytes, characters,
-	// digits or hex digits), for both fixed and variable lengths.
-	// You should use appropriate field types corresponding to the
+	// Length defines the maximum length of the field value (bytes,
+	// characters, digits or hex digits), for both fixed and variable
+	// lengths. You should use appropriate field types corresponding to the
 	// length of the field you're defining, e.g. Numeric, String, Binary
-	// etc. For Hex fields, the length is defined in terms of the number
-	// of bytes, while the value of the field is hex string.
+	// etc. For Hex fields, the length is defined in terms of the number of
+	// bytes, while the value of the field is hex string.
 	Length int
 	// Tag sets the tag specification. Only applicable to composite field
 	// types.
@@ -77,9 +77,47 @@ type Spec struct {
 	// will be disregarded, and the size of the bitmap will not change when
 	// the first bit is set.
 	DisableAutoExpand bool
-	// Bitmap defines a bitmap field that is used only by a composite field type.
-	// It defines the way that the composite will determine its subflieds existence.
+	// Bitmap defines a bitmap field that is used only by a composite field
+	// type. It defines the way that the composite will determine its
+	// subflieds existence.
 	Bitmap *Bitmap
+	// Packer packes the field value according to its spec. Default is
+	// defaultPacker.
+	Packer Packer
+	// Unpacker unpackes the field value according to its spec. Default is
+	// defaultUnpacker.
+	Unpacker Unpacker
+}
+
+// Packer is the interface that wraps the Pack method.
+type Packer interface {
+	// Pack packs the data (field value) according to the spec and returns
+	// the packed data.
+	Pack(data []byte, spec *Spec) ([]byte, error)
+}
+
+// Unpacker is the interface that wraps the Unpack method.
+type Unpacker interface {
+	// Unpack unpacks the packed data according to the spec and returns the
+	// unpacked data (field value) and the number of bytes read.
+	Unpack(data []byte, spec *Spec) ([]byte, int, error)
+}
+
+// PackerFunc is a function type that implements the Packer interface.
+type PackerFunc func(data []byte, spec *Spec) ([]byte, error)
+
+// Pack packs the data (field value) according to the spec.
+func (f PackerFunc) Pack(data []byte, spec *Spec) ([]byte, error) {
+	return f(data, spec)
+}
+
+// UnpackerFunc is a function type that implements the Unpacker interface.
+type UnpackerFunc func(data []byte, spec *Spec) ([]byte, int, error)
+
+// Unpack unpacks the packed data according to the spec and returns the
+// unpacked data (field value) and the number of bytes read.
+func (f UnpackerFunc) Unpack(data []byte, spec *Spec) ([]byte, int, error) {
+	return f(data, spec)
 }
 
 func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer) *Spec {
@@ -89,6 +127,20 @@ func NewSpec(length int, desc string, enc encoding.Encoder, pref prefix.Prefixer
 		Enc:         enc,
 		Pref:        pref,
 	}
+}
+
+func (spec *Spec) getPacker() Packer {
+	if spec.Packer == nil {
+		return defaultPacker{}
+	}
+	return spec.Packer
+}
+
+func (spec *Spec) getUnpacker() Unpacker {
+	if spec.Unpacker == nil {
+		return defaultUnpacker{}
+	}
+	return spec.Unpacker
 }
 
 // Validate validates the spec.

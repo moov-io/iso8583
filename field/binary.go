@@ -10,9 +10,11 @@ import (
 	"github.com/moov-io/iso8583/utils"
 )
 
-var _ Field = (*Binary)(nil)
-var _ json.Marshaler = (*Binary)(nil)
-var _ json.Unmarshaler = (*Binary)(nil)
+var (
+	_ Field            = (*Binary)(nil)
+	_ json.Marshaler   = (*Binary)(nil)
+	_ json.Unmarshaler = (*Binary)(nil)
+)
 
 type Binary struct {
 	value []byte
@@ -72,43 +74,24 @@ func (f *Binary) SetValue(v []byte) {
 func (f *Binary) Pack() ([]byte, error) {
 	data := f.value
 
-	if f.spec.Pad != nil {
-		data = f.spec.Pad.Pad(data, f.spec.Length)
-	}
+	packer := f.spec.getPacker()
 
-	packed, err := f.spec.Enc.Encode(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %w", err)
-	}
-
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(data))
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %w", err)
-	}
-
-	return append(packedLength, packed...), nil
+	return packer.Pack(data, f.spec)
 }
 
 func (f *Binary) Unpack(data []byte) (int, error) {
-	dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
-	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %w", err)
-	}
+	unpacker := f.spec.getUnpacker()
 
-	raw, read, err := f.spec.Enc.Decode(data[prefBytes:], dataLen)
+	raw, bytesRead, err := unpacker.Unpack(data, f.spec)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode content: %w", err)
-	}
-
-	if f.spec.Pad != nil {
-		raw = f.spec.Pad.Unpad(raw)
+		return 0, err
 	}
 
 	if err := f.SetBytes(raw); err != nil {
 		return 0, fmt.Errorf("failed to set bytes: %w", err)
 	}
 
-	return read + prefBytes, nil
+	return bytesRead, nil
 }
 
 // Deprecated. Use Marshal instead

@@ -15,9 +15,11 @@ import (
 	"github.com/moov-io/iso8583/utils"
 )
 
-var _ Field = (*Composite)(nil)
-var _ json.Marshaler = (*Composite)(nil)
-var _ json.Unmarshaler = (*Composite)(nil)
+var (
+	_ Field            = (*Composite)(nil)
+	_ json.Marshaler   = (*Composite)(nil)
+	_ json.Unmarshaler = (*Composite)(nil)
+)
 
 // Composite is a wrapper object designed to hold ISO8583 TLVs, subfields and
 // subelements. Because Composite handles both of these usecases generically,

@@ -10,9 +10,11 @@ import (
 	"github.com/moov-io/iso8583/utils"
 )
 
-var _ Field = (*Hex)(nil)
-var _ json.Marshaler = (*Hex)(nil)
-var _ json.Unmarshaler = (*Hex)(nil)
+var (
+	_ Field            = (*Hex)(nil)
+	_ json.Marshaler   = (*Hex)(nil)
+	_ json.Unmarshaler = (*Hex)(nil)
+)
 
 // Hex field allows working with hex strings but under the hood it's a binary
 // field. It's convenient to use when you need to work with hex strings, but
