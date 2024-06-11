@@ -125,6 +125,8 @@ jobs:
         asset_content_type: application/octet-stream
 
   docker:
+    # temporarily skip the creation of docker image with fuzz testing
+    if: false
     name: Docker
     needs: [testing, create_release]
     runs-on: ubuntu-latest
