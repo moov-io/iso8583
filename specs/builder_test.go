@@ -248,3 +248,32 @@ func TestSpecWithCompositeBitmapedFields(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "22004000000000000011 456", string(packed))
 }
+
+func TestExportImportWithNonePrefixField(t *testing.T) {
+	spec := &iso8583.MessageSpec{
+		Fields: map[int]field.Field{
+			3: field.NewComposite(&field.Spec{
+				Description: "Processing code",
+				Pref:        prefix.None.Fixed,
+				Tag: &field.TagSpec{
+					Enc:  encoding.ASCII,
+					Sort: sort.StringsByInt,
+				},
+				Subfields: map[string]field.Field{
+					"1": field.NewNumeric(&field.Spec{
+						Length:      3,
+						Description: "Transaction code",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
+			}),
+		},
+	}
+
+	specJSON, err := Builder.ExportJSON(spec)
+	require.NoError(t, err)
+
+	spec, err = Builder.ImportJSON(specJSON)
+	require.NoError(t, err)
+}

@@ -31,6 +31,7 @@ var (
 	}
 
 	PrefixesExtToInt = map[string]prefix.Prefixer{
+		"None.Fixed":   prefix.None.Fixed,
 		"ASCII.Fixed":  prefix.ASCII.Fixed,
 		"ASCII.L":      prefix.ASCII.L,
 		"ASCII.LL":     prefix.ASCII.LL,
