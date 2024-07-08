@@ -871,12 +871,7 @@ func TestPackUnpack(t *testing.T) {
 			},
 		}
 		message := NewMessage(shortSpec)
-
 		message.MTI("0100")
-
-		got, err := message.Pack()
-		require.NotNil(t, got)
-		require.NoError(t, err)
 
 		// Field F3SF2 has a letter in, which will make it fail
 		rawMsg := []byte{0x30, 0x31, 0x30, 0x30, // MTI F0
@@ -886,9 +881,7 @@ func TestPackUnpack(t *testing.T) {
 			0x30, 0x30, 0x30, 0x51, 0x30, 0x30, //F3
 		}
 
-		// assert.Equal(t, rawMsg, got)
-
-		err = message.Unpack([]byte(rawMsg))
+		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
 		var unpackError *mooverrors.UnpackError
@@ -993,26 +986,9 @@ func TestPackUnpack(t *testing.T) {
 			},
 		}
 		message := NewMessage(shortSpec)
-		err := message.Marshal(&TestISOShortData{
-			F2: field.NewStringValue("4276555555555555"),
-			F3: &TestISOF3MixedData{
-				F1: field.NewStringValue("00"),
-				F2: &TestDateAndTimeData{
-					F1: field.NewStringValue("1111"),
-					F2: field.NewNumericValue(123456),
-				},
-				F3: field.NewStringValue("00"),
-			},
-		})
-		require.NoError(t, err)
-
 		message.MTI("0100")
 
-		got, err := message.Pack()
-		require.NotNil(t, got)
-		require.NoError(t, err)
-
-		// Field F3SF2SF2 is numeric type but has a letter in, which will make unpack error
+		// Field F3SF2SF2 is numeric type but has a letter in, which will cause an unpack error
 		rawMsg := []byte{0x30, 0x31, 0x30, 0x30, // MTI F0
 			0x60, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // Bitmap F1
 			0x31, 0x36, // Tag for F2
@@ -1022,7 +998,7 @@ func TestPackUnpack(t *testing.T) {
 			0x30, 0x30, //F3 SF3
 		}
 
-		err = message.Unpack([]byte(rawMsg))
+		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
 		var unpackError *mooverrors.UnpackError
@@ -1036,7 +1012,7 @@ func TestPackUnpack(t *testing.T) {
 
 		s, err = message.GetString(3)
 		require.NoError(t, err)
-		require.Equal(t, "00111112345600", s)
+		require.Equal(t, "00", s)
 
 		data := &TestISOShortData{}
 		require.NoError(t, message.Unmarshal(data))
