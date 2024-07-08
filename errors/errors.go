@@ -1,10 +1,11 @@
-package iso8583
+package errors
 
 // UnpackError returns error with possibility to access RawMessage when
 // connection failed to unpack message
 type UnpackError struct {
 	Err        error
 	FieldID    string
+	FieldIDs   []string
 	RawMessage []byte
 }
 
