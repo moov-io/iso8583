@@ -521,12 +521,12 @@ func (f *Composite) packByTag() ([]byte, error) {
 // locked by the caller.
 func (f *Composite) wrapErrorUnpack(src []byte, isVariableLength bool) (int, error) {
 	offset, tagID, err := f.unpack(src, isVariableLength)
-	subfields := []string{}
-	var unpackErr *mooverrors.UnpackError
-	if errors.As(err, &unpackErr) {
-		subfields = unpackErr.FieldIDs
-	}
 	if err != nil {
+		subfields := []string{}
+		var unpackErr *mooverrors.UnpackError
+		if errors.As(err, &unpackErr) {
+			subfields = unpackErr.FieldIDs
+		}
 		return offset, &mooverrors.UnpackError{
 			Err:        err,
 			FieldID:    tagID,

@@ -1,10 +1,12 @@
 package errors
 
-// UnpackError returns error with possibility to access RawMessage when
-// connection failed to unpack message
+// UnpackError returns an error with the possibility to access the RawMessage when
+// the connection failed to unpack the message
 type UnpackError struct {
-	Err        error
-	FieldID    string
+	Err error
+	// the field ID of the field on which unpacking errored
+	FieldID string
+	// the field ID and subfield IDs (if any) that errored ordered from outermost inwards
 	FieldIDs   []string
 	RawMessage []byte
 }
