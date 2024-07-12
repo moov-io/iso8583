@@ -32,6 +32,15 @@ func TestBuilder(t *testing.T) {
 	require.Exactly(t, Spec87Hex.Name, hexSpec.Name)
 }
 
+func TestImportingJSONWithTrack2Spec(t *testing.T) {
+	track2Json, err := os.ReadFile("../examples/fields/track2.json")
+	require.NoError(t, err)
+
+	track2Spec, err := Builder.ImportJSON(track2Json)
+	require.NoError(t, err)
+	require.Exactly(t, Spec87Track2, track2Spec)
+}
+
 func TestExampleJSONSpec(t *testing.T) {
 	asciiJson, err := os.ReadFile("../examples/specs/spec87ascii.json")
 	require.NoError(t, err)

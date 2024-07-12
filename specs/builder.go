@@ -24,6 +24,7 @@ type FieldConstructorFunc func(spec *field.Spec) field.Field
 var (
 	FieldConstructor = map[string]FieldConstructorFunc{
 		"String":    func(spec *field.Spec) field.Field { return field.NewString(spec) },
+		"Track2":    func(spec *field.Spec) field.Field { return field.NewTrack2(spec) },
 		"Numeric":   func(spec *field.Spec) field.Field { return field.NewNumeric(spec) },
 		"Binary":    func(spec *field.Spec) field.Field { return field.NewBinary(spec) },
 		"Bitmap":    func(spec *field.Spec) field.Field { return field.NewBitmap(spec) },
