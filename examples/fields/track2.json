@@ -1,0 +1,12 @@
+{
+    "name": "ISO 8583 v1987 Track2",
+    "fields": {
+        "35": {
+            "type": "Track2",
+            "length": 37,
+            "description": "TRACK 2 DATA",
+            "prefix": "Binary.L",
+            "enc": "ASCIIToHex"            
+        }
+    }
+}
