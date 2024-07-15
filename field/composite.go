@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/moov-io/iso8583/encoding"
-	mooverrors "github.com/moov-io/iso8583/errors"
+	iso8583errors "github.com/moov-io/iso8583/errors"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
 	"github.com/moov-io/iso8583/utils"
@@ -522,15 +522,9 @@ func (f *Composite) packByTag() ([]byte, error) {
 func (f *Composite) wrapErrorUnpack(src []byte, isVariableLength bool) (int, error) {
 	offset, tagID, err := f.unpack(src, isVariableLength)
 	if err != nil {
-		subfields := []string{}
-		var unpackErr *mooverrors.UnpackError
-		if errors.As(err, &unpackErr) {
-			subfields = unpackErr.FieldIDs
-		}
-		return offset, &mooverrors.UnpackError{
+		return offset, &iso8583errors.UnpackError{
 			Err:        err,
 			FieldID:    tagID,
-			FieldIDs:   append([]string{tagID}, subfields...),
 			RawMessage: src,
 		}
 	}

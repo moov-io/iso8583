@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
-	mooverrors "github.com/moov-io/iso8583/errors"
+	iso8583errors "github.com/moov-io/iso8583/errors"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
@@ -801,10 +801,10 @@ func TestCompositePacking(t *testing.T) {
 		read, err := composite.Unpack([]byte("ABCDEF"))
 		require.Equal(t, 0, read)
 		require.Error(t, err)
-		var unpackError *mooverrors.UnpackError
+		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 		assert.Equal(t, "3", unpackError.FieldID)
-		assert.Equal(t, []string{"3"}, unpackError.FieldIDs)
+		assert.Equal(t, []string{"3"}, unpackError.FieldIDs())
 		require.EqualError(t, err, "failed to unpack subfield 3: failed to set bytes: failed to convert into number")
 		require.ErrorIs(t, err, strconv.ErrSyntax)
 	})

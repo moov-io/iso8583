@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/moov-io/iso8583/encoding"
-	mooverrors "github.com/moov-io/iso8583/errors"
+	iso8583errors "github.com/moov-io/iso8583/errors"
 	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
@@ -723,7 +723,7 @@ func TestPackUnpack(t *testing.T) {
 		_, err := message.Pack()
 		require.Error(t, err)
 
-		var packErr *mooverrors.PackError
+		var packErr *iso8583errors.PackError
 		require.ErrorAs(t, err, &packErr)
 	})
 
@@ -734,7 +734,7 @@ func TestPackUnpack(t *testing.T) {
 
 		require.Error(t, err)
 
-		var unpackError *mooverrors.UnpackError
+		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 	})
 
@@ -747,7 +747,7 @@ func TestPackUnpack(t *testing.T) {
 
 		require.Error(t, err)
 
-		var unpackError *mooverrors.UnpackError
+		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 		require.Equal(t, rawMsg, unpackError.RawMessage)
 	})
@@ -761,7 +761,7 @@ func TestPackUnpack(t *testing.T) {
 		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
-		var unpackError *mooverrors.UnpackError
+		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 		assert.Equal(t, unpackError.FieldID, "120")
 
@@ -884,10 +884,10 @@ func TestPackUnpack(t *testing.T) {
 		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
-		var unpackError *mooverrors.UnpackError
+		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 		assert.Equal(t, "3", unpackError.FieldID)
-		assert.Equal(t, []string{"3", "2"}, unpackError.FieldIDs)
+		assert.Equal(t, []string{"3", "2"}, unpackError.FieldIDs())
 
 		s, err := message.GetString(2)
 		require.NoError(t, err)
@@ -1003,10 +1003,10 @@ func TestPackUnpack(t *testing.T) {
 		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
-		var unpackError *mooverrors.UnpackError
+		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 		assert.Equal(t, "3", unpackError.FieldID)
-		assert.Equal(t, []string{"3", "2", "2"}, unpackError.FieldIDs)
+		assert.Equal(t, []string{"3", "2", "2"}, unpackError.FieldIDs())
 
 		s, err := message.GetString(2)
 		require.NoError(t, err)

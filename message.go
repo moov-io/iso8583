@@ -239,15 +239,9 @@ func (m *Message) Unpack(src []byte) error {
 // locked by the caller.
 func (m *Message) wrapErrorUnpack(src []byte) error {
 	if fieldID, err := m.unpack(src); err != nil {
-		subfields := []string{}
-		var unpackErr *iso8583errors.UnpackError
-		if errors.As(err, &unpackErr) {
-			subfields = unpackErr.FieldIDs
-		}
 		return &iso8583errors.UnpackError{
 			Err:        err,
 			FieldID:    fieldID,
-			FieldIDs:   append([]string{fieldID}, subfields...),
 			RawMessage: src,
 		}
 	}
