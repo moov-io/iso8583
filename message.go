@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"sync"
 
+	iso8583errors "github.com/moov-io/iso8583/errors"
 	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/utils"
 )
@@ -175,7 +176,7 @@ func (m *Message) Pack() ([]byte, error) {
 func (m *Message) wrapErrorPack() ([]byte, error) {
 	data, err := m.pack()
 	if err != nil {
-		return nil, &PackError{Err: err}
+		return nil, &iso8583errors.PackError{Err: err}
 	}
 
 	return data, nil
@@ -238,7 +239,7 @@ func (m *Message) Unpack(src []byte) error {
 // locked by the caller.
 func (m *Message) wrapErrorUnpack(src []byte) error {
 	if fieldID, err := m.unpack(src); err != nil {
-		return &UnpackError{
+		return &iso8583errors.UnpackError{
 			Err:        err,
 			FieldID:    fieldID,
 			RawMessage: src,

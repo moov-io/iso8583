@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/moov-io/iso8583/encoding"
+	iso8583errors "github.com/moov-io/iso8583/errors"
 	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
@@ -722,7 +723,7 @@ func TestPackUnpack(t *testing.T) {
 		_, err := message.Pack()
 		require.Error(t, err)
 
-		var packErr *PackError
+		var packErr *iso8583errors.PackError
 		require.ErrorAs(t, err, &packErr)
 	})
 
@@ -733,7 +734,7 @@ func TestPackUnpack(t *testing.T) {
 
 		require.Error(t, err)
 
-		var unpackError *UnpackError
+		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 	})
 
@@ -746,7 +747,7 @@ func TestPackUnpack(t *testing.T) {
 
 		require.Error(t, err)
 
-		var unpackError *UnpackError
+		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 		require.Equal(t, rawMsg, unpackError.RawMessage)
 	})
@@ -760,7 +761,7 @@ func TestPackUnpack(t *testing.T) {
 		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
-		var unpackError *UnpackError
+		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 		assert.Equal(t, unpackError.FieldID, "120")
 
@@ -805,6 +806,221 @@ func TestPackUnpack(t *testing.T) {
 		assert.Equal(t, "210720", data.F55.F9A.Value())
 		assert.Equal(t, "000000000501", data.F55.F9F02.Value())
 		assert.Empty(t, data.F120)
+	})
+
+	t.Run("Unpack data field error on subfield returns both numbers and partial message", func(t *testing.T) {
+		type TestISOF3MixedData struct {
+			F1 *field.String
+			F2 *field.Numeric
+			F3 *field.String
+		}
+
+		type TestISOShortData struct {
+			F2 *field.String
+			F3 *TestISOF3MixedData
+		}
+
+		shortSpec := &MessageSpec{
+			Fields: map[int]field.Field{
+				0: field.NewString(&field.Spec{
+					Length:      4,
+					Description: "Message Type Indicator",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				1: field.NewBitmap(&field.Spec{
+					Description: "Bitmap",
+					Enc:         encoding.Binary,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				2: field.NewString(&field.Spec{
+					Length:      19,
+					Description: "Primary Account Number",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.LL,
+				}),
+				3: field.NewComposite(&field.Spec{
+					Length:      6,
+					Description: "Processing Code",
+					Pref:        prefix.ASCII.Fixed,
+					Tag: &field.TagSpec{
+						Sort: sort.StringsByInt,
+					},
+					Subfields: map[string]field.Field{
+						"1": field.NewString(&field.Spec{
+							Length:      2,
+							Description: "Transaction Type",
+							Enc:         encoding.ASCII,
+							Pref:        prefix.ASCII.Fixed,
+						}),
+						"2": field.NewNumeric(&field.Spec{
+							Length:      2,
+							Description: "From Account",
+							Enc:         encoding.ASCII,
+							Pref:        prefix.ASCII.Fixed,
+							Pad:         padding.Left('0'),
+						}),
+						"3": field.NewString(&field.Spec{
+							Length:      2,
+							Description: "To Account",
+							Enc:         encoding.ASCII,
+							Pref:        prefix.ASCII.Fixed,
+						}),
+					},
+				}),
+			},
+		}
+		message := NewMessage(shortSpec)
+		message.MTI("0100")
+
+		// Field F3SF2 has a letter in, which will make it fail
+		rawMsg := []byte{0x30, 0x31, 0x30, 0x30, // MTI F0
+			0x60, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // Bitmap F1
+			0x31, 0x36, // Tag for F2
+			0x34, 0x32, 0x37, 0x36, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, //F2
+			0x30, 0x30, 0x30, 0x51, 0x30, 0x30, //F3
+		}
+
+		err := message.Unpack([]byte(rawMsg))
+
+		require.Error(t, err)
+		var unpackError *iso8583errors.UnpackError
+		require.ErrorAs(t, err, &unpackError)
+		assert.Equal(t, "3", unpackError.FieldID)
+		assert.Equal(t, []string{"3", "2"}, unpackError.FieldIDs())
+
+		s, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4276555555555555", s)
+
+		s, err = message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "00", s)
+
+		data := &TestISOShortData{}
+		require.NoError(t, message.Unmarshal(data))
+
+		assert.Equal(t, "4276555555555555", data.F2.Value())
+	})
+
+	t.Run("Unpack data field error on subfield in nested spec returns both numbers and partial message", func(t *testing.T) {
+		type TestDateAndTimeData struct {
+			F1 *field.String
+			F2 *field.Numeric
+		}
+
+		type TestISOF3MixedData struct {
+			F1 *field.String
+			F2 *TestDateAndTimeData
+			F3 *field.String
+		}
+
+		type TestISOShortData struct {
+			F2 *field.String
+			F3 *TestISOF3MixedData
+		}
+
+		shortSpec := &MessageSpec{
+			Fields: map[int]field.Field{
+				0: field.NewString(&field.Spec{
+					Length:      4,
+					Description: "Message Type Indicator",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				1: field.NewBitmap(&field.Spec{
+					Description: "Bitmap",
+					Enc:         encoding.Binary,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				2: field.NewString(&field.Spec{
+					Length:      19,
+					Description: "Primary Account Number",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.LL,
+				}),
+				3: field.NewComposite(&field.Spec{
+					Length:      14,
+					Description: "Processing Code",
+					Pref:        prefix.ASCII.LL,
+					Tag: &field.TagSpec{
+						Sort: sort.StringsByInt,
+					},
+					Subfields: map[string]field.Field{
+						"1": field.NewString(&field.Spec{
+							Length:      2,
+							Description: "Transaction Type",
+							Enc:         encoding.ASCII,
+							Pref:        prefix.ASCII.Fixed,
+						}),
+						"2": field.NewComposite(&field.Spec{
+							Length:      10,
+							Description: "Authorization System Advice Date and Time",
+							Pref:        prefix.ASCII.Fixed,
+							Tag: &field.TagSpec{
+								Sort: sort.StringsByInt,
+							},
+							Subfields: map[string]field.Field{
+								"1": field.NewString(&field.Spec{
+									Length:      4,
+									Description: "Date",
+									Enc:         encoding.ASCII,
+									Pref:        prefix.ASCII.Fixed,
+								}),
+								"2": field.NewNumeric(&field.Spec{
+									Length:      6,
+									Description: "Time",
+									Enc:         encoding.ASCII,
+									Pref:        prefix.ASCII.Fixed,
+								}),
+							},
+						}),
+						"3": field.NewString(&field.Spec{
+							Length:      2,
+							Description: "To Account",
+							Enc:         encoding.ASCII,
+							Pref:        prefix.ASCII.Fixed,
+						}),
+					},
+				}),
+			},
+		}
+		message := NewMessage(shortSpec)
+		message.MTI("0100")
+
+		// Field F3SF2SF2 is a numeric type but has a letter in, which will cause an unpack error
+		rawMsg := []byte{0x30, 0x31, 0x30, 0x30, // MTI F0
+			0x60, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // Bitmap F1
+			0x31, 0x36, // Tag for F2
+			0x34, 0x32, 0x37, 0x36, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, //F2
+			0x31, 0x34, // Tag for F3
+			0x30, 0x30, // F3 SF1
+			0x31, 0x31, 0x31, 0x31, //F3 SF2 Subfield 1
+			0x31, 0x32, 0x33, 0x34, 0x35, 0x51, //F3 SF2 Subfield 2
+			0x30, 0x30, // F3 SF3
+		}
+
+		err := message.Unpack([]byte(rawMsg))
+
+		require.Error(t, err)
+		var unpackError *iso8583errors.UnpackError
+		require.ErrorAs(t, err, &unpackError)
+		assert.Equal(t, "3", unpackError.FieldID)
+		assert.Equal(t, []string{"3", "2", "2"}, unpackError.FieldIDs())
+
+		s, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4276555555555555", s)
+
+		s, err = message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "00", s)
+
+		data := &TestISOShortData{}
+		require.NoError(t, message.Unmarshal(data))
+
+		assert.Equal(t, "4276555555555555", data.F2.Value())
+		require.Nil(t, data.F3)
 	})
 
 	// this test should check that BCD fields are packed and

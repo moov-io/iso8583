@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/moov-io/iso8583/encoding"
+	iso8583errors "github.com/moov-io/iso8583/errors"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
 	"github.com/moov-io/iso8583/utils"
@@ -314,7 +315,7 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 	// data is stripped of the prefix before it is provided to unpack().
 	// Therefore, it is unaware of when to stop parsing unless we bound the
 	// length of the slice by the data length.
-	read, err := f.unpack(data[offset:offset+dataLen], isVariableLength)
+	read, err := f.wrapErrorUnpack(data[offset:offset+dataLen], isVariableLength)
 	if err != nil {
 		return 0, err
 	}
@@ -333,7 +334,7 @@ func (f *Composite) SetBytes(data []byte) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	_, err := f.unpack(data, false)
+	_, err := f.wrapErrorUnpack(data, false)
 	return err
 }
 
@@ -517,7 +518,22 @@ func (f *Composite) packByTag() ([]byte, error) {
 	return packed, nil
 }
 
-func (f *Composite) unpack(data []byte, isVariableLength bool) (int, error) {
+// wrapErrorUnpack calls the core unpacking logic and wraps any
+// errors in a *UnpackError. It assumes that the mutex is already
+// locked by the caller.
+func (f *Composite) wrapErrorUnpack(src []byte, isVariableLength bool) (int, error) {
+	offset, tagID, err := f.unpack(src, isVariableLength)
+	if err != nil {
+		return offset, &iso8583errors.UnpackError{
+			Err:        err,
+			FieldID:    tagID,
+			RawMessage: src,
+		}
+	}
+	return offset, nil
+}
+
+func (f *Composite) unpack(data []byte, isVariableLength bool) (int, string, error) {
 	if f.bitmap() != nil {
 		return f.unpackSubfieldsByBitmap(data)
 	}
@@ -527,7 +543,7 @@ func (f *Composite) unpack(data []byte, isVariableLength bool) (int, error) {
 	return f.unpackSubfields(data, isVariableLength)
 }
 
-func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, error) {
+func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, string, error) {
 	offset := 0
 	for _, tag := range f.orderedSpecFieldTags {
 		field, ok := f.subfields[tag]
@@ -537,7 +553,7 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, er
 
 		read, err := field.Unpack(data[offset:])
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
+			return 0, tag, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
 
 		f.setSubfields[tag] = struct{}{}
@@ -549,10 +565,10 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, er
 		}
 	}
 
-	return offset, nil
+	return offset, "", nil
 }
 
-func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, error) {
+func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, string, error) {
 	var off int
 
 	// Reset fields that were set.
@@ -562,7 +578,7 @@ func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, error) {
 
 	read, err := f.bitmap().Unpack(data[off:])
 	if err != nil {
-		return 0, fmt.Errorf("failed to unpack bitmap: %w", err)
+		return 0, "", fmt.Errorf("failed to unpack bitmap: %w", err)
 	}
 
 	off += read
@@ -573,12 +589,12 @@ func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, error) {
 
 			fl, ok := f.subfields[iStr]
 			if !ok {
-				return 0, fmt.Errorf("failed to unpack subfield %s: no specification found", iStr)
+				return 0, iStr, fmt.Errorf("failed to unpack subfield %s: no specification found", iStr)
 			}
 
 			read, err = fl.Unpack(data[off:])
 			if err != nil {
-				return 0, fmt.Errorf("failed to unpack subfield %s (%s): %w", iStr, fl.Spec().Description, err)
+				return 0, iStr, fmt.Errorf("failed to unpack subfield %s (%s): %w", iStr, fl.Spec().Description, err)
 			}
 
 			f.setSubfields[iStr] = struct{}{}
@@ -587,7 +603,7 @@ func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, error) {
 		}
 	}
 
-	return off, nil
+	return off, "", nil
 }
 
 const (
@@ -598,12 +614,12 @@ const (
 	maxLenOfUnknownTag = math.MaxInt
 )
 
-func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
+func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 	offset := 0
 	for offset < len(data) {
 		tagBytes, read, err := f.spec.Tag.Enc.Decode(data[offset:], f.spec.Tag.Length)
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield Tag: %w", err)
+			return 0, "", fmt.Errorf("failed to unpack subfield Tag: %w", err)
 		}
 		offset += read
 
@@ -625,15 +641,15 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 					maxLen = maxLenOfUnknownTag
 				}
 
-				fieldLength, readed, err := pref.DecodeLength(maxLen, data[offset:])
+				fieldLength, read, err := pref.DecodeLength(maxLen, data[offset:])
 				if err != nil {
-					return 0, err
+					return 0, "", err
 				}
-				offset += fieldLength + readed
+				offset += fieldLength + read
 				continue
 			}
 
-			return 0, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
+			return 0, tag, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
 		}
 
 		field, ok := f.subfields[tag]
@@ -643,14 +659,14 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, error) {
 
 		read, err = field.Unpack(data[offset:])
 		if err != nil {
-			return 0, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
+			return 0, tag, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
 
 		f.setSubfields[tag] = struct{}{}
 
 		offset += read
 	}
-	return offset, nil
+	return offset, "", nil
 }
 
 func (f *Composite) skipUnknownTLVTags() bool {
