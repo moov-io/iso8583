@@ -29,9 +29,20 @@ func TestICCField55(t *testing.T) {
 		Description: "Integrated Circuit Card (ICC) Data",
 		Pref:        prefix.Binary.L,
 		Tag: &field.TagSpec{
-			Length: 1,
-			Enc:    encoding.ASCIIHexToBytes,
-			Sort:   sort.StringsByHex,
+			// We have 1 byte length tag, that in the spec is seen as a Hex string
+			// but will be encoded as a binary byte (ASCIIHexToBytes)
+			// We sort the TLV tags by their hex values, but it's not important
+			// Finally, if we have unknown tag, in order to skip it, we need to know
+			// how long its value is. For this, we need to read the length tag.
+			// To read the length tag, we need to know its length.
+			// Setting PrefUnknownTLV to prefix.Binary.LL will read the length prefix
+			// as a 2-byte binary value.
+			Length:             1,
+			Enc:                encoding.ASCIIHexToBytes,
+			Sort:               sort.StringsByHex,
+			SkipUnknownTLVTags: true,
+			// if we have unknown TLV tags,
+			PrefUnknownTLV: prefix.Binary.LL,
 		},
 		Subfields: map[string]field.Field{
 			"01": field.NewComposite(&field.Spec{
@@ -39,8 +50,9 @@ func TestICCField55(t *testing.T) {
 				Description: "VSDC Data",
 				Pref:        prefix.Binary.LL,
 				Tag: &field.TagSpec{
-					Enc:  encoding.BerTLVTag,
-					Sort: sort.StringsByHex,
+					Enc:                encoding.BerTLVTag,
+					Sort:               sort.StringsByHex,
+					SkipUnknownTLVTags: true,
 				},
 				Subfields: map[string]field.Field{
 					"9A": field.NewString(&field.Spec{
