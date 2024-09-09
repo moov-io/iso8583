@@ -71,7 +71,7 @@ type ebcdicFixedPrefixer struct {
 }
 
 func (p *ebcdicFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
-	if dataLen > fixLen {
+	if dataLen != fixLen {
 		return nil, fmt.Errorf("field length: %d should be fixed: %d", dataLen, fixLen)
 	}
 

@@ -84,5 +84,11 @@ func TestEBCDICFixedPrefixer_EncodeLengthValidation(t *testing.T) {
 
 	_, err := pref.EncodeLength(8, 12)
 
+	require.Error(t, err)
 	require.Contains(t, err.Error(), "field length: 12 should be fixed: 8")
+
+	_, err = pref.EncodeLength(8, 6)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "field length: 6 should be fixed: 8")
 }
