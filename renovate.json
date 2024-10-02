@@ -3,5 +3,10 @@
     "config:base"
   ],
   "groupName": "all",
-  "schedule": "on monday"
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    }
+  ]
 }
