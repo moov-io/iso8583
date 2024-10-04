@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/stretchr/testify v1.9.0
 	github.com/yerden/go-util v1.1.4
-	golang.org/x/text v0.18.0
+	golang.org/x/text v0.19.0
 )
 
 require (
