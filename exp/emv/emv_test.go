@@ -19,6 +19,8 @@ func TestEmv(t *testing.T) {
 	msg.BinaryField(55, rawData)
 
 	// this will print the all EMV tags in readable format
+	iso8583.Describe(msg, os.Stdout)
+
 	// like this (note, that first F is not part of the tag, it's just a Filed prefix):
 	// F55  ICC Data SUBFIELDS:
 	// -------------------------------------------
@@ -31,10 +33,19 @@ func TestEmv(t *testing.T) {
 	// F9C  Transaction Type...............................: 00
 	// F9F02 Amount, Authorised (Numeric)..................: 100
 
-	iso8583.Describe(msg, os.Stdout)
-
 	// now we can extract values we can use
 	iccField := msg.GetField(55)
 	data := &NativeData{}
 	iccField.Unmarshal(data)
+
+	// test our spec and that we can pack and unpack the same
+	// without errors
+	packed, _ := msg.Pack()
+	msg2 := iso8583.NewMessage(MessageSpec)
+
+	err = msg2.Unpack(packed)
+	require.NoError(t, err)
+
+	packed2, err := msg2.Pack()
+	require.Equal(t, packed, packed2)
 }
