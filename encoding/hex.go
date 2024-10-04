@@ -11,8 +11,13 @@ import (
 
 // HEX to ASCII encoder
 var (
-	_               Encoder = (*hexToASCIIEncoder)(nil)
-	BytesToASCIIHex         = &hexToASCIIEncoder{}
+	_ Encoder = (*hexToASCIIEncoder)(nil)
+	// BytesToASCIIHex is an encoder that converts bytes into their ASCII
+	// representation.  On success, the ASCII representation bytes are returned
+	// Don't use this encoder with String, Numeric or Binary fields as packing and
+	// unpacking in these fields uses length of value/bytes, so only Pack will be
+	// able to write the value correctly.
+	BytesToASCIIHex = &hexToASCIIEncoder{}
 )
 
 type hexToASCIIEncoder struct{}
@@ -56,8 +61,14 @@ func (e hexToASCIIEncoder) Decode(data []byte, length int) ([]byte, int, error) 
 
 // ASCII To HEX encoder
 var (
-	_               Encoder = (*asciiToHexEncoder)(nil)
-	ASCIIHexToBytes         = &asciiToHexEncoder{}
+	_ Encoder = (*asciiToHexEncoder)(nil)
+	// ASCIIHexToBytes is an encoder that converts ASCII Hex-digits into a byte slice
+	// This encoder is used in TagSpec, BerTLVTag and similar.
+	// It shouldn't be used with String, Numeric or Binary fields as packing and unpacking
+	// in these fields uses length of value/bytes, so only Unpack will be able to read
+	// the value correctly.
+	// If you are looking for a way to work with HEX strings, use Hex field instead.
+	ASCIIHexToBytes = &asciiToHexEncoder{}
 )
 
 type asciiToHexEncoder struct{}

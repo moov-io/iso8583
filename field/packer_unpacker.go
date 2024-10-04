@@ -1,6 +1,8 @@
 package field
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type defaultPacker struct{}
 

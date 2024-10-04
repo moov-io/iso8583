@@ -38,6 +38,31 @@ func TestHexField(t *testing.T) {
 		require.Equal(t, "AABBCCDDEE", f.Value())
 	})
 
+	t.Run("packing and unpacking with variable length", func(t *testing.T) {
+		spec := &Spec{
+			Length:      5, // 5 bytes, 10 hex chars
+			Description: "Field",
+			Enc:         encoding.Binary,
+			Pref:        prefix.Binary.LL,
+		}
+
+		f := NewHexValue("AABBCCDDEE")
+		f.SetSpec(spec)
+
+		packed, err := f.Pack()
+
+		require.NoError(t, err)
+		require.Equal(t, []byte{0x00, 0x05, 0xaa, 0xbb, 0xcc, 0xdd, 0xee}, packed)
+
+		f = NewHex(spec)
+		read, err := f.Unpack(packed)
+
+		require.NoError(t, err)
+		require.Equal(t, 7, read)
+		require.Equal(t, "AABBCCDDEE", f.Value())
+
+	})
+
 	t.Run("marshaling", func(t *testing.T) {
 		f := NewHexValue("AABBCCDDEE")
 		f2 := &Hex{}

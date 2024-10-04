@@ -20,7 +20,7 @@ var (
 // field. It's convenient to use when you need to work with hex strings, but
 // don't want to deal with converting them to bytes manually.
 // If provided value is not a valid hex string, it will return an error during
-// packing.
+// packing. For the Hex field, the Binary encoding shoud be used in the Spec.
 type Hex struct {
 	value string
 	spec  *Spec
@@ -85,43 +85,24 @@ func (f *Hex) Pack() ([]byte, error) {
 		return nil, utils.NewSafeErrorf(err, "converting hex field into bytes")
 	}
 
-	if f.spec.Pad != nil {
-		data = f.spec.Pad.Pad(data, f.spec.Length)
-	}
+	packer := f.spec.getPacker()
 
-	packed, err := f.spec.Enc.Encode(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode content: %w", err)
-	}
-
-	packedLength, err := f.spec.Pref.EncodeLength(f.spec.Length, len(data))
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode length: %w", err)
-	}
-
-	return append(packedLength, packed...), nil
+	return packer.Pack(data, f.spec)
 }
 
 func (f *Hex) Unpack(data []byte) (int, error) {
-	dataLen, prefBytes, err := f.spec.Pref.DecodeLength(f.spec.Length, data)
-	if err != nil {
-		return 0, fmt.Errorf("failed to decode length: %w", err)
-	}
+	unpacker := f.spec.getUnpacker()
 
-	raw, read, err := f.spec.Enc.Decode(data[prefBytes:], dataLen)
+	raw, bytesRead, err := unpacker.Unpack(data, f.spec)
 	if err != nil {
-		return 0, fmt.Errorf("failed to decode content: %w", err)
-	}
-
-	if f.spec.Pad != nil {
-		raw = f.spec.Pad.Unpad(raw)
+		return 0, err
 	}
 
 	if err := f.SetBytes(raw); err != nil {
 		return 0, fmt.Errorf("failed to set bytes: %w", err)
 	}
 
-	return read + prefBytes, nil
+	return bytesRead, nil
 }
 
 // Deprecated. Use Marshal instead
