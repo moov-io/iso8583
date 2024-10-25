@@ -21,6 +21,18 @@ type IndexTag struct {
 }
 
 func NewIndexTag(field reflect.StructField) IndexTag {
+	indexTag := extractTagInfo(field)
+
+	if indexTag.Tag == "" {
+		id, tag := extractIdAndTagFromName(field.Name)
+		indexTag.ID = id
+		indexTag.Tag = tag
+	}
+
+	return indexTag
+}
+
+func extractTagInfo(field reflect.StructField) IndexTag {
 	// value of the key "index" in the tag
 	var value string
 
@@ -35,41 +47,37 @@ func NewIndexTag(field reflect.StructField) IndexTag {
 	// format of the value is "id[,keep_zero_value]"
 	// id is the id of the field
 	// let's parse it
-	if value != "" {
-		tag, opts := parseTag(value)
-
-		id, err := strconv.Atoi(tag)
-		if err != nil {
-			id = -1
-		}
-
+	if value == "" {
 		return IndexTag{
-			ID:       id,
-			Tag:      tag,
-			KeepZero: opts.Contains("keepzero"),
+			ID: -1,
 		}
 	}
 
-	dataFieldName := field.Name
-	if len(dataFieldName) > 0 && fieldNameIndexRe.MatchString(dataFieldName) {
-		indexStr := dataFieldName[1:]
-		fieldIndex, err := strconv.Atoi(indexStr)
-		if err != nil {
-			return IndexTag{
-				ID:  -1,
-				Tag: indexStr,
-			}
-		}
-
-		return IndexTag{
-			ID:  fieldIndex,
-			Tag: indexStr,
-		}
+	tag, opts := parseTag(value)
+	id, err := strconv.Atoi(tag)
+	if err != nil {
+		id = -1
 	}
 
 	return IndexTag{
-		ID: -1,
+		ID:       id,
+		Tag:      tag,
+		KeepZero: opts.Contains("keepzero"),
 	}
+}
+
+func extractIdAndTagFromName(fieldName string) (int, string) {
+	if len(fieldName) > 0 && fieldNameIndexRe.MatchString(fieldName) {
+		indexStr := fieldName[1:]
+		fieldIndex, err := strconv.Atoi(indexStr)
+		if err != nil {
+			return -1, indexStr
+		}
+
+		return fieldIndex, indexStr
+	}
+
+	return -1, ""
 }
 
 type tagOptions []string
@@ -78,6 +86,7 @@ type tagOptions []string
 // comma-separated options.
 func parseTag(tag string) (string, tagOptions) {
 	tag, opt, _ := strings.Cut(tag, ",")
+
 	return tag, tagOptions(strings.Split(opt, ","))
 }
 
@@ -85,9 +94,5 @@ func parseTag(tag string) (string, tagOptions) {
 // contains a particular substr flag. substr must be surrounded by a
 // string boundary or commas.
 func (o tagOptions) Contains(optionName string) bool {
-	if len(o) == 0 {
-		return false
-	}
-
 	return slices.Contains(o, optionName)
 }
