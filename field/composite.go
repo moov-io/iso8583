@@ -234,16 +234,22 @@ func (f *Composite) Marshal(v interface{}) error {
 	defer f.mu.Unlock()
 
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
-		return errors.New("data is not a pointer or nil")
+	if rv.Kind() != reflect.Ptr {
+		return errors.New("data is not a pointer")
+	}
+
+	elemType := rv.Type().Elem()
+	if elemType.Kind() != reflect.Struct {
+		return errors.New("data must be a pointer to struct")
+	}
+
+	// If nil, create a new instance of the struct
+	if rv.IsNil() {
+		rv = reflect.New(elemType)
 	}
 
 	// get the struct from the pointer
 	dataStruct := rv.Elem()
-
-	if dataStruct.Kind() != reflect.Struct {
-		return errors.New("data is not a struct")
-	}
 
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
@@ -258,7 +264,7 @@ func (f *Composite) Marshal(v interface{}) error {
 		}
 
 		dataField := dataStruct.Field(i)
-		if dataField.IsZero() {
+		if dataField.IsZero() && !indexTag.KeepZero {
 			continue
 		}
 
