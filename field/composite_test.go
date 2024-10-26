@@ -281,6 +281,11 @@ var (
 						Enc:         encoding.Binary,
 						Pref:        prefix.BerTLV,
 					}),
+					"9F02": NewHex(&Spec{
+						Description: "Amount, Authorized (Numeric)",
+						Enc:         encoding.Binary,
+						Pref:        prefix.BerTLV,
+					}),
 				},
 			}),
 		},
@@ -348,6 +353,7 @@ type ConstructedTLVTestData struct {
 
 type SubConstructedTLVTestData struct {
 	F9F45 *Hex
+	F9F02 *Hex
 }
 
 func TestCompositeField_Marshal(t *testing.T) {
@@ -478,6 +484,90 @@ func TestCompositeField_Unmarshal(t *testing.T) {
 		data := &tlvTestData{}
 		err = composite.Unmarshal(data)
 		require.NoError(t, err)
+	})
+}
+
+func TestCompositeField_Unset(t *testing.T) {
+	t.Run("Unset creates new empty field when it deletes it", func(t *testing.T) {
+		composite := NewComposite(constructedBERTLVTestSpec)
+		err := composite.Marshal(&ConstructedTLVTestData{
+			F82:   NewHexValue("017F"),
+			F9F36: NewHexValue("027F"),
+			F9F3B: &SubConstructedTLVTestData{
+				F9F45: NewHexValue("047F"),
+				F9F02: NewHexValue("057F"),
+			},
+		})
+		require.NoError(t, err)
+
+		data := &ConstructedTLVTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		// all fields are set
+		require.Equal(t, "017F", data.F82.Value())
+		require.Equal(t, "027F", data.F9F36.Value())
+		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
+		require.Equal(t, "057F", data.F9F3B.F9F02.Value())
+
+		// if we delete subfield F9F3B and then set only one field of it,
+		// the other field should be nil (not set)
+		require.NoError(t, composite.UnsetSubfields("9F3B"))
+
+		data = &ConstructedTLVTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "017F", data.F82.Value())
+		require.Equal(t, "027F", data.F9F36.Value())
+		require.Nil(t, data.F9F3B) // F9F3B should be nil as it was unset / deleted
+
+		// if we set only one field of subfield F9F3B, the other field should be nil (not set)
+		err = composite.Marshal(&ConstructedTLVTestData{
+			F9F3B: &SubConstructedTLVTestData{
+				F9F45: NewHexValue("047F"),
+			},
+		})
+		require.NoError(t, err)
+
+		data = &ConstructedTLVTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "017F", data.F82.Value())
+		require.Equal(t, "027F", data.F9F36.Value())
+		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
+		require.Nil(t, data.F9F3B.F9F02) // F9F02 should be nil as it was not set
+	})
+
+	t.Run("Unset sets all fields of composite field to nil", func(t *testing.T) {
+		composite := NewComposite(constructedBERTLVTestSpec)
+		err := composite.Marshal(&ConstructedTLVTestData{
+			F82:   NewHexValue("017F"),
+			F9F36: NewHexValue("027F"),
+			F9F3B: &SubConstructedTLVTestData{
+				F9F45: NewHexValue("047F"),
+			},
+		})
+		require.NoError(t, err)
+
+		data := &ConstructedTLVTestData{}
+		err = composite.Unmarshal(data)
+		require.NoError(t, err)
+
+		// all fields are set
+		require.Equal(t, "017F", data.F82.Value())
+		require.Equal(t, "027F", data.F9F36.Value())
+		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
+
+		// unset the composite fields
+		err = composite.UnsetSubfields("82", "9F3B.9F45")
+		require.NoError(t, err)
+
+		data = &ConstructedTLVTestData{}
+		err = composite.Unmarshal(data)
+		require.NoError(t, err)
+
+		require.Nil(t, data.F82)
+		require.Equal(t, "027F", data.F9F36.Value())
+		require.Nil(t, data.F9F3B.F9F45)
 	})
 }
 

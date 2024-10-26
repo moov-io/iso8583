@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	iso8583errors "github.com/moov-io/iso8583/errors"
@@ -510,6 +511,63 @@ func (m *Message) Unmarshal(v interface{}) error {
 			err := messageField.Unmarshal(dataField)
 			if err != nil {
 				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// UnsetField marks the field with the given ID as not set and replaces it with
+// a new zero-valued field. This effectively removes the field's value and excludes
+// it from operations like Pack() or Marshal().
+func (m *Message) UnsetField(id int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if _, ok := m.fieldsMap[id]; ok {
+		delete(m.fieldsMap, id)
+		// re-create the field to reset its value (and subfields if it's a composite field)
+		if fieldSpec, ok := m.GetSpec().Fields[id]; ok {
+			m.fields[id] = createMessageField(fieldSpec)
+		}
+	}
+}
+
+// UnsetFields marks multiple fields identified by their paths as not set and
+// replaces them with new zero-valued fields. Each path should be in the format
+// "a.b.c". This effectively removes the fields' values and excludes them from
+// operations like Pack() or Marshal().
+func (m *Message) UnsetFields(idPaths ...string) error {
+	for _, idPath := range idPaths {
+		if idPath == "" {
+			continue
+		}
+
+		id, path, _ := strings.Cut(idPath, ".")
+		idx, err := strconv.Atoi(id)
+		if err != nil {
+			return fmt.Errorf("conversion of %s to int failed: %w", id, err)
+		}
+
+		if _, ok := m.fieldsMap[idx]; ok {
+			if len(path) == 0 {
+				m.UnsetField(idx)
+				continue
+			}
+
+			f := m.fields[idx]
+			if f == nil {
+				return fmt.Errorf("field %d does not exist", idx)
+			}
+
+			composite, ok := f.(*field.Composite)
+			if !ok {
+				return fmt.Errorf("field %d is not a composite field and its subfields %s cannot be unset", idx, path)
+			}
+
+			if err := composite.UnsetSubfields(path); err != nil {
+				return fmt.Errorf("failed to unset %s in composite field %d: %w", path, idx, err)
 			}
 		}
 	}

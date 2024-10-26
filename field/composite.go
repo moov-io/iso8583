@@ -7,6 +7,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -686,4 +687,55 @@ func orderedKeys(kvs map[string]Field, sorter sort.StringSlice) []string {
 	}
 	sorter(keys)
 	return keys
+}
+
+// UnsetSubfield marks the subfield with the given ID as not set and replaces it
+// with a new zero-valued field. This effectively removes the subfield's value and
+// excludes it from operations like Pack() or Marshal().
+func (m *Composite) UnsetSubfield(id string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// unset the field
+	delete(m.setSubfields, id)
+
+	// we should re-create the subfield to reset its value (and its subfields)
+	m.subfields[id] = CreateSubfield(m.Spec().Subfields[id])
+}
+
+// UnsetSubfields marks multiple subfields identified by their paths as not set and
+// replaces them with new zero-valued fields. Each path should be in the format
+// "a.b.c". This effectively removes the subfields' values and excludes them from
+// operations like Pack() or Marshal().
+func (m *Composite) UnsetSubfields(idPaths ...string) error {
+	for _, idPath := range idPaths {
+		if idPath == "" {
+			continue
+		}
+
+		id, path, _ := strings.Cut(idPath, ".")
+
+		if _, ok := m.setSubfields[id]; ok {
+			if len(path) == 0 {
+				m.UnsetSubfield(id)
+				continue
+			}
+
+			f := m.subfields[id]
+			if f == nil {
+				return fmt.Errorf("subfield %s does not exist", id)
+			}
+
+			composite, ok := f.(*Composite)
+			if !ok {
+				return fmt.Errorf("field %s is not a composite field and its subfields %s cannot be unset", id, path)
+			}
+
+			if err := composite.UnsetSubfields(path); err != nil {
+				return fmt.Errorf("failed to unset %s in composite field %s: %w", path, id, err)
+			}
+		}
+	}
+
+	return nil
 }
