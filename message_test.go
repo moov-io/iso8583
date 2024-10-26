@@ -435,6 +435,12 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, "100", data.F4.Value())
 	})
 
+	t.Run("Unset doesn't return error for fields that are not set", func(t *testing.T) {
+		message := NewMessage(spec)
+		err := message.UnsetFields("2", "3", "4")
+		require.NoError(t, err)
+	})
+
 	t.Run("Unset unsets fields", func(t *testing.T) {
 		type TestISOF3Data struct {
 			F1 *field.String
