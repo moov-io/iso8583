@@ -62,7 +62,7 @@ func (p *ebcdic1047Prefixer) DecodeLength(maxLen int, data []byte) (int, int, er
 }
 
 func (p *ebcdic1047Prefixer) Inspect() string {
-	return fmt.Sprintf("EBCDIC.%s", strings.Repeat("L", p.digits))
+	return fmt.Sprintf("EBCDIC1047.%s", strings.Repeat("L", p.digits))
 }
 
 type ebcdic1047FixedPrefixer struct{}
@@ -80,5 +80,5 @@ func (p *ebcdic1047FixedPrefixer) DecodeLength(fixLen int, data []byte) (int, in
 }
 
 func (p *ebcdic1047FixedPrefixer) Inspect() string {
-	return "EBCDIC.Fixed"
+	return "EBCDIC1047.Fixed"
 }
