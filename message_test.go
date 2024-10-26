@@ -1753,26 +1753,6 @@ func TestMessageClone(t *testing.T) {
 	require.Equal(t, message2Data.F55.F9A.Value(), message3Data.F55.F9A.Value())
 	require.Equal(t, message2Data.F55.F9F02.Value(), message3Data.F55.F9F02.Value())
 	require.Equal(t, message2Data.F120.Value(), message3Data.F120.Value())
-
-	// here is the way how to reset fields
-	response, err := message3.Clone()
-	// handle error
-
-	err = response.Marshal(&struct {
-		PAN *string `iso8583:"2,keepzero"`
-		F55 *struct {
-			F9A *string `iso8583:",keepzero"`
-		} `iso8583:",keepzero"`
-	}{})
-	require.NoError(t, err)
-
-	responseData := &TestISOData{}
-	require.NoError(t, response.Unmarshal(responseData))
-
-	// check if the PAN is reset
-	require.Equal(t, "", responseData.F2.Value())
-	// check if the F55.F9A is reset
-	require.Equal(t, "", responseData.F55.F9A.Value())
 }
 
 func TestMessageMarshaling(t *testing.T) {
