@@ -351,10 +351,23 @@ type SubConstructedTLVTestData struct {
 }
 
 func TestCompositeField_Marshal(t *testing.T) {
+	t.Run("Marshal returns error on nil value", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+		err := composite.Marshal(nil)
+		require.EqualError(t, err, "data is not a pointer")
+	})
+
+	t.Run("Marshal doesn't return an error when nil pointer is of struct type", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+		var data *CompositeTestData
+		err := composite.Marshal(data)
+		require.NoError(t, err)
+	})
+
 	t.Run("Marshal returns an error on provision of primitive type data", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpec)
 		err := composite.Marshal("primitive str")
-		require.EqualError(t, err, "data is not a pointer or nil")
+		require.EqualError(t, err, "data is not a pointer")
 	})
 
 	t.Run("Marshal skips fields without index tag", func(t *testing.T) {

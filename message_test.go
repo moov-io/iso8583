@@ -367,6 +367,79 @@ func TestMessage(t *testing.T) {
 		wantMsg := []byte("01007000000000000000164242424242424242123456000000000100")
 		require.Equal(t, wantMsg, rawMsg)
 	})
+
+	t.Run("Clone, set zero values and reset fields", func(t *testing.T) {
+		type TestISOF3Data struct {
+			F1 *field.String
+			F2 *field.String
+			F3 *field.String
+		}
+
+		type ISO87Data struct {
+			F0 *field.String
+			F2 *field.String
+			F3 *TestISOF3Data
+			F4 *field.String
+		}
+
+		message := NewMessage(spec)
+		err := message.Marshal(&ISO87Data{
+			F0: field.NewStringValue("0100"),
+			F2: field.NewStringValue("4242424242424242"),
+			F3: &TestISOF3Data{
+				F1: field.NewStringValue("12"),
+				F2: field.NewStringValue("34"),
+				F3: field.NewStringValue("56"),
+			},
+			F4: field.NewStringValue("100"),
+		})
+		require.NoError(t, err)
+
+		// clone the message and reset some fields
+		clone, err := message.Clone()
+		require.NoError(t, err)
+
+		// reset the fields
+		// first, check that the fields are set
+		data := &ISO87Data{}
+		require.NoError(t, clone.Unmarshal(data))
+
+		require.Equal(t, "0100", data.F0.Value())
+		require.Equal(t, "4242424242424242", data.F2.Value())
+		require.Equal(t, "12", data.F3.F1.Value())
+		require.Equal(t, "34", data.F3.F2.Value())
+		require.Equal(t, "56", data.F3.F3.Value())
+		require.Equal(t, "100", data.F4.Value())
+
+		// reset the fields
+		err = clone.Marshal(&struct {
+			F2 *field.String `iso8583:",keepzero"`
+			F3 *struct {
+				F2 *field.String `iso8583:",keepzero"`
+			} `iso8583:",keepzero"`
+		}{})
+		require.NoError(t, err)
+
+		// check that the field values are set to zero values
+		data = &ISO87Data{}
+		require.NoError(t, clone.Unmarshal(data))
+
+		// check that fields are set
+		require.NotNil(t, data.F2)
+		require.NotNil(t, data.F3)
+		require.NotNil(t, data.F3.F2)
+
+		// check the zero values
+		require.Equal(t, "", data.F2.Value())
+		require.Equal(t, "", data.F3.F2.Value())
+
+		// check the reset fields in the message
+		require.Equal(t, "0100", data.F0.Value())
+		require.Equal(t, "12", data.F3.F1.Value())
+		require.Equal(t, "56", data.F3.F3.Value())
+		require.Equal(t, "100", data.F4.Value())
+	})
+
 }
 
 func TestPackUnpack(t *testing.T) {
