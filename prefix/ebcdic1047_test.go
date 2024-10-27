@@ -420,9 +420,9 @@ func TestEBCDIC1047PrefixersDecodeErrors(t *testing.T) {
 
 func TestEBCDIC1047PrefixersInspect(t *testing.T) {
 	t.Parallel()
-	require.Equal(t, "EBCDIC.Fixed", EBCDIC1047.Fixed.Inspect())
-	require.Equal(t, "EBCDIC.L", EBCDIC1047.L.Inspect())
-	require.Equal(t, "EBCDIC.LL", EBCDIC1047.LL.Inspect())
-	require.Equal(t, "EBCDIC.LLL", EBCDIC1047.LLL.Inspect())
-	require.Equal(t, "EBCDIC.LLLL", EBCDIC1047.LLLL.Inspect())
+	require.Equal(t, "EBCDIC1047.Fixed", EBCDIC1047.Fixed.Inspect())
+	require.Equal(t, "EBCDIC1047.L", EBCDIC1047.L.Inspect())
+	require.Equal(t, "EBCDIC1047.LL", EBCDIC1047.LL.Inspect())
+	require.Equal(t, "EBCDIC1047.LLL", EBCDIC1047.LLL.Inspect())
+	require.Equal(t, "EBCDIC1047.LLLL", EBCDIC1047.LLLL.Inspect())
 }
