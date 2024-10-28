@@ -368,7 +368,7 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, wantMsg, rawMsg)
 	})
 
-	t.Run("Clone, set zero values and reset fields", func(t *testing.T) {
+	t.Run("Clone, set zero values", func(t *testing.T) {
 		type TestISOF3Data struct {
 			F1 *field.String
 			F2 *field.String
@@ -395,11 +395,11 @@ func TestMessage(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// clone the message and reset some fields
+		// clone the message and reset some values
 		clone, err := message.Clone()
 		require.NoError(t, err)
 
-		// reset the fields
+		// reset the values
 		// first, check that the fields are set
 		data := &ISO87Data{}
 		require.NoError(t, clone.Unmarshal(data))
@@ -424,11 +424,6 @@ func TestMessage(t *testing.T) {
 		data = &ISO87Data{}
 		require.NoError(t, clone.Unmarshal(data))
 
-		// check that fields are set
-		require.NotNil(t, data.F2)
-		require.NotNil(t, data.F3)
-		require.NotNil(t, data.F3.F2)
-
 		// check the zero values
 		require.Equal(t, "", data.F2.Value())
 		require.Equal(t, "", data.F3.F2.Value())
@@ -440,6 +435,78 @@ func TestMessage(t *testing.T) {
 		require.Equal(t, "100", data.F4.Value())
 	})
 
+	t.Run("Unset doesn't return error for fields that are not set", func(t *testing.T) {
+		message := NewMessage(spec)
+		err := message.UnsetFields("2", "3", "4")
+		require.NoError(t, err)
+	})
+
+	t.Run("Unset unsets fields", func(t *testing.T) {
+		type TestISOF3Data struct {
+			F1 *field.String
+			F2 *field.String
+			F3 *field.String
+		}
+
+		type ISO87Data struct {
+			F0 *field.String
+			F2 *field.String
+			F3 *TestISOF3Data
+			F4 *field.String
+		}
+
+		messageCode := "0100"
+		message := NewMessage(spec)
+		err := message.Marshal(&ISO87Data{
+			F0: field.NewStringValue(messageCode),
+			F2: field.NewStringValue("4242424242424242"),
+			F3: &TestISOF3Data{
+				F1: field.NewStringValue("12"),
+				F2: field.NewStringValue("34"),
+				F3: field.NewStringValue("56"),
+			},
+			F4: field.NewStringValue("100"),
+		})
+		require.NoError(t, err)
+
+		// unset fields
+		err = message.UnsetFields("2", "3.3")
+		require.NoError(t, err)
+
+		data := &ISO87Data{}
+		err = message.Unmarshal(data)
+		require.NoError(t, err)
+
+		require.Nil(t, data.F2)
+		require.Nil(t, data.F3.F3)
+
+		// unset field 3
+		err = message.UnsetFields("3")
+		require.NoError(t, err)
+
+		data = &ISO87Data{}
+		err = message.Unmarshal(data)
+		require.NoError(t, err)
+
+		require.Nil(t, data.F3)
+
+		// let's set the field 3.3 again
+		// only subfield 3 should be set in the field 3, the rest should be unset
+		err = message.Marshal(&ISO87Data{
+			F3: &TestISOF3Data{
+				F3: field.NewStringValue("56"),
+			},
+		})
+		require.NoError(t, err)
+
+		data = &ISO87Data{}
+		err = message.Unmarshal(data)
+		require.NoError(t, err)
+
+		require.Nil(t, data.F3.F1)
+		require.Nil(t, data.F3.F2)
+		require.Equal(t, "56", data.F3.F3.Value())
+	})
 }
 
 func TestPackUnpack(t *testing.T) {
