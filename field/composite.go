@@ -125,6 +125,20 @@ func (f *Composite) GetSubfields() map[string]Field {
 	return f.getSubfields()
 }
 
+// RemoveSubfield removed subfield by a tag name
+func (f *Composite) RemoveSubfield(indexTag string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if _, set := f.setSubfields[indexTag]; !set {
+		return errors.New("fieldTag '" + indexTag + "' is not present")
+	}
+
+	delete(f.setSubfields, indexTag)
+
+	return nil
+}
+
 // getSubfields returns the map of set sub fields, it should be called
 // only when the mutex is locked
 func (f *Composite) getSubfields() map[string]Field {

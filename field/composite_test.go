@@ -2034,3 +2034,54 @@ func TestComposit_concurrency(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+func TestComposite_RemoveSubfield(t *testing.T) {
+	t.Run("Removes subfield when subfield present", func(t *testing.T) {
+		composite := NewComposite(constructedBERTLVTestSpec)
+		err := composite.Marshal(&ConstructedTLVTestData{
+			F82:   NewHexValue("017F"),
+			F9F36: NewHexValue("027F"),
+			F9F3B: &SubConstructedTLVTestData{
+				F9F45: NewHexValue("047F"),
+				F9F02: NewHexValue("057F"),
+			},
+		})
+		require.NoError(t, err)
+
+		data := &ConstructedTLVTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		// save original packed data as expected for later comparison
+		originalPackedData, err := composite.Pack()
+		require.NoError(t, err)
+
+		assert.Len(t, composite.GetSubfields(), 3)
+		err = composite.RemoveSubfield("9F3B")
+		require.NoError(t, err)
+		assert.Len(t, composite.GetSubfields(), 2)
+
+		// pack cleaned composite field
+		packedBytes, err := composite.Pack()
+		require.NoError(t, err)
+		assert.NotEqual(t, originalPackedData, packedBytes)
+	})
+
+	t.Run("Does not remove subfield when subfield is blank", func(t *testing.T) {
+		composite := NewComposite(constructedBERTLVTestSpec)
+		err := composite.Marshal(&ConstructedTLVTestData{
+			F82:   NewHexValue("017F"),
+			F9F36: NewHexValue("027F"),
+			F9F3B: &SubConstructedTLVTestData{
+				F9F45: NewHexValue("047F"),
+				F9F02: NewHexValue("057F"),
+			},
+		})
+		require.NoError(t, err)
+
+		data := &ConstructedTLVTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+
+		err = composite.RemoveSubfield("9F99")
+		require.ErrorContains(t, err, "fieldTag '9F99' is not present")
+	})
+}
