@@ -45,7 +45,6 @@ func NewTrack1(spec *Spec) *Track1 {
 }
 
 func NewTrack1Value(
-	formatCode,
 	primaryAccountNumber,
 	name string,
 	expirationDate *time.Time,
@@ -54,7 +53,6 @@ func NewTrack1Value(
 	opts ...Track1Option,
 ) *Track1 {
 	t := &Track1{
-		FormatCode:           formatCode,
 		PrimaryAccountNumber: primaryAccountNumber,
 		Name:                 name,
 		ExpirationDate:       expirationDate,
