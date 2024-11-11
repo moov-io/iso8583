@@ -29,10 +29,39 @@ const (
 
 var track2Regex = regexp.MustCompile(`^([0-9]{1,19})(=|D)([0-9]{4})([0-9]{3})([^?]+)$`)
 
+type Track2Option func(*Track2)
+
+func WithSeparator(sep string) Track2Option {
+	return func(t *Track2) {
+		t.Separator = sep
+	}
+}
+
 func NewTrack2(spec *Spec) *Track2 {
 	return &Track2{
 		spec: spec,
 	}
+}
+
+func NewTrack2Value(
+	primaryAccountNumber string,
+	expirationDate *time.Time,
+	serviceCode,
+	discretionaryData string,
+	opts ...Track2Option,
+) *Track2 {
+	t := &Track2{
+		PrimaryAccountNumber: primaryAccountNumber,
+		ExpirationDate:       expirationDate,
+		ServiceCode:          serviceCode,
+		DiscretionaryData:    discretionaryData,
+	}
+
+	for _, opt := range opts {
+		opt(t)
+	}
+
+	return t
 }
 
 func (f *Track2) Spec() *Spec {
@@ -180,6 +209,7 @@ func (f *Track2) pack() ([]byte, error) {
 	if len(f.ServiceCode) > 0 {
 		code = f.ServiceCode
 	}
+
 	separator := defaultSeparator
 	if f.Separator != "" {
 		separator = f.Separator

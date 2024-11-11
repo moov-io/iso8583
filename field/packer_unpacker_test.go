@@ -3,9 +3,11 @@ package field_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
+	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/stretchr/testify/require"
 )
@@ -108,4 +110,71 @@ func TestCustomPackerAndUnpacker(t *testing.T) {
 	// so, you can see that the length prefix is 0x02, as the length of the packed
 	// data is 2 bytes.
 	require.Equal(t, []byte{0x02, 0x01, 0x23}, packed)
+}
+
+func TestTrack2Packer(t *testing.T) {
+	type testCase struct {
+		name, primaryAccountNumber, serviceCode, discretionaryData, separator string
+		expirationDate                                                        time.Time
+		expectedPack                                                          []byte
+	}
+
+	s := &field.Spec{
+		Length:      37,
+		Description: "Track 2 Data",
+		Enc:         encoding.ASCII,
+		Pref:        prefix.ASCII.LL,
+		Pad:         padding.Left('0'),
+		Packer:      field.Track2Packer{},
+		Unpacker:    field.Track2Unpacker{},
+	}
+
+	expirationDate, err := time.Parse("0601", "3112")
+	require.NoError(t, err)
+
+	testCases := []testCase{
+		{
+			name:                 "even length",
+			primaryAccountNumber: "4444444444444444",
+			serviceCode:          "201",
+			discretionaryData:    "1474900373",
+			separator:            "D",
+			expirationDate:       expirationDate,
+			// Two bytes for length then: 44444444444444D31122011474900373
+			expectedPack: []byte{0x33, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x44, 0x33, 0x31, 0x31, 0x32, 0x32, 0x30, 0x31, 0x31, 0x34, 0x37, 0x34, 0x39, 0x30, 0x30, 0x33, 0x37, 0x33},
+		},
+		{
+			name:                 "odd length",
+			primaryAccountNumber: "4444444444444444",
+			serviceCode:          "201",
+			discretionaryData:    "147",
+			separator:            "D",
+			expirationDate:       expirationDate,
+			// Two bytes for length then: 04444444444444444D3112201147
+			expectedPack: []byte{0x32, 0x37, 0x30, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x34, 0x44, 0x33, 0x31, 0x31, 0x32, 0x32, 0x30, 0x31, 0x31, 0x34, 0x37},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fd := field.NewTrack2Value(tc.primaryAccountNumber, &tc.expirationDate, tc.serviceCode, tc.discretionaryData, field.WithSeparator(tc.separator))
+			fd.SetSpec(s)
+
+			packed, err := fd.Pack()
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expectedPack, packed)
+
+			// unpack and verify that it is the same
+			unpackedFd := field.NewTrack2(s)
+			_, err = unpackedFd.Unpack(packed)
+			require.NoError(t, err)
+
+			require.Equal(t, fd.PrimaryAccountNumber, unpackedFd.PrimaryAccountNumber)
+			require.Equal(t, fd.ExpirationDate, unpackedFd.ExpirationDate)
+			require.Equal(t, fd.ServiceCode, unpackedFd.ServiceCode)
+			require.Equal(t, fd.DiscretionaryData, unpackedFd.DiscretionaryData)
+			require.Equal(t, fd.Separator, unpackedFd.Separator)
+		})
+	}
 }

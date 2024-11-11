@@ -51,3 +51,67 @@ func (u defaultUnpacker) Unpack(packedFieldValue []byte, spec *Spec) ([]byte, in
 
 	return value, read + prefBytes, nil
 }
+
+type Track2Packer struct{}
+
+// This is a custom packer for Track2 Data. Some specifications require the length
+// to be equal to the length of the pre-padded value.
+func (p Track2Packer) Pack(value []byte, spec *Spec) ([]byte, error) {
+	data := value
+
+	// Only pad if the length is odd. If so, just add
+	// one pad character, so tell the Pad function that
+	// the length we want is +1 to what the value is
+	if spec.Pad != nil && len(value)%2 != 0 {
+		data = spec.Pad.Pad(data, len(value)+1)
+	}
+
+	packed, err := spec.Enc.Encode(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode content: %w", err)
+	}
+
+	// Encode the length to that of the original string, not the potentially
+	// padded length
+	packedLength, err := spec.Pref.EncodeLength(spec.Length, len(value))
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode length: %w", err)
+	}
+
+	return append(packedLength, packed...), nil
+}
+
+type Track2Unpacker struct{}
+
+func (p Track2Unpacker) Unpack(packedFieldValue []byte, spec *Spec) ([]byte, int, error) {
+	// decode the length
+	valueLength, prefBytes, err := spec.Pref.DecodeLength(spec.Length, packedFieldValue)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to decode length: %w", err)
+	}
+
+	// Peek and see if the first value is equal to the padding rune if set
+	// if it is, we need to increase the length to decode by 1
+	// This is because the packer will pad the value, but set the value length
+	// equal to the unpadded value length
+	if spec.Pad != nil {
+		b := spec.Pad.Inspect()
+		r := b[0]
+		if packedFieldValue[prefBytes] == r {
+			valueLength++
+		}
+	}
+
+	// decode the value
+	value, read, err := spec.Enc.Decode(packedFieldValue[prefBytes:], valueLength)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to decode content: %w", err)
+	}
+
+	// unpad the value if needed
+	if spec.Pad != nil {
+		value = spec.Pad.Unpad(value)
+	}
+
+	return value, read + prefBytes, nil
+}
