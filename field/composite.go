@@ -138,17 +138,17 @@ func (f *Composite) getSubfields() map[string]Field {
 // SetSpec validates the spec and creates new instances of Subfields defined
 // in the specification.
 // NOTE: Composite does not support padding on the base spec. Therefore, users
-// should only pass None or nil values for ths type. Passing any other value
+// should only pass None or nil values for this type. Passing any other value
 // will result in a panic.
 func (f *Composite) SetSpec(spec *Spec) {
 	if err := spec.Validate(); err != nil {
-		panic(err) //nolint:forbidigo,nolintlint // as specs moslty static, we panic on spec validation errors
+		panic(err) //nolint:forbidigo,nolintlint // as specs mostly static, we panic on spec validation errors
 	}
 	f.spec = spec
 
 	var sortFn sort.StringSlice
 
-	// When bitmap is defined, always order tags by int.
+	// When bitmap is not defined, always order tags by int.
 	if spec.Bitmap != nil {
 		sortFn = sort.StringsByInt
 	} else {
