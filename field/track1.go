@@ -30,14 +30,6 @@ const (
 
 var track1Regex = regexp.MustCompile(`^([A-Z]{1})([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)$`)
 
-type Track1Option func(*Track1)
-
-func WithFormatCode(code string) Track1Option {
-	return func(t *Track1) {
-		t.FormatCode = code
-	}
-}
-
 func NewTrack1(spec *Spec) *Track1 {
 	return &Track1{
 		spec: spec,
@@ -49,8 +41,9 @@ func NewTrack1Value(
 	name string,
 	expirationDate *time.Time,
 	serviceCode,
-	discretionaryData string,
-	opts ...Track1Option,
+	discretionaryData,
+	formatCode string,
+	fixedLength bool,
 ) *Track1 {
 	t := &Track1{
 		PrimaryAccountNumber: primaryAccountNumber,
@@ -58,10 +51,8 @@ func NewTrack1Value(
 		ExpirationDate:       expirationDate,
 		ServiceCode:          serviceCode,
 		DiscretionaryData:    discretionaryData,
-	}
-
-	for _, opt := range opts {
-		opt(t)
+		FormatCode:           formatCode,
+		FixedLength:          fixedLength,
 	}
 
 	return t

@@ -147,16 +147,18 @@ func TestTrack1(t *testing.T) {
 			expDate, err := time.Parse("0601", "9901")
 			require.NoError(t, err)
 
+			fd := field.NewTrack1Value(
+				"1234567890123445",
+				"PADILLA/L.",
+				&expDate,
+				"120",
+				"0000000000000**XXX******",
+				"B",
+				true,
+			)
+
 			track := field.NewTrack1(track1Spec)
-			err = track.Marshal(&field.Track1{
-				FixedLength:          true,
-				FormatCode:           "B",
-				PrimaryAccountNumber: "1234567890123445",
-				ServiceCode:          "120",
-				DiscretionaryData:    "0000000000000**XXX******",
-				ExpirationDate:       &expDate,
-				Name:                 "PADILLA/L.",
-			})
+			err = track.Marshal(fd)
 			require.NoError(t, err)
 
 			data := &field.Track1{}

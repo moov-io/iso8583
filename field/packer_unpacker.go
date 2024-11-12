@@ -90,16 +90,10 @@ func (p Track2Unpacker) Unpack(packedFieldValue []byte, spec *Spec) ([]byte, int
 		return nil, 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
-	// Peek and see if the first value is equal to the padding rune if set
-	// if it is, we need to increase the length to decode by 1
-	// This is because the packer will pad the value, but set the value length
-	// equal to the unpadded value length
-	if spec.Pad != nil {
-		b := spec.Pad.Inspect()
-		r := b[0]
-		if packedFieldValue[prefBytes] == r {
-			valueLength++
-		}
+	// if valueLength is odd we need to make it even to adjust for
+	// the padding in our Packer
+	if valueLength%2 != 0 {
+		valueLength++
 	}
 
 	// decode the value

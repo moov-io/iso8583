@@ -157,7 +157,13 @@ func TestTrack2Packer(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fd := field.NewTrack2Value(tc.primaryAccountNumber, &tc.expirationDate, tc.serviceCode, tc.discretionaryData, field.WithSeparator(tc.separator))
+			fd := field.NewTrack2Value(
+				tc.primaryAccountNumber,
+				&tc.expirationDate,
+				tc.serviceCode,
+				tc.discretionaryData,
+				tc.separator,
+			)
 			fd.SetSpec(s)
 
 			packed, err := fd.Pack()
