@@ -20,7 +20,7 @@ func (p defaultPacker) Pack(value []byte, spec *Spec) ([]byte, error) {
 	}
 
 	// encode the length
-	lengthPrefix, err := spec.Pref.EncodeLength(spec.Length, len(value))
+	lengthPrefix, err := spec.Pref.EncodeLength(spec.Length, len(encodedValue))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
