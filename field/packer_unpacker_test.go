@@ -184,3 +184,24 @@ func TestTrack2Packer(t *testing.T) {
 		})
 	}
 }
+
+func TestPackerandUnpackerWithVariantDataLength(t *testing.T) {
+	spec := &field.Spec{
+		Length:      5,
+		Description: "Field",
+		Enc:         encoding.EBCDIC1047,
+		Pref:        prefix.EBCDIC1047.L,
+	}
+
+	data := []byte{0xc2, 0xa0, 0x31}
+	str := field.NewString(spec)
+	str.SetBytes(data)
+
+	packed, err := str.Pack()
+	require.NoError(t, err)
+	require.Equal(t, 0xf2, packed[0])
+
+	_, err = str.Unpack(packed)
+	require.NoError(t, err)
+	require.Equal(t, data, str.Bytes())
+}
