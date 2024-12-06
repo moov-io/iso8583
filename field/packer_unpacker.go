@@ -73,7 +73,7 @@ func (p Track2Packer) Pack(value []byte, spec *Spec) ([]byte, error) {
 
 	// Encode the length to that of the original string, not the potentially
 	// padded length
-	packedLength, err := spec.Pref.EncodeLength(spec.Length, len(value))
+	packedLength, err := spec.Pref.EncodeLength(spec.Length, len(packed))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode length: %w", err)
 	}
