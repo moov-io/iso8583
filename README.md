@@ -246,20 +246,20 @@ First, you need to define a struct with fields you want to set. Fields should co
 // list fields you want to set, add `index` tag with field index or tag (for
 // composite subfields) use the same types from message specification
 type NetworkManagementRequest struct {
-	MTI                  *field.String `index:"0"`
-	TransmissionDateTime *field.String `index:"7"`
-	STAN                 *field.String `index:"11"`
-	InformationCode      *field.String `index:"70"`
+	MTI                  string `index:"0"`
+	TransmissionDateTime string `index:"7"`
+	STAN                 string `index:"11"`
+	InformationCode      string `index:"70"`
 }
 
 message := NewMessage(spec)
 
 // now, pass data with fields into the message
 err := message.Marshal(&NetworkManagementRequest{
-	MTI:                  field.NewStringValue("0800"),
-	TransmissionDateTime: field.NewStringValue(time.Now().UTC().Format("060102150405")),
-	STAN:                 field.NewStringValue("000001"),
-	InformationCode:      field.NewStringValue("001"),
+	MTI:                  "0800",
+	TransmissionDateTime: time.Now().UTC().Format("060102150405"),
+	STAN:                 "000001",
+	InformationCode:      "001",
 })
 
 // pack the message and send it to your provider
@@ -301,10 +301,10 @@ To get values of multiple fields with their types just pass a pointer to a struc
 // list fields you want to set, add `index` tag with field index or tag (for
 // composite subfields) use the same types from message specification
 type NetworkManagementRequest struct {
-	MTI                  *field.String `index:"0"`
-	TransmissionDateTime *field.String `index:"7"`
-	STAN                 *field.String `index:"11"`
-	InformationCode      *field.String `index:"70"`
+	MTI                  string `index:"0"`
+	TransmissionDateTime string `index:"7"`
+	STAN                 string `index:"11"`
+	InformationCode      string `index:"70"`
 }
 
 message := NewMessage(spec)
