@@ -25,11 +25,11 @@ var BCD = Prefixers{
 
 func (p *bcdVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	if dataLen > maxLen {
-		return nil, fmt.Errorf("field length: %d is larger than maximum: %d", dataLen, maxLen)
+		return nil, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
 	if len(strconv.Itoa(dataLen)) > p.Digits {
-		return nil, fmt.Errorf("number of digits in length: %d exceeds: %d", dataLen, p.Digits)
+		return nil, fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.Digits)
 	}
 
 	strLen := fmt.Sprintf("%0*d", p.Digits, dataLen)
@@ -44,7 +44,7 @@ func (p *bcdVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 func (p *bcdVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	length := bcd.EncodedLen(p.Digits)
 	if len(data) < length {
-		return 0, 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", length, len(data))
+		return 0, 0, fmt.Errorf(notEnoughDataToRead, length, len(data))
 	}
 
 	bDigits, _, err := encoding.BCD.Decode(data[:length], p.Digits)
@@ -58,7 +58,7 @@ func (p *bcdVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error)
 	}
 
 	if dataLen > maxLen {
-		return 0, 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
+		return 0, 0, fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
 	return dataLen, length, nil
@@ -73,7 +73,7 @@ type bcdFixedPrefixer struct {
 
 func (p *bcdFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	if dataLen != fixLen {
-		return nil, fmt.Errorf("field length: %d should be fixed: %d", dataLen, fixLen)
+		return nil, fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen)
 	}
 
 	return []byte{}, nil

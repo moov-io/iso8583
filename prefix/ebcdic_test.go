@@ -21,7 +21,7 @@ func TestEBCDICVarPrefixer_EncodeLengthMaxLengthValidation(t *testing.T) {
 func TestEBCDICVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
 	_, _, err := EBCDIC.LLL.DecodeLength(20, []byte{0x22})
 
-	require.Contains(t, err.Error(), "length mismatch: want to read 3 bytes, get only 1")
+	require.Contains(t, err.Error(), "not enough data length: 3 to read: 1 byte digits")
 }
 
 func TestEBCDICVarPrefixer_LHelpers(t *testing.T) {

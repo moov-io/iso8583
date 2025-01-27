@@ -903,7 +903,7 @@ func TestPackUnpack(t *testing.T) {
 		require.Error(t, err)
 		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
-		assert.Equal(t, unpackError.FieldID, "120")
+		assert.Equal(t, "120", unpackError.FieldID)
 
 		s, err := message.GetString(2)
 		require.NoError(t, err)

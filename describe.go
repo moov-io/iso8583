@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -36,7 +37,7 @@ func (m *MessageWrapper) GetSubfields() map[string]field.Field {
 	fields := m.Message.GetFields()
 	result := make(map[string]field.Field, len(fields))
 	for k, v := range fields {
-		result[fmt.Sprintf("%d", k)] = v
+		result[strconv.Itoa(k)] = v
 	}
 	return result
 }

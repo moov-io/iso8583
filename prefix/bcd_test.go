@@ -21,7 +21,7 @@ func TestBCDVarPrefixer_EncodeLengthMaxLengthValidation(t *testing.T) {
 func TestBCDVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
 	_, _, err := BCD.LLL.DecodeLength(20, []byte{0x22})
 
-	require.Contains(t, err.Error(), "length mismatch: want to read 2 bytes, get only 1")
+	require.Contains(t, err.Error(), "not enough data length: 2 to read: 1 byte digits")
 }
 
 func TestBCDVarPrefixer_LHelpers(t *testing.T) {

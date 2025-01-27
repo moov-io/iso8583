@@ -30,8 +30,8 @@ func TestMessageSpec_CreateMessageFields(t *testing.T) {
 	fields := spec.CreateMessageFields()
 
 	// test that derived fields have the same type as in the message spec
-	require.True(t, reflect.TypeOf(fields[0]).Elem() == reflect.TypeOf(field.String{}))
-	require.True(t, reflect.TypeOf(fields[1]).Elem() == reflect.TypeOf(field.Bitmap{}))
+	require.Equal(t, reflect.TypeOf(field.String{}), reflect.TypeOf(fields[0]).Elem())
+	require.Equal(t, reflect.TypeOf(field.Bitmap{}), reflect.TypeOf(fields[1]).Elem())
 
 	// test that derived field have the same spec
 	require.Equal(t, fields[0].Spec(), spec.Fields[0].Spec())
