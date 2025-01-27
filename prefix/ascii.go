@@ -22,11 +22,11 @@ var ASCII = Prefixers{
 
 func (p *asciiVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	if dataLen > maxLen {
-		return nil, fmt.Errorf("field length: %d is larger than maximum: %d", dataLen, maxLen)
+		return nil, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
 	if len(strconv.Itoa(dataLen)) > p.Digits {
-		return nil, fmt.Errorf("number of digits in length: %d exceeds: %d", dataLen, p.Digits)
+		return nil, fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.Digits)
 	}
 
 	res := fmt.Sprintf("%0*d", p.Digits, dataLen)
@@ -36,7 +36,7 @@ func (p *asciiVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 
 func (p *asciiVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	if len(data) < p.Digits {
-		return 0, 0, fmt.Errorf("not enough data length: %d to read: %d byte digits", len(data), p.Digits)
+		return 0, 0, fmt.Errorf(notEnoughDataToRead, len(data), p.Digits)
 	}
 
 	dataLen, err := strconv.Atoi(string(data[:p.Digits]))
@@ -46,11 +46,11 @@ func (p *asciiVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, erro
 
 	// length should be positive
 	if dataLen < 0 {
-		return 0, 0, fmt.Errorf("invalid length: %d", dataLen)
+		return 0, 0, fmt.Errorf(invalidLength, dataLen)
 	}
 
 	if dataLen > maxLen {
-		return 0, 0, fmt.Errorf("data length: %d is larger than maximum %d", dataLen, maxLen)
+		return 0, 0, fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
 	return dataLen, p.Digits, nil
@@ -65,7 +65,7 @@ type asciiFixedPrefixer struct {
 
 func (p *asciiFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	if dataLen != fixLen {
-		return nil, fmt.Errorf("field length: %d should be fixed: %d", dataLen, fixLen)
+		return nil, fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen)
 	}
 
 	return []byte{}, nil

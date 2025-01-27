@@ -123,25 +123,25 @@ func TestEBCDIC1047PrefixersEncodeErrors(t *testing.T) {
 				prefixer:      EBCDIC1047.L,
 				maxLen:        8,
 				dataLen:       9,
-				expectedError: "field length [9] is larger than maximum [8]",
+				expectedError: "field length: 9 is larger than maximum: 8",
 			},
 			{
 				prefixer:      EBCDIC1047.LL,
 				maxLen:        52,
 				dataLen:       73,
-				expectedError: "field length [73] is larger than maximum [52]",
+				expectedError: "field length: 73 is larger than maximum: 52",
 			},
 			{
 				prefixer:      EBCDIC1047.LLL,
 				maxLen:        512,
 				dataLen:       999,
-				expectedError: "field length [999] is larger than maximum [512]",
+				expectedError: "field length: 999 is larger than maximum: 512",
 			},
 			{
 				prefixer:      EBCDIC1047.LLLL,
 				maxLen:        1024,
 				dataLen:       2048,
-				expectedError: "field length [2048] is larger than maximum [1024]",
+				expectedError: "field length: 2048 is larger than maximum: 1024",
 			},
 		} {
 			encoded, err := testCase.prefixer.EncodeLength(testCase.maxLen, testCase.dataLen)
@@ -165,25 +165,25 @@ func TestEBCDIC1047PrefixersEncodeErrors(t *testing.T) {
 				prefixer:      EBCDIC1047.L,
 				maxLen:        52,
 				dataLen:       10,
-				expectedError: "number of digits in data [10] exceeds its maximum indicator [1]",
+				expectedError: "number of digits in length: 10 exceeds: 1",
 			},
 			{
 				prefixer:      EBCDIC1047.LL,
 				maxLen:        101,
 				dataLen:       100,
-				expectedError: "number of digits in data [100] exceeds its maximum indicator [2]",
+				expectedError: "number of digits in length: 100 exceeds: 2",
 			},
 			{
 				prefixer:      EBCDIC1047.LLL,
 				maxLen:        1333,
 				dataLen:       1001,
-				expectedError: "number of digits in data [1001] exceeds its maximum indicator [3]",
+				expectedError: "number of digits in length: 1001 exceeds: 3",
 			},
 			{
 				prefixer:      EBCDIC1047.LLLL,
 				maxLen:        11111,
 				dataLen:       10908,
-				expectedError: "number of digits in data [10908] exceeds its maximum indicator [4]",
+				expectedError: "number of digits in length: 10908 exceeds: 4",
 			},
 		} {
 			encoded, err := testCase.prefixer.EncodeLength(testCase.maxLen, testCase.dataLen)
@@ -196,7 +196,7 @@ func TestEBCDIC1047PrefixersEncodeErrors(t *testing.T) {
 		t.Parallel()
 		encoded, err := EBCDIC1047.Fixed.EncodeLength(128, 127)
 		require.Nil(t, encoded)
-		require.EqualError(t, err, "field length [127] should be fixed [128]")
+		require.EqualError(t, err, "field length: 127 should be fixed: 128")
 	})
 }
 
@@ -309,25 +309,25 @@ func TestEBCDIC1047PrefixersDecodeErrors(t *testing.T) {
 				prefixer:      EBCDIC1047.L,
 				maxLen:        8,
 				data:          []byte{},
-				expectedError: "not enough data length [0] to read [1] byte digits",
+				expectedError: "not enough data length: 0 to read: 1 byte digits",
 			},
 			{
 				prefixer:      EBCDIC1047.LL,
 				maxLen:        16,
 				data:          []byte{ebcdic1047_8},
-				expectedError: "not enough data length [1] to read [2] byte digits",
+				expectedError: "not enough data length: 1 to read: 2 byte digits",
 			},
 			{
 				prefixer:      EBCDIC1047.LLL,
 				maxLen:        128,
 				data:          []byte{ebcdic1047_0, ebcdic1047_0},
-				expectedError: "not enough data length [2] to read [3] byte digits",
+				expectedError: "not enough data length: 2 to read: 3 byte digits",
 			},
 			{
 				prefixer:      EBCDIC1047.LLLL,
 				maxLen:        8,
 				data:          []byte{ebcdic1047_0, ebcdic1047_0, ebcdic1047_9},
-				expectedError: "not enough data length [3] to read [4] byte digits",
+				expectedError: "not enough data length: 3 to read: 4 byte digits",
 			},
 		} {
 			length, read, err := testCase.prefixer.DecodeLength(testCase.maxLen, testCase.data)
@@ -349,25 +349,25 @@ func TestEBCDIC1047PrefixersDecodeErrors(t *testing.T) {
 				prefixer:      EBCDIC1047.L,
 				maxLen:        8,
 				data:          []byte{ebcdic1047_9},
-				expectedError: "data length [9] is larger than maximum [8]",
+				expectedError: "data length: 9 is larger than maximum 8",
 			},
 			{
 				prefixer:      EBCDIC1047.LL,
 				maxLen:        16,
 				data:          []byte{ebcdic1047_2, ebcdic1047_0},
-				expectedError: "data length [20] is larger than maximum [16]",
+				expectedError: "data length: 20 is larger than maximum 16",
 			},
 			{
 				prefixer:      EBCDIC1047.LLL,
 				maxLen:        128,
 				data:          []byte{ebcdic1047_1, ebcdic1047_9, ebcdic1047_4},
-				expectedError: "data length [194] is larger than maximum [128]",
+				expectedError: "data length: 194 is larger than maximum 128",
 			},
 			{
 				prefixer:      EBCDIC1047.LLLL,
 				maxLen:        8000,
 				data:          []byte{ebcdic1047_8, ebcdic1047_0, ebcdic1047_9, ebcdic1047_2},
-				expectedError: "data length [8092] is larger than maximum [8000]",
+				expectedError: "data length: 8092 is larger than maximum 8000",
 			},
 		} {
 			length, read, err := testCase.prefixer.DecodeLength(testCase.maxLen, testCase.data)

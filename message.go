@@ -318,7 +318,7 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 	fieldMap := m.getFields()
 	strFieldMap := map[string]field.Field{}
 	for id, field := range fieldMap {
-		strFieldMap[fmt.Sprint(id)] = field
+		strFieldMap[strconv.Itoa(id)] = field
 	}
 
 	// get only fields that were set

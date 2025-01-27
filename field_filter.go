@@ -1,7 +1,7 @@
 package iso8583
 
 import (
-	"fmt"
+	"errors"
 	"unicode/utf8"
 
 	"github.com/moov-io/iso8583/field"
@@ -18,6 +18,8 @@ const (
 	panLastIndex  = 4
 	panPattern    = "****"
 )
+
+var ErrCreatingNewTrackData = errors.New("creating new track data")
 
 type FilterFunc func(in string, data field.Field) string
 
@@ -109,7 +111,7 @@ func newTrackData(data, track field.Field) error {
 	if raw, err := data.Pack(); err == nil {
 		track.SetSpec(data.Spec())
 		if _, err := track.Unpack(raw); err != nil {
-			return fmt.Errorf("creating new track data")
+			return ErrCreatingNewTrackData
 		}
 	}
 

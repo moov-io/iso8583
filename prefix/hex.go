@@ -23,7 +23,7 @@ type hexFixedPrefixer struct {
 func (p *hexFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	// for ascii hex the length is x2 (ascii hex digit takes one byte)
 	if dataLen != fixLen*2 {
-		return nil, fmt.Errorf("field length: %d should be fixed: %d", dataLen, fixLen*2)
+		return nil, fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen*2)
 	}
 
 	return []byte{}, nil
@@ -43,12 +43,12 @@ type hexVarPrefixer struct {
 
 func (p *hexVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	if dataLen > maxLen {
-		return nil, fmt.Errorf("field length: %d is larger than maximum: %d", dataLen, maxLen)
+		return nil, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
 	maxPossibleLength := 1<<(p.Digits*8) - 1
 	if dataLen > maxPossibleLength {
-		return nil, fmt.Errorf("number of digits in length: %d exceeds: %d", dataLen, p.Digits)
+		return nil, fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.Digits)
 	}
 
 	strLen := strconv.FormatInt(int64(dataLen), 16)
@@ -60,7 +60,7 @@ func (p *hexVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	length := hex.EncodedLen(p.Digits)
 	if len(data) < length {
-		return 0, 0, fmt.Errorf("length mismatch: want to read %d bytes, get only %d", length, len(data))
+		return 0, 0, fmt.Errorf(notEnoughDataToRead, length, len(data))
 	}
 
 	dataLen, err := strconv.ParseInt(string(data[:length]), 16, p.Digits*8)
@@ -69,7 +69,7 @@ func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error)
 	}
 
 	if int(dataLen) > maxLen {
-		return 0, 0, fmt.Errorf("data length %d is larger than maximum %d", dataLen, maxLen)
+		return 0, 0, fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
 	return int(dataLen), length, nil

@@ -22,7 +22,7 @@ type binaryFixedPrefixer struct {
 
 func (p *binaryFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	if dataLen != fixLen {
-		return nil, fmt.Errorf("field length: %d should be fixed: %d", dataLen, fixLen)
+		return nil, fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen)
 	}
 
 	return []byte{}, nil
@@ -64,7 +64,7 @@ func bytesToInt(b []byte) (int, error) {
 
 func (p *binaryVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	if dataLen > maxLen {
-		return nil, fmt.Errorf("field length: %d is larger than maximum: %d", dataLen, maxLen)
+		return nil, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
 	res, err := intToBytes(dataLen)
@@ -76,7 +76,7 @@ func (p *binaryVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	res = bytes.TrimLeft(res, "\x00")
 
 	if len(res) > p.Digits {
-		return nil, fmt.Errorf("number of digits in length: %d exceeds: %d", dataLen, p.Digits)
+		return nil, fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.Digits)
 	}
 
 	// if len of res is less than p.Digits prepend with 0x00
@@ -92,7 +92,7 @@ func (p *binaryVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 // and the number of bytes read.
 func (p *binaryVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	if len(data) < p.Digits {
-		return 0, 0, fmt.Errorf("not enough data length: %d to read: %d bytes", len(data), p.Digits)
+		return 0, 0, fmt.Errorf(notEnoughDataToRead, len(data), p.Digits)
 	}
 
 	prefBytes := data[:p.Digits]
@@ -111,7 +111,7 @@ func (p *binaryVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, err
 	}
 
 	if dataLen > maxLen {
-		return 0, 0, fmt.Errorf("data length: %d is larger than maximum %d", dataLen, maxLen)
+		return 0, 0, fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
 	return dataLen, p.Digits, nil
