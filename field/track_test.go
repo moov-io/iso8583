@@ -1,4 +1,4 @@
-package field
+package field_test
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/moov-io/iso8583/encoding"
+	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/stretchr/testify/require"
 )
@@ -22,26 +23,28 @@ type TestSample struct {
 }
 
 var (
-	track1Spec = &Spec{
+	track1Spec = &field.Spec{
 		Length:      76,
 		Description: "Track 1 Data",
 		Enc:         encoding.ASCII,
 		Pref:        prefix.ASCII.LL,
 	}
 
-	track2Spec = &Spec{
+	track2Spec = &field.Spec{
 		Length:      37,
 		Description: "Track 2 Data",
 		Enc:         encoding.ASCII,
 		Pref:        prefix.ASCII.LL,
 	}
 
-	track3Spec = &Spec{
+	track3Spec = &field.Spec{
 		Length:      104,
 		Description: "Track 3 Data",
 		Enc:         encoding.ASCII,
 		Pref:        prefix.ASCII.LLL,
 	}
+
+	expiryDateFormat = "0601"
 )
 
 func TestTrack1(t *testing.T) {
@@ -77,7 +80,7 @@ func TestTrack1(t *testing.T) {
 			},
 		}
 
-		testTrackFields := func(t *testing.T, track *Track1, sample TestSample) {
+		testTrackFields := func(t *testing.T, track *field.Track1, sample TestSample) {
 			require.Equal(t, sample.FormatCode, track.FormatCode)
 			require.Equal(t, sample.PrimaryAccountNumber, track.PrimaryAccountNumber)
 			require.Equal(t, sample.ServiceCode, track.ServiceCode)
@@ -92,13 +95,13 @@ func TestTrack1(t *testing.T) {
 
 		for id, sample := range samples {
 			t.Run(fmt.Sprintf("sample %d", id), func(t *testing.T) {
-				spec := &Spec{
+				spec := &field.Spec{
 					Length:      76,
 					Description: "Track 1 Data",
 					Enc:         encoding.ASCII,
 					Pref:        prefix.ASCII.LL,
 				}
-				track := NewTrack1(spec)
+				track := field.NewTrack1(spec)
 				require.NotNil(t, track.Spec())
 
 				// test SetBytes / Bytes
@@ -117,7 +120,7 @@ func TestTrack1(t *testing.T) {
 				require.NoError(t, err)
 				require.Len(t, packBuf, len(sample.Raw)+2, "packed length must be 2 bytes longer as it has ASCII.LL prefix")
 
-				unpackedTrack := NewTrack1(spec)
+				unpackedTrack := field.NewTrack1(spec)
 				require.NoError(t, err)
 
 				_, err = unpackedTrack.Unpack(packBuf)
@@ -125,7 +128,6 @@ func TestTrack1(t *testing.T) {
 
 				testTrackFields(t, unpackedTrack, sample)
 			})
-
 		}
 	})
 
@@ -136,8 +138,8 @@ func TestTrack1(t *testing.T) {
 		)
 
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
-			track := NewTrack1(track1Spec)
-			err := track.Marshal(NewStringValue("hello"))
+			track := field.NewTrack1(track1Spec)
+			err := track.Marshal(field.NewStringValue("hello"))
 			require.EqualError(t, err, "unsupported type: expected *Track1, got *field.String")
 		})
 
@@ -145,19 +147,21 @@ func TestTrack1(t *testing.T) {
 			expDate, err := time.Parse("0601", "9901")
 			require.NoError(t, err)
 
-			track := NewTrack1(track1Spec)
-			err = track.Marshal(&Track1{
-				FixedLength:          true,
-				FormatCode:           "B",
-				PrimaryAccountNumber: "1234567890123445",
-				ServiceCode:          "120",
-				DiscretionaryData:    "0000000000000**XXX******",
-				ExpirationDate:       &expDate,
-				Name:                 "PADILLA/L.",
-			})
+			fd := field.NewTrack1Value(
+				"1234567890123445",
+				"PADILLA/L.",
+				&expDate,
+				"120",
+				"0000000000000**XXX******",
+				"B",
+				true,
+			)
+
+			track := field.NewTrack1(track1Spec)
+			err = track.Marshal(fd)
 			require.NoError(t, err)
 
-			data := &Track1{}
+			data := &field.Track1{}
 
 			err = track.Unmarshal(data)
 
@@ -174,7 +178,7 @@ func TestTrack1(t *testing.T) {
 			expDate, err := time.Parse("0601", "9901")
 			require.NoError(t, err)
 
-			data := &Track1{
+			data := &field.Track1{
 				FixedLength:          true,
 				FormatCode:           "B",
 				PrimaryAccountNumber: "1234567890123445",
@@ -184,7 +188,7 @@ func TestTrack1(t *testing.T) {
 				Name:                 "PADILLA/L.",
 			}
 
-			track := NewTrack1(track1Spec)
+			track := field.NewTrack1(track1Spec)
 			err = track.Marshal(data)
 			require.NoError(t, err)
 
@@ -205,9 +209,9 @@ func TestTrack1(t *testing.T) {
 			expDate, err := time.Parse("0601", "9901")
 			require.NoError(t, err)
 
-			data := &Track1{}
+			data := &field.Track1{}
 
-			track := NewTrack1(track1Spec)
+			track := field.NewTrack1(track1Spec)
 			err = track.Marshal(data)
 			require.NoError(t, err)
 
@@ -227,9 +231,9 @@ func TestTrack1(t *testing.T) {
 			expDate, err := time.Parse("0601", "9901")
 			require.NoError(t, err)
 
-			data := &Track1{}
+			data := &field.Track1{}
 
-			track := NewTrack1(track1Spec)
+			track := field.NewTrack1(track1Spec)
 			err = track.Marshal(data)
 			require.NoError(t, err)
 
@@ -272,7 +276,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 			},
 		}
 		for _, tc := range testCases {
-			tracker := NewTrack2(track2Spec)
+			tracker := field.NewTrack2(track2Spec)
 			require.NotNil(t, tracker.Spec())
 
 			err := tracker.SetBytes(tc.Bytes)
@@ -303,8 +307,8 @@ func TestTrack2TypedAPI(t *testing.T) {
 
 	t.Run("Track 2 typed", func(t *testing.T) {
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
-			track := NewTrack2(track2Spec)
-			err := track.Marshal(NewStringValue("hello"))
+			track := field.NewTrack2(track2Spec)
+			err := track.Marshal(field.NewStringValue("hello"))
 			require.EqualError(t, err, "unsupported type: expected *Track2, got *field.String")
 		})
 
@@ -312,8 +316,8 @@ func TestTrack2TypedAPI(t *testing.T) {
 			expDate, err := time.Parse("0601", "9901")
 			require.NoError(t, err)
 
-			track := NewTrack2(track2Spec)
-			err = track.Marshal(&Track2{
+			track := field.NewTrack2(track2Spec)
+			err = track.Marshal(&field.Track2{
 				PrimaryAccountNumber: "4000340000000506",
 				Separator:            "D",
 				ServiceCode:          "111",
@@ -322,7 +326,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			data := &Track2{}
+			data := &field.Track2{}
 
 			err = track.Unmarshal(data)
 
@@ -357,7 +361,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 				expDate, err := time.Parse("0601", "2512")
 				require.NoError(t, err)
 
-				data := &Track2{
+				data := &field.Track2{
 					PrimaryAccountNumber: `4000340000000506`,
 					Separator:            tc.Separator,
 					ServiceCode:          `111`,
@@ -365,7 +369,7 @@ func TestTrack2TypedAPI(t *testing.T) {
 					ExpirationDate:       &expDate,
 				}
 
-				track := NewTrack2(track2Spec)
+				track := field.NewTrack2(track2Spec)
 				err = track.Marshal(data)
 				require.NoError(t, err)
 
@@ -401,9 +405,9 @@ func TestTrack2TypedAPI(t *testing.T) {
 				expDate, err := time.Parse("0601", "2512")
 				require.NoError(t, err)
 
-				data := &Track2{}
+				data := &field.Track2{}
 
-				track := NewTrack2(track2Spec)
+				track := field.NewTrack2(track2Spec)
 				err = track.Marshal(data)
 				require.NoError(t, err)
 
@@ -438,9 +442,9 @@ func TestTrack2TypedAPI(t *testing.T) {
 				expDate, err := time.Parse("0601", "2512")
 				require.NoError(t, err)
 
-				data := &Track2{}
+				data := &field.Track2{}
 
-				track := NewTrack2(track2Spec)
+				track := field.NewTrack2(track2Spec)
 				err = track.Marshal(data)
 				require.NoError(t, err)
 
@@ -475,13 +479,13 @@ func TestTrack3TypedAPI(t *testing.T) {
 			},
 		}
 		for _, sample := range samples {
-			spec := &Spec{
+			spec := &field.Spec{
 				Length:      104,
 				Description: "Track 3 Data",
 				Enc:         encoding.ASCII,
 				Pref:        prefix.ASCII.LLL,
 			}
-			tracker := NewTrack3(spec)
+			tracker := field.NewTrack3(spec)
 			require.NotNil(t, tracker.Spec())
 
 			err := tracker.SetBytes([]byte(sample.Raw))
@@ -514,21 +518,21 @@ func TestTrack3TypedAPI(t *testing.T) {
 			rawWithPrefix = []byte("104011234567890123445=724724000000000****00300XXXX020200099010=********************==1=100000000000000000**")
 		)
 		t.Run("Returns an error on mismatch of track type", func(t *testing.T) {
-			track := NewTrack3(track3Spec)
-			err := track.Marshal(NewStringValue("hello"))
+			track := field.NewTrack3(track3Spec)
+			err := track.Marshal(field.NewStringValue("hello"))
 			require.EqualError(t, err, "unsupported type: expected *Track3, got *field.String")
 		})
 
 		t.Run("Unmarshal gets track values into data parameter", func(t *testing.T) {
-			track := NewTrack3(track3Spec)
-			err := track.Marshal(&Track3{
+			track := field.NewTrack3(track3Spec)
+			err := track.Marshal(&field.Track3{
 				FormatCode:           `01`,
 				PrimaryAccountNumber: `1234567890123445`,
 				DiscretionaryData:    `724724000000000****00300XXXX020200099010=********************==1=100000000000000000**`,
 			})
 			require.NoError(t, err)
 
-			data := &Track3{}
+			data := &field.Track3{}
 
 			err = track.Unmarshal(data)
 
@@ -539,13 +543,13 @@ func TestTrack3TypedAPI(t *testing.T) {
 		})
 
 		t.Run("Pack correctly serializes data to bytes", func(t *testing.T) {
-			data := &Track3{
+			data := &field.Track3{
 				FormatCode:           `01`,
 				PrimaryAccountNumber: `1234567890123445`,
 				DiscretionaryData:    `724724000000000****00300XXXX020200099010=********************==1=100000000000000000**`,
 			}
 
-			track := NewTrack3(track3Spec)
+			track := field.NewTrack3(track3Spec)
 			err := track.Marshal(data)
 			require.NoError(t, err)
 
@@ -560,9 +564,9 @@ func TestTrack3TypedAPI(t *testing.T) {
 		})
 
 		t.Run("Unpack correctly deserializes bytes with length prefix to the data struct", func(t *testing.T) {
-			data := &Track3{}
+			data := &field.Track3{}
 
-			track := NewTrack3(track3Spec)
+			track := field.NewTrack3(track3Spec)
 			err := track.Marshal(data)
 			require.NoError(t, err)
 
@@ -576,9 +580,9 @@ func TestTrack3TypedAPI(t *testing.T) {
 		})
 
 		t.Run("SetBytes correctly deserializes and assigns data", func(t *testing.T) {
-			data := &Track3{}
+			data := &field.Track3{}
 
-			track := NewTrack3(track3Spec)
+			track := field.NewTrack3(track3Spec)
 			err := track.Marshal(data)
 			require.NoError(t, err)
 

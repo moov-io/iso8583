@@ -35,6 +35,24 @@ func NewTrack2(spec *Spec) *Track2 {
 	}
 }
 
+func NewTrack2Value(
+	primaryAccountNumber string,
+	expirationDate *time.Time,
+	serviceCode,
+	discretionaryData,
+	separator string,
+) *Track2 {
+	t := &Track2{
+		PrimaryAccountNumber: primaryAccountNumber,
+		Separator:            separator,
+		ExpirationDate:       expirationDate,
+		ServiceCode:          serviceCode,
+		DiscretionaryData:    discretionaryData,
+	}
+
+	return t
+}
+
 func (f *Track2) Spec() *Spec {
 	return f.spec
 }
@@ -180,6 +198,7 @@ func (f *Track2) pack() ([]byte, error) {
 	if len(f.ServiceCode) > 0 {
 		code = f.ServiceCode
 	}
+
 	separator := defaultSeparator
 	if f.Separator != "" {
 		separator = f.Separator

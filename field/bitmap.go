@@ -148,7 +148,7 @@ func (f *Bitmap) Marshal(v interface{}) error {
 	return nil
 }
 
-// Reset resets the bitmap to its initial state because of how message works,
+// Reset the bitmap to its initial state because of how message works,
 // Message need a way to initialize bitmap. That's why we set parameters to
 // their default values here like we do in constructor.
 func (f *Bitmap) Reset() {

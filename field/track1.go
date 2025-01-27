@@ -36,6 +36,28 @@ func NewTrack1(spec *Spec) *Track1 {
 	}
 }
 
+func NewTrack1Value(
+	primaryAccountNumber,
+	name string,
+	expirationDate *time.Time,
+	serviceCode,
+	discretionaryData,
+	formatCode string,
+	fixedLength bool,
+) *Track1 {
+	t := &Track1{
+		PrimaryAccountNumber: primaryAccountNumber,
+		Name:                 name,
+		ExpirationDate:       expirationDate,
+		ServiceCode:          serviceCode,
+		DiscretionaryData:    discretionaryData,
+		FormatCode:           formatCode,
+		FixedLength:          fixedLength,
+	}
+
+	return t
+}
+
 func (f *Track1) Spec() *Spec {
 	return f.spec
 }
