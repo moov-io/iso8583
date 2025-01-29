@@ -2179,6 +2179,8 @@ func TestStructWithTypes(t *testing.T) {
 		},
 	}
 
+	type myString string
+
 	t.Run("pack", func(t *testing.T) {
 		panInt := 4242424242424242
 		panStr := "4242424242424242"
@@ -2222,6 +2224,19 @@ func TestStructWithTypes(t *testing.T) {
 					MTI: "0110",
 				},
 				expectedPackedString: "01104000000000000000000000000000000000",
+			},
+
+			// Tests for named string type
+			{
+				name: "struct with named string type and value set",
+				input: struct {
+					MTI                  myString `index:"0"`
+					PrimaryAccountNumber myString `index:"2"`
+				}{
+					MTI:                  "0110",
+					PrimaryAccountNumber: myString(panStr),
+				},
+				expectedPackedString: "011040000000000000000000000000000000164242424242424242",
 			},
 
 			// Tests for *string type
@@ -2439,6 +2454,15 @@ func TestStructWithTypes(t *testing.T) {
 				input: &struct {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber string `index:"2,keepzero"`
+				}{},
+			},
+
+			// Tests for named string type
+			{
+				name: "struct with named string type",
+				input: &struct {
+					MTI                  myString `index:"0"`
+					PrimaryAccountNumber myString `index:"2"`
 				}{},
 			},
 
