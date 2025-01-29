@@ -147,7 +147,10 @@ func (f *String) Marshal(v interface{}) error {
 	if v == nil {
 		f.value = ""
 		return nil
-	} else if reflect.ValueOf(v).IsZero() {
+	}
+
+	rv := reflect.ValueOf(v)
+	if rv.IsZero() {
 		if !strings.Contains(reflect.ValueOf(v).Type().String(), "int") {
 			f.value = ""
 			return nil
@@ -178,7 +181,18 @@ func (f *String) Marshal(v interface{}) error {
 			f.value = strconv.FormatInt(*v, 10)
 		}
 	default:
-		return fmt.Errorf("data does not match required *String or (string, *string, int, *int) type")
+		kind := rv.Kind()
+		if kind == reflect.Ptr {
+			rv = rv.Elem()
+			kind = rv.Kind()
+		}
+
+		switch kind {
+		case reflect.String:
+			f.value = rv.String()
+		default:
+			return fmt.Errorf("data does not match required *String or (string, *string, int, *int) type")
+		}
 	}
 
 	return nil
