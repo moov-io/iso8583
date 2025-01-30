@@ -16,7 +16,7 @@ type IndexTag struct {
 	Tag string
 	// KeepZero tells the marshaler to use zero value and set bitmap bit to
 	// 1 for this field. Default behavior is to omit the field from the
-	// message if it's zero value.
+	// message when we Marshal data if it's zero value.
 	KeepZero bool
 }
 

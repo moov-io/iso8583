@@ -280,6 +280,17 @@ if err != nil {
 // data is ready to be sent
 ```
 
+If you want empty values to be included in the message, you can use the `keepzero` option in the `iso8583` field tag:
+
+```go
+type Authorization struct {
+    // ...
+    AdditionalData       string    `iso8583:"48,keepzero"` // Additional data
+}
+```
+
+For such fields, the field bit will be set in the bitmap, but the value will be empty. You should set padding for such fields to ensure the field length is correct.
+
 #### Working with Individual Fields
 
 <details>
