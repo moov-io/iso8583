@@ -311,6 +311,10 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 		return 0, fmt.Errorf("failed to decode length: %w", err)
 	}
 
+	if dataLen == 0 {
+		return 0, nil
+	}
+
 	isVariableLength := false
 	if offset != 0 {
 		isVariableLength = true

@@ -1225,6 +1225,123 @@ func TestPackUnpack(t *testing.T) {
 		result, _ = in.GetField(3).String()
 		require.Equal(t, "890", result)
 	})
+
+	compositeSpec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.Binary,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      2,
+				Description: "Field 2",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			3: field.NewComposite(&field.Spec{
+				Length:      256,
+				Description: "Field 3",
+				Pref:        prefix.Binary.L,
+				Bitmap: field.NewBitmap(&field.Spec{
+					Description:       "Field 3 Bitmap",
+					Enc:               encoding.Binary,
+					Pref:              prefix.ASCII.Fixed,
+					DisableAutoExpand: true,
+				}),
+				Subfields: map[string]field.Field{
+					"1": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Field 3.1",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"2": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Field 3.2",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
+			}),
+		},
+	}
+
+	type compositeTypeF3 struct {
+		F3_1 string `index:"1"`
+		F3_2 string `index:"2"`
+	}
+
+	type compositeType struct {
+		MTI    string           `index:"0"`
+		Bitmap *field.Bitmap    `index:"1"`
+		F2     string           `index:"2"`
+		F3     *compositeTypeF3 `index:"3"`
+	}
+
+	t.Run("Test packing and unpacking a composite type with a bitmap", func(t *testing.T) {
+		values := compositeType{
+			MTI: "0100",
+			F2:  "22",
+			F3: &compositeTypeF3{
+				F3_1: "11",
+				F3_2: "22",
+			},
+		}
+
+		msg2Pack := NewMessage(compositeSpec)
+
+		err := msg2Pack.Marshal(values)
+		require.NoError(t, err)
+
+		packed, err := msg2Pack.Pack()
+		require.NoError(t, err)
+
+		rawStr := hex.EncodeToString(packed)
+
+		want := "30313030600000000000000032320cc00000000000000031313232"
+		require.Equal(t, want, rawStr)
+
+		msg2Unpack := NewMessage(compositeSpec)
+		err = msg2Unpack.Unpack(packed)
+		require.NoError(t, err)
+
+		var dst compositeType
+		err = msg2Unpack.Unmarshal(&dst)
+		require.NoError(t, err)
+
+		dst.Bitmap = nil
+		require.Equal(t, values, dst)
+	})
+
+	t.Run("Test packing and unpacking a composite type with empty values", func(t *testing.T) {
+		want := "303130306000000000000000323200"
+
+		rawWant, err := hex.DecodeString(want)
+
+		msg2Unpack := NewMessage(compositeSpec)
+		err = msg2Unpack.Unpack(rawWant)
+		require.NoError(t, err)
+
+		var dst compositeType
+		err = msg2Unpack.Unmarshal(&dst)
+		require.NoError(t, err)
+
+		expected := compositeType{
+			MTI: "0100",
+			F2:  "22",
+			F3:  &compositeTypeF3{},
+		}
+
+		dst.Bitmap = nil
+		require.Equal(t, expected, dst)
+	})
 }
 
 func TestMessageJSON(t *testing.T) {
