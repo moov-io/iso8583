@@ -29,14 +29,16 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 ## Table of contents
 
 - [Project status](#project-status)
-- [Go module](#go-library)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Go version support policy](#go-version-support-policy)
 - [How to](#how-to)
-	- [Define specification](#define-your-specification)
-	- [Build message](#build-and-pack-the-message)
-	- [Parse message](#parse-the-message-and-access-the-data)
-	- [Inspect message fields](#inspect-message-fields)
-	- [Encode/Decode from/to JSON](#json-encoding)
+	- [Defining Message Specifications](#defining-message-specifications)
+    - [Working with ISO 8583 Messages](#working-with-iso-8583-messages)
+    - [Setting Message Data](#setting-message-data)
+    - [Getting Message Data](#getting-message-data)
+	- [Inspecting message fields](#inspecting-message-fields)
+	- [JSON Encoding and Decoding](#json-encoding-and-decoding)
 - [ISO8583 CLI](#cli)
 - [Learn about ISO 8583](#learn-about-iso-8583)
 - [Getting help](#getting-help)
@@ -45,11 +47,90 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 
 ## Project status
 
-Moov ISO8583 is a Go package that's been **thoroughly tested and trusted in the real world**. The project has proven its reliability and robustness in real-world, high-stakes scenarios. Please let us know if you encounter any missing feature/bugs/unclear documentation by opening up [an issue](https://github.com/moov-io/iso8583/issues/new). Thanks!
+Moov ISO8583 is a Go package that's been **thoroughly tested and trusted in the real world**. The project has proven its reliability and robustness in real-world, high-stakes scenarios. Please let us know if you encounter any missing feature/bugs/unclear documentation by opening up [an issue](https://github.com/moov-io/iso8583/issues/new) or asking on our [#iso8583 Community Slack channel](https://moov-io.slack.com/archives/C014UT7C3ST).
+. Thanks!
 
-## Go library
+## Installation
 
-This project uses [Go Modules](https://go.dev/blog/using-go-modules). See [Golang's install instructions](https://golang.org/doc/install) for help in setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
+```
+go get github.com/moov-io/iso8583
+```
+
+## Quick Start
+
+The following example demonstrates how to:
+- Define message structure using Go types
+- Pack a message for transmission
+- Unpack and parse a received message
+
+```go
+// Define types for the message fields
+type Authorization struct {
+	MTI                  string               `iso8583:"0"`  // Message Type Indicator
+	PrimaryAccountNumber string               `iso8583:"2"`  // PAN
+	ProcessingCode       string               `iso8583:"3"`  // Processing code
+	Amount               int64                `iso8583:"4"`  // Transaction amount
+	STAN                 string               `iso8583:"11"` // System Trace Audit Number
+	ExpirationDate       string               `iso8583:"14"` // YYMM
+	AcceptorInformation  *AcceptorInformation `iso8583:"43"` // Merchant details
+}
+
+type AcceptorInformation struct {
+	Name    string `index:"1"`
+	City    string `index:"2"`
+	Country string `index:"3"`
+}
+
+func Example() {
+	// Pack the message
+	msg := iso8583.NewMessage(examples.Spec)
+
+	authData := &Authorization{
+		MTI:                  "0100",
+		PrimaryAccountNumber: "4242424242424242",
+		ProcessingCode:       "000000",
+		Amount:               2599,
+		ExpirationDate:       "2201",
+		AcceptorInformation: &AcceptorInformation{
+			Name:    "Merchant Name",
+			City:    "Denver",
+			Country: "US",
+		},
+	}
+
+	// Set the field values
+	err := msg.Marshal(authData)
+	if err != nil {
+		panic(err)
+	}
+
+	// Pack the message
+	packed, err := msg.Pack()
+	if err != nil {
+		panic(err)
+	}
+
+	// send packed message to the server
+	// ...
+
+	// Unpack the message
+	msg = iso8583.NewMessage(Spec)
+	err = msg.Unpack(packed)
+	if err != nil {
+		panic(err)
+	}
+
+	// Get the field values
+	authData = &Authorization{}
+	err = msg.Unmarshal(authData)
+	if err != nil {
+		panic(err)
+	}
+
+	// Print the entire message
+	iso8583.Describe(msg, os.Stdout)
+}
+```
 
 ## Go version support policy
 
@@ -74,261 +155,301 @@ Whenever a new version of Go is released, we will update our systems and ensure 
 
 To ensure our promise of support for these versions, we've configured our GitHub CI actions to test our code with both the current and previous versions of Go. This means you can feel confident that the project will work as expected if you're using either of these versions.
 
-### Installation
-
-```
-go get github.com/moov-io/iso8583
-```
-
 ## How to
 
-### Define your specification
+### Defining Message Specifications
 
-Currently, we have defined the following ISO 8583 specifications:
+Most ISO 8583 implementations use confidential specifications that vary between payment systems, so you'll likely need to create your own specification. We provide example specifications in [/specs](./specs) directory that you can use as a starting point.
 
-* [Spec87ASCII](./specs/spec87ascii.go) - 1987 version of the spec with ASCII encoding
-* [Spec87Hex](./specs/spec87hex.go) - 1987 version of the spec with Hex encoding
+#### Core Concepts
 
-Spec87ASCII is suitable for the majority of use cases. Simply instantiate a new message using `specs.Spec87ASCII`:
+The package maps ISO 8583 concepts to the following types:
 
-```
-isomessage := iso8583.NewMessage(specs.Spec87ASCII)
-```
-If this spec does not meet your needs, we encourage you to modify it or create your own using the information below.
+- **MessageSpec** - Defines the complete message format with fields
+- **field.Spec** - Defines field's structure and behavior
+- **field.Field** - Represents an ISO 8583 data element with its value storing and handling logic:
+  - `field.String` - For alphanumeric fields
+  - `field.Numeric` - For numeric fields
+  - `field.Binary` - For binary data fields 
+  - `field.Composite` - For structured data like TLV/BER-TLV fields or fields with positional subfields
 
-First, you need to define the format of the message fields that are described in your ISO8583 specification. Each data field has a type and its own spec. You can create a `NewBitmap`, `NewString`, or `NewNumeric` field. Each individual field spec consists of a few elements:
+Each field specification consists of these elements:
 
 | Element          | Notes                                                                                                                                                                                                                       | Example                    |
 |------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
 | `Length`         | Maximum length of field (bytes, characters or digits), for both fixed and variable lengths.                                                                                                                                 | `10`                       |
 | `Description`    | Describes what the data field holds.                                                                                                                                                                                        | `"Primary Account Number"` |
-| `Enc`            | Sets the encoding type (`ASCII`, `Hex`, `Binary`, `BCD`, `LBCD`, `EBCDIC`).                                                                                                                                                           | `encoding.ASCII`           |
-| `Pref`           | Sets the encoding (`ASCII`, `Hex`, `Binary`, `BCD`, `EBCDIC`) of the field length and its type as fixed or variable (`Fixed`, `L`, `LL`, `LLL`, `LLLL`). The number of 'L's corresponds to the number of digits in a variable length. | `prefix.ASCII.Fixed`       |
+| `Enc`            | Sets the encoding type (`ASCII`, `Binary`, `BCD`, `LBCD`, `EBCDIC`).                                                                                                                                                           | `encoding.ASCII`           |
+| `Pref`           | Sets the encoding (`ASCII`, `Binary`, `BCD`, `EBCDIC`) of the field length and its type as fixed or variable (`Fixed`, `L`, `LL`, `LLL`, `LLLL`). The number of 'L's corresponds to the number of digits in a variable length. | `prefix.ASCII.Fixed`       |
 | `Pad` (optional) | Sets padding direction and type.                                                                                                                                                                                            | `padding.Left('0')`        |
 
-While some ISO8583 specifications do not have field 0 and field 1, we use them for MTI and Bitmap. Because technically speaking, they are just regular fields. We use field specs to describe MTI and Bitmap too. We currently use the `String` field for MTI, while we have a separate `Bitmap` field for the bitmap.
+Note: While some ISO 8583 specifications do not have field 0 and field 1, we use them for MTI and Bitmap as they are technically regular fields. We use `String` field for MTI and `Bitmap` field for the bitmap.
 
-The following example creates a full specification with three individual fields (excluding MTI and Bitmap):
+For more advanced examples including handling of BER-TLV data, positional subfields, and various encoding types, see:
+- [message_test.go](message_test.go) - Complex message specifications and field types
+- [field/composite_test.go](field/composite_test.go) - Working with composite fields and subfields
+
+### Working with ISO 8583 Messages
+
+The package provides two key operations for working with ISO 8583 messages:
+
+#### Building Messages
+
+To build a message:
+1. Set message data using Go structs or individual field operations
+2. Pack the message into bytes using `Pack()`
+3. Send the bytes over the network
+
+```
+Set Data → Pack → Network →
+```
+
+#### Processing Messages
+
+When receiving a message:
+1. Unpack the received bytes using `Unpack()`
+2. Get message data using Go structs or individual field operations
+3. Process the data in your application
+
+```
+→ Network → Unpack → Get Data
+```
+
+### Setting Message Data
+
+After defining your specification, you can set message data in two ways: working with individual fields or using Go structs. While individual field access is available, using structs provides a cleaner approach.
+
+#### Using Go Structs (Recommended)
+
+Define a struct that maps your business data to ISO 8583 fields using native Go types and `iso8583` tags:
 
 ```go
-spec := &iso8583.MessageSpec{
-	Fields: map[int]field.Field{
-		0: field.NewString(&field.Spec{
-			Length:      4,
-			Description: "Message Type Indicator",
-			Enc:         encoding.ASCII,
-			Pref:        prefix.ASCII.Fixed,
-		}),
-		1: field.NewBitmap(&field.Spec{
-			Description: "Bitmap",
-			Enc:         encoding.Hex,
-			Pref:        prefix.Hex.Fixed,
-		}),
+type Authorization struct {
+    MTI                  string    `iso8583:"0"`  // Message Type Indicator
+    PrimaryAccountNumber string    `iso8583:"2"`  // PAN
+    ProcessingCode       string    `iso8583:"3"`  // Processing code
+    Amount               int64     `iso8583:"4"`  // Transaction amount
+    STAN                 string    `iso8583:"11"` // System Trace Audit Number
+    LocalTime            string    `iso8583:"12"` // HHmmss
+    LocalDate            string    `iso8583:"13"` // MMDD
+    MerchantType         string    `iso8583:"18"` // Merchant category code
+    AcceptorInfo         *Acceptor `iso8583:"43"` // Merchant details
+}
 
-		// Message fields:
-		2: field.NewString(&field.Spec{
-			Length:      19,
-			Description: "Primary Account Number",
-			Enc:         encoding.ASCII,
-			Pref:        prefix.ASCII.LL,
-		}),
-		3: field.NewNumeric(&field.Spec{
-			Length:      6,
-			Description: "Processing Code",
-			Enc:         encoding.ASCII,
-			Pref:        prefix.ASCII.Fixed,
-			Pad:         padding.Left('0'),
-		}),
-		4: field.NewString(&field.Spec{
-			Length:      12,
-			Description: "Transaction Amount",
-			Enc:         encoding.ASCII,
-			Pref:        prefix.ASCII.Fixed,
-			Pad:         padding.Left('0'),
-		}),
-	},
+type Acceptor struct {
+    Name    string `index:"1"`
+    City    string `index:"2"`
+    Country string `index:"3"`
 }
 ```
 
-The following example creates a full specification with three individual fields (excluding MTI and Bitmap). It differs from the example above, by [showing the expandability of the bitmap field](https://github.com/moov-io/iso8583/blob/5b24f23a5a02206d59baa033ed040f79478b6ecb/field/bitmap.go#L94-L109). This is useful for specs that define both a primary and secondary bitmap.
+Then create and populate your message:
 
 ```go
-spec := &iso8583.MessageSpec{
-	Fields: map[int]field.Field{
-		0: field.NewString(&field.Spec{
-			Length:      4,
-			Description: "Message Type Indicator",
-			Enc:         encoding.ASCII,
-			Pref:        prefix.ASCII.Fixed,
-		}),
-		1: field.NewBitmap(&field.Spec{
-			Description: "Bitmap",
-			Enc:         encoding.Hex,
-			Pref:        prefix.Hex.Fixed,
-		}),
+// Create new message
+msg := iso8583.NewMessage(Spec)
 
-		// Message fields:
-		2: field.NewString(&field.Spec{
-			Length:      19,
-			Description: "Primary Account Number",
-			Enc:         encoding.ASCII,
-			Pref:        prefix.ASCII.LL,
-		}),
-		3: field.NewNumeric(&field.Spec{
-			Length:      6,
-			Description: "Processing Code",
-			Enc:         encoding.ASCII,
-			Pref:        prefix.ASCII.Fixed,
-			Pad:         padding.Left('0'),
-		}),
-		4: field.NewString(&field.Spec{
-			Length:      12,
-			Description: "Transaction Amount",
-			Enc:         encoding.ASCII,
-			Pref:        prefix.ASCII.Fixed,
-			Pad:         padding.Left('0'),
-		}),
-        // Pulled from the 1993 spec
-        67: field.NewNumeric(&field.Spec{
-            Length: 2,
-            Description: "Extended Payment Data",
-            Enc: encoding.ASCII,
-            Pref: prefix.ASCII.Fixed,
-            Pad: padding.Left('0'),
-        }),
-	},
+// Prepare transaction data
+auth := &Authorization{
+    MTI:                  "0100",
+    PrimaryAccountNumber: "4242424242424242",
+    ProcessingCode:       "000000",
+    Amount:               9999,
+    STAN:                 "000123",
+    LocalTime:            "152059",
+    LocalDate:            "0205",
+    MerchantType:         "5411",
+    AcceptorInfo: &Acceptor{
+        Name:    "ACME Store",
+        City:    "New York",
+        Country: "US",
+    },
+}
+
+// Marshal data into message
+err := msg.Marshal(auth)
+if err != nil {
+    panic(err)
+}
+
+// Pack for transmission
+data, err := msg.Pack()
+if err != nil {
+    panic(err)
+}
+// data is ready to be sent
+```
+
+If you want empty values to be included in the message, you can use the `keepzero` option in the `iso8583` field tag:
+
+```go
+type Authorization struct {
+    // ...
+    AdditionalData       string    `iso8583:"48,keepzero"` // Additional data
 }
 ```
 
-### Build and pack the message
+For such fields, the field bit will be set in the bitmap, but the value will be empty. You should set padding for such fields to ensure the field length is correct.
 
-After the specification is defined, you can build a message. Having a binary representation of your message that's packed according to the provided spec lets you send it directly to a payment system!
+#### Working with Individual Fields
 
-Notice in the examples below, you do not need to set the bitmap value manually, as it is automatically generated for you during packing.
+<details>
+<summary>Click to show individual field operations</summary>
 
-#### Setting values of individual fields
-
-If you need to set few fields, you can easily set them using `message.Field(id, string)` or `message.BinaryField(id, []byte)` like this:
+For simple operations, you can set fields directly:
 
 ```go
-// create message with defined spec
-message := NewMessage(spec)
+msg := iso8583.NewMessage(spec)
 
-// set message type indicator at field 0
-message.MTI("0100")
+// Set MTI
+msg.MTI("0100")
 
-// set all message fields you need as strings
+// Set field values as strings
+err := msg.Field(2, "4242424242424242")
+err = msg.Field(3, "000000")
+err = msg.Field(4, "9999")
 
-err := message.Field(2, "4242424242424242")
-// handle error
+// For binary fields
+err = msg.BinaryField(52, []byte{0x1A, 0x2B, 0x3C, 0x4D})
 
-err = message.Field(3, "123456")
-// handle error
-
-err = message.Field(4, "100")
-// handle error
-
-// generate binary representation of the message into rawMessage
-rawMessage, err := message.Pack()
-
-// now you can send rawMessage over the wire
+// Pack for transmission
+data, err := msg.Pack()
 ```
 
-Working with individual fields is limited to two types: `string` or `[]byte`. Underlying field converts the input into its own type. If it fails, then error is returned.
+Note: Individual field operations are limited to string or []byte values. The underlying field handles type conversion.
+</details>
 
-#### Setting values using data struct
+#### Legacy: Using Field Types
 
-Accessing individual fields is handy when you want to get value of one or two fields. When you need to access a lot of them and you want to work with field types, using structs with `message.Marshal(data)` is more convenient.
+<details>
+<summary>Click to show legacy field type usage</summary>
 
-First, you need to define a struct with fields you want to set. Fields should correspond to the spec field types. Here is an example:
+In previous versions, it was common to use package-specific field types. While still supported, we recommend using native Go types instead:
 
 ```go
-// list fields you want to set, add `index` tag with field index or tag (for
-// composite subfields) use the same types from message specification
-type NetworkManagementRequest struct {
-	MTI                  *field.String `index:"0"`
-	TransmissionDateTime *field.String `index:"7"`
-	STAN                 *field.String `index:"11"`
-	InformationCode      *field.String `index:"70"`
+type Authorization struct {
+    MTI         *field.String `index:"0"`
+    PAN         *field.String `index:"2"`
+    Amount      *field.Numeric `index:"4"`
+    LocalTime   *field.String `index:"12"`
 }
 
-message := NewMessage(spec)
-
-// now, pass data with fields into the message
-err := message.Marshal(&NetworkManagementRequest{
-	MTI:                  field.NewStringValue("0800"),
-	TransmissionDateTime: field.NewStringValue(time.Now().UTC().Format("060102150405")),
-	STAN:                 field.NewStringValue("000001"),
-	InformationCode:      field.NewStringValue("001"),
-})
-
-// pack the message and send it to your provider
-requestMessage, err := message.Pack()
-```
-
-### Parse the message and access the data
-
-When you have a binary (packed) message and you know the specification it follows, you can unpack it and access the data. Again, you have two options for data access: access individual fields or populate struct with message field values.
-
-#### Getting values of individual fields
-
-You can access values of individual fields using `message.GetString(id)`, `message.GetBytes(id)` like this:
-
-```go
-message := NewMessage(spec)
-message.Unpack(rawMessage)
-
-mti, err := message.GetMTI() // MTI: 0100
-// handle error
-
-pan, err := message.GetString(2) // Card number: 4242424242424242
-// handle error
-
-processingCode, err := message.GetString(3) // Processing code: 123456
-// handle error
-
-amount, err := message.GetString(4) // Transaction amount: 100
-// handle error
-```
-
-Again, you are limited to a `string` or a `[]byte` types when you get values of individual fields.
-
-#### Getting values using data struct
-
-To get values of multiple fields with their types just pass a pointer to a struct for the data you want into `message.Unmarshal(data)` like this:
-
-```go
-// list fields you want to set, add `index` tag with field index or tag (for
-// composite subfields) use the same types from message specification
-type NetworkManagementRequest struct {
-	MTI                  *field.String `index:"0"`
-	TransmissionDateTime *field.String `index:"7"`
-	STAN                 *field.String `index:"11"`
-	InformationCode      *field.String `index:"70"`
+auth := &Authorization{
+    MTI:       field.NewStringValue("0100"),
+    PAN:       field.NewStringValue("4242424242424242"),
+    Amount:    field.NewNumericValue(9999),
+    LocalTime: field.NewStringValue("152059"),
 }
 
-message := NewMessage(spec)
-// let's unpack binary message
-err := message.Unpack(rawMessage)
-// handle error
+msg.Marshal(auth)
+```
+</details>
 
-// create pointer to empty struct
-data := &NetworkManagementRequest{}
+### Getting Message Data
 
-// get field values into data struct
-err = message.Unmarshal(data)
-// handle error
+When you receive a packed ISO 8583 message, you can unpack and access its data in two ways: using Go structs or accessing individual fields. Using structs provides a cleaner approach to working with message data.
 
-// now you can access field values
-data.MTI.Value() // "0100"
-data.TransmissionDateTime.Value() // "220102103212"
-data.STAN.Value() // "000001"
-data.InformationCode.Value() // "001"
+#### Using Go Structs (Recommended)
+
+Define a struct matching your expected message format using native Go types:
+
+```go
+type Authorization struct {
+    MTI                  string    `iso8583:"0"`  // Message Type Indicator
+    PrimaryAccountNumber string    `iso8583:"2"`  // PAN
+    ProcessingCode       string    `iso8583:"3"`  // Processing code
+    Amount              int64     `iso8583:"4"`  // Transaction amount
+    STAN                string    `iso8583:"11"` // System Trace Audit Number
+    LocalTime           string    `iso8583:"12"` // HHmmss
+    LocalDate           string    `iso8583:"13"` // MMDD
+    MerchantType        string    `iso8583:"18"` // Merchant category code
+    AcceptorInfo        *Acceptor `iso8583:"43"` // Merchant details
+}
+
+type Acceptor struct {
+    Name    string `index:"1"`
+    City    string `index:"2"`
+    Country string `index:"3"`
+}
 ```
 
-For complete code samples please check [./message_test.go](./message_test.go).
+Then unpack and parse your message:
 
-### Inspect message fields
+```go
+// Create message with appropriate spec
+msg := iso8583.NewMessage(specs.Spec87ASCII)
+
+// Unpack received bytes
+err := msg.Unpack(receivedData)
+if err != nil {
+    panic(err)
+}
+
+// Parse into struct
+var auth Authorization
+err = msg.Unmarshal(&auth)
+if err != nil {
+    panic(err)
+}
+
+// Work with parsed data
+fmt.Printf("Transaction amount: %d\n", auth.Amount)
+fmt.Printf("Merchant: %s, %s\n", auth.AcceptorInfo.Name, auth.AcceptorInfo.City)
+
+// Print full message contents (with sensitive data masked)
+iso8583.Describe(msg, os.Stdout)
+```
+
+#### Working with Individual Fields
+
+<details>
+<summary>Click to show individual field operations</summary>
+
+For quick access to specific fields:
+
+```go
+msg := iso8583.NewMessage(spec)
+err := msg.Unpack(receivedData)
+
+// Get MTI
+mti, err := msg.GetMTI()
+
+// Get field values as strings
+pan, err := msg.GetString(2)
+proc, err := msg.GetString(3)
+amount, err := msg.GetString(4)
+
+// Get binary field values
+pinData, err := msg.GetBytes(52)
+```
+
+Note: Individual field access is limited to string or []byte values.
+</details>
+
+#### Legacy: Using Field Types
+
+<details>
+<summary>Click to show legacy field type usage</summary>
+
+Previously, it was common to use package-specific field types. While still supported, we recommend using native Go types instead:
+
+```go
+type LegacyAuthorization struct {
+    MTI         *field.String  `index:"0"`
+    PAN         *field.String  `index:"2"`
+    Amount      *field.Numeric `index:"4"`
+    LocalTime   *field.String  `index:"12"`
+}
+
+var auth LegacyAuthorization
+msg.Unmarshal(&auth)
+
+fmt.Println(auth.MTI.Value())
+fmt.Println(auth.Amount.Value())
+```
+</details>
+
+### Inspecting Message Fields
 
 There is a `Describe` function in the package that displays all message fields
 in a human-readable way. Here is an example of how you can print message fields
@@ -382,17 +503,11 @@ If you want to view unfiltered values, you can use no-op filters `iso8583.DoNotF
 iso8583.Describe(message, os.Stdout, DoNotFilterFields()...)
 ```
 
-### JSON encoding
+### JSON Encoding and Decoding
 
 You can serialize message into JSON format:
 
 ```go
-message := iso8583.NewMessage(spec)
-message.MTI("0100")
-message.Field(2, "4242424242424242")
-message.Field(3, "123456")
-message.Field(4, "100")
-
 jsonMessage, err := json.Marshal(message)
 ```
 
@@ -420,14 +535,21 @@ if err := json.Unmarshal([]byte(input), message); err != nil {
 // access indidual fields or using struct
 ```
 
-### Network Header
+### Sending and Receiving Messages
 
-All messages between the client/server (ISO host and endpoint) have a message
-length header. It can be a 4 bytes ASCII or 2 bytes BCD encoded length. We
-provide a `network.Header` interface to simplify the reading and writing of the
-network header.
+While this package handles message formatting and parsing, for network operations we recommend using our companion package [moov-io/iso8583-connection](https://github.com/moov-io/iso8583-connection). It provides robust client/server communication with features like:
 
-Following network headers are supported:
+- Message sending and receiving
+- Request/response matching
+- Connection management
+- Support for both acquiring and issuing services
+- Testing utilities
+
+#### Network Headers
+
+All messages between the client/server (ISO host and endpoint) have a message length header. It can be a 4 bytes ASCII or 2 bytes BCD encoded length or any other custom header format. We provide a `network.Header` interface to simplify the reading and writing of the network header.
+
+Following network headers implementations are available in [network](./network) package:
 
 * Binary2Bytes - message length encoded in 2 bytes, e.g, {0x00 0x73} for 115
   bytes of the message
@@ -551,9 +673,12 @@ Please, check the example of the JSON spec file [spec87ascii.json](./examples/sp
 
 ## Learn about ISO 8583
 
+- [Mastering ISO 8583 messages with Golang](https://alovak.com/2024/08/15/mastering-iso-8583-messages-with-golang/)
+- [Mastering ISO 8583 Message Networking with Golang](https://alovak.com/2024/08/27/mastering-iso-8583-message-networking-with-golang/)
 - [Intro to ISO 8583](./docs/intro.md)
 - [Message Type Indicator](./docs/mti.md)
 - [Bitmaps](./docs/bitmap.md)
+- [How Tos](./docs/howtos.md)
 - [Data Fields](./docs/data-elements.md)
 - [ISO 8583 Terms and Definitions](https://www.iso.org/obp/ui/#iso:std:iso:8583:-1:ed-1:v1:en)
 
