@@ -1324,6 +1324,7 @@ func TestPackUnpack(t *testing.T) {
 		want := "303130306000000000000000323200"
 
 		rawWant, err := hex.DecodeString(want)
+		require.NoError(t, err)
 
 		msg2Unpack := NewMessage(compositeSpec)
 		err = msg2Unpack.Unpack(rawWant)
