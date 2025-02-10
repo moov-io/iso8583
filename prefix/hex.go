@@ -29,7 +29,7 @@ func (p *hexFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (p *hexFixedPrefixer) DecodeLength(fixLen int, data []byte) (int, int, error) {
+func (p *hexFixedPrefixer) DecodeLength(fixLen int, _ []byte) (int, int, error) {
 	return fixLen, 0, nil
 }
 
@@ -63,7 +63,7 @@ func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error)
 		return 0, 0, fmt.Errorf(notEnoughDataToRead, length, len(data))
 	}
 
-	dataLen, err := strconv.ParseInt(string(data[:length]), 16, p.Digits*8)
+	dataLen, err := strconv.ParseUint(string(data[:length]), 16, p.Digits*8)
 	if err != nil {
 		return 0, 0, err
 	}

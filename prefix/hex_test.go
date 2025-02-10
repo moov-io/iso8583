@@ -114,6 +114,19 @@ func Test_hexVarPrefixer_DecodeLength(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name: "data_length_exceeds_signed_byte",
+			fields: fields{
+				Digits: 1,
+			},
+			args: args{
+				maxLen: 255,
+				data:   []byte("FFzdsadsdasdsdasasdasadadasdasdsafsdgerherhrtherherhwergewrergtertwetwegwhrwehjerjetuery4wtwegwrjerjrejereryereye4y45735u45u45ehe45yy4t34t34y4y43h34h3yh3hgey5jhrtjrjerjnerj45ki45kjtk4e5ue5u5eu545u45j45j45uj45uj45u45u45u45u45jgjgjgfjrtjtjjtrjrtjrtjtrjrthhrew"),
+			},
+			wantDataLen: 0xFF,
+			wantRead:    2,
+			wantErr:     false,
+		},
+		{
 			name: "not_enough_data",
 			fields: fields{
 				Digits: 3,
