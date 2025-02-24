@@ -40,7 +40,7 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 	- [Inspecting message fields](#inspecting-message-fields)
 	- [JSON Encoding and Decoding](#json-encoding-and-decoding)
 - [ISO8583 CLI](#cli)
-- [Learn about ISO 8583](#learn-about-iso-8583)
+- [Learn more](#learn-more)
 - [Getting help](#getting-help)
 - [Contributing](#contributing)
 - [Related projects](#related-projects)
@@ -671,15 +671,16 @@ You can also define your spec in JSON format and describe message using the spec
 Please, check the example of the JSON spec file [spec87ascii.json](./examples/specs/spec87ascii.json).
 
 
-## Learn about ISO 8583
+## Learn more
 
-- [Mastering ISO 8583 messages with Golang](https://alovak.com/2024/08/15/mastering-iso-8583-messages-with-golang/)
-- [Mastering ISO 8583 Message Networking with Golang](https://alovak.com/2024/08/27/mastering-iso-8583-message-networking-with-golang/)
+- [How to Define Composite Fields](./docs/composite-fields.md)
 - [Intro to ISO 8583](./docs/intro.md)
 - [Message Type Indicator](./docs/mti.md)
 - [Bitmaps](./docs/bitmap.md)
 - [How Tos](./docs/howtos.md)
 - [Data Fields](./docs/data-elements.md)
+- [Mastering ISO 8583 messages with Golang](https://alovak.com/2024/08/15/mastering-iso-8583-messages-with-golang/)
+- [Mastering ISO 8583 Message Networking with Golang](https://alovak.com/2024/08/27/mastering-iso-8583-message-networking-with-golang/)
 - [ISO 8583 Terms and Definitions](https://www.iso.org/obp/ui/#iso:std:iso:8583:-1:ed-1:v1:en)
 
 ## Getting help
