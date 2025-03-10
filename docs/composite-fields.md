@@ -150,6 +150,8 @@ With BER-TLV fields:
 
 > **Note:** To work with BerTLV subfields, we suggest using the `encoding.Binary` for the entire field and then use [moov-io/bertlv](https://github.com/moov-io/bertlv) to parse the subfields.
 
+> **Note on subfield order:** When unpacking and then packing non-positional fields, you can get a different output than the input due to the subfields being sorted when packing.
+
 
 ### 4. Nested Composite Fields with Data Set IDs
 
