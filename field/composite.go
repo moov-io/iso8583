@@ -319,6 +319,10 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 	if offset+dataLen > len(data) {
 		return 0, fmt.Errorf("not enough data to unpack, expected: %d, got: %d", offset+dataLen, len(data))
 	}
+
+	if isVariableLength && dataLen == 0 {
+		return offset, nil
+	}
 	// data is stripped of the prefix before it is provided to unpack().
 	// Therefore, it is unaware of when to stop parsing unless we bound the
 	// length of the slice by the data length.
