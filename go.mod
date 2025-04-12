@@ -2,12 +2,12 @@ module github.com/moov-io/iso8583
 
 go 1.23.0
 
-toolchain go1.24.1
+toolchain go1.24.2
 
 require (
 	github.com/stretchr/testify v1.10.0
 	github.com/yerden/go-util v1.1.4
-	golang.org/x/text v0.23.0
+	golang.org/x/text v0.24.0
 )
 
 require (
