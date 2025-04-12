@@ -48,7 +48,7 @@ func (e *lBCDEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 		return nil, 0, fmt.Errorf("not enough data to decode. expected len %d, got %d", read, len(src))
 	}
 
-	_, err := dec.Decode(dst, src)
+	_, err := dec.Decode(dst, src[:read])
 	if err != nil {
 		return nil, 0, utils.NewSafeError(err, "failed to perform BCD decoding")
 	}
