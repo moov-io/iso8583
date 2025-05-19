@@ -50,6 +50,8 @@ type Spec struct {
 	// length of the field you're defining, e.g. Numeric, String, Binary
 	// etc. For Hex fields, the length is defined in terms of the number of
 	// bytes, while the value of the field is hex string.
+	// In case of Composite field, the Length is defined in terms of the number
+	// of bytes in the field value.
 	Length int
 	// Tag sets the tag specification. Only applicable to composite field
 	// types.
