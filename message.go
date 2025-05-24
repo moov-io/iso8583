@@ -427,34 +427,62 @@ func (m *Message) Marshal(v interface{}) error {
 		return errors.New("data is not a struct")
 	}
 
+	return m.marshalStruct(dataStruct)
+}
+
+// marshalStruct is a helper method that handles the core logic of marshaling a struct.
+// It supports anonymous embedded structs by recursively traversing into them when they
+// don't have index tags themselves.
+func (m *Message) marshalStruct(dataStruct reflect.Value) error {
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
-		indexTag := field.NewIndexTag(dataStruct.Type().Field(i))
+		structField := dataStruct.Type().Field(i)
+		indexTag := field.NewIndexTag(structField)
 
-		// skip field without index or if index in tag is not defined
-		if indexTag.ID < 0 {
+		// If the field has an index tag, process it normally
+		if indexTag.ID >= 0 {
+			messageField := m.GetField(indexTag.ID)
+			// if struct field we are using to populate value expects to
+			// set index of the field that is not described by spec
+			if messageField == nil {
+				return fmt.Errorf("no message field defined by spec with index: %d", indexTag.ID)
+			}
+
+			dataField := dataStruct.Field(i)
+			// for non pointer fields we need to check if they are zero
+			// and we want to skip them (as specified in the field tag)
+			if dataField.IsZero() && !indexTag.KeepZero {
+				continue
+			}
+
+			if err := messageField.Marshal(dataField.Interface()); err != nil {
+				return fmt.Errorf("failed to set value to field %d: %w", indexTag.ID, err)
+			}
+
+			m.fieldsMap[indexTag.ID] = struct{}{}
 			continue
 		}
 
-		messageField := m.GetField(indexTag.ID)
-		// if struct field we are usgin to populate value expects to
-		// set index of the field that is not described by spec
-		if messageField == nil {
-			return fmt.Errorf("no message field defined by spec with index: %d", indexTag.ID)
-		}
+		// If it's an anonymous embedded struct without an index tag, traverse into it
+		if structField.Anonymous {
+			fieldValue := dataStruct.Field(i)
 
-		dataField := dataStruct.Field(i)
-		// for non pointer fields we need to check if they are zero
-		// and we want to skip them (as specified in the field tag)
-		if dataField.IsZero() && !indexTag.KeepZero {
-			continue
-		}
+			// Handle pointer and interface types
+			for fieldValue.Kind() == reflect.Ptr || fieldValue.Kind() == reflect.Interface {
+				if fieldValue.IsNil() {
+					break // skip nil embedded structs
+				}
+				fieldValue = fieldValue.Elem()
+			}
 
-		if err := messageField.Marshal(dataField.Interface()); err != nil {
-			return fmt.Errorf("failed to set value to field %d: %w", indexTag.ID, err)
+			if fieldValue.Kind() == reflect.Struct && fieldValue.IsValid() {
+				// Recursively process the embedded struct
+				if err := m.marshalStruct(fieldValue); err != nil {
+					return err
+				}
+			}
 		}
-
-		m.fieldsMap[indexTag.ID] = struct{}{}
+		// Otherwise, skip the field (existing behavior for non-anonymous fields without index tags)
 	}
 
 	return nil
@@ -479,40 +507,76 @@ func (m *Message) Unmarshal(v interface{}) error {
 		return errors.New("data is not a struct")
 	}
 
+	return m.unmarshalStruct(dataStruct)
+}
+
+// unmarshalStruct is a helper method that handles the core logic of unmarshaling into a struct.
+// It supports anonymous embedded structs by recursively traversing into them when they
+// don't have index tags themselves.
+func (m *Message) unmarshalStruct(dataStruct reflect.Value) error {
 	// iterate over struct fields
 	for i := 0; i < dataStruct.NumField(); i++ {
-		indexTag := field.NewIndexTag(dataStruct.Type().Field(i))
-		// skip field without index or if index in tag is not defined
-		if indexTag.ID < 0 {
+		structField := dataStruct.Type().Field(i)
+		indexTag := field.NewIndexTag(structField)
+
+		// If the field has an index tag, process it normally
+		if indexTag.ID >= 0 {
+			// we can get data only if field value is set
+			messageField := m.GetField(indexTag.ID)
+			if messageField == nil {
+				continue
+			}
+
+			if _, set := m.fieldsMap[indexTag.ID]; !set {
+				continue
+			}
+
+			dataField := dataStruct.Field(i)
+			switch dataField.Kind() { //nolint:exhaustive
+			case reflect.Pointer, reflect.Interface, reflect.Slice:
+				if dataField.IsNil() && dataField.Kind() != reflect.Slice {
+					dataField.Set(reflect.New(dataField.Type().Elem()))
+				}
+				err := messageField.Unmarshal(dataField.Interface())
+				if err != nil {
+					return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
+				}
+			default: // Native types
+				err := messageField.Unmarshal(dataField)
+				if err != nil {
+					return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
+				}
+			}
 			continue
 		}
 
-		// we can get data only if field value is set
-		messageField := m.GetField(indexTag.ID)
-		if messageField == nil {
-			continue
-		}
+		// If it's an anonymous embedded struct without an index tag, traverse into it
+		if structField.Anonymous {
+			fieldValue := dataStruct.Field(i)
 
-		if _, set := m.fieldsMap[indexTag.ID]; !set {
-			continue
-		}
+			// Handle pointer and interface types
+			for fieldValue.Kind() == reflect.Ptr || fieldValue.Kind() == reflect.Interface {
+				if fieldValue.IsNil() {
+					// Initialize nil pointer for embedded struct so we can populate it
+					if fieldValue.CanSet() && fieldValue.Kind() == reflect.Ptr {
+						fieldValue.Set(reflect.New(fieldValue.Type().Elem()))
+						fieldValue = fieldValue.Elem()
+						break
+					} else {
+						break // skip nil embedded structs that we can't initialize
+					}
+				}
+				fieldValue = fieldValue.Elem()
+			}
 
-		dataField := dataStruct.Field(i)
-		switch dataField.Kind() { //nolint:exhaustive
-		case reflect.Pointer, reflect.Interface, reflect.Slice:
-			if dataField.IsNil() && dataField.Kind() != reflect.Slice {
-				dataField.Set(reflect.New(dataField.Type().Elem()))
-			}
-			err := messageField.Unmarshal(dataField.Interface())
-			if err != nil {
-				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
-			}
-		default: // Native types
-			err := messageField.Unmarshal(dataField)
-			if err != nil {
-				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
+			if fieldValue.Kind() == reflect.Struct && fieldValue.IsValid() {
+				// Recursively process the embedded struct
+				if err := m.unmarshalStruct(fieldValue); err != nil {
+					return err
+				}
 			}
 		}
+		// Otherwise, skip the field (existing behavior for non-anonymous fields without index tags)
 	}
 
 	return nil
