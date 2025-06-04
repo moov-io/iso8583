@@ -44,6 +44,12 @@ $ git fetch $user
 
 Now, feel free to branch and push (`git push $user $branch`) to your remote and send us Pull Requests!
 
+## Test Changes
+
+Please run `make check` before submitting your changes. This command runs Go tests and applies various linters.
+
+Since we manage linters centrally across all projects, new checks may be introduced at any time. As a result, your PR might fail due to issues unrelated to your specific changes. We appreciate your help in addressing any issues flagged by new linter checks - either as part of your PR or in a separate one.
+
 ## Pull Requests
 
 A good quality PR will have the following characteristics:
@@ -53,7 +59,7 @@ A good quality PR will have the following characteristics:
 * There will be well written commit messages, with well crafted commits that tell the story of the development of this work.
 * Ideally it will be small and easy to understand. Single commit PRs are usually easy to submit, review, and merge.
 * The code contained within will meet the best practices set by the team wherever possible.
-* The code is able to be merged.
+* The code is able to be merged (meaning all CI checks pass)
 * A PR does not end at submission though. A code change is not made until it is merged and used in production.
 
 A good PR should be able to flow through a peer review system easily and quickly.
