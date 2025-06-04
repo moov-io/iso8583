@@ -193,12 +193,18 @@ func (f *Composite) Unmarshal(v interface{}) error {
 
 		dataField := dataStruct.Field(i)
 		switch dataField.Kind() { //nolint:exhaustive
-		case reflect.Pointer, reflect.Interface, reflect.Slice:
-			if dataField.IsNil() && dataField.Kind() != reflect.Slice {
+		case reflect.Pointer, reflect.Interface:
+			if dataField.IsNil() {
 				dataField.Set(reflect.New(dataField.Type().Elem()))
 			}
 
 			err := messageField.Unmarshal(dataField.Interface())
+			if err != nil {
+				return fmt.Errorf("unmarshalling field %s: %w", indexTag.Tag, err)
+			}
+		case reflect.Slice:
+			// Pass reflect.Value for slices so they can be modified
+			err := messageField.Unmarshal(dataField)
 			if err != nil {
 				return fmt.Errorf("unmarshalling field %s: %w", indexTag.Tag, err)
 			}

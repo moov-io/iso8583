@@ -116,6 +116,11 @@ func (f *String) Unmarshal(v interface{}) error {
 			}
 
 			val.SetInt(int64(i))
+		case reflect.Slice:
+			if val.Type().Elem().Kind() != reflect.Uint8 {
+				return fmt.Errorf("can only be unmarshaled into []byte, got %s", val.Type())
+			}
+			val.SetBytes([]byte(f.value))
 		default:
 			return fmt.Errorf("unsupported reflect.Value type: %s", val.Kind())
 		}
