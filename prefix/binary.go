@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -45,6 +46,12 @@ func intToBytes(n int) ([]byte, error) {
 		return nil, fmt.Errorf("negative number: %d", n)
 	}
 	buf := new(bytes.Buffer)
+
+	if n > math.MaxUint32 {
+		return nil, fmt.Errorf("number %d exceeds maximum uint32 value", n)
+	}
+
+	// #nosec G115 -- length is validated above
 	err := binary.Write(buf, binary.BigEndian, uint32(n))
 	if err != nil {
 		return nil, fmt.Errorf("int to bytes: %w", err)

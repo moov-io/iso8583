@@ -10,7 +10,8 @@ import (
 
 var _ Field = (*Bitmap)(nil)
 
-// Bitmap is a 1-indexed big endian bitmap field.
+// Bitmap represents an ISO 8583–style bitmap.
+// Bits are 1-indexed from left to right (ISO bit 1 → MSB of byte 0, ISO bit 8 → LSB of byte 0, and so on).
 type Bitmap struct {
 	spec         *Spec
 	data         []byte
@@ -19,7 +20,8 @@ type Bitmap struct {
 
 const defaultBitmapLength = 8
 
-const firstBitOn = 0b10000000 // big endian
+// first bit of the bitmap
+const firstBitOn = 0b10000000
 
 func NewBitmap(spec *Spec) *Bitmap {
 	length := spec.Length
@@ -195,8 +197,13 @@ func (f *Bitmap) Set(n int) {
 		}
 	}
 
+	bitIndex := n - 1 // convert to 0-indexed
+	byteIndex := bitIndex / 8
+	bitInByte := bitIndex % 8
+	offset := 7 - bitInByte // reverse order for MSB=bit 1 convention (0..7)
+
 	// set bit
-	f.data[(n-1)/8] |= 1 << (uint(7-(n-1)) % 8)
+	f.data[byteIndex] |= (1 << offset)
 }
 
 func (f *Bitmap) IsSet(n int) bool {
@@ -204,7 +211,12 @@ func (f *Bitmap) IsSet(n int) bool {
 		return false
 	}
 
-	return f.data[(n-1)/8]&(1<<(uint(7-(n-1))%8)) != 0
+	bitIndex := n - 1
+	byteIndex := bitIndex / 8
+	bitInByte := bitIndex % 8
+	offset := 7 - bitInByte // reverse order for MSB=bit 1 convention (0..7)
+
+	return f.data[byteIndex]&(1<<offset) != 0
 }
 
 func (f *Bitmap) Len() int {

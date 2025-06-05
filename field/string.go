@@ -192,6 +192,7 @@ func (f *String) Marshal(v interface{}) error {
 			kind = rv.Kind()
 		}
 
+		//nolint:exhaustive
 		switch kind {
 		case reflect.String:
 			f.value = rv.String()
