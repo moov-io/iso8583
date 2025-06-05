@@ -3,6 +3,7 @@ package iso8583
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -2176,8 +2177,48 @@ func TestStructWithTypes(t *testing.T) {
 				Pref:        prefix.ASCII.Fixed,
 				Pad:         padding.Left('0'),
 			}),
+			4: field.NewBinary(&field.Spec{
+				Length:      3,
+				Description: "Binary Data",
+				Enc:         encoding.Binary,
+				Pref:        prefix.Binary.Fixed,
+			}),
 		},
 	}
+
+	t.Run("binary field marshaling and unmarshaling using []byte", func(t *testing.T) {
+		type TestData struct {
+			MTI        string `index:"0"`
+			BinaryData []byte `index:"4"`
+		}
+
+		message := NewMessage(spec)
+		data := &TestData{
+			MTI:        "0100",
+			BinaryData: []byte{0x01, 0x02, 0x03},
+		}
+
+		require.NoError(t, message.Marshal(data))
+
+		f4 := message.GetField(4)
+		require.NotNil(t, f4)
+		bs, err := f4.Bytes()
+		require.NoError(t, err)
+		fmt.Printf("Binary field bytes: %x\n", bs)
+
+		rawMsg, err := message.Pack()
+		require.NoError(t, err)
+
+		// MTI => "0110" and then a 16-byte bitmap with the 4th field set
+		// then Binary Data field with 3 bytes of data
+		expected := []byte{0x30, 0x31, 0x30, 0x30, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x1, 0x2, 0x3}
+		require.Equal(t, expected, rawMsg)
+
+		data = &TestData{}
+		require.NoError(t, message.Unmarshal(data))
+		require.Equal(t, "0100", data.MTI)
+		require.Equal(t, []byte{0x01, 0x02, 0x03}, data.BinaryData)
+	})
 
 	type myString string
 
@@ -2521,8 +2562,6 @@ func TestStructWithTypes(t *testing.T) {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber []byte `index:"2"`
 				}{},
-				isError:     true,
-				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []uint8",
 			},
 			{
 				name: "struct with []byte type with keepzero tag",
@@ -2530,8 +2569,6 @@ func TestStructWithTypes(t *testing.T) {
 					MTI                  string `index:"0"`
 					PrimaryAccountNumber []byte `index:"2,keepzero"`
 				}{},
-				isError:     true,
-				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []uint8",
 			},
 
 			// Tests for *[]byte type
@@ -2562,7 +2599,7 @@ func TestStructWithTypes(t *testing.T) {
 					PrimaryAccountNumber []string `index:"2"`
 				}{},
 				isError:     true,
-				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []string",
+				errorString: "failed to get value from field 2: can only be unmarshaled into []byte, got []string",
 			},
 			{
 				name: "struct with []string type with keepzero tag",
@@ -2571,7 +2608,7 @@ func TestStructWithTypes(t *testing.T) {
 					PrimaryAccountNumber []string `index:"2,keepzero"`
 				}{},
 				isError:     true,
-				errorString: "failed to get value from field 2: unsupported type: expected *String, *string, or reflect.Value, got []string",
+				errorString: "failed to get value from field 2: can only be unmarshaled into []byte, got []string",
 			},
 
 			// Tests for *[]string type
