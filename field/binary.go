@@ -110,6 +110,9 @@ func (f *Binary) Unmarshal(v interface{}) error {
 		case reflect.String:
 			val.SetString(hex.EncodeToString(f.value))
 		case reflect.Slice:
+			if val.Type().Elem().Kind() != reflect.Uint8 {
+				return fmt.Errorf("binary data can only be unmarshaled into []byte, got %s", val.Type())
+			}
 			val.SetBytes(f.value)
 		default:
 			return fmt.Errorf("unsupported reflect.Value type: %s", val.Kind())
