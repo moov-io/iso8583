@@ -43,6 +43,13 @@ func (p *berTLVPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	if dataLen <= 127 {
 		return buf, nil
 	}
+
+	if len(buf) > 127 { // the maximum length of the long form
+		return nil, fmt.Errorf("data length %d exceeds maximum length of 127 bytes to store it", dataLen)
+	}
+
+	// set the most significant bit to indicate that this is a long form
+	// #nosec G115 -- length of `buf` is validated above
 	return append([]byte{setMSB(uint8(len(buf)))}, buf...), nil
 }
 

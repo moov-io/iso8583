@@ -20,6 +20,7 @@ func (h *Binary2Bytes) SetLength(length int) error {
 		return fmt.Errorf("length %d exceeds max length for 2 bytes header %d", length, math.MaxUint16)
 	}
 
+	// #nosec G115 -- length is validated to be within uint16 range above
 	h.Len = uint16(length)
 
 	return nil
