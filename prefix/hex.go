@@ -3,6 +3,7 @@ package prefix
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -68,10 +69,16 @@ func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error)
 		return 0, 0, err
 	}
 
+	if dataLen > math.MaxInt {
+		return 0, 0, fmt.Errorf("data length %d exceeds maximum int value", dataLen)
+	}
+
+	// #nosec G115 -- dataLen is validated to be within MaxInt range above
 	if int(dataLen) > maxLen {
 		return 0, 0, fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
+	// #nosec G115 -- dataLen is validated to be within MaxInt range above
 	return int(dataLen), length, nil
 }
 
