@@ -531,28 +531,58 @@ func (m *Message) unmarshalStruct(dataStruct reflect.Value) error {
 				continue
 			}
 
-		dataField := dataStruct.Field(i)
-		switch dataField.Kind() { //nolint:exhaustive
-		case reflect.Pointer, reflect.Interface:
-			if dataField.IsNil() {
-				dataField.Set(reflect.New(dataField.Type().Elem()))
+			dataField := dataStruct.Field(i)
+			switch dataField.Kind() { //nolint:exhaustive
+			case reflect.Pointer, reflect.Interface:
+				if dataField.IsNil() {
+					dataField.Set(reflect.New(dataField.Type().Elem()))
+				}
+				err := messageField.Unmarshal(dataField.Interface())
+				if err != nil {
+					return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
+				}
+			case reflect.Slice:
+				// Pass reflect.Value for slices so they can be modified
+				err := messageField.Unmarshal(dataField)
+				if err != nil {
+					return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
+				}
+			default: // Native types
+				err := messageField.Unmarshal(dataField)
+				if err != nil {
+					return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
+				}
 			}
-			err := messageField.Unmarshal(dataField.Interface())
-			if err != nil {
-				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
+			continue
+		}
+
+		// If it's an anonymous embedded struct without an index tag, traverse into it
+		if structField.Anonymous {
+			fieldValue := dataStruct.Field(i)
+
+			// Handle pointer and interface types
+			for fieldValue.Kind() == reflect.Ptr || fieldValue.Kind() == reflect.Interface {
+				if fieldValue.IsNil() {
+					// Try to initialize if possible
+					if fieldValue.CanSet() && fieldValue.Kind() == reflect.Ptr {
+						fieldValue.Set(reflect.New(fieldValue.Type().Elem()))
+						fieldValue = fieldValue.Elem()
+					} else {
+						break // skip nil embedded structs that can't be initialized
+					}
+				} else {
+					fieldValue = fieldValue.Elem()
+				}
 			}
-		case reflect.Slice:
-			// Pass reflect.Value for slices so they can be modified
-			err := messageField.Unmarshal(dataField)
-			if err != nil {
-				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
-			}
-		default: // Native types
-			err := messageField.Unmarshal(dataField)
-			if err != nil {
-				return fmt.Errorf("failed to get value from field %d: %w", indexTag.ID, err)
+
+			if fieldValue.Kind() == reflect.Struct && fieldValue.IsValid() {
+				// Recursively process the embedded struct
+				if err := m.unmarshalStruct(fieldValue); err != nil {
+					return err
+				}
 			}
 		}
+		// Otherwise, skip the field (existing behavior for non-anonymous fields without index tags)
 	}
 
 	return nil
