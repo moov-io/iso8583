@@ -3196,4 +3196,94 @@ func TestAnonymousEmbeddedStructSupport(t *testing.T) {
 		require.Equal(t, originalData.PINData, newData.PINData)
 		require.Equal(t, originalData.EmvData, newData.EmvData)
 	})
+
+	t.Run("Anonymous embedded struct with binary data fields", func(t *testing.T) {
+		// Create a spec that includes a binary field similar to the upstream test
+		specWithBinary := &MessageSpec{
+			Fields: map[int]field.Field{
+				0: field.NewString(&field.Spec{
+					Length:      4,
+					Description: "Message Type Indicator",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				1: field.NewBitmap(&field.Spec{
+					Description: "Bitmap",
+					Enc:         encoding.BytesToASCIIHex,
+					Pref:        prefix.Hex.Fixed,
+				}),
+				4: field.NewBinary(&field.Spec{
+					Length:      3,
+					Description: "Binary Data",
+					Enc:         encoding.Binary,
+					Pref:        prefix.Binary.Fixed,
+				}),
+				70: field.NewString(&field.Spec{
+					Length:      3,
+					Description: "Network Management Information Code",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+			},
+		}
+
+		type SecurityData struct {
+			PINData    string `index:"70"`
+			BinaryData []byte `index:"4"` // This tests the binary data fix with anonymous embedded structs
+		}
+
+		type TransactionData struct {
+			MTI          string `index:"0"`
+			SecurityData        // Anonymous embedded struct
+		}
+
+		originalData := &TransactionData{
+			MTI: "0100",
+			SecurityData: SecurityData{
+				PINData:    "PIN",
+				BinaryData: []byte{0x01, 0x02, 0x03}, // Same test data as upstream binary test
+			},
+		}
+
+		// Test Marshal
+		message := NewMessage(specWithBinary)
+		err := message.Marshal(originalData)
+		require.NoError(t, err)
+
+		// Verify the embedded struct's binary field was set correctly
+		f4 := message.GetField(4)
+		require.NotNil(t, f4)
+		bs, err := f4.Bytes()
+		require.NoError(t, err)
+		require.Equal(t, []byte{0x01, 0x02, 0x03}, bs)
+
+		// Verify the embedded struct field was set correctly
+		pin, err := message.GetString(70)
+		require.NoError(t, err)
+		require.Equal(t, "PIN", pin)
+
+		// Test full round trip: Pack -> Unpack -> Unmarshal
+		packed, err := message.Pack()
+		require.NoError(t, err)
+
+		// Unpack into new message
+		message2 := NewMessage(specWithBinary)
+		err = message2.Unpack(packed)
+		require.NoError(t, err)
+
+		// Unmarshal into new struct
+		newData := &TransactionData{}
+		err = message2.Unmarshal(newData)
+		require.NoError(t, err)
+
+		// Verify data integrity for both binary and embedded struct fields
+		require.Equal(t, originalData.MTI, newData.MTI)
+		require.Equal(t, originalData.BinaryData, newData.BinaryData) // Binary data should be preserved
+		require.Equal(t, originalData.PINData, newData.PINData)       // Embedded struct field should be preserved
+
+		// Additional verification: check the raw packed message format
+		// The packed message should start with MTI "0100"
+		require.True(t, len(packed) >= 4)
+		require.Equal(t, []byte("0100"), packed[:4]) // MTI
+	})
 }
