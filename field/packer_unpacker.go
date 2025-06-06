@@ -97,7 +97,7 @@ func (p Track2Unpacker) Unpack(packedFieldValue []byte, spec *Spec) ([]byte, int
 	}
 
 	// decode the value
-	value, read, err := spec.Enc.Decode(packedFieldValue[prefBytes:], valueLength)
+	value, read, err := spec.Enc.Decode(packedFieldValue[prefBytes:], valueLength/2)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to decode content: %w", err)
 	}
