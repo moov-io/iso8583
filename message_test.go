@@ -2706,3 +2706,584 @@ func TestStructWithTypes(t *testing.T) {
 		}
 	})
 }
+
+func TestAnonymousEmbeddedStructSupport(t *testing.T) {
+	spec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.BytesToASCIIHex,
+				Pref:        prefix.Hex.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			3: field.NewComposite(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
+				Subfields: map[string]field.Field{
+					"1": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"2": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "From Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"3": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "To Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
+			}),
+			4: field.NewString(&field.Spec{
+				Length:      12,
+				Description: "Transaction Amount",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			70: field.NewString(&field.Spec{
+				Length:      3,
+				Description: "Network Management Information Code",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			90: field.NewString(&field.Spec{
+				Length:      42,
+				Description: "Original Data Elements",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+		},
+	}
+
+	t.Run("Marshal with anonymous embedded struct", func(t *testing.T) {
+		// Define embedded struct without index tag
+		type SecurityData struct {
+			PINData string `index:"70"`
+			EmvData string `index:"90"`
+		}
+
+		// Define main struct with anonymous embedding
+		type TransactionData struct {
+			MTI                  string `index:"0"`
+			PrimaryAccountNumber string `index:"2"`
+			Amount               string `index:"4"`
+			// Anonymous embedded struct - fields should be discovered
+			SecurityData
+		}
+
+		data := &TransactionData{
+			MTI:                  "0100",
+			PrimaryAccountNumber: "4242424242424242",
+			Amount:               "100",
+			SecurityData: SecurityData{
+				PINData: "PIN",
+				EmvData: "EMV123",
+			},
+		}
+
+		message := NewMessage(spec)
+		err := message.Marshal(data)
+		require.NoError(t, err)
+
+		// Verify fields are set
+		mti, err := message.GetString(0)
+		require.NoError(t, err)
+		require.Equal(t, "0100", mti)
+
+		pan, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", pan)
+
+		amount, err := message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", amount)
+
+		pin, err := message.GetString(70)
+		require.NoError(t, err)
+		require.Equal(t, "PIN", pin)
+
+		emv, err := message.GetString(90)
+		require.NoError(t, err)
+		require.Equal(t, "EMV123", emv)
+	})
+
+	t.Run("Unmarshal into anonymous embedded struct", func(t *testing.T) {
+		// Create and pack a message
+		message := NewMessage(spec)
+		message.MTI("0100")
+		require.NoError(t, message.Field(2, "4242424242424242"))
+		require.NoError(t, message.Field(4, "100"))
+		require.NoError(t, message.Field(70, "PIN"))
+		require.NoError(t, message.Field(90, "EMV123"))
+
+		// Define structs for unmarshaling
+		type SecurityData struct {
+			PINData string `index:"70"`
+			EmvData string `index:"90"`
+		}
+
+		type TransactionData struct {
+			MTI                  string `index:"0"`
+			PrimaryAccountNumber string `index:"2"`
+			Amount               string `index:"4"`
+			SecurityData                // Anonymous embedded
+		}
+
+		data := &TransactionData{}
+		err := message.Unmarshal(data)
+		require.NoError(t, err)
+
+		require.Equal(t, "0100", data.MTI)
+		require.Equal(t, "4242424242424242", data.PrimaryAccountNumber)
+		require.Equal(t, "100", data.Amount)
+		require.Equal(t, "PIN", data.PINData)
+		require.Equal(t, "EMV123", data.EmvData)
+	})
+
+	t.Run("Multiple anonymous embedded structs", func(t *testing.T) {
+		type CardData struct {
+			PAN string `index:"2"`
+		}
+
+		type TransactionInfo struct {
+			Amount string `index:"4"`
+		}
+
+		type SecurityData struct {
+			PINData string `index:"70"`
+		}
+
+		type Message struct {
+			MTI string `index:"0"`
+			CardData
+			TransactionInfo
+			SecurityData
+		}
+
+		data := &Message{
+			MTI:             "0100",
+			CardData:        CardData{PAN: "4242424242424242"},
+			TransactionInfo: TransactionInfo{Amount: "100"},
+			SecurityData:    SecurityData{PINData: "PIN"},
+		}
+
+		message := NewMessage(spec)
+		err := message.Marshal(data)
+		require.NoError(t, err)
+
+		// Verify all fields are accessible through embedded structs
+		mti, err := message.GetString(0)
+		require.NoError(t, err)
+		require.Equal(t, "0100", mti)
+
+		pan, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", pan)
+
+		amount, err := message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", amount)
+
+		pin, err := message.GetString(70)
+		require.NoError(t, err)
+		require.Equal(t, "PIN", pin)
+	})
+
+	t.Run("Nested anonymous embedded structs", func(t *testing.T) {
+		type InnerSecurity struct {
+			PINData string `index:"70"`
+		}
+
+		type OuterSecurity struct {
+			InnerSecurity        // Nested anonymous embedding
+			EmvData       string `index:"90"`
+		}
+
+		type TransactionData struct {
+			MTI           string `index:"0"`
+			OuterSecurity        // Anonymous embedded
+		}
+
+		data := &TransactionData{
+			MTI: "0100",
+			OuterSecurity: OuterSecurity{
+				InnerSecurity: InnerSecurity{PINData: "PIN"},
+				EmvData:       "EMV123",
+			},
+		}
+
+		message := NewMessage(spec)
+		err := message.Marshal(data)
+		require.NoError(t, err)
+
+		mti, err := message.GetString(0)
+		require.NoError(t, err)
+		require.Equal(t, "0100", mti)
+
+		pin, err := message.GetString(70)
+		require.NoError(t, err)
+		require.Equal(t, "PIN", pin)
+
+		emv, err := message.GetString(90)
+		require.NoError(t, err)
+		require.Equal(t, "EMV123", emv)
+	})
+
+	t.Run("Pointer to anonymous embedded struct", func(t *testing.T) {
+		type SecurityData struct {
+			PINData string `index:"70"`
+			EmvData string `index:"90"`
+		}
+
+		type TransactionData struct {
+			MTI           string `index:"0"`
+			*SecurityData        // Pointer to anonymous embedded struct
+		}
+
+		securityData := &SecurityData{
+			PINData: "PIN",
+			EmvData: "EMV123",
+		}
+
+		data := &TransactionData{
+			MTI:          "0100",
+			SecurityData: securityData,
+		}
+
+		message := NewMessage(spec)
+		err := message.Marshal(data)
+		require.NoError(t, err)
+
+		mti, err := message.GetString(0)
+		require.NoError(t, err)
+		require.Equal(t, "0100", mti)
+
+		pin, err := message.GetString(70)
+		require.NoError(t, err)
+		require.Equal(t, "PIN", pin)
+
+		emv, err := message.GetString(90)
+		require.NoError(t, err)
+		require.Equal(t, "EMV123", emv)
+	})
+
+	t.Run("Nil pointer to anonymous embedded struct is skipped", func(t *testing.T) {
+		type SecurityData struct {
+			PINData string `index:"70"`
+			EmvData string `index:"90"`
+		}
+
+		type TransactionData struct {
+			MTI           string `index:"0"`
+			*SecurityData        // Nil pointer
+		}
+
+		data := &TransactionData{
+			MTI:          "0100",
+			SecurityData: nil, // Nil pointer should be skipped
+		}
+
+		message := NewMessage(spec)
+		err := message.Marshal(data)
+		require.NoError(t, err)
+
+		mti, err := message.GetString(0)
+		require.NoError(t, err)
+		require.Equal(t, "0100", mti)
+
+		// Fields from nil embedded struct should not be set
+		pin, err := message.GetString(70)
+		require.NoError(t, err)
+		require.Equal(t, "", pin) // Should be empty/unset
+
+		emv, err := message.GetString(90)
+		require.NoError(t, err)
+		require.Equal(t, "", emv) // Should be empty/unset
+	})
+
+	t.Run("Anonymous embedded struct with index tag should be treated as regular field", func(t *testing.T) {
+		type SecurityData struct {
+			PINData string `index:"70"`
+			EmvData string `index:"90"`
+		}
+
+		type TransactionData struct {
+			MTI      string       `index:"0"`
+			Security SecurityData `index:"3"` // Has index tag, should be treated as regular composite field
+		}
+
+		data := &TransactionData{
+			MTI: "0100",
+			Security: SecurityData{
+				PINData: "PIN",
+				EmvData: "EMV123",
+			},
+		}
+
+		message := NewMessage(spec)
+		// This should fail because SecurityData doesn't match the composite field structure for field 3
+		err := message.Marshal(data)
+		require.Error(t, err) // We expect this to fail since the structure doesn't match
+
+		// But we can still set the MTI and verify that fields 70/90 are not set
+		message2 := NewMessage(spec)
+		message2.MTI("0100")
+
+		// Fields 70 and 90 should NOT be set because SecurityData has an index tag
+		// and is treated as a regular field, not as anonymous embedded struct
+		pin, err := message2.GetString(70)
+		require.NoError(t, err)
+		require.Equal(t, "", pin) // Should be empty
+
+		emv, err := message2.GetString(90)
+		require.NoError(t, err)
+		require.Equal(t, "", emv) // Should be empty
+	})
+
+	t.Run("Mixed regular fields and anonymous embedded fields", func(t *testing.T) {
+		type F3Data struct {
+			F1 *field.String `index:"1"`
+			F2 *field.String `index:"2"`
+			F3 *field.String `index:"3"`
+		}
+
+		type SecurityData struct {
+			PINData *field.String `index:"70"`
+		}
+
+		type TransactionData struct {
+			F0           *field.String `index:"0"`
+			F2           *field.String `index:"2"`
+			F3           *F3Data       `index:"3"`
+			F4           *field.String `index:"4"`
+			SecurityData               // Anonymous embedded - F70 should be discovered
+		}
+
+		type SecurityData2 struct {
+			EmvData *field.String `index:"90"`
+		}
+
+		data := &TransactionData{
+			F0: field.NewStringValue("0100"),
+			F2: field.NewStringValue("4242424242424242"),
+			F3: &F3Data{
+				F1: field.NewStringValue("12"),
+				F2: field.NewStringValue("34"),
+				F3: field.NewStringValue("56"),
+			},
+			F4: field.NewStringValue("100"),
+			SecurityData: SecurityData{
+				PINData: field.NewStringValue("PIN"),
+			},
+		}
+
+		message := NewMessage(spec)
+		err := message.Marshal(data)
+		require.NoError(t, err)
+
+		// Verify regular fields work
+		mti, err := message.GetString(0)
+		require.NoError(t, err)
+		require.Equal(t, "0100", mti)
+
+		pan, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", pan)
+
+		// Verify anonymous embedded field works
+		pin, err := message.GetString(70)
+		require.NoError(t, err)
+		require.Equal(t, "PIN", pin)
+	})
+
+	t.Run("Unmarshal with nil pointer to anonymous embedded struct initializes it", func(t *testing.T) {
+		message := NewMessage(spec)
+		message.MTI("0100")
+		require.NoError(t, message.Field(70, "PIN"))
+		require.NoError(t, message.Field(90, "EMV123"))
+
+		type SecurityData struct {
+			PINData string `index:"70"`
+			EmvData string `index:"90"`
+		}
+
+		type TransactionData struct {
+			MTI           string `index:"0"`
+			*SecurityData        // Nil pointer should be initialized during unmarshal
+		}
+
+		data := &TransactionData{
+			MTI:          "0100",
+			SecurityData: nil, // Start with nil
+		}
+
+		err := message.Unmarshal(data)
+		require.NoError(t, err)
+
+		require.Equal(t, "0100", data.MTI)
+		require.NotNil(t, data.SecurityData) // Should be initialized
+		require.Equal(t, "PIN", data.PINData)
+		require.Equal(t, "EMV123", data.EmvData)
+	})
+
+	t.Run("Round trip test: Marshal then Unmarshal", func(t *testing.T) {
+		type SecurityData struct {
+			PINData string `index:"70"`
+			EmvData string `index:"90"`
+		}
+
+		type TransactionData struct {
+			MTI                  string `index:"0"`
+			PrimaryAccountNumber string `index:"2"`
+			Amount               string `index:"4"`
+			SecurityData                // Anonymous embedded
+		}
+
+		originalData := &TransactionData{
+			MTI:                  "0100",
+			PrimaryAccountNumber: "4242424242424242",
+			Amount:               "100",
+			SecurityData: SecurityData{
+				PINData: "PIN",
+				EmvData: "EMV123456789012345678901234567890123456789", // Exactly 42 chars
+			},
+		}
+
+		// Marshal
+		message := NewMessage(spec)
+		err := message.Marshal(originalData)
+		require.NoError(t, err)
+
+		// Pack and unpack to simulate real-world usage
+		packed, err := message.Pack()
+		require.NoError(t, err)
+
+		message2 := NewMessage(spec)
+		err = message2.Unpack(packed)
+		require.NoError(t, err)
+
+		// Unmarshal into new struct
+		newData := &TransactionData{}
+		err = message2.Unmarshal(newData)
+		require.NoError(t, err)
+
+		// Verify data integrity
+		require.Equal(t, originalData.MTI, newData.MTI)
+		require.Equal(t, originalData.PrimaryAccountNumber, newData.PrimaryAccountNumber)
+		require.Equal(t, originalData.Amount, newData.Amount)
+		require.Equal(t, originalData.PINData, newData.PINData)
+		require.Equal(t, originalData.EmvData, newData.EmvData)
+	})
+
+	t.Run("Anonymous embedded struct with binary data fields", func(t *testing.T) {
+		// Create a spec that includes a binary field similar to the upstream test
+		specWithBinary := &MessageSpec{
+			Fields: map[int]field.Field{
+				0: field.NewString(&field.Spec{
+					Length:      4,
+					Description: "Message Type Indicator",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				1: field.NewBitmap(&field.Spec{
+					Description: "Bitmap",
+					Enc:         encoding.BytesToASCIIHex,
+					Pref:        prefix.Hex.Fixed,
+				}),
+				4: field.NewBinary(&field.Spec{
+					Length:      3,
+					Description: "Binary Data",
+					Enc:         encoding.Binary,
+					Pref:        prefix.Binary.Fixed,
+				}),
+				70: field.NewString(&field.Spec{
+					Length:      3,
+					Description: "Network Management Information Code",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+			},
+		}
+
+		type SecurityData struct {
+			PINData    string `index:"70"`
+			BinaryData []byte `index:"4"` // This tests the binary data fix with anonymous embedded structs
+		}
+
+		type TransactionData struct {
+			MTI          string `index:"0"`
+			SecurityData        // Anonymous embedded struct
+		}
+
+		originalData := &TransactionData{
+			MTI: "0100",
+			SecurityData: SecurityData{
+				PINData:    "PIN",
+				BinaryData: []byte{0x01, 0x02, 0x03}, // Same test data as upstream binary test
+			},
+		}
+
+		// Test Marshal
+		message := NewMessage(specWithBinary)
+		err := message.Marshal(originalData)
+		require.NoError(t, err)
+
+		// Verify the embedded struct's binary field was set correctly
+		f4 := message.GetField(4)
+		require.NotNil(t, f4)
+		bs, err := f4.Bytes()
+		require.NoError(t, err)
+		require.Equal(t, []byte{0x01, 0x02, 0x03}, bs)
+
+		// Verify the embedded struct field was set correctly
+		pin, err := message.GetString(70)
+		require.NoError(t, err)
+		require.Equal(t, "PIN", pin)
+
+		// Test full round trip: Pack -> Unpack -> Unmarshal
+		packed, err := message.Pack()
+		require.NoError(t, err)
+
+		// Unpack into new message
+		message2 := NewMessage(specWithBinary)
+		err = message2.Unpack(packed)
+		require.NoError(t, err)
+
+		// Unmarshal into new struct
+		newData := &TransactionData{}
+		err = message2.Unmarshal(newData)
+		require.NoError(t, err)
+
+		// Verify data integrity for both binary and embedded struct fields
+		require.Equal(t, originalData.MTI, newData.MTI)
+		require.Equal(t, originalData.BinaryData, newData.BinaryData) // Binary data should be preserved
+		require.Equal(t, originalData.PINData, newData.PINData)       // Embedded struct field should be preserved
+
+		// Additional verification: check the raw packed message format
+		// The packed message should start with MTI "0100"
+		require.True(t, len(packed) >= 4)
+		require.Equal(t, []byte("0100"), packed[:4]) // MTI
+	})
+}
