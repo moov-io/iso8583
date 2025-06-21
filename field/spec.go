@@ -75,7 +75,8 @@ type Spec struct {
 	// which indicates the presence of an additional bitmap.
 	// When automatic expansion is disabled, bits set beyond the bitmap range
 	// will be disregarded, and the size of the bitmap will not change when
-	// the first bit is set.
+	// the first bit is set. This field is only applicable to the spec of a
+	// Bitmap field type.
 	DisableAutoExpand bool
 	// Bitmap defines a bitmap field that is used only by a composite field
 	// type. It defines the way that the composite will determine its
