@@ -131,7 +131,13 @@ func (f *Binary) Unmarshal(v interface{}) error {
 }
 
 func (f *Binary) Marshal(v interface{}) error {
-	if v == nil || reflect.ValueOf(v).IsZero() {
+	if v == nil {
+		f.value = nil
+		return nil
+	}
+
+	rv := reflect.ValueOf(v)
+	if rv.IsZero() {
 		f.value = nil
 		return nil
 	}
@@ -158,7 +164,24 @@ func (f *Binary) Marshal(v interface{}) error {
 	case *[]byte:
 		f.SetBytes(*v)
 	default:
-		return fmt.Errorf("data does not match required *Binary or (string, *string, []byte, *[]byte) type")
+		kind := rv.Kind()
+		if kind == reflect.Ptr {
+			rv = rv.Elem()
+			kind = rv.Kind()
+		}
+
+		//nolint:exhaustive
+		switch kind {
+		case reflect.String:
+			buf, err := hex.DecodeString(rv.String())
+			if err != nil {
+				return fmt.Errorf("failed to convert string to byte: %w", err)
+			}
+
+			f.value = buf
+		default:
+			return fmt.Errorf("data does not match required *Binary or (string, *string, []byte, *[]byte) type")
+		}
 	}
 
 	return nil
