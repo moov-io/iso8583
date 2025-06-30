@@ -2279,6 +2279,17 @@ func TestStructWithTypes(t *testing.T) {
 				},
 				expectedPackedString: "011040000000000000000000000000000000164242424242424242",
 			},
+			{
+				name: "struct with named string type and value set on a binary field",
+				input: struct {
+					MTI        myString `index:"0"`
+					BinaryData myString `index:"4"`
+				}{
+					MTI:        "0110",
+					BinaryData: myString("313233"), // "123" in Hex
+				},
+				expectedPackedString: "011010000000000000000000000000000000123",
+			},
 
 			// Tests for *string type
 			{
