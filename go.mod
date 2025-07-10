@@ -7,7 +7,7 @@ toolchain go1.24.5
 require (
 	github.com/stretchr/testify v1.10.0
 	github.com/yerden/go-util v1.1.4
-	golang.org/x/text v0.26.0
+	golang.org/x/text v0.27.0
 )
 
 require (
