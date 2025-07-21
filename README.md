@@ -149,7 +149,7 @@ The [setup-go](https://github.com/actions/setup-go) action automatically manages
 
 #### What does this mean for you?
 
-Whenever a new version of Go is released, we will update our systems and ensure that our project remains fully compatible with it. At the same time, we will continue to support the previous version. However, once a new version is released, the 'previous previous' version will no longer be officially supported. 
+Whenever a new version of Go is released, we will update our systems and ensure that our project remains fully compatible with it. At the same time, we will continue to support the previous version. However, once a new version is released, the 'previous' version will no longer be officially supported. 
 
 #### Continuous integration
 
@@ -532,7 +532,7 @@ if err := json.Unmarshal([]byte(input), message); err != nil {
     // handle err
 }
 
-// access indidual fields or using struct
+// access individual fields or using struct
 ```
 
 ### Sending and Receiving Messages
