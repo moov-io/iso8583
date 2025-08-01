@@ -39,12 +39,14 @@ func TestBerTLVPrefixer(t *testing.T) {
 
 	t.Run("when maxLen is set EncodeLength returns error if length is larger than maxLen", func(t *testing.T) {
 		_, err := BerTLV.EncodeLength(2, 3)
-		require.EqualError(t, err, "field length: 3 is larger than maximum: 2")
+		require.EqualError(t, err, "data length: 3 is larger than maximum: 2")
+		require.True(t, IsLengthError(err), "error should be a length error")
 	})
 
 	t.Run("when maxLen is set DecodeLength returns error if length is larger than maxLen", func(t *testing.T) {
 		_, _, err := BerTLV.DecodeLength(2, []byte{0b10000010, 0b11111110, 0b00001111})
-		require.EqualError(t, err, "field length: 65039 is larger than maximum: 2")
+		require.EqualError(t, err, "data length: 65039 is larger than maximum: 2")
+		require.True(t, IsLengthError(err), "error should be a length error")
 	})
 }
 
