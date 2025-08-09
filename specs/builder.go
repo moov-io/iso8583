@@ -70,6 +70,7 @@ var (
 		"ASCIIToHex": encoding.ASCIIHexToBytes,
 		"LBCD":       encoding.LBCD,
 		"BerTLVTag":  encoding.BerTLVTag,
+		"Track2BCD":  encoding.Track2BCD,
 	}
 
 	EncodingsIntToExt = map[string]string{
@@ -80,6 +81,7 @@ var (
 		"hexToASCIIEncoder": "HexToASCII",
 		"asciiToHexEncoder": "ASCIIToHex",
 		"lBCDEncoder":       "LBCD",
+		"track2BcdEncoder":  "Track2BCD",
 	}
 
 	PaddersIntToExt = map[string]string{
