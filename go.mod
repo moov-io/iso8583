@@ -2,7 +2,7 @@ module github.com/moov-io/iso8583
 
 go 1.23.0
 
-toolchain go1.24.6
+toolchain go1.25.0
 
 require (
 	github.com/stretchr/testify v1.10.0
