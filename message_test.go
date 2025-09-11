@@ -3298,3 +3298,358 @@ func TestAnonymousEmbeddedStructSupport(t *testing.T) {
 		require.Equal(t, []byte("0100"), packed[:4]) // MTI
 	})
 }
+
+func TestMessage_SetField(t *testing.T) {
+	spec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.BytesToASCIIHex,
+				Pref:        prefix.Hex.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			3: field.NewComposite(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
+				Subfields: map[string]field.Field{
+					"1": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"2": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "From Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"3": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "To Account",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+				},
+			}),
+			4: field.NewString(&field.Spec{
+				Length:      12,
+				Description: "Transaction Amount",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			5: field.NewComposite(&field.Spec{
+				Length:      20,
+				Description: "Nested Composite",
+				Pref:        prefix.ASCII.Fixed,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
+				Subfields: map[string]field.Field{
+					"1": field.NewComposite(&field.Spec{
+						Length:      10,
+						Description: "Sub-Composite",
+						Pref:        prefix.ASCII.Fixed,
+						Tag: &field.TagSpec{
+							Sort: sort.StringsByInt,
+						},
+						Subfields: map[string]field.Field{
+							"1": field.NewString(&field.Spec{
+								Length:      3,
+								Description: "Nested String",
+								Enc:         encoding.ASCII,
+								Pref:        prefix.ASCII.Fixed,
+							}),
+						},
+					}),
+				},
+			}),
+		},
+	}
+
+	t.Run("Set simple field successfully", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		// Set a simple field
+		err := message.SetField("2", "4242424242424242")
+		require.NoError(t, err)
+
+		// Verify the field was set
+		value, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", value)
+
+		// Verify the field is marked as set
+		fields := message.GetFields()
+		require.Contains(t, fields, 2)
+	})
+
+	t.Run("Set composite subfield successfully", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		// Set composite subfields using dot notation
+		err := message.SetField("3.1", "12")
+		require.NoError(t, err)
+
+		err = message.SetField("3.2", "34")
+		require.NoError(t, err)
+
+		err = message.SetField("3.3", "56")
+		require.NoError(t, err)
+
+		// Verify the composite field was set
+		value, err := message.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "123456", value)
+
+		// Verify the field is marked as set
+		fields := message.GetFields()
+		require.Contains(t, fields, 3)
+	})
+
+	t.Run("Set nested composite subfield successfully", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		// Set a deeply nested subfield
+		err := message.SetField("5.1.1", "XYZ")
+		require.NoError(t, err)
+
+		// Verify the field was set
+		fields := message.GetFields()
+		require.Contains(t, fields, 5)
+
+		// Verify the nested structure
+		composite, ok := fields[5].(*field.Composite)
+		require.True(t, ok)
+
+		subfields := composite.GetSubfields()
+		require.Contains(t, subfields, "1")
+
+		nestedComposite, ok := subfields["1"].(*field.Composite)
+		require.True(t, ok)
+
+		nestedSubfields := nestedComposite.GetSubfields()
+		require.Contains(t, nestedSubfields, "1")
+
+		value, err := nestedSubfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "XYZ", value)
+	})
+
+	t.Run("Error: empty field path", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		err := message.SetField("", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "field path cannot be empty")
+	})
+
+	t.Run("Error: invalid field ID", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		err := message.SetField("invalid", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid field ID 'invalid'")
+	})
+
+	t.Run("Error: non-existent field", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		err := message.SetField("99", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "field 99 does not exist")
+	})
+
+	t.Run("Error: subfield on non-composite field", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		// Field 2 is a simple string field, not a composite
+		err := message.SetField("2.1", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "field 2 is not a composite field and cannot have subfields")
+	})
+
+	t.Run("Error: non-existent subfield in composite", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		// Field 3 is composite but doesn't have subfield "99"
+		err := message.SetField("3.99", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "subfield 99 does not exist")
+	})
+
+	t.Run("Overwrite existing field value", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		// Set initial value
+		err := message.SetField("2", "1111222233334444")
+		require.NoError(t, err)
+
+		// Verify initial value
+		value, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "1111222233334444", value)
+
+		// Overwrite with new value
+		err = message.SetField("2", "4242424242424242")
+		require.NoError(t, err)
+
+		// Verify new value
+		value, err = message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", value)
+	})
+
+	t.Run("Pack and unpack with SetField", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		// Set values using SetField
+		message.MTI("0100")
+		err := message.SetField("2", "4242424242424242")
+		require.NoError(t, err)
+
+		err = message.SetField("3.1", "12")
+		require.NoError(t, err)
+
+		err = message.SetField("3.2", "34")
+		require.NoError(t, err)
+
+		err = message.SetField("3.3", "56")
+		require.NoError(t, err)
+
+		err = message.SetField("4", "100")
+		require.NoError(t, err)
+
+		// Pack the message
+		packed, err := message.Pack()
+		require.NoError(t, err)
+
+		// Create a new message and unpack
+		newMessage := NewMessage(spec)
+		err = newMessage.Unpack(packed)
+		require.NoError(t, err)
+
+		// Verify the unpacked values
+		mti, err := newMessage.GetMTI()
+		require.NoError(t, err)
+		require.Equal(t, "0100", mti)
+
+		pan, err := newMessage.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", pan)
+
+		processingCode, err := newMessage.GetString(3)
+		require.NoError(t, err)
+		require.Equal(t, "123456", processingCode)
+
+		amount, err := newMessage.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", amount)
+	})
+
+	t.Run("Concurrent access to SetField", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		var wg sync.WaitGroup
+
+		// Test concurrent setting of different fields
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := message.SetField("2", "4242424242424242")
+			require.NoError(t, err)
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := message.SetField("4", "100")
+			require.NoError(t, err)
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := message.SetField("3.1", "12")
+			require.NoError(t, err)
+		}()
+
+		wg.Wait()
+
+		// Verify all fields were set
+		fields := message.GetFields()
+		require.Contains(t, fields, 2)
+		require.Contains(t, fields, 3)
+		require.Contains(t, fields, 4)
+
+		pan, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242424242424242", pan)
+
+		amount, err := message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "100", amount)
+	})
+
+	t.Run("SetField marks field as set", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		// Initially no fields should be set
+		fields := message.GetFields()
+		require.Len(t, fields, 0)
+
+		// Set a field using SetField
+		err := message.SetField("2", "4242424242424242")
+		require.NoError(t, err)
+
+		// Now the field should be marked as set
+		fields = message.GetFields()
+		require.Len(t, fields, 1)
+		require.Contains(t, fields, 2)
+
+		// Set a composite subfield
+		err = message.SetField("3.1", "12")
+		require.NoError(t, err)
+
+		// Now the composite field should also be marked as set
+		fields = message.GetFields()
+		require.Len(t, fields, 2)
+		require.Contains(t, fields, 3)
+	})
+
+	t.Run("SetField with special characters and numeric values", func(t *testing.T) {
+		message := NewMessage(spec)
+
+		// Test with special characters
+		err := message.SetField("2", "4242-4242-4242-4242")
+		require.NoError(t, err)
+
+		value, err := message.GetString(2)
+		require.NoError(t, err)
+		require.Equal(t, "4242-4242-4242-4242", value)
+
+		// Test with numeric string for amount field
+		err = message.SetField("4", "000000001000")
+		require.NoError(t, err)
+
+		amount, err := message.GetString(4)
+		require.NoError(t, err)
+		require.Equal(t, "000000001000", amount)
+	})
+}

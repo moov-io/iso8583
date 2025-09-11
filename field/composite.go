@@ -745,3 +745,55 @@ func (m *Composite) UnsetSubfields(idPaths ...string) error {
 
 	return nil
 }
+
+// SetSubfields sets the value of a subfield identified by its path in the format "a.b.c".
+// It supports nested composite fields and marks the subfield as set for inclusion in
+// operations like Pack() or Marshal().
+func (m *Composite) SetSubfields(idPath string, value string) error {
+	if idPath == "" {
+		return fmt.Errorf("subfield path cannot be empty")
+	}
+
+	id, path, _ := strings.Cut(idPath, ".")
+
+	subfield, ok := m.subfields[id]
+	if !ok {
+		return fmt.Errorf("subfield %s does not exist", id)
+	}
+
+	// If there's no further path, set the value directly
+	if len(path) == 0 {
+		return m.SetSubfield(id, value)
+	}
+
+	// If there's a further path, the subfield must be a composite
+	composite, ok := subfield.(*Composite)
+	if !ok {
+		return fmt.Errorf("subfield %s is not a composite field and cannot have nested subfields", id)
+	}
+
+	// Mark this subfield as set since we're setting a nested value
+	m.setSubfields[id] = struct{}{}
+
+	// Recursively set the nested subfield
+	return composite.SetSubfields(path, value)
+}
+
+// SetSubfield sets the value of a subfield identified by its ID.
+// It marks the subfield as set for inclusion in operations like Pack() or Marshal().
+func (m *Composite) SetSubfield(id string, value string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	subfield, ok := m.subfields[id]
+	if !ok {
+		return fmt.Errorf("subfield %s does not exist", id)
+	}
+
+	if err := subfield.SetBytes([]byte(value)); err != nil {
+		return fmt.Errorf("failed to set subfield %s: %w", id, err)
+	}
+
+	m.setSubfields[id] = struct{}{}
+	return nil
+}

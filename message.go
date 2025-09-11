@@ -644,3 +644,47 @@ func (m *Message) UnsetFields(idPaths ...string) error {
 
 	return nil
 }
+
+// SetField sets the value of a field or subfield identified by its path.
+// For simple fields, use just the field ID as a string (e.g., "3").
+// For composite fields with subfields, use dot notation (e.g., "3.01" for field 3, subfield 01).
+// The method automatically detects whether the target is a simple field or a composite field.
+func (m *Message) SetField(path string, val string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if path == "" {
+		return errors.New("field path cannot be empty")
+	}
+
+	// Parse the field ID from the path
+	fieldIDStr, subPath, hasSubPath := strings.Cut(path, ".")
+
+	fieldID, err := strconv.Atoi(fieldIDStr)
+	if err != nil {
+		return fmt.Errorf("invalid field ID '%s': %w", fieldIDStr, err)
+	}
+
+	// Check if the field exists
+	f, ok := m.fields[fieldID]
+	if !ok {
+		return fmt.Errorf("field %d does not exist", fieldID)
+	}
+
+	// Mark the field as set
+	m.fieldsMap[fieldID] = struct{}{}
+
+	// If there's no subpath, treat it as a simple field
+	if !hasSubPath {
+		return f.SetBytes([]byte(val))
+	}
+
+	// If there's a subpath, the field must be a composite
+	composite, ok := f.(*field.Composite)
+	if !ok {
+		return fmt.Errorf("field %d is not a composite field and cannot have subfields", fieldID)
+	}
+
+	// Set the subfield value using the composite's SetSubfields method
+	return composite.SetSubfields(subPath, val)
+}

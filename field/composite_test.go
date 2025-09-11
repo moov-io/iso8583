@@ -1978,7 +1978,7 @@ func TestTLVJSONConversion(t *testing.T) {
 	})
 }
 
-func TestComposit_concurrency(t *testing.T) {
+func TestComposite_Concurrency(t *testing.T) {
 	t.Run("Pack and Marshal", func(t *testing.T) {
 		// packing and marshaling
 		data := &TLVTestData{
@@ -2032,5 +2032,396 @@ func TestComposit_concurrency(t *testing.T) {
 		}
 
 		wg.Wait()
+	})
+}
+
+func TestComposite_SetSubfields(t *testing.T) {
+	t.Run("Set Simple Subfield", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+
+		err := composite.SetSubfields("1", "AB")
+		require.NoError(t, err)
+
+		// Verify the subfield was set
+		subfields := composite.GetSubfields()
+		require.Contains(t, subfields, "1")
+
+		value, err := subfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "AB", value)
+	})
+
+	t.Run("Set Multiple Subfields", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+
+		err := composite.SetSubfields("1", "AB")
+		require.NoError(t, err)
+
+		err = composite.SetSubfields("2", "CD")
+		require.NoError(t, err)
+
+		err = composite.SetSubfields("3", "12")
+		require.NoError(t, err)
+
+		// Verify all subfields were set
+		subfields := composite.GetSubfields()
+		require.Len(t, subfields, 3)
+
+		value1, err := subfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "AB", value1)
+
+		value2, err := subfields["2"].String()
+		require.NoError(t, err)
+		require.Equal(t, "CD", value2)
+
+		value3, err := subfields["3"].String()
+		require.NoError(t, err)
+		require.Equal(t, "12", value3)
+	})
+
+	t.Run("Set nested subfield in composite", func(t *testing.T) {
+		// Create a spec with nested composite fields
+		nestedSpec := &Spec{
+			Length:      20,
+			Description: "Nested Test Spec",
+			Pref:        prefix.ASCII.Fixed,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
+			Subfields: map[string]Field{
+				"1": NewString(&Spec{
+					Length:      2,
+					Description: "String Field",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"2": NewComposite(&Spec{
+					Length:      10,
+					Description: "Sub-Composite Field",
+					Pref:        prefix.ASCII.Fixed,
+					Tag: &TagSpec{
+						Sort: sort.StringsByInt,
+					},
+					Subfields: map[string]Field{
+						"1": NewString(&Spec{
+							Length:      3,
+							Description: "Nested String Field",
+							Enc:         encoding.ASCII,
+							Pref:        prefix.ASCII.Fixed,
+						}),
+						"2": NewString(&Spec{
+							Length:      3,
+							Description: "Another Nested String Field",
+							Enc:         encoding.ASCII,
+							Pref:        prefix.ASCII.Fixed,
+						}),
+					},
+				}),
+			},
+		}
+
+		composite := NewComposite(nestedSpec)
+
+		// Set a simple subfield
+		err := composite.SetSubfields("1", "AB")
+		require.NoError(t, err)
+
+		// Set a nested subfield
+		err = composite.SetSubfields("2.1", "XYZ")
+		require.NoError(t, err)
+
+		err = composite.SetSubfields("2.2", "123")
+		require.NoError(t, err)
+
+		// Verify the simple subfield
+		subfields := composite.GetSubfields()
+		require.Contains(t, subfields, "1")
+		require.Contains(t, subfields, "2")
+
+		value1, err := subfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "AB", value1)
+
+		// Verify the nested subfields
+		nestedComposite, ok := subfields["2"].(*Composite)
+		require.True(t, ok)
+
+		nestedSubfields := nestedComposite.GetSubfields()
+		require.Contains(t, nestedSubfields, "1")
+		require.Contains(t, nestedSubfields, "2")
+
+		nestedValue1, err := nestedSubfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "XYZ", nestedValue1)
+
+		nestedValue2, err := nestedSubfields["2"].String()
+		require.NoError(t, err)
+		require.Equal(t, "123", nestedValue2)
+	})
+
+	t.Run("Set deeply nested subfield", func(t *testing.T) {
+		// Create a spec with deeply nested composite fields (3 levels)
+		deeplyNestedSpec := &Spec{
+			Length:      30,
+			Description: "Deeply Nested Test Spec",
+			Pref:        prefix.ASCII.Fixed,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
+			Subfields: map[string]Field{
+				"1": NewComposite(&Spec{
+					Length:      20,
+					Description: "Level 1 Composite",
+					Pref:        prefix.ASCII.Fixed,
+					Tag: &TagSpec{
+						Sort: sort.StringsByInt,
+					},
+					Subfields: map[string]Field{
+						"1": NewComposite(&Spec{
+							Length:      10,
+							Description: "Level 2 Composite",
+							Pref:        prefix.ASCII.Fixed,
+							Tag: &TagSpec{
+								Sort: sort.StringsByInt,
+							},
+							Subfields: map[string]Field{
+								"1": NewString(&Spec{
+									Length:      5,
+									Description: "Level 3 String",
+									Enc:         encoding.ASCII,
+									Pref:        prefix.ASCII.Fixed,
+								}),
+							},
+						}),
+					},
+				}),
+			},
+		}
+
+		composite := NewComposite(deeplyNestedSpec)
+
+		// Set a deeply nested subfield
+		err := composite.SetSubfields("1.1.1", "HELLO")
+		require.NoError(t, err)
+
+		// Verify the deeply nested subfield
+		subfields := composite.GetSubfields()
+		require.Contains(t, subfields, "1")
+
+		level1, ok := subfields["1"].(*Composite)
+		require.True(t, ok)
+
+		level1Subfields := level1.GetSubfields()
+		require.Contains(t, level1Subfields, "1")
+
+		level2, ok := level1Subfields["1"].(*Composite)
+		require.True(t, ok)
+
+		level2Subfields := level2.GetSubfields()
+		require.Contains(t, level2Subfields, "1")
+
+		finalValue, err := level2Subfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "HELLO", finalValue)
+	})
+
+	t.Run("Error cases", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+
+		// Test empty path
+		err := composite.SetSubfields("", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "subfield path cannot be empty")
+
+		// Test non-existent subfield
+		err = composite.SetSubfields("99", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "subfield 99 does not exist")
+
+		// Test trying to set nested subfield on non-composite field
+		err = composite.SetSubfields("1.1", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "subfield 1 is not a composite field")
+	})
+
+	t.Run("Error case with nested composite", func(t *testing.T) {
+		// Create a spec with nested composite fields
+		nestedSpec := &Spec{
+			Length:      20,
+			Description: "Nested Test Spec",
+			Pref:        prefix.ASCII.Fixed,
+			Tag: &TagSpec{
+				Sort: sort.StringsByInt,
+			},
+			Subfields: map[string]Field{
+				"1": NewComposite(&Spec{
+					Length:      10,
+					Description: "Sub-Composite Field",
+					Pref:        prefix.ASCII.Fixed,
+					Tag: &TagSpec{
+						Sort: sort.StringsByInt,
+					},
+					Subfields: map[string]Field{
+						"1": NewString(&Spec{
+							Length:      3,
+							Description: "Nested String Field",
+							Enc:         encoding.ASCII,
+							Pref:        prefix.ASCII.Fixed,
+						}),
+					},
+				}),
+			},
+		}
+
+		composite := NewComposite(nestedSpec)
+
+		// Test non-existent nested subfield
+		err := composite.SetSubfields("1.99", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "subfield 99 does not exist")
+	})
+
+	t.Run("Overwrite existing subfield value", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+
+		// Set initial value
+		err := composite.SetSubfields("1", "AB")
+		require.NoError(t, err)
+
+		// Verify initial value
+		subfields := composite.GetSubfields()
+		value, err := subfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "AB", value)
+
+		// Overwrite with new value
+		err = composite.SetSubfields("1", "XY")
+		require.NoError(t, err)
+
+		// Verify new value
+		subfields = composite.GetSubfields()
+		value, err = subfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "XY", value)
+	})
+
+	t.Run("Pack and unpack with SetSubfields", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+
+		// Set values using SetSubfields
+		err := composite.SetSubfields("1", "AB")
+		require.NoError(t, err)
+
+		err = composite.SetSubfields("2", "CD")
+		require.NoError(t, err)
+
+		err = composite.SetSubfields("3", "12")
+		require.NoError(t, err)
+
+		// Pack the composite
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		// Create a new composite and unpack
+		newComposite := NewComposite(compositeTestSpec)
+		_, err = newComposite.Unpack(packed)
+		require.NoError(t, err)
+
+		// Verify the unpacked values
+		subfields := newComposite.GetSubfields()
+		require.Len(t, subfields, 3)
+
+		value1, err := subfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "AB", value1)
+
+		value2, err := subfields["2"].String()
+		require.NoError(t, err)
+		require.Equal(t, "CD", value2)
+
+		value3, err := subfields["3"].String()
+		require.NoError(t, err)
+		require.Equal(t, "12", value3)
+	})
+
+	t.Run("Concurrent access to SetSubfields", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+
+		var wg sync.WaitGroup
+
+		// Test concurrent setting of different subfields
+		for i := 1; i <= 3; i++ {
+			wg.Add(1)
+			go func(id int) {
+				defer wg.Done()
+
+				fieldID := strconv.Itoa(id)
+				var value string
+				// Field 3 is numeric, so we need to use a numeric value
+				if id == 3 {
+					value = strconv.Itoa(id * 10) // "10", "20", "30"
+				} else {
+					value = fmt.Sprintf("V%d", id) // "V1", "V2"
+				}
+
+				err := composite.SetSubfields(fieldID, value)
+				require.NoError(t, err)
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify all fields were set
+		subfields := composite.GetSubfields()
+		require.Len(t, subfields, 3)
+
+		for i := 1; i <= 3; i++ {
+			fieldID := strconv.Itoa(i)
+			require.Contains(t, subfields, fieldID)
+
+			value, err := subfields[fieldID].String()
+			require.NoError(t, err)
+
+			// Check the expected value based on field type
+			if i == 3 {
+				require.Equal(t, strconv.Itoa(i*10), value)
+			} else {
+				require.Equal(t, fmt.Sprintf("V%d", i), value)
+			}
+		}
+	})
+}
+
+func TestComposite_SetSubfield(t *testing.T) {
+	t.Run("SetSubfield", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+
+		// Initially no fields should be set
+		subfields := composite.GetSubfields()
+		require.Len(t, subfields, 0)
+
+		// Set a field
+		err := composite.SetSubfield("1", "AB")
+		require.NoError(t, err)
+
+		// Now one field should be marked as set
+		subfields = composite.GetSubfields()
+		require.Len(t, subfields, 1)
+		require.Contains(t, subfields, "1")
+
+		// The field should have the correct value
+		value, err := subfields["1"].String()
+		require.NoError(t, err)
+		require.Equal(t, "AB", value)
+	})
+
+	t.Run("SetSubfield with non-existent subfield", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpec)
+
+		// Try to set a field that doesn't exist in the spec
+		err := composite.SetSubfield("99", "value")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "subfield 99 does not exist")
 	})
 }
