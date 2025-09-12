@@ -17,10 +17,19 @@ import (
 	"github.com/moov-io/iso8583/utils"
 )
 
+// SubfieldAccessor defines methods for setting and unsetting subfields
+type SubfieldAccessor interface {
+	SetSubfields(idPath string, value string) error
+	SetSubfield(id string, value string) error
+	UnsetSubfields(idPaths ...string) error
+	UnsetSubfield(id string)
+}
+
 var (
 	_ Field            = (*Composite)(nil)
 	_ json.Marshaler   = (*Composite)(nil)
 	_ json.Unmarshaler = (*Composite)(nil)
+	_ SubfieldAccessor = (*Composite)(nil)
 )
 
 // Composite is a wrapper object designed to hold ISO8583 TLVs, subfields and
@@ -732,7 +741,7 @@ func (m *Composite) UnsetSubfields(idPaths ...string) error {
 				return fmt.Errorf("subfield %s does not exist", id)
 			}
 
-			composite, ok := f.(*Composite)
+			composite, ok := f.(SubfieldAccessor)
 			if !ok {
 				return fmt.Errorf("field %s is not a composite field and its subfields %s cannot be unset", id, path)
 			}
@@ -767,7 +776,7 @@ func (m *Composite) SetSubfields(idPath string, value string) error {
 	}
 
 	// If there's a further path, the subfield must be a composite
-	composite, ok := subfield.(*Composite)
+	composite, ok := subfield.(SubfieldAccessor)
 	if !ok {
 		return fmt.Errorf("subfield %s is not a composite field and cannot have nested subfields", id)
 	}

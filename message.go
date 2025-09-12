@@ -631,7 +631,7 @@ func (m *Message) UnsetFields(idPaths ...string) error {
 				return fmt.Errorf("field %d does not exist", idx)
 			}
 
-			composite, ok := f.(*field.Composite)
+			composite, ok := f.(field.SubfieldAccessor)
 			if !ok {
 				return fmt.Errorf("field %d is not a composite field and its subfields %s cannot be unset", idx, path)
 			}
@@ -680,7 +680,7 @@ func (m *Message) SetField(path string, val string) error {
 	}
 
 	// If there's a subpath, the field must be a composite
-	composite, ok := f.(*field.Composite)
+	composite, ok := f.(field.SubfieldAccessor)
 	if !ok {
 		return fmt.Errorf("field %d is not a composite field and cannot have subfields", fieldID)
 	}
