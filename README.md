@@ -64,6 +64,15 @@ The following example demonstrates how to:
 - Unpack and parse a received message
 
 ```go
+package main
+
+import (
+	"os"
+
+	"github.com/moov-io/iso8583"
+	"github.com/moov-io/iso8583/examples"
+)
+
 // Define types for the message fields
 type Authorization struct {
 	MTI                  string               `iso8583:"0"`  // Message Type Indicator
@@ -81,7 +90,7 @@ type AcceptorInformation struct {
 	Country string `index:"3"`
 }
 
-func Example() {
+func main() {
 	// Pack the message
 	msg := iso8583.NewMessage(examples.Spec)
 
@@ -114,7 +123,7 @@ func Example() {
 	// ...
 
 	// Unpack the message
-	msg = iso8583.NewMessage(Spec)
+	msg = iso8583.NewMessage(examples.Spec)
 	err = msg.Unpack(packed)
 	if err != nil {
 		panic(err)
