@@ -16,13 +16,13 @@ jobs:
         version: [stable, oldstable]
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: ${{ matrix.version }}
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Check
       if: runner.os == 'Linux'
