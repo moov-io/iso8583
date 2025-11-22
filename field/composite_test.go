@@ -392,6 +392,38 @@ func TestCompositeField_Marshal(t *testing.T) {
 	})
 }
 
+func TestCompositeField_MarshalPath(t *testing.T) {
+	t.Run("sets value of the field by path", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.MarshalPath("11.1", 743)
+		require.NoError(t, err)
+
+		// check that the value was set correctly
+		data := &CompositeTestData{}
+		err = composite.Unmarshal(data)
+		require.NoError(t, err)
+		require.Equal(t, "743", data.F11.F1.Value())
+	})
+
+	t.Run("returns error on empty path", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.MarshalPath("", 743)
+		require.Contains(t, err.Error(), "path cannot be empty")
+	})
+
+	t.Run("returns error on non-existent subfield", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.MarshalPath("11.FF", 743)
+		require.Contains(t, err.Error(), "field FF does not exist")
+	})
+
+	t.Run("non-composite nested error", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.MarshalPath("11.1.1", 743)
+		require.Contains(t, err.Error(), "field 1 is not a PathMarshaler")
+	})
+}
+
 func TestCompositeField_Unmarshal(t *testing.T) {
 	t.Run("Unmarshal gets data for composite field", func(t *testing.T) {
 		// first, we need to populate fields of composite field

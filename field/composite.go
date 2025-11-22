@@ -745,3 +745,48 @@ func (m *Composite) UnsetSubfields(idPaths ...string) error {
 
 	return nil
 }
+
+func (m *Composite) MarshalPath(path string, value any) error {
+	if path == "" {
+		return errors.New("path cannot be empty")
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	id, subPath, hasSubPath := strings.Cut(path, ".")
+
+	field := m.subfields[id]
+	if field == nil {
+		return fmt.Errorf("field %s does not exist", id)
+	}
+
+	// if there is subPath, marshal it recursively
+	if hasSubPath {
+		// check if field supports MarshalPath
+		mField, ok := field.(PathMarshaler)
+		if !ok {
+			return fmt.Errorf("field %s is not a PathMarshaler", id)
+		}
+
+		err := mField.MarshalPath(subPath, value)
+		if err != nil {
+			return fmt.Errorf("marshaling path %s in field %s: %w", subPath, id, err)
+		}
+
+		// mark field as set
+		m.setSubfields[id] = struct{}{}
+
+		return nil
+	}
+
+	err := field.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("marshaling field %s: %w", id, err)
+	}
+
+	// mark field as set
+	m.setSubfields[id] = struct{}{}
+
+	return nil
+}
