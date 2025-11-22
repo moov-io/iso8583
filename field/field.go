@@ -3,6 +3,11 @@ package field
 type PathMarshaler interface {
 	MarshalPath(path string, v any) error
 }
+
+type PathUnmarshaler interface {
+	UnmarshalPath(path string, v any) error
+}
+
 type Field interface {
 	// Spec returns the field spec
 	Spec() *Spec
