@@ -592,17 +592,15 @@ func (m *Message) unmarshalStruct(dataStruct reflect.Value) error {
 // a new zero-valued field. This effectively removes the field's value and excludes
 // it from operations like Pack() or Marshal().
 func (m *Message) UnsetField(id int) {
-	// TODO: rework this locking as it doesn't work for UnsetFields - we
-	// are reading from fieldsMap there
 	m.mu.Lock()
 	defer m.mu.Unlock()
+}
 
-	if _, ok := m.fieldsMap[id]; ok {
-		delete(m.fieldsMap, id)
-		// re-create the field to reset its value (and subfields if it's a composite field)
-		if fieldSpec, ok := m.GetSpec().Fields[id]; ok {
-			m.fields[id] = createMessageField(fieldSpec)
-		}
+func (m *Message) unsetField(id int) {
+	delete(m.fieldsMap, id)
+	// re-create the field to reset its value (and subfields if it's a composite field)
+	if fieldSpec, ok := m.GetSpec().Fields[id]; ok {
+		m.fields[id] = createMessageField(fieldSpec)
 	}
 }
 
@@ -610,38 +608,54 @@ func (m *Message) UnsetField(id int) {
 // replaces them with new zero-valued fields. Each path should be in the format
 // "a.b.c". This effectively removes the fields' values and excludes them from
 // operations like Pack() or Marshal().
+// Deprecated: use UnsetPath instead.
 func (m *Message) UnsetFields(idPaths ...string) error {
+	return m.UnsetPath(idPaths...)
+}
+
+// UnsetPath marks multiple fields identified by their paths as not set and
+// replaces them with new zero-valued fields. Each path should be in the format
+// "a.b.c". This effectively removes the fields' values and excludes them from
+// operations like Pack() or Marshal().
+func (m *Message) UnsetPath(idPaths ...string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	for _, idPath := range idPaths {
 		if idPath == "" {
 			continue
 		}
 
-		id, path, _ := strings.Cut(idPath, ".")
+		id, path, hasSubpath := strings.Cut(idPath, ".")
 		idx, err := strconv.Atoi(id)
 		if err != nil {
 			return fmt.Errorf("conversion of %s to int failed: %w", id, err)
 		}
 
-		if _, ok := m.fieldsMap[idx]; ok {
-			if len(path) == 0 {
-				m.UnsetField(idx)
-				continue
-			}
+		f := m.fields[idx]
+		if f == nil {
+			return fmt.Errorf("field %d does not exist", idx)
+		}
 
-			f := m.fields[idx]
-			if f == nil {
-				return fmt.Errorf("field %d does not exist", idx)
-			}
+		// Check if the field is already unset
+		if _, ok := m.fieldsMap[idx]; !ok {
+			continue
+		}
 
-			// TODO: replace with interface method when available
-			composite, ok := f.(*field.Composite)
-			if !ok {
-				return fmt.Errorf("field %d is not a composite field and its subfields %s cannot be unset", idx, path)
-			}
+		// If there's no subpath, unset the entire field
+		if !hasSubpath {
+			m.unsetField(idx)
+			continue
+		}
 
-			if err := composite.UnsetSubfields(path); err != nil {
-				return fmt.Errorf("failed to unset %s in composite field %d: %w", path, idx, err)
-			}
+		// Handle composite field with subpaths
+		pathUnsetter, ok := f.(field.PathUnsetter)
+		if !ok {
+			return fmt.Errorf("field %d is not a composite field and its subfields %s cannot be unset", idx, path)
+		}
+
+		if err := pathUnsetter.UnsetPath(path); err != nil {
+			return fmt.Errorf("failed to unset %s in composite field %d: %w", path, idx, err)
 		}
 	}
 

@@ -589,7 +589,7 @@ func TestCompositeField_Unset(t *testing.T) {
 
 		// if we delete subfield F9F3B and then set only one field of it,
 		// the other field should be nil (not set)
-		require.NoError(t, composite.UnsetSubfields("9F3B"))
+		require.NoError(t, composite.UnsetPath("9F3B"))
 
 		data = &ConstructedTLVTestData{}
 		require.NoError(t, composite.Unmarshal(data))
@@ -636,7 +636,7 @@ func TestCompositeField_Unset(t *testing.T) {
 		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
 
 		// unset the composite fields
-		err = composite.UnsetSubfields("82", "9F3B.9F45")
+		err = composite.UnsetPath("82", "9F3B.9F45")
 		require.NoError(t, err)
 
 		data = &ConstructedTLVTestData{}

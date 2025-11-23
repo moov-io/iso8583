@@ -8,6 +8,10 @@ type PathUnmarshaler interface {
 	UnmarshalPath(path string, v any) error
 }
 
+type PathUnsetter interface {
+	UnsetPath(idPaths ...string) error
+}
+
 type Field interface {
 	// Spec returns the field spec
 	Spec() *Spec
