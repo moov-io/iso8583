@@ -535,6 +535,12 @@ func TestCompositeField_UnmarshalPath(t *testing.T) {
 		require.Equal(t, "743", val)
 	})
 
+	t.Run("skips unset fields", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		var val string
+		require.NoError(t, composite.UnmarshalPath("11.1", &val))
+	})
+
 	t.Run("returns error on empty path", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpecWithTagPadding)
 		var val string
@@ -545,14 +551,16 @@ func TestCompositeField_UnmarshalPath(t *testing.T) {
 	t.Run("returns error on non-existent subfield", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpecWithTagPadding)
 		var val string
-		err := composite.UnmarshalPath("11.FF", &val)
-		require.Contains(t, err.Error(), "field FF does not exist")
+		err := composite.UnmarshalPath("77", &val)
+		require.Contains(t, err.Error(), "field 77 does not exist")
 	})
 
 	t.Run("non-composite nested error", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpecWithTagPadding)
+		require.NoError(t, composite.MarshalPath("1", "val1"))
+
 		var val string
-		err := composite.UnmarshalPath("11.1.1", &val)
+		err := composite.UnmarshalPath("1.1", &val)
 		require.Contains(t, err.Error(), "field 1 is not a PathUnmarshaler")
 	})
 }

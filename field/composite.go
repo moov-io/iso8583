@@ -732,6 +732,7 @@ func (m *Composite) UnsetSubfields(idPaths ...string) error {
 				return fmt.Errorf("subfield %s does not exist", id)
 			}
 
+			// TODO: replace with PathUnsetter interface
 			composite, ok := f.(*Composite)
 			if !ok {
 				return fmt.Errorf("field %s is not a composite field and its subfields %s cannot be unset", id, path)
@@ -804,6 +805,12 @@ func (m *Composite) UnmarshalPath(path string, value any) error {
 	field := m.subfields[id]
 	if field == nil {
 		return fmt.Errorf("field %s does not exist", id)
+	}
+
+	_, isSet := m.setSubfields[id]
+	if !isSet {
+		// TODO: write test for it
+		return nil
 	}
 
 	// if there is subPath, unmarshal it recursively
