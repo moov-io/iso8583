@@ -702,9 +702,11 @@ func (m *Composite) UnsetSubfield(id string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// unset the field
-	delete(m.setSubfields, id)
+	m.unsetField(id)
+}
 
+func (m *Composite) unsetField(id string) {
+	delete(m.setSubfields, id)
 	// we should re-create the subfield to reset its value (and its subfields)
 	m.subfields[id] = CreateSubfield(m.Spec().Subfields[id])
 }
@@ -713,34 +715,138 @@ func (m *Composite) UnsetSubfield(id string) {
 // replaces them with new zero-valued fields. Each path should be in the format
 // "a.b.c". This effectively removes the subfields' values and excludes them from
 // operations like Pack() or Marshal().
+// Deprecated: use UnsetPath instead.
 func (m *Composite) UnsetSubfields(idPaths ...string) error {
+	return m.UnsetPath(idPaths...)
+}
+
+// UnsetPath marks field identified by their path as not set and replaces them
+// with new zero-valued fields. Each path should be in the format "a.b.c". It
+// accepts multiple paths as arguments.
+func (m *Composite) UnsetPath(idPaths ...string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	for _, idPath := range idPaths {
 		if idPath == "" {
 			continue
 		}
 
-		id, path, _ := strings.Cut(idPath, ".")
+		id, path, hasSubPath := strings.Cut(idPath, ".")
 
-		if _, ok := m.setSubfields[id]; ok {
-			if len(path) == 0 {
-				m.UnsetSubfield(id)
-				continue
-			}
-
-			f := m.subfields[id]
-			if f == nil {
-				return fmt.Errorf("subfield %s does not exist", id)
-			}
-
-			composite, ok := f.(*Composite)
-			if !ok {
-				return fmt.Errorf("field %s is not a composite field and its subfields %s cannot be unset", id, path)
-			}
-
-			if err := composite.UnsetSubfields(path); err != nil {
-				return fmt.Errorf("failed to unset %s in composite field %s: %w", path, id, err)
-			}
+		f := m.subfields[id]
+		if f == nil {
+			return fmt.Errorf("subfield %s does not exist", id)
 		}
+
+		if _, ok := m.setSubfields[id]; !ok {
+			// field is already unset
+			continue
+		}
+
+		if !hasSubPath {
+			m.unsetField(id)
+			continue
+		}
+
+		pathUnsetter, ok := f.(PathUnsetter)
+		if !ok {
+			return fmt.Errorf("field %s is not a composite field and its subfields %s cannot be unset", id, path)
+		}
+
+		if err := pathUnsetter.UnsetPath(path); err != nil {
+			return fmt.Errorf("failed to unset %s in composite field %s: %w", path, id, err)
+		}
+	}
+
+	return nil
+}
+
+func (m *Composite) MarshalPath(path string, value any) error {
+	if path == "" {
+		return errors.New("path cannot be empty")
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	id, subPath, hasSubPath := strings.Cut(path, ".")
+
+	field := m.subfields[id]
+	if field == nil {
+		return fmt.Errorf("field %s does not exist", id)
+	}
+
+	// if there is subPath, marshal it recursively
+	if hasSubPath {
+		// check if field supports MarshalPath
+		mField, ok := field.(PathMarshaler)
+		if !ok {
+			return fmt.Errorf("field %s is not a PathMarshaler", id)
+		}
+
+		err := mField.MarshalPath(subPath, value)
+		if err != nil {
+			return fmt.Errorf("marshaling path %s in field %s: %w", subPath, id, err)
+		}
+
+		// mark field as set
+		m.setSubfields[id] = struct{}{}
+
+		return nil
+	}
+
+	err := field.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("marshaling field %s: %w", id, err)
+	}
+
+	// mark field as set
+	m.setSubfields[id] = struct{}{}
+
+	return nil
+}
+
+func (m *Composite) UnmarshalPath(path string, value any) error {
+	if path == "" {
+		return errors.New("path cannot be empty")
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	id, subPath, hasSubPath := strings.Cut(path, ".")
+
+	field := m.subfields[id]
+	if field == nil {
+		return fmt.Errorf("field %s does not exist", id)
+	}
+
+	_, isSet := m.setSubfields[id]
+	if !isSet {
+		// TODO: write test for it
+		return nil
+	}
+
+	// if there is subPath, unmarshal it recursively
+	if hasSubPath {
+		// check if field supports UnmarshalPath
+		uField, ok := field.(PathUnmarshaler)
+		if !ok {
+			return fmt.Errorf("field %s is not a PathUnmarshaler", id)
+		}
+
+		err := uField.UnmarshalPath(subPath, value)
+		if err != nil {
+			return fmt.Errorf("unmarshaling path %s in field %s: %w", subPath, id, err)
+		}
+
+		return nil
+	}
+
+	err := field.Unmarshal(value)
+	if err != nil {
+		return fmt.Errorf("unmarshaling field %s: %w", id, err)
 	}
 
 	return nil

@@ -594,13 +594,13 @@ func (m *Message) unmarshalStruct(dataStruct reflect.Value) error {
 func (m *Message) UnsetField(id int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+}
 
-	if _, ok := m.fieldsMap[id]; ok {
-		delete(m.fieldsMap, id)
-		// re-create the field to reset its value (and subfields if it's a composite field)
-		if fieldSpec, ok := m.GetSpec().Fields[id]; ok {
-			m.fields[id] = createMessageField(fieldSpec)
-		}
+func (m *Message) unsetField(id int) {
+	delete(m.fieldsMap, id)
+	// re-create the field to reset its value (and subfields if it's a composite field)
+	if fieldSpec, ok := m.GetSpec().Fields[id]; ok {
+		m.fields[id] = createMessageField(fieldSpec)
 	}
 }
 
@@ -608,38 +608,146 @@ func (m *Message) UnsetField(id int) {
 // replaces them with new zero-valued fields. Each path should be in the format
 // "a.b.c". This effectively removes the fields' values and excludes them from
 // operations like Pack() or Marshal().
+// Deprecated: use UnsetPath instead.
 func (m *Message) UnsetFields(idPaths ...string) error {
+	return m.UnsetPath(idPaths...)
+}
+
+// UnsetPath marks multiple fields identified by their paths as not set and
+// replaces them with new zero-valued fields. Each path should be in the format
+// "a.b.c". This effectively removes the fields' values and excludes them from
+// operations like Pack() or Marshal().
+func (m *Message) UnsetPath(idPaths ...string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	for _, idPath := range idPaths {
 		if idPath == "" {
 			continue
 		}
 
-		id, path, _ := strings.Cut(idPath, ".")
+		id, path, hasSubpath := strings.Cut(idPath, ".")
 		idx, err := strconv.Atoi(id)
 		if err != nil {
 			return fmt.Errorf("conversion of %s to int failed: %w", id, err)
 		}
 
-		if _, ok := m.fieldsMap[idx]; ok {
-			if len(path) == 0 {
-				m.UnsetField(idx)
-				continue
-			}
-
-			f := m.fields[idx]
-			if f == nil {
-				return fmt.Errorf("field %d does not exist", idx)
-			}
-
-			composite, ok := f.(*field.Composite)
-			if !ok {
-				return fmt.Errorf("field %d is not a composite field and its subfields %s cannot be unset", idx, path)
-			}
-
-			if err := composite.UnsetSubfields(path); err != nil {
-				return fmt.Errorf("failed to unset %s in composite field %d: %w", path, idx, err)
-			}
+		f := m.fields[idx]
+		if f == nil {
+			return fmt.Errorf("field %d does not exist", idx)
 		}
+
+		// Check if the field is already unset
+		if _, ok := m.fieldsMap[idx]; !ok {
+			continue
+		}
+
+		// If there's no subpath, unset the entire field
+		if !hasSubpath {
+			m.unsetField(idx)
+			continue
+		}
+
+		// Handle composite field with subpaths
+		pathUnsetter, ok := f.(field.PathUnsetter)
+		if !ok {
+			return fmt.Errorf("field %d is not a composite field and its subfields %s cannot be unset", idx, path)
+		}
+
+		if err := pathUnsetter.UnsetPath(path); err != nil {
+			return fmt.Errorf("failed to unset %s in composite field %d: %w", path, idx, err)
+		}
+	}
+
+	return nil
+}
+
+func (m *Message) MarshalPath(path string, value any) error {
+	if path == "" {
+		return errors.New("path cannot be empty")
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	id, subPath, hasSubPath := strings.Cut(path, ".")
+	idx, err := strconv.Atoi(id)
+	if err != nil {
+		return fmt.Errorf("conversion of %s to int failed: %w", id, err)
+	}
+
+	f := m.fields[idx]
+	if f == nil {
+		return fmt.Errorf("field %d does not exist", idx)
+	}
+
+	if hasSubPath {
+		mField, ok := f.(field.PathMarshaler)
+		if !ok {
+			return fmt.Errorf("field %s is not a PathMarshaler", id)
+		}
+
+		err := mField.MarshalPath(subPath, value)
+		if err != nil {
+			return fmt.Errorf("marshaling filed %s: %w", id, err)
+		}
+
+		m.fieldsMap[idx] = struct{}{}
+
+		return nil
+	}
+
+	err = f.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("marshaling field %s: %w", id, err)
+	}
+
+	m.fieldsMap[idx] = struct{}{}
+
+	return nil
+}
+
+func (m *Message) UnmarshalPath(path string, value any) error {
+	if path == "" {
+		return errors.New("path cannot be empty")
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	id, subPath, hasSubPath := strings.Cut(path, ".")
+	idx, err := strconv.Atoi(id)
+	if err != nil {
+		return fmt.Errorf("conversion of %s to int failed: %w", id, err)
+	}
+
+	f := m.fields[idx]
+	if f == nil {
+		return fmt.Errorf("field %d does not exist", idx)
+	}
+
+	_, set := m.fieldsMap[idx]
+	if !set {
+		return nil
+	}
+
+	if hasSubPath {
+		uField, ok := f.(field.PathUnmarshaler)
+		if !ok {
+			return fmt.Errorf("field %s is not a PathUnmarshaler", id)
+		}
+
+		err := uField.UnmarshalPath(subPath, value)
+		if err != nil {
+			return fmt.Errorf("unmarshaling filed %s: %w", id, err)
+		}
+
+		return nil
+	}
+
+	err = f.Unmarshal(value)
+	if err != nil {
+		return fmt.Errorf("unmarshaling field %s: %w", id, err)
 	}
 
 	return nil

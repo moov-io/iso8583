@@ -392,6 +392,38 @@ func TestCompositeField_Marshal(t *testing.T) {
 	})
 }
 
+func TestCompositeField_MarshalPath(t *testing.T) {
+	t.Run("sets value of the field by path", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.MarshalPath("11.1", 743)
+		require.NoError(t, err)
+
+		// check that the value was set correctly
+		data := &CompositeTestData{}
+		err = composite.Unmarshal(data)
+		require.NoError(t, err)
+		require.Equal(t, "743", data.F11.F1.Value())
+	})
+
+	t.Run("returns error on empty path", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.MarshalPath("", 743)
+		require.Contains(t, err.Error(), "path cannot be empty")
+	})
+
+	t.Run("returns error on non-existent subfield", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.MarshalPath("11.FF", 743)
+		require.Contains(t, err.Error(), "field FF does not exist")
+	})
+
+	t.Run("non-composite nested error", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.MarshalPath("11.1.1", 743)
+		require.Contains(t, err.Error(), "field 1 is not a PathMarshaler")
+	})
+}
+
 func TestCompositeField_Unmarshal(t *testing.T) {
 	t.Run("Unmarshal gets data for composite field", func(t *testing.T) {
 		// first, we need to populate fields of composite field
@@ -487,6 +519,52 @@ func TestCompositeField_Unmarshal(t *testing.T) {
 	})
 }
 
+func TestCompositeField_UnmarshalPath(t *testing.T) {
+	t.Run("gets value of the field by path", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		err := composite.Marshal(&CompositeTestData{
+			F11: &SubCompositeData{
+				F1: NewStringValue("743"),
+			},
+		})
+		require.NoError(t, err)
+
+		var val string
+		err = composite.UnmarshalPath("11.1", &val)
+		require.NoError(t, err)
+		require.Equal(t, "743", val)
+	})
+
+	t.Run("skips unset fields", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		var val string
+		require.NoError(t, composite.UnmarshalPath("11.1", &val))
+	})
+
+	t.Run("returns error on empty path", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		var val string
+		err := composite.UnmarshalPath("", &val)
+		require.Contains(t, err.Error(), "path cannot be empty")
+	})
+
+	t.Run("returns error on non-existent subfield", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		var val string
+		err := composite.UnmarshalPath("77", &val)
+		require.Contains(t, err.Error(), "field 77 does not exist")
+	})
+
+	t.Run("non-composite nested error", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		require.NoError(t, composite.MarshalPath("1", "val1"))
+
+		var val string
+		err := composite.UnmarshalPath("1.1", &val)
+		require.Contains(t, err.Error(), "field 1 is not a PathUnmarshaler")
+	})
+}
+
 func TestCompositeField_Unset(t *testing.T) {
 	t.Run("Unset creates new empty field when it deletes it", func(t *testing.T) {
 		composite := NewComposite(constructedBERTLVTestSpec)
@@ -511,7 +589,7 @@ func TestCompositeField_Unset(t *testing.T) {
 
 		// if we delete subfield F9F3B and then set only one field of it,
 		// the other field should be nil (not set)
-		require.NoError(t, composite.UnsetSubfields("9F3B"))
+		require.NoError(t, composite.UnsetPath("9F3B"))
 
 		data = &ConstructedTLVTestData{}
 		require.NoError(t, composite.Unmarshal(data))
@@ -558,7 +636,7 @@ func TestCompositeField_Unset(t *testing.T) {
 		require.Equal(t, "047F", data.F9F3B.F9F45.Value())
 
 		// unset the composite fields
-		err = composite.UnsetSubfields("82", "9F3B.9F45")
+		err = composite.UnsetPath("82", "9F3B.9F45")
 		require.NoError(t, err)
 
 		data = &ConstructedTLVTestData{}

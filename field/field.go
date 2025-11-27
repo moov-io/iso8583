@@ -1,5 +1,28 @@
 package field
 
+// PathMarshaler provides the ability to marshal field values using path notation.
+// The path uses dot notation (e.g., "11.1" or "3.2.1") to navigate nested
+// composite fields and marshal values at any depth within the field hierarchy.
+type PathMarshaler interface {
+	MarshalPath(path string, v any) error
+}
+
+// PathUnmarshaler provides the ability to unmarshal field values using path
+// notation. The path uses dot notation (e.g., "11.1" or "3.2.1") to navigate
+// nested composite fields and unmarshal values from any depth within the field
+// hierarchy.
+type PathUnmarshaler interface {
+	UnmarshalPath(path string, v any) error
+}
+
+// PathUnsetter provides the ability to unset fields using path notation.
+// The path uses dot notation (e.g., "11.1" or "3.2.1") to navigate nested
+// composite fields and unset values at any depth. Unset fields are replaced
+// with zero-valued fields and excluded from operations like Pack() or Marshal().
+type PathUnsetter interface {
+	UnsetPath(idPaths ...string) error
+}
+
 type Field interface {
 	// Spec returns the field spec
 	Spec() *Spec
