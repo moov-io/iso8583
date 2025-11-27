@@ -67,6 +67,7 @@ The following example demonstrates how to:
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/moov-io/iso8583"
@@ -129,7 +130,25 @@ func main() {
 		panic(err)
 	}
 
-	// Get the field values
+	// get individual field values
+	var amount int64
+	err = msg.UnmarshalPath("4", &amount)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Amount: %d\n", amount)
+
+	// get value of composite subfield
+	var acceptorName string
+	err = msg.UnmarshalPath("43.1", &acceptorName)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Acceptor Name: %s\n", acceptorName)
+
+	// Get the field values into data structure
 	authData = &Authorization{}
 	err = msg.Unmarshal(authData)
 	if err != nil {
