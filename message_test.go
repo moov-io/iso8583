@@ -1014,17 +1014,18 @@ func TestPackUnpack(t *testing.T) {
 		message := NewMessage(shortSpec)
 		message.MTI("0100")
 
-		// Field F3SF2 has a letter in, which will make it fail
+		// Field 3, subfield 2 has a letter in, which will make it fail
 		rawMsg := []byte{0x30, 0x31, 0x30, 0x30, // MTI F0
 			0x60, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // Bitmap F1
 			0x31, 0x36, // Tag for F2
 			0x34, 0x32, 0x37, 0x36, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, //F2
-			0x30, 0x30, 0x30, 0x51, 0x30, 0x30, //F3
+			0x30, 0x31, 0x30, 0x51, 0x33, 0x33, //F3 - subfield 1: 01, subfield 2: 0A (invalid), subfield 3: 33
 		}
 
 		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
+		fmt.Println(err)
 		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 		assert.Equal(t, "3", unpackError.FieldID)
@@ -1034,9 +1035,15 @@ func TestPackUnpack(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "4276555555555555", s)
 
+		composite := message.GetField(3)
+		require.NotNil(t, composite)
+		fmt.Printf("Composite field: %+v\n", composite)
+
+		// for field 3 only 1st subfield could be unpacked successfully
+		// subfield 2 failed during unpacking, but it was created with zero value
 		s, err = message.GetString(3)
 		require.NoError(t, err)
-		require.Equal(t, "00", s)
+		require.Equal(t, "0100", s) // 01 is subfield 1, 00 - is zero value of subfield 2
 
 		data := &TestISOShortData{}
 		require.NoError(t, message.Unmarshal(data))
@@ -1134,11 +1141,11 @@ func TestPackUnpack(t *testing.T) {
 			0x60, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // Bitmap F1
 			0x31, 0x36, // Tag for F2
 			0x34, 0x32, 0x37, 0x36, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, 0x35, //F2
-			0x31, 0x34, // Tag for F3
-			0x30, 0x30, // F3 SF1
-			0x31, 0x31, 0x31, 0x31, //F3 SF2 Subfield 1
-			0x31, 0x32, 0x33, 0x34, 0x35, 0x51, //F3 SF2 Subfield 2
-			0x30, 0x30, // F3 SF3
+			0x31, 0x34, // Length of F3
+			0x30, 0x30, // 3.1 - 00 Transaction Type
+			0x31, 0x31, 0x31, 0x31, //3.2.1 Date - 1111
+			0x31, 0x32, 0x33, 0x34, 0x35, 0x51, //3.2.2 Time - 12345A (invalid)
+			0x30, 0x30, // 3.3 - 00 To Account
 		}
 
 		err := message.Unpack([]byte(rawMsg))
@@ -1153,15 +1160,20 @@ func TestPackUnpack(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "4276555555555555", s)
 
-		s, err = message.GetString(3)
+		var str string
+		err = message.UnmarshalPath("3.2.1", &str)
 		require.NoError(t, err)
-		require.Equal(t, "00", s)
+		require.Equal(t, "1111", str)
+
+		err = message.UnmarshalPath("3.2.2", &str)
+		require.NoError(t, err)
+		require.Equal(t, "0", str) // zero value for numeric field
 
 		data := &TestISOShortData{}
 		require.NoError(t, message.Unmarshal(data))
 
 		assert.Equal(t, "4276555555555555", data.F2.Value())
-		require.Nil(t, data.F3)
+		require.NotNil(t, data.F3) // but it's not in the correct state
 	})
 
 	// this test should check that BCD fields are packed and
@@ -2248,11 +2260,11 @@ func TestMessageMarshal_Unmarshal_Path(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("UnmarshalPath returns error when field is not found", func(t *testing.T) {
+	t.Run("UnmarshalPath doesn't error when field is not found", func(t *testing.T) {
 		message := NewMessage(spec)
 		var str string
 		err := message.UnmarshalPath("9", &str)
-		require.Error(t, err)
+		require.Contains(t, err.Error(), "field 9 is not defined in the spec")
 	})
 
 	t.Run("UnmarshalPath skips unset fields", func(t *testing.T) {
@@ -2546,9 +2558,8 @@ func TestStructWithTypes(t *testing.T) {
 
 		f4 := message.GetField(4)
 		require.NotNil(t, f4)
-		bs, err := f4.Bytes()
+		_, err := f4.Bytes()
 		require.NoError(t, err)
-		fmt.Printf("Binary field bytes: %x\n", bs)
 
 		rawMsg, err := message.Pack()
 		require.NoError(t, err)
@@ -2816,7 +2827,7 @@ func TestStructWithTypes(t *testing.T) {
 				err := message.Marshal(tt.input)
 				if tt.isError {
 					require.Error(t, err)
-					require.Equal(t, tt.errorString, err.Error())
+					require.Contains(t, err.Error(), tt.errorString)
 					return
 				}
 

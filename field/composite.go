@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"reflect"
 	"strconv"
@@ -77,18 +78,17 @@ type Composite struct {
 
 	// stores all fields according to the spec
 	subfields map[string]Field
-
-	// tracks which subfields were set
-	setSubfields map[string]struct{}
 }
 
 // NewComposite creates a new instance of the *Composite struct,
 // validates and sets its Spec before returning it.
 // Refer to SetSpec() for more information on Spec validation.
 func NewComposite(spec *Spec) *Composite {
-	f := &Composite{}
+	f := &Composite{
+		subfields: make(map[string]Field),
+	}
 	f.SetSpec(spec)
-	f.ConstructSubfields()
+	// f.ConstructSubfields()
 
 	return f
 }
@@ -102,14 +102,15 @@ type CompositeWithSubfields interface {
 // ConstructSubfields creates subfields according to the spec
 // this method is used when composite field is created without
 // calling NewComposite (when we create message spec and composite spec)
+// TODO: update comment
+// TODO: maybe replace with once.Do?
 func (f *Composite) ConstructSubfields() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	if f.subfields == nil {
-		f.subfields = CreateSubfields(f.spec)
+		f.subfields = make(map[string]Field)
 	}
-	f.setSubfields = make(map[string]struct{})
 }
 
 // Spec returns the receiver's spec.
@@ -117,7 +118,8 @@ func (f *Composite) Spec() *Spec {
 	return f.spec
 }
 
-// GetSubfields returns the map of set sub fields
+// GetSubfields returns the map of set sub fields. The returned map is a copy
+// of the internal map, but the fields themselves are live references.
 func (f *Composite) GetSubfields() map[string]Field {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -128,11 +130,7 @@ func (f *Composite) GetSubfields() map[string]Field {
 // getSubfields returns the map of set sub fields, it should be called
 // only when the mutex is locked
 func (f *Composite) getSubfields() map[string]Field {
-	fields := map[string]Field{}
-	for i := range f.setSubfields {
-		fields[i] = f.subfields[i]
-	}
-	return fields
+	return maps.Clone(f.subfields)
 }
 
 // SetSpec validates the spec and creates new instances of Subfields defined
@@ -141,29 +139,20 @@ func (f *Composite) getSubfields() map[string]Field {
 // should only pass None or nil values for this type. Passing any other value
 // will result in a panic.
 func (f *Composite) SetSpec(spec *Spec) {
+	// TODO: do I need it here? Maybe we can check all aspects of the spec
+	// where it's needed - when we access fields, spec, tag encoding, etc.?
 	if err := spec.Validate(); err != nil {
 		panic(err) //nolint:forbidigo,nolintlint // as specs mostly static, we panic on spec validation errors
 	}
 	f.spec = spec
-
-	var sortFn sort.StringSlice
-
-	// When bitmap is not defined, always order tags by int.
-	if spec.Bitmap != nil {
-		sortFn = sort.StringsByInt
-	} else {
-		sortFn = spec.Tag.Sort
-	}
-
-	f.orderedSpecFieldTags = orderedKeys(spec.Subfields, sortFn)
 }
 
-func (f *Composite) Unmarshal(v interface{}) error {
+func (f *Composite) Unmarshal(v any) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
 		return errors.New("data is not a pointer or nil")
 	}
 
@@ -175,7 +164,7 @@ func (f *Composite) Unmarshal(v interface{}) error {
 	}
 
 	// iterate over struct fields
-	for i := 0; i < dataStruct.NumField(); i++ {
+	for i := range dataStruct.NumField() {
 		indexTag := NewIndexTag(dataStruct.Type().Field(i))
 		if indexTag.Tag == "" {
 			continue
@@ -183,11 +172,6 @@ func (f *Composite) Unmarshal(v interface{}) error {
 
 		messageField, ok := f.subfields[indexTag.Tag]
 		if !ok {
-			continue
-		}
-
-		// unmarshal only subfield that has the value set
-		if _, set := f.setSubfields[indexTag.Tag]; !set {
 			continue
 		}
 
@@ -220,7 +204,7 @@ func (f *Composite) Unmarshal(v interface{}) error {
 }
 
 // Deprecated. Use Marshal instead
-func (f *Composite) SetData(v interface{}) error {
+func (f *Composite) SetData(v any) error {
 	return f.Marshal(v)
 }
 
@@ -236,12 +220,12 @@ func (f *Composite) SetData(v interface{}) error {
 //	    F3 *Numeric
 //	    F4 *SubfieldCompositeData
 //	}
-func (f *Composite) Marshal(v interface{}) error {
+func (f *Composite) Marshal(v any) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr {
+	if rv.Kind() != reflect.Pointer {
 		return errors.New("data is not a pointer")
 	}
 
@@ -259,14 +243,9 @@ func (f *Composite) Marshal(v interface{}) error {
 	dataStruct := rv.Elem()
 
 	// iterate over struct fields
-	for i := 0; i < dataStruct.NumField(); i++ {
+	for i := range dataStruct.NumField() {
 		indexTag := NewIndexTag(dataStruct.Type().Field(i))
 		if indexTag.Tag == "" {
-			continue
-		}
-
-		messageField, ok := f.subfields[indexTag.Tag]
-		if !ok {
 			continue
 		}
 
@@ -275,15 +254,40 @@ func (f *Composite) Marshal(v interface{}) error {
 			continue
 		}
 
-		err := messageField.Marshal(dataField.Interface())
+		// TODO: changing behavior here - we will return error if subfield is not defined in spec
+		messageField, err := f.getOrCreateField(indexTag.Tag)
+		if err != nil {
+			// TODO? or return error?
+			continue
+		}
+
+		err = messageField.Marshal(dataField.Interface())
 		if err != nil {
 			return fmt.Errorf("marshalling field %s: %w", indexTag.Tag, err)
 		}
-
-		f.setSubfields[indexTag.Tag] = struct{}{}
 	}
 
 	return nil
+}
+
+func (f *Composite) getOrCreateField(id string) (Field, error) {
+	subfield := f.subfields[id]
+	if subfield == nil {
+		return f.createField(id)
+	}
+
+	return subfield, nil
+}
+
+func (f *Composite) createField(id string) (Field, error) {
+	specField, ok := f.Spec().Subfields[id]
+	if !ok {
+		return nil, fmt.Errorf("field %s does not exist in the spec", id)
+	}
+	field := NewInstanceOf(specField)
+	f.subfields[id] = field
+
+	return field, nil
 }
 
 // Pack deserialises data held by the receiver (via SetData)
@@ -379,14 +383,25 @@ func (f *Composite) bitmap() *Bitmap {
 		return nil
 	}
 
-	bitmap, ok := CreateSubfield(f.spec.Bitmap).(*Bitmap)
+	bitmap, ok := NewInstanceOf(f.spec.Bitmap).(*Bitmap)
 	if !ok {
 		return nil
 	}
 
+	bitmap.Reset()
+
 	f.cachedBitmap = bitmap
 
 	return f.cachedBitmap
+}
+
+func (f *Composite) resetBitmap() {
+	f.cachedBitmap = nil
+	f.bitmap()
+}
+
+func (f *Composite) isWithBitmap() bool {
+	return f.spec.Bitmap != nil
 }
 
 // String iterates over the receiver's subfields, packs them and converts the
@@ -427,44 +442,48 @@ func (f *Composite) UnmarshalJSON(b []byte) error {
 	}
 
 	for tag, rawMsg := range data {
-		if _, ok := f.spec.Subfields[tag]; !ok && !f.skipUnknownTLVTags() {
-			return fmt.Errorf("failed to unmarshal subfield %v: received subfield not defined in spec", tag)
+		subfield, err := f.getOrCreateField(tag)
+		if err != nil { // TODO: check if the error is NotDefinedInSpec error
+
+			if !f.skipUnknownTLVTags() {
+				return fmt.Errorf("getting or creating subfield %s: %w", tag, err)
+			}
 		}
 
-		subfield, ok := f.subfields[tag]
-		if !ok {
+		// if _, ok := f.spec.Subfields[tag]; !ok && !f.skipUnknownTLVTags() {
+		// 	return fmt.Errorf("failed to unmarshal subfield %v: received subfield not defined in spec", tag)
+		// }
+
+		// subfield is not defined in spec and we skip unknown TLV tags
+		if subfield == nil {
 			continue
 		}
 
 		if err := json.Unmarshal(rawMsg, subfield); err != nil {
 			return utils.NewSafeErrorf(err, "failed to unmarshal subfield %v", tag)
 		}
-
-		f.setSubfields[tag] = struct{}{}
 	}
 
 	return nil
 }
 
 func (f *Composite) pack() ([]byte, error) {
-	if f.bitmap() != nil {
-		return f.packByBitmap()
+	// we can validate specs here
+	if f.isWithBitmap() {
+		return f.packWithBitmap()
 	}
 
 	return f.packByTag()
 }
 
-func (f *Composite) packByBitmap() ([]byte, error) {
-	f.bitmap().Reset()
+func (f *Composite) packWithBitmap() ([]byte, error) {
+	f.resetBitmap()
 
 	var packedFields []byte
 
-	// pack fields
-	for _, id := range f.orderedSpecFieldTags {
-		// If this ordered field is not set, continue to the next field.
-		if _, ok := f.setSubfields[id]; !ok {
-			continue
-		}
+	for _, id := range orderedKeys(f.subfields, sort.StringsByInt) {
+		// field must be there as we got it from the subfields map
+		field := f.subfields[id]
 
 		idInt, err := strconv.Atoi(id)
 		if err != nil {
@@ -473,11 +492,6 @@ func (f *Composite) packByBitmap() ([]byte, error) {
 
 		// set bitmap bit for this field
 		f.bitmap().Set(idInt)
-
-		field, ok := f.subfields[id]
-		if !ok {
-			return nil, fmt.Errorf("failed to pack subfield %s: no specification found", id)
-		}
 
 		packedField, err := field.Pack()
 		if err != nil {
@@ -498,17 +512,18 @@ func (f *Composite) packByBitmap() ([]byte, error) {
 
 func (f *Composite) packByTag() ([]byte, error) {
 	packed := []byte{}
-	for _, tag := range f.orderedSpecFieldTags {
-		field, ok := f.subfields[tag]
-		if !ok {
-			return nil, fmt.Errorf("no subfield for tag %s", tag)
-		}
 
-		if _, set := f.setSubfields[tag]; !set {
-			continue
-		}
+	if f.spec.Tag == nil {
+		return nil, errors.New("cannot pack composite field by tag when Tag spec is not defined")
+	}
 
-		if f.spec.Tag != nil && f.spec.Tag.Enc != nil {
+	fmt.Printf("Packing Composite field by Tag with subfields: %v\n", f.subfields)
+
+	for _, tag := range orderedKeys(f.subfields, f.spec.Tag.Sort) {
+		field := f.subfields[tag]
+		fmt.Printf("Packing subfield %s: %v\n", tag, field)
+
+		if f.spec.Tag.Enc != nil {
 			tagBytes := []byte(tag)
 			if f.spec.Tag.Pad != nil {
 				tagBytes = f.spec.Tag.Pad.Pad(tagBytes, f.spec.Tag.Length)
@@ -535,6 +550,7 @@ func (f *Composite) packByTag() ([]byte, error) {
 // errors in a *UnpackError. It assumes that the mutex is already
 // locked by the caller.
 func (f *Composite) wrapErrorUnpack(src []byte, isVariableLength bool) (int, error) {
+	fmt.Printf("Unpacking Composite field with data: %x\n", src)
 	offset, tagID, err := f.unpack(src, isVariableLength)
 	if err != nil {
 		return offset, &iso8583errors.UnpackError{
@@ -547,29 +563,47 @@ func (f *Composite) wrapErrorUnpack(src []byte, isVariableLength bool) (int, err
 }
 
 func (f *Composite) unpack(data []byte, isVariableLength bool) (int, string, error) {
+	// Reset fields that were set.
+	f.subfields = make(map[string]Field)
+	f.resetBitmap()
+
 	if f.bitmap() != nil {
-		return f.unpackSubfieldsByBitmap(data)
+		n, s, err := f.unpackSubfieldsByBitmap(data)
+		if err != nil {
+			return n, s, fmt.Errorf("unpacking subfields by bitmap: %w", err)
+
+		}
+		return n, s, nil
 	}
+
 	if f.spec.Tag.Enc != nil {
-		return f.unpackSubfieldsByTag(data)
+		n, s, err := f.unpackSubfieldsByTag(data)
+		if err != nil {
+			return n, s, fmt.Errorf("unpacking subfields by tag: %w", err)
+		}
+		return n, s, nil
 	}
-	return f.unpackSubfields(data, isVariableLength)
+
+	n, s, err := f.unpackSubfields(data, isVariableLength)
+	if err != nil {
+		return n, s, fmt.Errorf("unpacking subfields: %w", err)
+	}
+	return n, s, nil
 }
 
 func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, string, error) {
 	offset := 0
-	for _, tag := range f.orderedSpecFieldTags {
-		field, ok := f.subfields[tag]
-		if !ok {
-			continue
+
+	for _, tag := range orderedKeys(f.spec.Subfields, f.spec.Tag.Sort) {
+		field, err := f.createField(tag)
+		if err != nil {
+			return 0, tag, fmt.Errorf("creating subfield %v: %w", tag, err)
 		}
 
 		read, err := field.Unpack(data[offset:])
 		if err != nil {
 			return 0, tag, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
-
-		f.setSubfields[tag] = struct{}{}
 
 		offset += read
 
@@ -584,11 +618,6 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, st
 func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, string, error) {
 	var off int
 
-	// Reset fields that were set.
-	f.setSubfields = make(map[string]struct{})
-
-	f.bitmap().Reset()
-
 	read, err := f.bitmap().Unpack(data[off:])
 	if err != nil {
 		return 0, "", fmt.Errorf("failed to unpack bitmap: %w", err)
@@ -598,19 +627,17 @@ func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, string, error) {
 
 	for i := 1; i <= f.bitmap().Len(); i++ {
 		if f.bitmap().IsSet(i) {
-			iStr := strconv.Itoa(i)
+			idx := strconv.Itoa(i)
 
-			fl, ok := f.subfields[iStr]
-			if !ok {
-				return 0, iStr, fmt.Errorf("failed to unpack subfield %s: no specification found", iStr)
+			fl, err := f.createField(idx)
+			if err != nil {
+				return 0, idx, fmt.Errorf("getting or creating subfield %s: %w", idx, err)
 			}
 
 			read, err = fl.Unpack(data[off:])
 			if err != nil {
-				return 0, iStr, fmt.Errorf("failed to unpack subfield %s (%s): %w", iStr, fl.Spec().Description, err)
+				return 0, idx, fmt.Errorf("failed to unpack subfield %s (%s): %w", idx, fl.Spec().Description, err)
 			}
-
-			f.setSubfields[iStr] = struct{}{}
 
 			off += read
 		}
@@ -640,7 +667,8 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 			tagBytes = f.spec.Tag.Pad.Unpad(tagBytes)
 		}
 		tag := string(tagBytes)
-		if _, ok := f.spec.Subfields[tag]; !ok {
+		specField, ok := f.spec.Subfields[tag]
+		if !ok {
 			if f.skipUnknownTLVTags() {
 				// to obtain the length of the unknown tag and add it to the offset we need to decode its length
 				// by default, we use BER-TVL prefix because BER-TLV lengths are decoded dynamically, the maxLen method argument is ignored.
@@ -662,20 +690,16 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 				continue
 			}
 
-			return 0, tag, fmt.Errorf("failed to unpack subfield %v: field not defined in Spec", tag)
+			return 0, tag, fmt.Errorf("failed to unpack subfield %v: field not defined in spec", tag)
 		}
 
-		field, ok := f.subfields[tag]
-		if !ok {
-			continue
-		}
+		field := NewInstanceOf(specField)
+		f.subfields[tag] = field
 
 		read, err = field.Unpack(data[offset:])
 		if err != nil {
 			return 0, tag, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
-
-		f.setSubfields[tag] = struct{}{}
 
 		offset += read
 	}
@@ -706,9 +730,9 @@ func (m *Composite) UnsetSubfield(id string) {
 }
 
 func (m *Composite) unsetField(id string) {
-	delete(m.setSubfields, id)
+	delete(m.subfields, id)
 	// we should re-create the subfield to reset its value (and its subfields)
-	m.subfields[id] = CreateSubfield(m.Spec().Subfields[id])
+	// m.subfields[id] = CreateSubfield(m.Spec().Subfields[id])
 }
 
 // UnsetSubfields marks multiple subfields identified by their paths as not set and
@@ -736,11 +760,6 @@ func (m *Composite) UnsetPath(idPaths ...string) error {
 
 		f := m.subfields[id]
 		if f == nil {
-			return fmt.Errorf("subfield %s does not exist", id)
-		}
-
-		if _, ok := m.setSubfields[id]; !ok {
-			// field is already unset
 			continue
 		}
 
@@ -772,9 +791,9 @@ func (m *Composite) MarshalPath(path string, value any) error {
 
 	id, subPath, hasSubPath := strings.Cut(path, ".")
 
-	field := m.subfields[id]
-	if field == nil {
-		return fmt.Errorf("field %s does not exist", id)
+	field, err := m.getOrCreateField(id)
+	if err != nil {
+		return fmt.Errorf("getting or creating subfield %s: %w", id, err)
 	}
 
 	// if there is subPath, marshal it recursively
@@ -790,19 +809,13 @@ func (m *Composite) MarshalPath(path string, value any) error {
 			return fmt.Errorf("marshaling path %s in field %s: %w", subPath, id, err)
 		}
 
-		// mark field as set
-		m.setSubfields[id] = struct{}{}
-
 		return nil
 	}
 
-	err := field.Marshal(value)
+	err = field.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("marshaling field %s: %w", id, err)
 	}
-
-	// mark field as set
-	m.setSubfields[id] = struct{}{}
 
 	return nil
 }
@@ -819,12 +832,10 @@ func (m *Composite) UnmarshalPath(path string, value any) error {
 
 	field := m.subfields[id]
 	if field == nil {
-		return fmt.Errorf("field %s does not exist", id)
-	}
+		if _, ok := m.Spec().Subfields[id]; !ok {
+			return fmt.Errorf("field %s not defined in spec", id)
+		}
 
-	_, isSet := m.setSubfields[id]
-	if !isSet {
-		// TODO: write test for it
 		return nil
 	}
 

@@ -1,5 +1,7 @@
 package field
 
+import "reflect"
+
 // PathMarshaler provides the ability to marshal field values using path notation.
 // The path uses dot notation (e.g., "11.1" or "3.2.1") to navigate nested
 // composite fields and marshal values at any depth within the field hierarchy.
@@ -59,4 +61,24 @@ type Field interface {
 
 	// String returns a string representation of the field Value
 	String() (string, error)
+}
+
+// NewInstanceOf creates a new instance of the same type as specField
+// and sets its spec to be the same as specField's spec.
+func NewInstanceOf(specField Field) Field {
+	fieldType := reflect.TypeOf(specField).Elem()
+
+	// create new field and convert it to field.Field interface
+
+	//nolint:forcetypeassert // we know the type of the field we're creating here
+	fl := reflect.New(fieldType).Interface().(Field)
+	fl.SetSpec(specField.Spec())
+
+	// if it's a composite field, we have to recusively create its subfields as well
+	// TODO: remove this, as fields will be lazily constructed when accessed
+	if composite, ok := fl.(CompositeWithSubfields); ok {
+		composite.ConstructSubfields()
+	}
+
+	return fl
 }

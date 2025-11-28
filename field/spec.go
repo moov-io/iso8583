@@ -192,6 +192,7 @@ func (s *Spec) Validate() error {
 
 // CreateSubfield creates a new instance of a field based on the input
 // provided.
+// TODO: delelte
 func CreateSubfield(specField Field) Field {
 	fieldType := reflect.TypeOf(specField).Elem()
 
@@ -208,6 +209,7 @@ func CreateSubfield(specField Field) Field {
 	return fl
 }
 
+// TODO: delete
 func CreateSubfields(s *Spec) map[string]Field {
 	subfields := map[string]Field{}
 
