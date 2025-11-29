@@ -36,6 +36,11 @@ type Message struct {
 }
 
 func NewMessage(spec *MessageSpec) *Message {
+	// Validate the spec
+	if err := spec.Validate(); err != nil {
+		panic(err) //nolint:forbidigo,nolintlint // as specs moslty static, we panic on spec validation errors
+	}
+
 	return &Message{
 		fields: make(map[int]field.Field),
 		spec:   spec,
@@ -43,7 +48,7 @@ func NewMessage(spec *MessageSpec) *Message {
 }
 
 // Deprecated. Use Marshal instead.
-func (m *Message) SetData(data interface{}) error {
+func (m *Message) SetData(data any) error {
 	return m.Marshal(data)
 }
 
@@ -61,19 +66,19 @@ func (m *Message) bitmap() *field.Bitmap {
 		return m.cachedBitmap
 	}
 
-	bitmap, err := m.createField(bitmapIdx)
-	if err != nil {
-		panic(fmt.Sprintf("required bitmap field is missing: %v", err))
-	}
+	// presence and type of m.spec.Fields[bitmapIdx] was validated in NewMessage
+	bitmap := field.NewInstanceOf(m.spec.Fields[bitmapIdx]).(*field.Bitmap)
+	m.fields[bitmapIdx] = bitmap
+	bitmap.Reset()
 
-	var ok bool
-	m.cachedBitmap, ok = bitmap.(*field.Bitmap)
-	if !ok {
-		panic("bitmap field is not of type *field.Bitmap")
-	}
-	m.cachedBitmap.Reset()
+	m.cachedBitmap = bitmap
 
 	return m.cachedBitmap
+}
+
+func (m *Message) resetBitmap() {
+	m.fields[bitmapIdx] = m.bitmap()
+	m.bitmap().Reset()
 }
 
 func (m *Message) MTI(val string) {
@@ -224,7 +229,8 @@ func (m *Message) wrapErrorPack() ([]byte, error) {
 // after ensuring concurrency safety.
 func (m *Message) pack() ([]byte, error) {
 	packed := []byte{}
-	m.bitmap().Reset()
+
+	m.resetBitmap()
 
 	ids, err := m.packableFieldIDs()
 	if err != nil {
@@ -288,13 +294,13 @@ func (m *Message) wrapErrorUnpack(src []byte) error {
 // not handle locking or error wrapping and should typically be used internally
 // after ensuring concurrency safety.
 func (m *Message) unpack(src []byte) (string, error) {
-	var off int
-
+	// reset fields
 	m.fields = make(map[int]field.Field)
-	m.cachedBitmap = nil
 
-	// This method implicitly also sets m.fields[bitmapIdx]
-	bitmap := m.bitmap()
+	// it implicitly sets the bitmap field in m.fields
+	m.resetBitmap()
+
+	offset := 0
 
 	mti, err := m.createField(mtiIdx)
 	if err != nil {
@@ -306,15 +312,15 @@ func (m *Message) unpack(src []byte) (string, error) {
 		return strconv.Itoa(mtiIdx), fmt.Errorf("failed to unpack MTI: %w", err)
 	}
 
-	off = read
+	offset = read
 
 	// unpack Bitmap
-	read, err = bitmap.Unpack(src[off:])
+	read, err = m.bitmap().Unpack(src[offset:])
 	if err != nil {
 		return strconv.Itoa(bitmapIdx), fmt.Errorf("failed to unpack bitmap: %w", err)
 	}
 
-	off += read
+	offset += read
 
 	for i := 2; i <= m.bitmap().Len(); i++ {
 		// skip bitmap presence bits (for default bitmap length of 64 these are bits 1, 65, 129, 193, etc.)
@@ -323,17 +329,17 @@ func (m *Message) unpack(src []byte) (string, error) {
 		}
 
 		if m.bitmap().IsSet(i) {
-			fl, err := m.getOrCreateField(i)
+			fl, err := m.createField(i)
 			if err != nil {
-				return strconv.Itoa(i), fmt.Errorf("getting or creating field %d: %w", i, err)
+				return strconv.Itoa(i), fmt.Errorf("creating field %d: %w", i, err)
 			}
 
-			read, err = fl.Unpack(src[off:])
+			read, err = fl.Unpack(src[offset:])
 			if err != nil {
 				return strconv.Itoa(i), fmt.Errorf("failed to unpack field %d (%s): %w", i, fl.Spec().Description, err)
 			}
 
-			off += read
+			offset += read
 		}
 	}
 
