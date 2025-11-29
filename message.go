@@ -637,7 +637,7 @@ func (m *Message) getOrCreateField(id int) (field.Field, error) {
 		return nil, fmt.Errorf("creating field %d: %w", id, err)
 	}
 
-	return m.createField(id)
+	return f, nil
 }
 
 func (m *Message) createField(id int) (field.Field, error) {
