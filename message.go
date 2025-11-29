@@ -67,6 +67,7 @@ func (m *Message) bitmap() *field.Bitmap {
 	}
 
 	// presence and type of m.spec.Fields[bitmapIdx] was validated in NewMessage
+	//nolint:forcetypeassert
 	bitmap := field.NewInstanceOf(m.spec.Fields[bitmapIdx]).(*field.Bitmap)
 	m.fields[bitmapIdx] = bitmap
 	bitmap.Reset()
@@ -300,8 +301,6 @@ func (m *Message) unpack(src []byte) (string, error) {
 	// it implicitly sets the bitmap field in m.fields
 	m.resetBitmap()
 
-	offset := 0
-
 	mti, err := m.createField(mtiIdx)
 	if err != nil {
 		return strconv.Itoa(mtiIdx), fmt.Errorf("getting or creating MTI field: %w", err)
@@ -312,7 +311,7 @@ func (m *Message) unpack(src []byte) (string, error) {
 		return strconv.Itoa(mtiIdx), fmt.Errorf("failed to unpack MTI: %w", err)
 	}
 
-	offset = read
+	offset := read
 
 	// unpack Bitmap
 	read, err = m.bitmap().Unpack(src[offset:])

@@ -93,7 +93,10 @@ func NewComposite(spec *Spec) *Composite {
 }
 
 func (c *Composite) NewInstance() Field {
-	return NewComposite(c.Spec())
+	return &Composite{
+		spec:      c.spec, // spec is validated already
+		subfields: make(map[string]Field),
+	}
 }
 
 // Spec returns the receiver's spec.
@@ -368,6 +371,9 @@ func (f *Composite) bitmap() *Bitmap {
 		return nil
 	}
 
+	// we already know that spec.Bitmap is of type *Bitmap
+	// and it presents the spec
+	//nolint:forcetypeassert
 	bitmap := f.spec.Bitmap.NewInstance().(*Bitmap)
 	bitmap.Reset()
 

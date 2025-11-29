@@ -33,8 +33,11 @@ func NewBinaryValue(val []byte) *Binary {
 	}
 }
 
+// NewInstance creates a new instance of the Binary field with the same Spec.
 func (f *Binary) NewInstance() Field {
-	return NewBinary(f.spec)
+	return &Binary{
+		spec: f.spec,
+	}
 }
 
 func (f *Binary) Spec() *Spec {
