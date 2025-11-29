@@ -33,6 +33,10 @@ func NewBinaryValue(val []byte) *Binary {
 	}
 }
 
+func (f *Binary) NewInstance() Field {
+	return NewBinary(f.spec)
+}
+
 func (f *Binary) Spec() *Spec {
 	return f.spec
 }

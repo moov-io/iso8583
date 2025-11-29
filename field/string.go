@@ -33,6 +33,10 @@ func NewStringValue(val string) *String {
 	}
 }
 
+func (f *String) NewInstance() Field {
+	return NewString(f.spec)
+}
+
 func (f *String) Spec() *Spec {
 	return f.spec
 }

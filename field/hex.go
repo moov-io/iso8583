@@ -41,6 +41,10 @@ func NewHexValue(val string) *Hex {
 	}
 }
 
+func (f *Hex) NewInstance() Field {
+	return NewHex(f.spec)
+}
+
 func (f *Hex) Spec() *Spec {
 	return f.spec
 }

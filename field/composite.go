@@ -88,29 +88,11 @@ func NewComposite(spec *Spec) *Composite {
 		subfields: make(map[string]Field),
 	}
 	f.SetSpec(spec)
-	// f.ConstructSubfields()
-
 	return f
 }
 
-// CompositeWithSubfields is used when composite field is created without
-// calling NewComposite e.g. in iso8583.NewMessage(...)
-type CompositeWithSubfields interface {
-	ConstructSubfields()
-}
-
-// ConstructSubfields creates subfields according to the spec
-// this method is used when composite field is created without
-// calling NewComposite (when we create message spec and composite spec)
-// TODO: update comment
-// TODO: maybe replace with once.Do?
-func (f *Composite) ConstructSubfields() {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	if f.subfields == nil {
-		f.subfields = make(map[string]Field)
-	}
+func (c *Composite) NewInstance() Field {
+	return NewComposite(c.Spec())
 }
 
 // Spec returns the receiver's spec.

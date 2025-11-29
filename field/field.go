@@ -1,6 +1,8 @@
 package field
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // PathMarshaler provides the ability to marshal field values using path notation.
 // The path uses dot notation (e.g., "11.1" or "3.2.1") to navigate nested
@@ -49,36 +51,41 @@ type Field interface {
 	Bytes() ([]byte, error)
 
 	// Deprecated. Use Marshal instead.
-	SetData(data interface{}) error
+	SetData(data any) error
 
 	// Unmarshal sets field Value into provided v. If v is nil or not
 	// a pointer it returns error.
-	Unmarshal(v interface{}) error
+	Unmarshal(v any) error
 
 	// Marshal sets field Value from provided v. If v is nil or not
 	// a pointer it returns error.
-	Marshal(v interface{}) error
+	Marshal(v any) error
 
 	// String returns a string representation of the field Value
 	String() (string, error)
 }
 
+type Instantiator interface {
+	NewInstance() Field
+}
+
 // NewInstanceOf creates a new instance of the same type as specField
 // and sets its spec to be the same as specField's spec.
 func NewInstanceOf(specField Field) Field {
+	if inst, ok := specField.(Instantiator); ok {
+		return inst.NewInstance()
+	}
+
+	// fallback to use reflection to create new instance
+	// of the same type as specField. Be aware that this
+	// doesn't call custom constructors, so if the field
+	// type requires special initialization, then implement
+	// the Instantiator interface
+
 	fieldType := reflect.TypeOf(specField).Elem()
-
-	// create new field and convert it to field.Field interface
-
 	//nolint:forcetypeassert // we know the type of the field we're creating here
 	fl := reflect.New(fieldType).Interface().(Field)
 	fl.SetSpec(specField.Spec())
-
-	// if it's a composite field, we have to recusively create its subfields as well
-	// TODO: remove this, as fields will be lazily constructed when accessed
-	if composite, ok := fl.(CompositeWithSubfields); ok {
-		composite.ConstructSubfields()
-	}
 
 	return fl
 }

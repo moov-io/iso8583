@@ -333,8 +333,6 @@ func (m *Message) unpack(src []byte) (string, error) {
 				return strconv.Itoa(i), fmt.Errorf("failed to unpack field %d (%s): %w", i, fl.Spec().Description, err)
 			}
 
-			fmt.Printf("Unpacked field %d: %+v\n", i, fl)
-
 			off += read
 		}
 	}

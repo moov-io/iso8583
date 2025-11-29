@@ -3,7 +3,6 @@ package iso8583
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -1025,7 +1024,6 @@ func TestPackUnpack(t *testing.T) {
 		err := message.Unpack([]byte(rawMsg))
 
 		require.Error(t, err)
-		fmt.Println(err)
 		var unpackError *iso8583errors.UnpackError
 		require.ErrorAs(t, err, &unpackError)
 		assert.Equal(t, "3", unpackError.FieldID)
@@ -1037,7 +1035,6 @@ func TestPackUnpack(t *testing.T) {
 
 		composite := message.GetField(3)
 		require.NotNil(t, composite)
-		fmt.Printf("Composite field: %+v\n", composite)
 
 		// for field 3 only 1st subfield could be unpacked successfully
 		// subfield 2 failed during unpacking, but it was created with zero value

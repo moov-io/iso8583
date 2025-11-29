@@ -30,6 +30,10 @@ func NewTrack3(spec *Spec) *Track3 {
 	}
 }
 
+func (f *Track3) NewInstance() Field {
+	return NewTrack3(f.spec)
+}
+
 func (f *Track3) Spec() *Spec {
 	return f.spec
 }

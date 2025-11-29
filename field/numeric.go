@@ -32,6 +32,10 @@ func NewNumericValue(val int64) *Numeric {
 	}
 }
 
+func (f *Numeric) NewInstance() Field {
+	return NewNumeric(f.spec)
+}
+
 func (f *Numeric) Spec() *Spec {
 	return f.spec
 }
