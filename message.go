@@ -87,7 +87,7 @@ func (m *Message) MTI(val string) {
 
 	mti, err := m.getOrCreateField(mtiIdx)
 	if err != nil {
-		panic(fmt.Sprintf("required MTI field is missing: %v", err))
+		panic(fmt.Sprintf("required MTI field is missing: %v", err)) //nolint:forbidigo,nolintlint // as specs mostly static, we panic on spec validation errors
 	}
 	mti.SetBytes([]byte(val))
 }
