@@ -414,7 +414,7 @@ func TestCompositeField_MarshalPath(t *testing.T) {
 	t.Run("returns error on non-existent subfield", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.MarshalPath("11.FF", 743)
-		require.Contains(t, err.Error(), "field FF does not exist")
+		require.Contains(t, err.Error(), "field FF is not defined in the spec")
 	})
 
 	t.Run("non-composite nested error", func(t *testing.T) {
@@ -552,7 +552,7 @@ func TestCompositeField_UnmarshalPath(t *testing.T) {
 		composite := NewComposite(compositeTestSpecWithTagPadding)
 		var val string
 		err := composite.UnmarshalPath("77", &val)
-		require.Contains(t, err.Error(), "field 77 not defined in spec")
+		require.Contains(t, err.Error(), "field 77 is not defined in the spec")
 	})
 
 	t.Run("non-composite nested error", func(t *testing.T) {
@@ -785,7 +785,7 @@ func TestTLVPacking(t *testing.T) {
 		// contains tags 9F36 and 9F37 which aren't in the specification.
 		_, err := composite.Unpack([]byte{0x30, 0x32, 0x36, 0x9f, 0x36, 0x2, 0x1, 0x57, 0x9a, 0x3, 0x21, 0x7, 0x20,
 			0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1, 0x9f, 0x37, 0x4, 0x9b, 0xad, 0xbc, 0xab})
-		require.EqualError(t, err, "unpacking subfields by tag: failed to unpack subfield 9F36: field not defined in spec")
+		require.EqualError(t, err, "unpacking subfields by tag: failed to unpack subfield 9F36: field is not defined in the spec")
 	})
 
 	t.Run("ASCII Unknown TLV with PrefUnknownTLV: prefix.ASCII.L:  unpack correct deserialises bytes to the data struct skipping unexpected tags", func(t *testing.T) {
@@ -1301,7 +1301,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		// Index 2-3 should have '01' rather than '12'.
 		read, err := composite.Unpack([]byte("181202AB0202CD030212"))
 		require.Equal(t, 0, read)
-		require.Contains(t, err.Error(), "failed to unpack subfield 12: field not defined in spec")
+		require.Contains(t, err.Error(), "failed to unpack subfield 12: field is not defined in the spec")
 	})
 
 	t.Run("Unpack returns an error on if subfield not defined in spec", func(t *testing.T) {
@@ -1314,7 +1314,7 @@ func TestCompositePackingWithTags(t *testing.T) {
 		// Index 0, 1 should have '01' rather than 'ID'.
 		read, err := composite.Unpack([]byte("18ID02AB0202CD030212"))
 		require.Equal(t, 0, read)
-		require.Contains(t, err.Error(), "failed to unpack subfield ID: field not defined in spec")
+		require.Contains(t, err.Error(), "failed to unpack subfield ID: field is not defined in the spec")
 	})
 
 	t.Run("Unpack correctly deserialises out of order composite subfields to the data struct", func(t *testing.T) {
@@ -1574,7 +1574,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		// Index 2-3 = 70 indicates the presence of field 4. This field is not defined on spec.
 		read, err := composite.Unpack([]byte("32702000000000000002AB0212060102YZ"))
 		require.Equal(t, 0, read)
-		require.Contains(t, err.Error(), "field 4 does not exist in the spec")
+		require.Contains(t, err.Error(), "field 4 is not defined in the spec")
 	})
 
 	t.Run("Unpack correctly deserialises out of order composite subfields to the data struct with default bitmap", func(t *testing.T) {
@@ -1653,7 +1653,7 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		// Index 2-3 = 70 indicates the presence of field 4. This field is not defined on spec.
 		read, err := composite.Unpack([]byte("2270200002CD0212060102YZ"))
 		require.Equal(t, 0, read)
-		require.Contains(t, err.Error(), "field 4 does not exist in the spec")
+		require.Contains(t, err.Error(), "field 4 is not defined in the spec")
 	})
 
 	t.Run("Unpack correctly deserialises out of order composite subfields to the data struct with sized bitmap on 3 bytes", func(t *testing.T) {
@@ -2052,7 +2052,7 @@ func TestTLVJSONConversion(t *testing.T) {
 
 		err = composite.UnmarshalJSON([]byte(json_tags))
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "field 9F37 does not exist in the spec")
+		require.Contains(t, err.Error(), "field 9F37 is not defined in the spec")
 	})
 }
 

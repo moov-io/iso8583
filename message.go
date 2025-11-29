@@ -618,6 +618,8 @@ func (m *Message) unmarshalStruct(dataStruct reflect.Value) error {
 func (m *Message) UnsetField(id int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	m.unsetField(id)
 }
 
 func (m *Message) unsetField(id int) {
@@ -626,17 +628,22 @@ func (m *Message) unsetField(id int) {
 
 func (m *Message) getOrCreateField(id int) (field.Field, error) {
 	f := m.fields[id]
-	if f == nil {
-		return m.createField(id)
+	if f != nil {
+		return f, nil
 	}
 
-	return f, nil
+	f, err := m.createField(id)
+	if err != nil {
+		return nil, fmt.Errorf("creating field %d: %w", id, err)
+	}
+
+	return m.createField(id)
 }
 
 func (m *Message) createField(id int) (field.Field, error) {
 	specField, ok := m.GetSpec().Fields[id]
 	if !ok {
-		return nil, fmt.Errorf("failed to create field %d as it does not exist in the spec", id)
+		return nil, fmt.Errorf("field %d is not defined in the spec", id)
 	}
 	f := field.NewInstanceOf(specField)
 	m.fields[id] = f
@@ -714,7 +721,7 @@ func (m *Message) MarshalPath(path string, value any) error {
 
 	f, err := m.getOrCreateField(idx)
 	if err != nil {
-		return fmt.Errorf("field %d does not exist", idx)
+		return fmt.Errorf("getting or creating field %s: %w", id, err)
 	}
 
 	if hasSubPath {

@@ -12,7 +12,6 @@ type MessageSpec struct {
 }
 
 // Validate checks if the MessageSpec is valid.
-// TODO: delete as we don't use it anymore
 func (s *MessageSpec) Validate() error {
 	// we require MTI and Bitmap fields
 	if _, ok := s.Fields[mtiIdx]; !ok {

@@ -249,18 +249,23 @@ func (f *Composite) Marshal(v any) error {
 }
 
 func (f *Composite) getOrCreateField(id string) (Field, error) {
-	subfield := f.subfields[id]
-	if subfield == nil {
-		return f.createField(id)
+	field := f.subfields[id]
+	if field != nil {
+		return field, nil
 	}
 
-	return subfield, nil
+	field, err := f.createField(id)
+	if err != nil {
+		return nil, fmt.Errorf("creating field %s: %w", id, err)
+	}
+
+	return field, nil
 }
 
 func (f *Composite) createField(id string) (Field, error) {
 	specField, ok := f.Spec().Subfields[id]
 	if !ok {
-		return nil, fmt.Errorf("field %s does not exist in the spec", id)
+		return nil, fmt.Errorf("field %s is not defined in the spec", id)
 	}
 
 	field := NewInstanceOf(specField)
@@ -671,7 +676,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 				continue
 			}
 
-			return 0, tag, fmt.Errorf("failed to unpack subfield %v: field not defined in spec", tag)
+			return 0, tag, fmt.Errorf("failed to unpack subfield %v: field is not defined in the spec", tag)
 		}
 
 		field := NewInstanceOf(specField)
@@ -815,7 +820,7 @@ func (m *Composite) UnmarshalPath(path string, value any) error {
 	field := m.subfields[id]
 	if field == nil {
 		if _, ok := m.Spec().Subfields[id]; !ok {
-			return fmt.Errorf("field %s not defined in spec", id)
+			return fmt.Errorf("field %s is not defined in the spec", id)
 		}
 
 		return nil
