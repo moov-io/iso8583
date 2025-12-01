@@ -12,15 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func BenchmarkMessageCreation(b *testing.B) {
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_ = iso8583.NewMessage(benchmarkSpec)
-	}
-}
-func BenchmarkFieldPopulation(b *testing.B) {
+func BenchmarkMarshaling(b *testing.B) {
 	b.ReportAllocs()
 
 	b.StopTimer()
@@ -35,6 +27,30 @@ func BenchmarkFieldPopulation(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		msg := iso8583.NewMessage(benchmarkSpec)
 		msg.Marshal(data)
+	}
+}
+
+func BenchmarkUnpacking(b *testing.B) {
+	b.ReportAllocs()
+
+	b.StopTimer()
+	// prepare packed message
+	msg0 := iso8583.NewMessage(benchmarkSpec)
+	data := getTestMessageData()
+	err := msg0.Marshal(data)
+	require.NoError(b, err)
+	packed, err := msg0.Pack()
+	require.NoError(b, err)
+
+	// test that we can Unpack without errors before starting the benchmark
+	msg := iso8583.NewMessage(benchmarkSpec)
+	err = msg.Unpack(packed)
+	require.NoError(b, err)
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		msg := iso8583.NewMessage(benchmarkSpec)
+		msg.Unpack(packed)
 	}
 }
 
@@ -360,8 +376,8 @@ var benchmarkSpec *iso8583.MessageSpec = &iso8583.MessageSpec{
 		52: field.NewString(&field.Spec{
 			Length:      8,
 			Description: "PIN Data",
-			Enc:         encoding.BytesToASCIIHex,
-			Pref:        prefix.Hex.Fixed,
+			Enc:         encoding.Binary,
+			Pref:        prefix.Binary.Fixed,
 		}),
 		53: field.NewString(&field.Spec{
 			Length:      16,
@@ -432,8 +448,8 @@ var benchmarkSpec *iso8583.MessageSpec = &iso8583.MessageSpec{
 		64: field.NewString(&field.Spec{
 			Length:      8,
 			Description: "Message Authentication Code (MAC)",
-			Enc:         encoding.BytesToASCIIHex,
-			Pref:        prefix.Hex.Fixed,
+			Enc:         encoding.Binary,
+			Pref:        prefix.Binary.Fixed,
 		}),
 		66: field.NewComposite(&field.Spec{
 			Length:      999,
@@ -715,8 +731,8 @@ func getTestMessageData() *messageData {
 		ResponseCode:               "00",                                                                                                   // 2 chars
 		ServiceRestrictionCode:     "000",                                                                                                  // 3 chars
 		CardAcceptorTerminalID:     "TERM0001",                                                                                             // 8 chars
-		CardAcceptorIdentification: "MERCHANT000001",                                                                                       // 15 chars
-		CardAcceptorNameLocation:   "Test Store    123 Main St    City  US",                                                                // 40 chars
+		CardAcceptorIdentification: "MERCHANT0000012",                                                                                      // 15 chars
+		CardAcceptorNameLocation:   "Test Store    123 Main St    City  US840",                                                             // 40 chars
 		AdditionalData:             "Additional response data field 44",                                                                    // up to 99 chars
 		Track1Data:                 "B4111111111111111^CARDHOLDER/TEST^2512101123456789",                                                   // up to 76 chars
 		AdditionalDataISO:          "ISO additional data field 46",                                                                         // up to 999 chars
