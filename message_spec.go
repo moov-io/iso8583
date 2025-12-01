@@ -29,16 +29,3 @@ func (s *MessageSpec) Validate() error {
 
 	return nil
 }
-
-// Creates a map with new instances of Fields (Field interface)
-// based on the field type in MessageSpec.
-func (s *MessageSpec) CreateMessageFields() map[int]field.Field {
-
-	fields := map[int]field.Field{}
-
-	for k, specField := range s.Fields {
-		fields[k] = field.NewInstanceOf(specField)
-	}
-
-	return fields
-}
