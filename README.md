@@ -86,9 +86,9 @@ type Authorization struct {
 }
 
 type AcceptorInformation struct {
-	Name    string `index:"1"`
-	City    string `index:"2"`
-	Country string `index:"3"`
+	Name    string `iso8583:"1"`
+	City    string `iso8583:"2"`
+	Country string `iso8583:"3"`
 }
 
 func main() {
@@ -265,9 +265,9 @@ type Authorization struct {
 }
 
 type Acceptor struct {
-    Name    string `index:"1"`
-    City    string `index:"2"`
-    Country string `index:"3"`
+    Name    string `iso8583:"1"`
+    City    string `iso8583:"2"`
+    Country string `iso8583:"3"`
 }
 ```
 
@@ -356,10 +356,10 @@ In previous versions, it was common to use package-specific field types. While s
 
 ```go
 type Authorization struct {
-    MTI         *field.String `index:"0"`
-    PAN         *field.String `index:"2"`
-    Amount      *field.Numeric `index:"4"`
-    LocalTime   *field.String `index:"12"`
+    MTI         *field.String `iso8583:"0"`
+    PAN         *field.String `iso8583:"2"`
+    Amount      *field.Numeric `iso8583:"4"`
+    LocalTime   *field.String `iso8583:"12"`
 }
 
 auth := &Authorization{
@@ -395,9 +395,9 @@ type Authorization struct {
 }
 
 type Acceptor struct {
-    Name    string `index:"1"`
-    City    string `index:"2"`
-    Country string `index:"3"`
+    Name    string `iso8583:"1"`
+    City    string `iso8583:"2"`
+    Country string `iso8583:"3"`
 }
 ```
 
@@ -463,10 +463,10 @@ Previously, it was common to use package-specific field types. While still suppo
 
 ```go
 type LegacyAuthorization struct {
-    MTI         *field.String  `index:"0"`
-    PAN         *field.String  `index:"2"`
-    Amount      *field.Numeric `index:"4"`
-    LocalTime   *field.String  `index:"12"`
+    MTI         *field.String  `iso8583:"0"`
+    PAN         *field.String  `iso8583:"2"`
+    Amount      *field.Numeric `iso8583:"4"`
+    LocalTime   *field.String  `iso8583:"12"`
 }
 
 var auth LegacyAuthorization
