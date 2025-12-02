@@ -32,6 +32,13 @@ func NewNumericValue(val int64) *Numeric {
 	}
 }
 
+// NewInstance creates a new instance of the Numeric field with the same Spec.
+func (f *Numeric) NewInstance() Field {
+	return &Numeric{
+		spec: f.spec,
+	}
+}
+
 func (f *Numeric) Spec() *Spec {
 	return f.spec
 }

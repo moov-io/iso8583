@@ -58,6 +58,10 @@ func NewTrack1Value(
 	return t
 }
 
+func (f *Track1) NewInstance() Field {
+	return NewTrack1(f.spec)
+}
+
 func (f *Track1) Spec() *Spec {
 	return f.spec
 }

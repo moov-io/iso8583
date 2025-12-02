@@ -2,7 +2,6 @@ package field
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -188,32 +187,4 @@ func (s *Spec) Validate() error {
 	}
 
 	return nil
-}
-
-// CreateSubfield creates a new instance of a field based on the input
-// provided.
-func CreateSubfield(specField Field) Field {
-	fieldType := reflect.TypeOf(specField).Elem()
-
-	// create new field and convert it to Field interface
-
-	//nolint:forcetypeassert // we know the type of the field we're creating here
-	fl := reflect.New(fieldType).Interface().(Field)
-	fl.SetSpec(specField.Spec())
-
-	if composite, ok := fl.(CompositeWithSubfields); ok {
-		composite.ConstructSubfields()
-	}
-
-	return fl
-}
-
-func CreateSubfields(s *Spec) map[string]Field {
-	subfields := map[string]Field{}
-
-	for k, specField := range s.Subfields {
-		subfields[k] = CreateSubfield(specField)
-	}
-
-	return subfields
 }

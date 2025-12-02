@@ -36,6 +36,10 @@ func NewBitmap(spec *Spec) *Bitmap {
 	}
 }
 
+func (f *Bitmap) NewInstance() Field {
+	return NewBitmap(f.spec)
+}
+
 func (f *Bitmap) Spec() *Spec {
 	return f.spec
 }

@@ -33,6 +33,13 @@ func NewStringValue(val string) *String {
 	}
 }
 
+// NewInstance creates a new instance of the String field with the same Spec.
+func (f *String) NewInstance() Field {
+	return &String{
+		spec: f.spec,
+	}
+}
+
 func (f *String) Spec() *Spec {
 	return f.spec
 }

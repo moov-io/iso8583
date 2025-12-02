@@ -41,6 +41,13 @@ func NewHexValue(val string) *Hex {
 	}
 }
 
+// NewInstance creates a new instance of the Hex field with the same Spec.
+func (f *Hex) NewInstance() Field {
+	return &Hex{
+		spec: f.spec,
+	}
+}
+
 func (f *Hex) Spec() *Spec {
 	return f.spec
 }
