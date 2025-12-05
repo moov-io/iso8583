@@ -131,9 +131,8 @@ func (m *Message) BinaryField(id int, val []byte) error {
 	return nil
 }
 
-// GetMTI returns the Message Type Indicator (MTI) of the message. If the MTI
-// field does not exist in the message, an empty value will be returned. If the MTI field
-// is not defined in the specification, an error will be returned.
+// GetMTI returns the Message Type Indicator (MTI) of the message. It returns
+// an empty string if the MTI field is not set.
 func (m *Message) GetMTI() (string, error) {
 	return m.GetString(mtiIdx)
 }
