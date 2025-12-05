@@ -138,7 +138,7 @@ func (m *Message) GetMTI() (string, error) {
 }
 
 // GetString returns the string representation of the field with the given ID.
-// If the field does not exist in the message, an empty value be returned. If
+// If the field does not exist in the message, an empty value will be returned. If
 // the field ID is not defined in the specification, an error will be returned.
 func (m *Message) GetString(id int) (string, error) {
 	m.mu.Lock()
@@ -162,7 +162,7 @@ func (m *Message) GetString(id int) (string, error) {
 }
 
 // GetBytes returns the byte slice representation of the field with the given ID.
-// If the field does not exist in the message, nil be returned. If the field ID
+// If the field does not exist in the message, nil will be returned. If the field ID
 // is not defined in the specification, an error will be returned.
 func (m *Message) GetBytes(id int) ([]byte, error) {
 	m.mu.Lock()
