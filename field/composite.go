@@ -677,6 +677,22 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 				if err != nil {
 					return 0, "", err
 				}
+
+				// store unknown field as Binary if StoreUnknownTLVTags is enabled
+				if f.spec.Tag.StoreUnknownTLVTags {
+					fieldData := data[offset+read : offset+read+fieldLength]
+					binaryField := NewBinary(&Spec{
+						Length:      fieldLength,
+						Description: fmt.Sprintf("Unknown TLV tag %s", tag),
+						Pref:        pref,
+						Enc:         encoding.Binary,
+					})
+					if err := binaryField.SetBytes(fieldData); err != nil {
+						return 0, tag, fmt.Errorf("failed to set bytes for unknown tag %s: %w", tag, err)
+					}
+					f.subfields[tag] = binaryField
+				}
+
 				offset += fieldLength + read
 
 				continue
