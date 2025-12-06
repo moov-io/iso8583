@@ -131,25 +131,26 @@ func (m *Message) BinaryField(id int, val []byte) error {
 	return nil
 }
 
+// GetMTI returns the Message Type Indicator (MTI) of the message. It returns
+// an empty string if the MTI field is not set.
 func (m *Message) GetMTI() (string, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	mti, err := m.getOrCreateField(mtiIdx)
-	if err != nil {
-		return "", fmt.Errorf("getting or creating MTI field: %w", err)
-	}
-
-	return mti.String()
+	return m.GetString(mtiIdx)
 }
 
+// GetString returns the string representation of the field with the given ID.
+// If the field does not exist in the message, an empty value will be returned. If
+// the field ID is not defined in the specification, an error will be returned.
 func (m *Message) GetString(id int) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	field, err := m.getOrCreateField(id)
+	field, err := m.getField(id)
 	if err != nil {
-		return "", fmt.Errorf("getting or creating field %d: %w", id, err)
+		return "", err
+	}
+
+	if field == nil {
+		return "", nil
 	}
 
 	str, err := field.String()
@@ -160,13 +161,20 @@ func (m *Message) GetString(id int) (string, error) {
 	return str, nil
 }
 
+// GetBytes returns the byte slice representation of the field with the given ID.
+// If the field does not exist in the message, nil will be returned. If the field ID
+// is not defined in the specification, an error will be returned.
 func (m *Message) GetBytes(id int) ([]byte, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	field, err := m.getOrCreateField(id)
+	field, err := m.getField(id)
 	if err != nil {
-		return nil, fmt.Errorf("getting or creating field %d: %w", id, err)
+		return nil, err
+	}
+
+	if field == nil {
+		return nil, nil
 	}
 
 	bytes, err := field.Bytes()
@@ -177,15 +185,28 @@ func (m *Message) GetBytes(id int) ([]byte, error) {
 	return bytes, nil
 }
 
-// GetField returns the field with the given ID. If the field does not exist
-// in the message, it will be created based on the message specification. If
-// the field ID is not defined in the specification, nil will be returned.
+// GetField returns the field with the given ID, or nil if the field is not set
+// or not defined in the specification.
 func (m *Message) GetField(id int) field.Field {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	field, _ := m.getOrCreateField(id)
+	field, _ := m.getField(id)
+
 	return field
+}
+
+func (m *Message) getField(id int) (field.Field, error) {
+	f := m.fields[id]
+	if f == nil {
+		if _, ok := m.spec.Fields[id]; !ok {
+			return nil, fmt.Errorf("field %d is not defined in the spec", id)
+		}
+
+		return nil, nil
+	}
+
+	return f, nil
 }
 
 // Fields returns the copy of the map of the set fields in the message. Be aware
