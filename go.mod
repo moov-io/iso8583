@@ -1,13 +1,13 @@
 module github.com/moov-io/iso8583
 
-go 1.23.0
+go 1.24.0
 
-toolchain go1.24.6
+toolchain go1.25.5
 
 require (
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/yerden/go-util v1.1.4
-	golang.org/x/text v0.28.0
+	golang.org/x/text v0.32.0
 )
 
 require (
