@@ -2113,7 +2113,7 @@ func TestComposite_concurrency(t *testing.T) {
 	})
 }
 
-func TestOptionalFields_Unpack(t *testing.T) {
+func TestOptionalFields_UnpackEmpty(t *testing.T) {
 	t.Run("Unpack without error when not all subfields are set", func(t *testing.T) {
 
 		data := &CompositeTestDataOptionalFields{}
