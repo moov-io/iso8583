@@ -2123,9 +2123,16 @@ func TestOptionalFields_UnpackEmpty(t *testing.T) {
 		require.NoError(t, err)
 
 		// There is data only for first subfield
-		read, err := composite.Unpack([]byte("2AB"))
-		require.Equal(t, 3, read)
+		read, err := composite.Unpack([]byte("002AB"))
 		require.NoError(t, err)
+		require.Equal(t, 5, read)
+
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "AB", data.F1.Value())
+		require.Nil(t, data.F2)
+		require.Nil(t, data.F3)
+		require.Nil(t, data.F54)
 	})
 }
 
@@ -2167,7 +2174,22 @@ func TestOptionalFields_Pack(t *testing.T) {
 	unpackedComposite := NewComposite(compositeOptionalFieldsFullSpec)
 	_, err = unpackedComposite.Unpack(b)
 	require.NoError(t, err)
-	require.Equal(t, composite, unpackedComposite)
+
+	unpackedData := &CompositeTestDataOptionalFields{}
+	require.NoError(t, unpackedComposite.Unmarshal(unpackedData))
+
+	require.Equal(t, data.F1.Value(), unpackedData.F1.Value())
+	require.Equal(t, data.F2.Value(), unpackedData.F2.Value())
+	require.Equal(t, data.F3.Value(), unpackedData.F3.Value())
+	require.NotNil(t, unpackedData.F54)
+	require.NotNil(t, unpackedData.F54.F1)
+	require.NotNil(t, unpackedData.F54.F2)
+	require.Nil(t, unpackedData.F54.F3)
+	require.Nil(t, unpackedData.F54.F4)
+	require.Nil(t, unpackedData.F54.F5)
+	require.Nil(t, unpackedData.F54.F6)
+
+	require.Equal(t, data.F54, unpackedData.F54)
 }
 
 type CompositeTestDataOptionalFields struct {
@@ -2179,20 +2201,20 @@ type CompositeTestDataOptionalFields struct {
 }
 
 type SubCompositeOptionalFields struct {
-	F1 *SubCompositeOptionalFieldsData
-	F2 *SubCompositeOptionalFieldsData
-	F3 *SubCompositeOptionalFieldsData
-	F4 *SubCompositeOptionalFieldsData
-	F5 *SubCompositeOptionalFieldsData
-	F6 *SubCompositeOptionalFieldsData
+	F1 *SubCompositeOptionalFieldsData `iso8583:"01"`
+	F2 *SubCompositeOptionalFieldsData `iso8583:"02"`
+	F3 *SubCompositeOptionalFieldsData `iso8583:"03"`
+	F4 *SubCompositeOptionalFieldsData `iso8583:"04"`
+	F5 *SubCompositeOptionalFieldsData `iso8583:"05"`
+	F6 *SubCompositeOptionalFieldsData `iso8583:"06"`
 }
 
 type SubCompositeOptionalFieldsData struct {
-	F1 *String
-	F2 *String
-	F3 *String
-	F4 *String
-	F5 *String
+	F1 *String `iso8583:"01"`
+	F2 *String `iso8583:"02"`
+	F3 *String `iso8583:"03"`
+	F4 *String `iso8583:"04"`
+	F5 *String `iso8583:"05"`
 }
 
 var (
@@ -2256,7 +2278,7 @@ var (
 
 	compositeOptionalFieldsFullSpec = &Spec{
 		Length: 126,
-		Pref:   prefix.ASCII.L,
+		Pref:   prefix.ASCII.LLL,
 		Tag: &TagSpec{
 			Sort: sort.StringsByInt,
 		},
