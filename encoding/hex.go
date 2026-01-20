@@ -119,9 +119,9 @@ var (
 type hexToBytes struct{ asciiToHexEncoder }
 
 // Decode converts bytes into their ASCII representation.
-// Length is the number of decoded HEX digits (two ASCII characters is one HEX digit)
-// On success, the ASCII representation bytes are returned e.g. []byte{0x5F,
-// 0x2A} would be converted to []byte("5F2A")
+// The length parameter specifies the number of characters in the resulting hex string.
+// The number of bytes read from the input data will be length / 2.
+// e.g. []byte{0x5F, 0x2A} with length 4 is converted to []byte("5F2A").
 func (e hexToBytes) Decode(data []byte, length int) ([]byte, int, error) {
 	return e.asciiToHexEncoder.Decode(data, hex.DecodedLen(length))
 }
