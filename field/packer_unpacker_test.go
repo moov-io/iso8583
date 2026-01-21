@@ -184,3 +184,76 @@ func TestTrack2Packer(t *testing.T) {
 		})
 	}
 }
+
+func TestBinaryTrack2Packer(t *testing.T) {
+	type testCase struct {
+		name, primaryAccountNumber, serviceCode, discretionaryData, separator string
+		expirationDate                                                        time.Time
+		expectedPack                                                          []byte
+	}
+
+	s := &field.Spec{
+		Length:      37,
+		Description: "Track 2 Data",
+		Enc:         encoding.HexToBytes,
+		Pref:        prefix.Binary.L,
+		Pad:         padding.Left('0'),
+		Packer:      field.Track2Packer{},
+		Unpacker:    field.Track2Unpacker{},
+	}
+
+	expirationDate, err := time.Parse("0601", "3112")
+	require.NoError(t, err)
+
+	testCases := []testCase{
+		{
+			name:                 "even length",
+			primaryAccountNumber: "4444444444444444",
+			serviceCode:          "201",
+			discretionaryData:    "1474900373",
+			separator:            "D",
+			expirationDate:       expirationDate,
+			// 4444444444444444D31122011474900373
+			expectedPack: []byte{0x22, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0xD3, 0x11, 0x22, 0x01, 0x14, 0x74, 0x90, 0x03, 0x73},
+		},
+		{
+			name:                 "odd length",
+			primaryAccountNumber: "4444444444444444",
+			serviceCode:          "201",
+			discretionaryData:    "147",
+			separator:            "D",
+			expirationDate:       expirationDate,
+			// 04444444444444444D3112201147
+			expectedPack: []byte{0x1b, 0x04, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x4D, 0x31, 0x12, 0x20, 0x11, 0x47},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fd := field.NewTrack2Value(
+				tc.primaryAccountNumber,
+				&tc.expirationDate,
+				tc.serviceCode,
+				tc.discretionaryData,
+				tc.separator,
+			)
+			fd.SetSpec(s)
+
+			packed, err := fd.Pack()
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expectedPack, packed)
+
+			// unpack and verify that it is the same
+			unpackedFd := field.NewTrack2(s)
+			_, err = unpackedFd.Unpack(packed)
+			require.NoError(t, err)
+
+			require.Equal(t, fd.PrimaryAccountNumber, unpackedFd.PrimaryAccountNumber)
+			require.Equal(t, fd.ExpirationDate, unpackedFd.ExpirationDate)
+			require.Equal(t, fd.ServiceCode, unpackedFd.ServiceCode)
+			require.Equal(t, fd.DiscretionaryData, unpackedFd.DiscretionaryData)
+			require.Equal(t, fd.Separator, unpackedFd.Separator)
+		})
+	}
+}
