@@ -313,6 +313,10 @@ func (f *Composite) Unpack(data []byte) (int, error) {
 		isVariableLength = true
 	}
 
+	if isVariableLength && dataLen == 0 {
+		return offset, nil
+	}
+
 	if offset+dataLen > len(data) {
 		return 0, fmt.Errorf("not enough data to unpack, expected: %d, got: %d", offset+dataLen, len(data))
 	}

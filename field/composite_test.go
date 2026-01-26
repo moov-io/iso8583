@@ -2056,7 +2056,7 @@ func TestTLVJSONConversion(t *testing.T) {
 	})
 }
 
-func TestComposit_concurrency(t *testing.T) {
+func TestComposite_concurrency(t *testing.T) {
 	t.Run("Pack and Marshal", func(t *testing.T) {
 		// packing and marshaling
 		data := &TLVTestData{
@@ -2112,3 +2112,193 @@ func TestComposit_concurrency(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+func TestOptionalFields_UnpackEmpty(t *testing.T) {
+	t.Run("Unpack without error when not all subfields are set", func(t *testing.T) {
+
+		data := &CompositeTestDataOptionalFields{}
+
+		composite := NewComposite(compositeOptionalFieldsFullSpec)
+		err := composite.Marshal(data)
+		require.NoError(t, err)
+
+		// There is data only for first subfield
+		read, err := composite.Unpack([]byte("002AB"))
+		require.NoError(t, err)
+		require.Equal(t, 5, read)
+
+		require.NoError(t, composite.Unmarshal(data))
+
+		require.Equal(t, "AB", data.F1.Value())
+		require.Nil(t, data.F2)
+		require.Nil(t, data.F3)
+		require.Nil(t, data.F54)
+	})
+}
+
+func TestOptionalFields_Pack(t *testing.T) {
+	data := &CompositeTestDataOptionalFields{
+		F1: NewStringValue("AB"),
+		F2: NewStringValue("CD"),
+		F3: NewNumericValue(12),
+		F54: &SubCompositeOptionalFields{
+			F1: &SubCompositeOptionalFieldsData{
+				F1: NewStringValue("01"),
+				F2: NewStringValue("23"),
+				F3: NewStringValue("456"),
+				F4: NewStringValue("7"),
+				F5: NewStringValue("ABCDEFGHIJKL"),
+			},
+			F2: &SubCompositeOptionalFieldsData{
+				F1: NewStringValue("10"),
+				F2: NewStringValue("32"),
+				F3: NewStringValue("654"),
+				F4: NewStringValue("7"),
+				F5: NewStringValue("LKJIHGFEDCBA"),
+			},
+			F3: nil,
+			F4: nil,
+			F5: nil,
+			F6: nil,
+		},
+	}
+
+	composite := NewComposite(compositeOptionalFieldsFullSpec)
+
+	err := composite.Marshal(data)
+	require.NoError(t, err)
+
+	b, err := composite.Pack()
+	require.NoError(t, err)
+
+	unpackedComposite := NewComposite(compositeOptionalFieldsFullSpec)
+	_, err = unpackedComposite.Unpack(b)
+	require.NoError(t, err)
+
+	unpackedData := &CompositeTestDataOptionalFields{}
+	require.NoError(t, unpackedComposite.Unmarshal(unpackedData))
+
+	require.Equal(t, data.F1.Value(), unpackedData.F1.Value())
+	require.Equal(t, data.F2.Value(), unpackedData.F2.Value())
+	require.Equal(t, data.F3.Value(), unpackedData.F3.Value())
+	require.NotNil(t, unpackedData.F54)
+	require.NotNil(t, unpackedData.F54.F1)
+	require.NotNil(t, unpackedData.F54.F2)
+	require.Nil(t, unpackedData.F54.F3)
+	require.Nil(t, unpackedData.F54.F4)
+	require.Nil(t, unpackedData.F54.F5)
+	require.Nil(t, unpackedData.F54.F6)
+
+	require.Equal(t, data.F54, unpackedData.F54)
+}
+
+type CompositeTestDataOptionalFields struct {
+	F1  *String
+	F2  *String
+	F3  *Numeric
+	F11 *SubCompositeData
+	F54 *SubCompositeOptionalFields
+}
+
+type SubCompositeOptionalFields struct {
+	F1 *SubCompositeOptionalFieldsData `iso8583:"01"`
+	F2 *SubCompositeOptionalFieldsData `iso8583:"02"`
+	F3 *SubCompositeOptionalFieldsData `iso8583:"03"`
+	F4 *SubCompositeOptionalFieldsData `iso8583:"04"`
+	F5 *SubCompositeOptionalFieldsData `iso8583:"05"`
+	F6 *SubCompositeOptionalFieldsData `iso8583:"06"`
+}
+
+type SubCompositeOptionalFieldsData struct {
+	F1 *String `iso8583:"01"`
+	F2 *String `iso8583:"02"`
+	F3 *String `iso8583:"03"`
+	F4 *String `iso8583:"04"`
+	F5 *String `iso8583:"05"`
+}
+
+var (
+	field54 = &Spec{
+		Length:      120,
+		Description: "Additional Amounts",
+		Tag: &TagSpec{
+			Sort: sort.StringsByInt,
+		},
+		Pref: prefix.ASCII.LLL,
+		Subfields: map[string]Field{
+			"01": additionalAmountField,
+			"02": additionalAmountField,
+			"03": additionalAmountField,
+			"04": additionalAmountField,
+			"05": additionalAmountField,
+			"06": additionalAmountField,
+		},
+	}
+
+	additionalAmountField = NewComposite(&Spec{
+		Length:      20,
+		Description: "Additional Amount",
+		Tag: &TagSpec{
+			Sort: sort.StringsByInt,
+		},
+		Pref: prefix.ASCII.Fixed,
+		Subfields: map[string]Field{
+			"01": NewString(&Spec{
+				Length:      2,
+				Description: "Account Type",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			"02": NewString(&Spec{
+				Length:      2,
+				Description: "Amount Type",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			"03": NewString(&Spec{
+				Length:      3,
+				Description: "Currency Code",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			"04": NewString(&Spec{
+				Length:      1,
+				Description: "Amount Sign",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			"05": NewString(&Spec{
+				Length:      12,
+				Description: "Amount",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+		},
+	})
+
+	compositeOptionalFieldsFullSpec = &Spec{
+		Length: 126,
+		Pref:   prefix.ASCII.LLL,
+		Tag: &TagSpec{
+			Sort: sort.StringsByInt,
+		},
+		Subfields: map[string]Field{
+			"1": NewString(&Spec{
+				Length: 2,
+				Enc:    encoding.ASCII,
+				Pref:   prefix.ASCII.Fixed,
+			}),
+			"2": NewString(&Spec{
+				Length: 2,
+				Enc:    encoding.ASCII,
+				Pref:   prefix.ASCII.Fixed,
+			}),
+			"3": NewNumeric(&Spec{
+				Length: 2,
+				Enc:    encoding.ASCII,
+				Pref:   prefix.ASCII.Fixed,
+			}),
+			"54": NewComposite(field54),
+		},
+	}
+)

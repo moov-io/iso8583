@@ -69,12 +69,17 @@ func TestFieldIndex(t *testing.T) {
 func TestFieldIndexTag(t *testing.T) {
 	t.Run("returns index from field name", func(t *testing.T) {
 		st := reflect.ValueOf(&struct {
-			F1 string
+			F1  string
+			F02 string
 		}{}).Elem()
 
 		indexTag := NewIndexTag(st.Type().Field(0))
 		require.Equal(t, "1", indexTag.Tag)
 		require.Equal(t, 1, indexTag.ID)
+
+		indexTag = NewIndexTag(st.Type().Field(1))
+		require.Equal(t, "02", indexTag.Tag)
+		require.Equal(t, 2, indexTag.ID)
 	})
 
 	t.Run("returns index from field tag instead of field name when both match", func(t *testing.T) {
