@@ -3650,3 +3650,114 @@ func TestAnonymousEmbeddedStructSupport(t *testing.T) {
 		require.Equal(t, []byte("0100"), packed[:4]) // MTI
 	})
 }
+
+func TestUnknownTags(t *testing.T) {
+	spec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.BytesToASCIIHex,
+				Pref:        prefix.Hex.Fixed,
+			}),
+			3: field.NewComposite(&field.Spec{
+				Length:      999,
+				Description: "Processing Code",
+				Pref:        prefix.ASCII.LLL,
+				Tag: &field.TagSpec{
+					Sort: sort.StringsByInt,
+				},
+				Subfields: map[string]field.Field{
+					"1": field.NewString(&field.Spec{
+						Length:      2,
+						Description: "Transaction Type",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.Fixed,
+					}),
+					"2": field.NewComposite(&field.Spec{
+						Length:      100,
+						Description: "TLV without storage",
+						Pref:        prefix.ASCII.LLL,
+						Tag: &field.TagSpec{
+							Enc:                 encoding.BerTLVTag,
+							Sort:                sort.StringsByHex,
+							SkipUnknownTLVTags:  true,
+							StoreUnknownTLVTags: false, // explicitly false
+						},
+						Subfields: map[string]field.Field{
+							"9A": field.NewHex(&field.Spec{
+								Description: "Transaction Date",
+								Enc:         encoding.Binary,
+								Pref:        prefix.BerTLV,
+							}),
+							"9F02": field.NewHex(&field.Spec{
+								Description: "Amount, Authorized (Numeric)",
+								Enc:         encoding.Binary,
+								Pref:        prefix.BerTLV,
+							}),
+						},
+					}),
+				},
+			}),
+		},
+	}
+
+	msg := NewMessage(spec)
+
+	msg.MarshalPath("0", "0100")
+	msg.MarshalPath("3.1", "00")
+	msg.MarshalPath("3.2.9A", []byte{0x21, 0x07, 0x20})
+	msg.MarshalPath("3.2.9F02", []byte{0x00, 0x00, 0x00, 0x00, 0x05, 0x01})
+
+	packed, err := msg.Pack()
+	require.NoError(t, err)
+	expectedData := []byte("01002000000000000000")
+	// LLL for composite field 3
+	expectedData = append(expectedData, []byte("019")...)
+	// Value for subfield 1 of composite field 3
+	expectedData = append(expectedData, []byte("00")...)
+	// LLL for TLV field 3.2
+	expectedData = append(expectedData, []byte("014")...)
+	// TLV for 9A and 9F02
+	expectedData = append(expectedData, 0x9a, 0x03, 0x21, 0x07, 0x20)
+	// TLV for 9F02
+	expectedData = append(expectedData, 0x9f, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01)
+
+	require.Equal(t, expectedData, packed)
+
+	// Now create a message with unknown tags in the TLV field 3.2
+	// MTI and bitmap are the same
+	dataWithUnknownTags := []byte("01002000000000000000")
+
+	// LLL for composite field 3 - includes 12 bytes of two unknown fileds in TLV 3.2
+	dataWithUnknownTags = append(dataWithUnknownTags, []byte("031")...)
+	// Value for subfield 1 of composite field 3
+	dataWithUnknownTags = append(dataWithUnknownTags, []byte("00")...)
+	// LLL for TLV field 3.2 - includes 12 bytes of two unknown fileds
+	dataWithUnknownTags = append(dataWithUnknownTags, []byte("026")...)
+	// TLV for 9A and 9F02 - same as before - known tags
+	dataWithUnknownTags = append(dataWithUnknownTags, 0x9a, 0x03, 0x21, 0x07, 0x20)                         // TLV for 9A
+	dataWithUnknownTags = append(dataWithUnknownTags, 0x9f, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01) // TLV for
+
+	// Unknown tags - these should be skipped and not cause an error
+	dataWithUnknownTags = append(dataWithUnknownTags, 0x9f, 0x36, 0x02, 0x01, 0x57)
+	dataWithUnknownTags = append(dataWithUnknownTags, 0x9f, 0x37, 0x04, 0x9b, 0xad, 0xbc, 0xab)
+
+	msg2 := NewMessage(spec)
+	err = msg2.Unpack(dataWithUnknownTags)
+	require.NoError(t, err)
+
+	mti, err := msg2.GetString(0)
+	require.NoError(t, err)
+	require.Equal(t, "0100", mti)
+
+	unknownTags := msg2.UnknownTags()
+	require.Len(t, unknownTags, 2)
+	require.Contains(t, unknownTags, "3.2.9F36")
+	require.Contains(t, unknownTags, "3.2.9F37")
+}

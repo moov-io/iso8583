@@ -72,6 +72,11 @@ func TestStoreUnknownTLVTags(t *testing.T) {
 		require.Contains(t, subfields, "9F36")
 		require.Contains(t, subfields, "9F37")
 
+		unknownTags := composite.UnknownTags()
+		require.Len(t, unknownTags, 2)
+		require.Contains(t, unknownTags, "9F36")
+		require.Contains(t, unknownTags, "9F37")
+
 		packed, err := composite.Pack()
 		require.NoError(t, err)
 
@@ -224,5 +229,12 @@ func TestStoreUnknownTLVTagsDisabled(t *testing.T) {
 		require.NotContains(t, subfields, "9A")
 		require.NotContains(t, subfields, "9F36")
 		require.NotContains(t, subfields, "9F37")
+
+		unknownTags := composite.UnknownTags()
+		require.Len(t, unknownTags, 3)
+		require.Contains(t, unknownTags, "9A")
+		require.Contains(t, unknownTags, "9F36")
+		require.Contains(t, unknownTags, "9F37")
 	})
+
 }

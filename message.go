@@ -32,7 +32,8 @@ type Message struct {
 	mu sync.Mutex
 
 	// stores all fields according to the spec
-	fields map[int]field.Field
+	fields      map[int]field.Field
+	unknownTags []string
 }
 
 func NewMessage(spec *MessageSpec) *Message {
@@ -359,11 +360,26 @@ func (m *Message) unpack(src []byte) (string, error) {
 				return strconv.Itoa(i), fmt.Errorf("failed to unpack field %d (%s): %w", i, fl.Spec().Description, err)
 			}
 
+			if unknownTagsLister, ok := fl.(field.UnknownTagLister); ok {
+				unknownTags := unknownTagsLister.UnknownTags()
+				for _, tag := range unknownTags {
+					m.unknownTags = append(m.unknownTags, fmt.Sprintf("%d.%s", i, tag))
+				}
+
+			}
+
 			offset += read
 		}
 	}
 
 	return "", nil
+}
+
+func (m *Message) UnknownTags() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.unknownTags
 }
 
 func (m *Message) MarshalJSON() ([]byte, error) {

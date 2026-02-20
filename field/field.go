@@ -27,6 +27,11 @@ type PathUnsetter interface {
 	UnsetPath(idPaths ...string) error
 }
 
+// The follofing is implemented in the field if it has list of unknown tlv tags
+type UnknownTagLister interface {
+	UnknownTags() []string
+}
+
 type Field interface {
 	// Spec returns the field spec
 	Spec() *Spec

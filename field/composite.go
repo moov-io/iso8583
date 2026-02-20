@@ -77,7 +77,8 @@ type Composite struct {
 	mu sync.Mutex
 
 	// stores all fields according to the spec
-	subfields map[string]Field
+	subfields   map[string]Field
+	unknownTags []string
 }
 
 // NewComposite creates a new instance of the *Composite struct,
@@ -111,6 +112,13 @@ func (f *Composite) GetSubfields() map[string]Field {
 	defer f.mu.Unlock()
 
 	return f.getSubfields()
+}
+
+func (f *Composite) UnknownTags() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	return f.unknownTags
 }
 
 // getSubfields returns the map of set sub fields, it should be called
@@ -588,6 +596,13 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, st
 			return 0, tag, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
 		}
 
+		if unknownTagsLister, ok := field.(UnknownTagLister); ok {
+			unknownTags := unknownTagsLister.UnknownTags()
+			for _, unknownTag := range unknownTags {
+				f.unknownTags = append(f.unknownTags, tag+"."+unknownTag)
+			}
+		}
+
 		offset += read
 
 		if isVariableLength && offset >= len(data) {
@@ -624,6 +639,13 @@ func (f *Composite) unpackSubfieldsByBitmap(data []byte) (int, string, error) {
 			read, err = fl.Unpack(data[offset:])
 			if err != nil {
 				return 0, idx, fmt.Errorf("failed to unpack subfield %s (%s): %w", idx, fl.Spec().Description, err)
+			}
+
+			if unknownTagsLister, ok := fl.(UnknownTagLister); ok {
+				unknownTags := unknownTagsLister.UnknownTags()
+				for _, tag := range unknownTags {
+					f.unknownTags = append(f.unknownTags, idx+"."+tag)
+				}
 			}
 
 			offset += read
@@ -697,6 +719,8 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 					f.subfields[tag] = binaryField
 				}
 
+				f.unknownTags = append(f.unknownTags, tag)
+
 				offset += fieldLength + read
 
 				continue
@@ -711,6 +735,13 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 		read, err = field.Unpack(data[offset:])
 		if err != nil {
 			return 0, tag, fmt.Errorf("failed to unpack subfield %v: %w", tag, err)
+		}
+
+		if unknownTagsLister, ok := field.(UnknownTagLister); ok {
+			unknownTags := unknownTagsLister.UnknownTags()
+			for _, unknownTag := range unknownTags {
+				f.unknownTags = append(f.unknownTags, tag+"."+unknownTag)
+			}
 		}
 
 		offset += read
