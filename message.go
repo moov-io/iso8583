@@ -33,6 +33,10 @@ type Message struct {
 
 	// stores all fields according to the spec
 	fields map[int]field.Field
+
+	// unknownTags stores the full paths (e.g. "55.9F36", "55.01.9F37") of
+	// unknown TLV tags encountered during the last Unpack operation.
+	unknownTags []string
 }
 
 func NewMessage(spec *MessageSpec) *Message {
@@ -318,6 +322,7 @@ func (m *Message) wrapErrorUnpack(src []byte) error {
 func (m *Message) unpack(src []byte) (string, error) {
 	// reset fields
 	m.fields = make(map[int]field.Field)
+	m.unknownTags = nil
 
 	// it implicitly sets the bitmap field in m.fields
 	m.resetBitmap()
@@ -668,7 +673,29 @@ func (m *Message) createField(id int) (field.Field, error) {
 	f := field.NewInstanceOf(specField)
 	m.fields[id] = f
 
+	// Only wire the callback when the field opts in via AuditUnknownTLVTags,
+	// avoiding an unnecessary type assertion otherwise.
+	if spec := f.Spec(); spec.Tag != nil && spec.Tag.AuditUnknownTLVTags {
+		if c, ok := f.(field.UnknownTagCallbackSetter); ok {
+			idStr := strconv.Itoa(id)
+			c.SetUnknownTagCallback(func(path string) {
+				m.unknownTags = append(m.unknownTags, idStr+"."+path)
+			})
+		}
+	}
+
 	return f, nil
+}
+
+// UnknownTags returns the full paths of unknown TLV tags encountered during
+// the last Unpack operation, e.g. ["55.9F36", "55.01.9F37"]. The slice is
+// empty when no unknown tags were found or when SkipUnknownTLVTags is not
+// enabled on any composite field in the spec.
+func (m *Message) UnknownTags() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return slices.Clone(m.unknownTags)
 }
 
 // UnsetFields marks multiple fields identified by their paths as not set and

@@ -42,6 +42,11 @@ type TagSpec struct {
 	// during unpack/pack cycles, marshaled to data structs, and modified.
 	// Requires SkipUnknownTLVTags to be true.
 	StoreUnknownTLVTags bool
+	// AuditUnknownTLVTags, when true, enables tracking of unknown TLV tags
+	// encountered during Unpack. The paths of skipped tags are collected and
+	// can be retrieved via Composite.UnknownTags() or Message.UnknownTags().
+	// Requires SkipUnknownTLVTags to be true.
+	AuditUnknownTLVTags bool
 	// PrefUnknownTLV is used for skipping unknown TLV if it is not nil
 	PrefUnknownTLV prefix.Prefixer
 }
@@ -189,6 +194,9 @@ func (s *Spec) Validate() error {
 	}
 	if s.Tag.Enc == nil && s.Tag.Length > 0 {
 		return fmt.Errorf("Composite spec requires a Tag.Enc to be defined if Tag.Length > 0")
+	}
+	if s.Tag.AuditUnknownTLVTags && !s.Tag.SkipUnknownTLVTags && (s.Tag.Enc == encoding.BerTLVTag || s.Tag.PrefUnknownTLV != nil) {
+		return fmt.Errorf("AuditUnknownTLVTags requires SkipUnknownTLVTags to be true")
 	}
 
 	return nil

@@ -7,6 +7,7 @@ import (
 	"maps"
 	"math"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -78,6 +79,17 @@ type Composite struct {
 
 	// stores all fields according to the spec
 	subfields map[string]Field
+
+	// unknownTLVTags stores the tag IDs of unknown TLV fields encountered
+	// during the last Unpack operation on this composite.
+	unknownTLVTags []string
+
+	// onUnknownTag is a callback provided by the parent (a Message or another
+	// Composite) when this field was created. When an unknown TLV tag is found
+	// during Unpack, the parent's closure prepends its own field ID and either
+	// calls its own parent's callback or writes the full path to a top-level
+	// collector (e.g. Message.unknownTags).
+	onUnknownTag func(string)
 }
 
 // NewComposite creates a new instance of the *Composite struct,
@@ -97,6 +109,27 @@ func (c *Composite) NewInstance() Field {
 		spec:      c.spec, // spec is validated already
 		subfields: make(map[string]Field),
 	}
+}
+
+// SetUnknownTagCallback sets the callback that is invoked whenever an unknown
+// TLV tag is encountered during Unpack. The callback receives the tag ID as
+// a relative path from this composite's perspective. It is intended to be
+// called by a parent (Message or Composite) so that it can prepend its own
+// field ID before forwarding the path further up the chain.
+func (f *Composite) SetUnknownTagCallback(cb func(string)) {
+	f.onUnknownTag = cb
+}
+
+// UnknownTags returns the relative paths of unknown TLV fields encountered
+// during the last Unpack on this composite. Direct unknown tags are returned
+// as bare IDs (e.g. "9F36"), while tags from nested sub-composites include
+// the subfield prefix (e.g. "01.9F36").
+// For full absolute paths rooted at the message level, use Message.UnknownTags().
+func (f *Composite) UnknownTags() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	return slices.Clone(f.unknownTLVTags)
 }
 
 // Spec returns the receiver's spec.
@@ -271,10 +304,24 @@ func (f *Composite) createField(id string) (Field, error) {
 		return nil, fmt.Errorf("field %s is not defined in the spec", id)
 	}
 
-	field := NewInstanceOf(specField)
-	f.subfields[id] = field
+	newField := NewInstanceOf(specField)
+	f.subfields[id] = newField
 
-	return field, nil
+	// Wire up a callback only when this composite has AuditUnknownTLVTags
+	// enabled, avoiding an unnecessary type assertion otherwise. The callback
+	// stores the relative path at this level and forwards it to the parent.
+	if f.spec.Tag != nil && f.spec.Tag.AuditUnknownTLVTags {
+		if c, ok := newField.(UnknownTagCallbackSetter); ok {
+			c.SetUnknownTagCallback(func(path string) {
+				f.unknownTLVTags = append(f.unknownTLVTags, id+"."+path)
+				if f.onUnknownTag != nil {
+					f.onUnknownTag(id + "." + path)
+				}
+			})
+		}
+	}
+
+	return newField, nil
 }
 
 // Pack deserialises data held by the receiver (via SetData)
@@ -546,6 +593,8 @@ func (f *Composite) wrapErrorUnpack(src []byte, isVariableLength bool) (int, err
 }
 
 func (f *Composite) unpack(data []byte, isVariableLength bool) (int, string, error) {
+	f.unknownTLVTags = nil
+
 	if f.isWithBitmap() {
 		n, s, err := f.unpackSubfieldsByBitmap(data)
 		if err != nil {
@@ -580,8 +629,10 @@ func (f *Composite) unpackSubfields(data []byte, isVariableLength bool) (int, st
 	offset := 0
 
 	for _, tag := range orderedKeys(f.spec.Subfields, f.spec.Tag.Sort) {
-		field := NewInstanceOf(f.spec.Subfields[tag])
-		f.subfields[tag] = field
+		field, err := f.createField(tag)
+		if err != nil {
+			return 0, tag, fmt.Errorf("failed to create subfield %v: %w", tag, err)
+		}
 
 		read, err := field.Unpack(data[offset:])
 		if err != nil {
@@ -661,7 +712,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 
 		tag := string(tagBytes)
 
-		specField, ok := f.spec.Subfields[tag]
+		_, ok := f.spec.Subfields[tag]
 		if !ok {
 			if f.skipUnknownTLVTags() {
 				// to obtain the length of the unknown tag and add it to the offset we need to decode its length
@@ -697,6 +748,17 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 					f.subfields[tag] = binaryField
 				}
 
+				// Track the unknown tag for auditing via UnknownTags() only when
+				// AuditUnknownTLVTags is enabled on this composite's spec. The
+				// callback notifies the parent (Composite or Message) so it can
+				// build the full absolute path by prepending its own field ID.
+				if f.spec.Tag.AuditUnknownTLVTags {
+					f.unknownTLVTags = append(f.unknownTLVTags, tag)
+					if f.onUnknownTag != nil {
+						f.onUnknownTag(tag)
+					}
+				}
+
 				offset += fieldLength + read
 
 				continue
@@ -705,8 +767,10 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 			return 0, tag, fmt.Errorf("failed to unpack subfield %v: field is not defined in the spec", tag)
 		}
 
-		field := NewInstanceOf(specField)
-		f.subfields[tag] = field
+		field, err := f.createField(tag)
+		if err != nil {
+			return 0, tag, fmt.Errorf("failed to create subfield %v: %w", tag, err)
+		}
 
 		read, err = field.Unpack(data[offset:])
 		if err != nil {

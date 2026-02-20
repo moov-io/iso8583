@@ -27,6 +27,15 @@ type PathUnsetter interface {
 	UnsetPath(idPaths ...string) error
 }
 
+// UnknownTagCallbackSetter is implemented by fields that support tracking
+// unknown TLV tags encountered during Unpack. The callback receives the
+// relative tag ID (e.g., "9F36") and is expected to be provided by the
+// parent so it can prepend its own field ID before forwarding the path up
+// the chain towards the top-level collector (e.g., Message.unknownTags).
+type UnknownTagCallbackSetter interface {
+	SetUnknownTagCallback(func(string))
+}
+
 type Field interface {
 	// Spec returns the field spec
 	Spec() *Spec

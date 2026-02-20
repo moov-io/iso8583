@@ -19,6 +19,7 @@ var storeUnknownTLVSpec = &Spec{
 		Sort:                sort.StringsByHex,
 		SkipUnknownTLVTags:  true,
 		StoreUnknownTLVTags: true,
+		AuditUnknownTLVTags: true,
 	},
 	Subfields: map[string]Field{
 		"9A": NewHex(&Spec{
@@ -174,6 +175,121 @@ func TestStoreUnknownTLVTags(t *testing.T) {
 		}
 
 		require.Equal(t, expectedData, packed)
+	})
+}
+
+func TestUnknownTags(t *testing.T) {
+	t.Run("returns tag IDs of unknown tags after unpack (StoreUnknownTLVTags=true)", func(t *testing.T) {
+		composite := NewComposite(storeUnknownTLVSpec)
+
+		inputData := []byte{
+			0x30, 0x32, 0x36, // ASCII "026" - length prefix
+			0x9a, 0x03, 0x21, 0x07, 0x20,
+			0x9f, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01,
+			0x9f, 0x36, 0x02, 0x01, 0x57,
+			0x9f, 0x37, 0x04, 0x9b, 0xad, 0xbc, 0xab,
+		}
+
+		_, err := composite.Unpack(inputData)
+		require.NoError(t, err)
+
+		unknown := composite.UnknownTags()
+		require.ElementsMatch(t, []string{"9F36", "9F37"}, unknown)
+	})
+
+	t.Run("returns tag IDs of unknown tags when StoreUnknownTLVTags=false", func(t *testing.T) {
+		spec := &Spec{
+			Length:      999,
+			Description: "TLV skip only",
+			Pref:        prefix.ASCII.LLL,
+			Tag: &TagSpec{
+				Enc:                 encoding.BerTLVTag,
+				Sort:                sort.StringsByHex,
+				SkipUnknownTLVTags:  true,
+				StoreUnknownTLVTags: false,
+				AuditUnknownTLVTags: true,
+			},
+			Subfields: map[string]Field{
+				"9F02": NewHex(&Spec{
+					Description: "Amount",
+					Enc:         encoding.Binary,
+					Pref:        prefix.BerTLV,
+				}),
+			},
+		}
+		composite := NewComposite(spec)
+
+		inputData := []byte{
+			0x30, 0x32, 0x36,
+			0x9a, 0x03, 0x21, 0x07, 0x20,
+			0x9f, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01,
+			0x9f, 0x36, 0x02, 0x01, 0x57,
+			0x9f, 0x37, 0x04, 0x9b, 0xad, 0xbc, 0xab,
+		}
+
+		_, err := composite.Unpack(inputData)
+		require.NoError(t, err)
+
+		// Tags are tracked regardless of whether they are stored
+		unknown := composite.UnknownTags()
+		require.ElementsMatch(t, []string{"9A", "9F36", "9F37"}, unknown)
+	})
+
+	t.Run("returns empty slice when SkipUnknownTLVTags is disabled", func(t *testing.T) {
+		spec := &Spec{
+			Length:      999,
+			Description: "TLV no skip",
+			Pref:        prefix.ASCII.LLL,
+			Tag: &TagSpec{
+				Enc:                encoding.BerTLVTag,
+				Sort:               sort.StringsByHex,
+				SkipUnknownTLVTags: false,
+			},
+			Subfields: map[string]Field{
+				"9A": NewHex(&Spec{
+					Description: "Transaction Date",
+					Enc:         encoding.Binary,
+					Pref:        prefix.BerTLV,
+				}),
+			},
+		}
+		composite := NewComposite(spec)
+
+		// Only known tag — no error, no unknown tags
+		inputData := []byte{
+			0x30, 0x30, 0x35,
+			0x9a, 0x03, 0x21, 0x07, 0x20,
+		}
+
+		_, err := composite.Unpack(inputData)
+		require.NoError(t, err)
+
+		require.Empty(t, composite.UnknownTags())
+	})
+
+	t.Run("resets unknown tags on re-unpack", func(t *testing.T) {
+		composite := NewComposite(storeUnknownTLVSpec)
+
+		withUnknown := []byte{
+			0x30, 0x32, 0x36,
+			0x9a, 0x03, 0x21, 0x07, 0x20,
+			0x9f, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01,
+			0x9f, 0x36, 0x02, 0x01, 0x57,
+			0x9f, 0x37, 0x04, 0x9b, 0xad, 0xbc, 0xab,
+		}
+		_, err := composite.Unpack(withUnknown)
+		require.NoError(t, err)
+		require.Len(t, composite.UnknownTags(), 2)
+
+		// Second unpack with only known tags
+		onlyKnown := []byte("014")
+		onlyKnown = append(onlyKnown,
+			0x9a, 0x03, 0x21, 0x07, 0x20,
+			0x9f, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01,
+		)
+		_, err = composite.Unpack(onlyKnown)
+		require.NoError(t, err)
+		require.Empty(t, composite.UnknownTags())
 	})
 }
 
