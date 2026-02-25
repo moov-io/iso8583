@@ -10,18 +10,21 @@ func TestEBCDICVarPrefixer_EncodeLengthDigitsValidation(t *testing.T) {
 	_, err := EBCDIC.LL.EncodeLength(999, 123)
 
 	require.Contains(t, err.Error(), "number of digits in length: 123 exceeds: 2")
+	require.True(t, IsLengthError(err), "error should be a length error")
 }
 
 func TestEBCDICVarPrefixer_EncodeLengthMaxLengthValidation(t *testing.T) {
 	_, err := EBCDIC.LL.EncodeLength(20, 22)
 
-	require.Contains(t, err.Error(), "field length: 22 is larger than maximum: 20")
+	require.Contains(t, err.Error(), "data length: 22 is larger than maximum: 20")
+	require.True(t, IsLengthError(err), "error should be a length error")
 }
 
 func TestEBCDICVarPrefixer_DecodeLengthMaxLengthValidation(t *testing.T) {
 	_, _, err := EBCDIC.LLL.DecodeLength(20, []byte{0x22})
 
 	require.Contains(t, err.Error(), "not enough data length: 3 to read: 1 byte digits")
+	require.True(t, IsLengthError(err), "error should be a length error")
 }
 
 func TestEBCDICVarPrefixer_LHelpers(t *testing.T) {
@@ -85,10 +88,12 @@ func TestEBCDICFixedPrefixer_EncodeLengthValidation(t *testing.T) {
 	_, err := pref.EncodeLength(8, 12)
 
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "field length: 12 should be fixed: 8")
+	require.Contains(t, err.Error(), "data length: 12 should be fixed: 8")
+	require.True(t, IsLengthError(err), "error should be a length error")
 
 	_, err = pref.EncodeLength(8, 6)
 
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "field length: 6 should be fixed: 8")
+	require.Contains(t, err.Error(), "data length: 6 should be fixed: 8")
+	require.True(t, IsLengthError(err), "error should be a length error")
 }
