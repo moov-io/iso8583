@@ -7,6 +7,10 @@ import "github.com/moov-io/iso8583/field"
 // inside field 55). This requires StoreUnknownTLVTags to be enabled in the
 // composite field specs that may contain unknown tags.
 func UnknownTags(message *Message) map[string]field.Field {
+	if message == nil {
+		return make(map[string]field.Field)
+	}
+
 	result := make(map[string]field.Field)
 	collectUnknownTags(&MessageWrapper{message}, nil, "", result)
 	return result
@@ -19,10 +23,8 @@ func UnknownTags(message *Message) map[string]field.Field {
 // considered known and the function only recurses into sub-containers.
 func collectUnknownTags(container FieldContainer, specSubfields map[string]field.Field, prefix string, result map[string]field.Field) {
 	for tag, f := range container.GetSubfields() {
-		var path string
-		if prefix == "" {
-			path = tag
-		} else {
+		path := tag
+		if prefix != "" {
 			path = prefix + "." + tag
 		}
 
