@@ -235,6 +235,39 @@ This is crucial when:
 - The specification may evolve with new tags or you don't want to handle all tags
 - Working with Data Set IDs where some IDs might be unknown to your implementation
 
+#### Storing Unknown Tags
+
+By default, skipped unknown tags are discarded. If you want to preserve them — for example, to re-pack the message with all original data intact — enable `StoreUnknownTLVTags`:
+
+```go
+spec := &field.Spec{
+    // ... other settings ...
+    Tag: &field.TagSpec{
+        Enc:                 encoding.BerTLVTag,
+        Sort:                sort.StringsByHex,
+        SkipUnknownTLVTags:  true,
+        StoreUnknownTLVTags: true, // keep unknown tags in the message
+    },
+}
+```
+
+When enabled, unknown tags are stored as `Binary` fields inside the composite. This means:
+- Packing the message again will include all unknown tags in the output
+- Unknown tags can be unmarshaled into data structs using `*field.Binary` fields with the corresponding `index` tag
+- Unknown tag values can be read via `UnmarshalPath`
+
+To retrieve all unknown tags from a message after unpacking, use the `UnknownTags` helper:
+
+```go
+unknownTags := iso8583.UnknownTags(msg)
+for path, f := range unknownTags {
+    val, _ := f.Bytes()
+    fmt.Printf("Unknown tag at %s: %X\n", path, val)
+}
+```
+
+It returns a map keyed by dot-separated paths (e.g., `"55.9F36"` for unknown tag `9F36` inside field 55). See the [README](../README.md#finding-unknown-tags-with-unknowntags) for more details.
+
 > **Note:** Using [moov-io/bertlv](https://github.com/moov-io/bertlv) handles cases like unknown tags, tags with the same name, etc.
 
 

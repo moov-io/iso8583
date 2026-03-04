@@ -39,6 +39,7 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
     - [Getting Message Data](#getting-message-data)
 	- [Inspecting message fields](#inspecting-message-fields)
 	- [JSON Encoding and Decoding](#json-encoding-and-decoding)
+	- [Working with Unknown TLV Tags](#working-with-unknown-tlv-tags)
 - [ISO8583 CLI](#cli)
 - [Learn more](#learn-more)
 - [Getting help](#getting-help)
@@ -562,6 +563,73 @@ if err := json.Unmarshal([]byte(input), message); err != nil {
 
 // access indidual fields or using struct
 ```
+
+### Working with Unknown TLV Tags
+
+Composite fields in ISO 8583 messages often use TLV (Tag-Length-Value) encoding. In practice, network specifications may include tags that you are not interested in and don't want to define in your Go specification. The library provides a way to skip, store, and inspect such unknown tags.
+
+#### Skipping Unknown Tags
+
+To skip unknown tags during unpacking, set `SkipUnknownTLVTags: true` in the `TagSpec` of the composite field. The behavior depends on the TLV encoding type:
+
+- **BER-TLV** fields: The parser knows how to read the tag and length of unknown tags automatically, so no additional configuration is needed.
+
+  ```go
+  Tag: &field.TagSpec{
+      Enc:                encoding.BerTLVTag,
+      Sort:               sort.StringsByHex,
+      SkipUnknownTLVTags: true, // skip tags not in Subfields
+  },
+  ```
+
+- **Non-BER TLV** fields: You must specify `PrefUnknownTLV` so the parser knows how to read the length of unknown tags. This only works when all tags in the composite field use a consistent tag length and length prefix format.
+
+  ```go
+  Tag: &field.TagSpec{
+      Length:             2,             // tag length in bytes
+      Enc:                encoding.ASCII,
+      Sort:               sort.Strings,
+      SkipUnknownTLVTags: true,
+      PrefUnknownTLV:     prefix.ASCII.L, // length prefix format for unknown tags
+  },
+  ```
+
+Without `SkipUnknownTLVTags`, the parser returns an error when it encounters a tag not defined in `Subfields`.
+
+#### Storing Unknown Tags
+
+By default, skipped tags are discarded. If you want to preserve them — for example, to re-pack the message with all original data intact — enable `StoreUnknownTLVTags`:
+
+```go
+Tag: &field.TagSpec{
+    Enc:                 encoding.BerTLVTag,
+    Sort:                sort.StringsByHex,
+    SkipUnknownTLVTags:  true,
+    StoreUnknownTLVTags: true, // keep unknown tags in the message
+},
+```
+
+When enabled, unknown tags are stored as `Binary` fields inside the composite. Packing the message again will include them in the output, preserving the original data.
+
+#### Finding Unknown Tags with `UnknownTags`
+
+If you store unknown tags, you can use the `UnknownTags` helper to retrieve them from a message after unpacking. It returns a map of unknown fields keyed by their dot-separated path (e.g., `"55.9F36"` for unknown tag `9F36` inside field 55):
+
+```go
+msg := iso8583.NewMessage(spec)
+err := msg.Unpack(rawData)
+if err != nil {
+    // handle error
+}
+
+unknownTags := iso8583.UnknownTags(msg)
+for path, f := range unknownTags {
+    val, _ := f.Bytes()
+    fmt.Printf("Unknown tag at %s: %X\n", path, val)
+}
+```
+
+> **Note:** `UnknownTags` only returns results when `StoreUnknownTLVTags` is enabled in the composite field specs. If unknown tags are skipped but not stored, they are discarded during unpacking and cannot be retrieved.
 
 ### Sending and Receiving Messages
 
