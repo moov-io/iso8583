@@ -500,8 +500,12 @@ func (f *Composite) packByTag() ([]byte, error) {
 		return nil, errors.New("cannot pack composite field by tag when Tag spec is not defined")
 	}
 
-	for _, tag := range orderedKeys(f.subfields, f.spec.Tag.Sort) {
-		field := f.subfields[tag]
+	for _, fieldKey := range orderedKeys(f.subfields, f.spec.Tag.Sort) {
+		field := f.subfields[fieldKey]
+
+		// Extract the base tag name (remove suffix if exists)
+		// e.g., "1a_1" -> "1a", "1a_2" -> "1a", "1a" -> "1a"
+		tag := extractBaseTag(fieldKey)
 
 		if f.spec.Tag.Enc != nil {
 			tagBytes := []byte(tag)
@@ -519,7 +523,7 @@ func (f *Composite) packByTag() ([]byte, error) {
 
 		packedBytes, err := field.Pack()
 		if err != nil {
-			return nil, fmt.Errorf("failed to pack subfield %v: %w", tag, err)
+			return nil, fmt.Errorf("failed to pack subfield %v: %w", fieldKey, err)
 		}
 
 		packed = append(packed, packedBytes...)
@@ -694,7 +698,9 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 					if err := binaryField.SetBytes(fieldData); err != nil {
 						return 0, tag, fmt.Errorf("failed to set bytes for unknown tag %s: %w", tag, err)
 					}
-					f.subfields[tag] = binaryField
+					// Handle duplicate unknown tags with suffix
+					fieldKey := f.getUniqueFieldKey(tag)
+					f.subfields[fieldKey] = binaryField
 				}
 
 				offset += fieldLength + read
@@ -706,7 +712,9 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 		}
 
 		field := NewInstanceOf(specField)
-		f.subfields[tag] = field
+		// Handle duplicate tags by adding numeric suffixes
+		fieldKey := f.getUniqueFieldKey(tag)
+		f.subfields[fieldKey] = field
 
 		read, err = field.Unpack(data[offset:])
 		if err != nil {
@@ -874,4 +882,50 @@ func (m *Composite) UnmarshalPath(path string, value any) error {
 	}
 
 	return nil
+}
+
+// getUniqueFieldKey returns a unique key for a field, adding numeric suffixes if the tag already exists.
+// For example:
+// - First occurrence of "1a" -> "1a"
+// - Second occurrence of "1a" -> "1a_1"
+// - Third occurrence of "1a" -> "1a_2"
+// etc.
+func (f *Composite) getUniqueFieldKey(tag string) string {
+	// Check if tag already exists
+	if _, exists := f.subfields[tag]; !exists {
+		return tag
+	}
+
+	// Tag exists, find next available suffix
+	suffix := 1
+	for {
+		candidateKey := tag + "_" + strconv.Itoa(suffix)
+		if _, exists := f.subfields[candidateKey]; !exists {
+			return candidateKey
+		}
+		suffix++
+	}
+}
+
+// extractBaseTag removes the numeric suffix from a field key.
+// For example:
+// - "1a" -> "1a"
+// - "1a_1" -> "1a"
+// - "1a_2" -> "1a"
+// etc.
+func extractBaseTag(fieldKey string) string {
+	// Find the last underscore
+	lastUnderscoreIdx := strings.LastIndex(fieldKey, "_")
+	if lastUnderscoreIdx == -1 {
+		return fieldKey
+	}
+
+	// Check if what follows the underscore is a valid number
+	suffix := fieldKey[lastUnderscoreIdx+1:]
+	if _, err := strconv.Atoi(suffix); err != nil {
+		// Not a number, so it's not a suffix
+		return fieldKey
+	}
+
+	return fieldKey[:lastUnderscoreIdx]
 }
