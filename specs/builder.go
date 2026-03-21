@@ -143,13 +143,13 @@ type paddingDummy struct {
 }
 
 type tagDummy struct {
-	Length               int           `json:"length,omitempty"               xml:"length,omitempty"`
-	Enc                  string        `json:"enc,omitempty"                  xml:"enc,omitempty"`
-	Padding              *paddingDummy `json:"padding,omitempty"              xml:"padding,omitempty"`
-	Sort                 string        `json:"sort,omitempty"                 xml:"sort,omitempty"`
-	SkipUnknownTLVTags   bool          `json:"skipUnknownTLVTags,omitempty"   xml:"skipUnknownTLVTags,omitempty"`
-	StoreUnknownTLVTags  bool          `json:"storeUnknownTLVTags,omitempty"  xml:"storeUnknownTLVTags,omitempty"`
-	PrefUnknownTLV       string        `json:"prefUnknownTLV,omitempty"       xml:"prefUnknownTLV,omitempty"`
+	Length              int           `json:"length,omitempty"               xml:"length,omitempty"`
+	Enc                 string        `json:"enc,omitempty"                  xml:"enc,omitempty"`
+	Padding             *paddingDummy `json:"padding,omitempty"              xml:"padding,omitempty"`
+	Sort                string        `json:"sort,omitempty"                 xml:"sort,omitempty"`
+	SkipUnknownTLVTags  bool          `json:"skipUnknownTLVTags,omitempty"   xml:"skipUnknownTLVTags,omitempty"`
+	StoreUnknownTLVTags bool          `json:"storeUnknownTLVTags,omitempty"  xml:"storeUnknownTLVTags,omitempty"`
+	PrefUnknownTLV      string        `json:"prefUnknownTLV,omitempty"       xml:"prefUnknownTLV,omitempty"`
 }
 
 func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
@@ -158,22 +158,24 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 		Description: dummyField.Description,
 	}
 
-	fieldSpec.Pref = PrefixesExtToInt[dummyField.Prefix]
-	if fieldSpec.Pref == nil {
+	pref, ok := PrefixesExtToInt[dummyField.Prefix]
+	if !ok {
 		return nil, fmt.Errorf("unknown prefix: %s for field: %s", dummyField.Prefix, index)
 	}
+	fieldSpec.Pref = pref
 
 	if dummyField.Padding != nil {
-		if padderConstructor := PaddersExtToInt[dummyField.Padding.Type]; padderConstructor != nil {
+		if padderConstructor, ok := PaddersExtToInt[dummyField.Padding.Type]; ok {
 			fieldSpec.Pad = padderConstructor(dummyField.Padding.Pad)
 		}
 	}
 
 	if len(dummyField.Subfields) == 0 {
-		fieldSpec.Enc = EncodingsExtToInt[dummyField.Enc]
-		if fieldSpec.Enc == nil {
+		enc, ok := EncodingsExtToInt[dummyField.Enc]
+		if !ok {
 			return nil, fmt.Errorf("unknown encoding: %s for field: %s", dummyField.Enc, index)
 		}
+		fieldSpec.Enc = enc
 	} else {
 		fieldSpec.Subfields = map[string]field.Field{}
 		for key, dummyField := range dummyField.Subfields {
@@ -181,8 +183,9 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 			if err != nil {
 				return nil, err
 			}
-			constructor := FieldConstructor[dummyField.Type]
-			if constructor == nil {
+
+			constructor, ok := FieldConstructor[dummyField.Type]
+			if !ok {
 				return nil, fmt.Errorf("no constructor for filed type: %s for field: %s", dummyField.Type, index)
 			}
 			fieldSpec.Subfields[key] = constructor(subfieldSpec)
@@ -194,18 +197,31 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 				SkipUnknownTLVTags:  dummyField.Tag.SkipUnknownTLVTags,
 				StoreUnknownTLVTags: dummyField.Tag.StoreUnknownTLVTags,
 			}
-			fieldSpec.Tag.Enc = EncodingsExtToInt[dummyField.Tag.Enc]
-			if dummyField.Tag.Padding != nil {
-				if padderConstructor := PaddersExtToInt[dummyField.Tag.Padding.Type]; padderConstructor != nil {
-					fieldSpec.Tag.Pad = padderConstructor(dummyField.Tag.Padding.Pad)
-				}
+
+			if enc, ok := EncodingsExtToInt[dummyField.Tag.Enc]; ok {
+				fieldSpec.Tag.Enc = enc
 			}
-			fieldSpec.Tag.Sort = SortExtToInt[dummyField.Tag.Sort]
+
+			if dummyField.Tag.Padding != nil {
+				padderConstructor, ok := PaddersExtToInt[dummyField.Tag.Padding.Type]
+				if !ok {
+					return nil, fmt.Errorf("unknown padding type: %s for tag in field: %s", dummyField.Tag.Padding.Type, index)
+				}
+				fieldSpec.Tag.Pad = padderConstructor(dummyField.Tag.Padding.Pad)
+			}
+
+			sortFunc, ok := SortExtToInt[dummyField.Tag.Sort]
+			if !ok {
+				return nil, fmt.Errorf("unknown sort function: %s for tag in field: %s", dummyField.Tag.Sort, index)
+			}
+			fieldSpec.Tag.Sort = sortFunc
+
 			if dummyField.Tag.PrefUnknownTLV != "" {
-				fieldSpec.Tag.PrefUnknownTLV = PrefixesExtToInt[dummyField.Tag.PrefUnknownTLV]
-				if fieldSpec.Tag.PrefUnknownTLV == nil {
+				prefixer, ok := PrefixesExtToInt[dummyField.Tag.PrefUnknownTLV]
+				if !ok {
 					return nil, fmt.Errorf("unknown prefix: %s for tag prefUnknownTLV in field: %s", dummyField.Tag.PrefUnknownTLV, index)
 				}
+				fieldSpec.Tag.PrefUnknownTLV = prefixer
 			}
 		}
 
