@@ -143,10 +143,13 @@ type paddingDummy struct {
 }
 
 type tagDummy struct {
-	Length  int           `json:"length,omitempty"  xml:"length,omitempty"`
-	Enc     string        `json:"enc,omitempty"     xml:"enc,omitempty"`
-	Padding *paddingDummy `json:"padding,omitempty" xml:"padding,omitempty"`
-	Sort    string        `json:"sort,omitempty"    xml:"sort,omitempty"`
+	Length               int           `json:"length,omitempty"               xml:"length,omitempty"`
+	Enc                  string        `json:"enc,omitempty"                  xml:"enc,omitempty"`
+	Padding              *paddingDummy `json:"padding,omitempty"              xml:"padding,omitempty"`
+	Sort                 string        `json:"sort,omitempty"                 xml:"sort,omitempty"`
+	SkipUnknownTLVTags   bool          `json:"skipUnknownTLVTags,omitempty"   xml:"skipUnknownTLVTags,omitempty"`
+	StoreUnknownTLVTags  bool          `json:"storeUnknownTLVTags,omitempty"  xml:"storeUnknownTLVTags,omitempty"`
+	PrefUnknownTLV       string        `json:"prefUnknownTLV,omitempty"       xml:"prefUnknownTLV,omitempty"`
 }
 
 func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
@@ -187,7 +190,9 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 
 		if dummyField.Tag != nil {
 			fieldSpec.Tag = &field.TagSpec{
-				Length: dummyField.Tag.Length,
+				Length:              dummyField.Tag.Length,
+				SkipUnknownTLVTags:  dummyField.Tag.SkipUnknownTLVTags,
+				StoreUnknownTLVTags: dummyField.Tag.StoreUnknownTLVTags,
 			}
 			fieldSpec.Tag.Enc = EncodingsExtToInt[dummyField.Tag.Enc]
 			if dummyField.Tag.Padding != nil {
@@ -196,6 +201,12 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 				}
 			}
 			fieldSpec.Tag.Sort = SortExtToInt[dummyField.Tag.Sort]
+			if dummyField.Tag.PrefUnknownTLV != "" {
+				fieldSpec.Tag.PrefUnknownTLV = PrefixesExtToInt[dummyField.Tag.PrefUnknownTLV]
+				if fieldSpec.Tag.PrefUnknownTLV == nil {
+					return nil, fmt.Errorf("unknown prefix: %s for tag prefUnknownTLV in field: %s", dummyField.Tag.PrefUnknownTLV, index)
+				}
+			}
 		}
 
 		if dummyField.Bitmap != nil {
@@ -319,7 +330,9 @@ func exportField(internalField field.Field) (*fieldDummy, error) {
 
 func exportTag(tag *field.TagSpec) (*tagDummy, error) {
 	dummy := &tagDummy{
-		Length: tag.Length,
+		Length:              tag.Length,
+		SkipUnknownTLVTags:  tag.SkipUnknownTLVTags,
+		StoreUnknownTLVTags: tag.StoreUnknownTLVTags,
 	}
 	if tag.Pad != nil {
 		var err error
@@ -336,6 +349,9 @@ func exportTag(tag *field.TagSpec) (*tagDummy, error) {
 	}
 	if tag.Sort != nil {
 		dummy.Sort = getFunctionName(tag.Sort)
+	}
+	if tag.PrefUnknownTLV != nil {
+		dummy.PrefUnknownTLV = tag.PrefUnknownTLV.Inspect()
 	}
 	return dummy, nil
 }
