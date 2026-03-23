@@ -476,7 +476,7 @@ func ExportYAML(origSpec *iso8583.MessageSpec) ([]byte, error) {
 
 type orderedFieldMap map[string]*fieldDummy
 
-func (om orderedFieldMap) MarshalYAML() (interface{}, error) {
+func (om orderedFieldMap) sortedKeys() ([]int, error) {
 	keys := make([]int, 0, len(om))
 	for k := range om {
 		index, err := strconv.Atoi(k)
@@ -485,8 +485,15 @@ func (om orderedFieldMap) MarshalYAML() (interface{}, error) {
 		}
 		keys = append(keys, index)
 	}
-
 	sort.Ints(keys)
+	return keys, nil
+}
+
+func (om orderedFieldMap) MarshalYAML() (interface{}, error) {
+	keys, err := om.sortedKeys()
+	if err != nil {
+		return nil, err
+	}
 
 	node := &yaml.Node{Kind: yaml.MappingNode}
 	for _, key := range keys {
@@ -510,36 +517,31 @@ func (om orderedFieldMap) MarshalYAML() (interface{}, error) {
 }
 
 func (om orderedFieldMap) MarshalJSON() ([]byte, error) {
-	keys := make([]int, 0, len(om))
-	for k := range om {
-		index, err := strconv.Atoi(k)
-		if err != nil {
-			return nil, fmt.Errorf("converting field index into int: %w", err)
-		}
-		keys = append(keys, index)
+	keys, err := om.sortedKeys()
+	if err != nil {
+		return nil, err
 	}
 
-	sort.Ints(keys)
-
 	buf := &bytes.Buffer{}
-	buf.Write([]byte{'{'})
+	buf.WriteByte('{')
 	for i, key := range keys {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
 		strIndex := strconv.Itoa(key)
-		b, err := json.Marshal(om[strIndex])
+		k, err := json.Marshal(strIndex)
 		if err != nil {
 			return nil, err
 		}
-		buf.WriteString(fmt.Sprintf("\"%s\":", strIndex))
-		buf.Write(b)
-
-		// don't add "," if it's the last item
-		if i == len(keys)-1 {
-			break
+		v, err := json.Marshal(om[strIndex])
+		if err != nil {
+			return nil, err
 		}
-
-		buf.Write([]byte{','})
+		buf.Write(k)
+		buf.WriteByte(':')
+		buf.Write(v)
 	}
-	buf.Write([]byte{'}'})
+	buf.WriteByte('}')
 
 	return buf.Bytes(), nil
 }
