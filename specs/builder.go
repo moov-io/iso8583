@@ -17,6 +17,7 @@ import (
 	"github.com/moov-io/iso8583/prefix"
 	moovsort "github.com/moov-io/iso8583/sort"
 	"github.com/moov-io/iso8583/utils"
+	"gopkg.in/yaml.v3"
 )
 
 type FieldConstructorFunc func(spec *field.Spec) field.Field
@@ -110,8 +111,10 @@ var (
 	}
 )
 
+// Deprecated: Use ImportJSON, ExportJSON package-level functions instead.
 var Builder MessageSpecBuilder = &messageSpecBuilder{}
 
+// Deprecated: Use ImportJSON, ExportJSON package-level functions instead.
 type MessageSpecBuilder interface {
 	ImportJSON([]byte) (*iso8583.MessageSpec, error)
 	ExportJSON(spec *iso8583.MessageSpec) ([]byte, error)
@@ -120,36 +123,36 @@ type MessageSpecBuilder interface {
 type messageSpecBuilder struct{}
 
 type specDummy struct {
-	Name   string          `json:"name,omitempty"   xml:"name,omitempty"`
-	Fields orderedFieldMap `json:"fields,omitempty" xml:"fields,omitempty"`
+	Name   string          `json:"name,omitempty"   xml:"name,omitempty"   yaml:"name,omitempty"`
+	Fields orderedFieldMap `json:"fields,omitempty" xml:"fields,omitempty" yaml:"fields,omitempty"`
 }
 
 type fieldDummy struct {
-	Type              string                 `json:"type,omitempty"              xml:"type,omitempty"`
-	Length            int                    `json:"length,omitempty"            xml:"length,omitempty"`
-	Description       string                 `json:"description,omitempty"       xml:"description,omitempty"`
-	Enc               string                 `json:"enc,omitempty"               xml:"enc,omitempty"`
-	Prefix            string                 `json:"prefix,omitempty"            xml:"prefix,omitempty"`
-	Padding           *paddingDummy          `json:"padding,omitempty"           xml:"padding,omitempty"`
-	Tag               *tagDummy              `json:"tag,omitempty"               xml:"tag,omitempty"`
-	Subfields         map[string]*fieldDummy `json:"subfields,omitempty"         xml:"subfields:omitempty"`
-	Bitmap            *fieldDummy            `json:"bitmap,omitempty"            xml:"bitmap,omitempty"`
-	DisableAutoExpand bool                   `json:"disableAutoExpand,omitempty" xml:"disableAutoExpand,omitempty"`
+	Type              string                 `json:"type,omitempty"              xml:"type,omitempty"              yaml:"type,omitempty"`
+	Length            int                    `json:"length,omitempty"            xml:"length,omitempty"            yaml:"length,omitempty"`
+	Description       string                 `json:"description,omitempty"       xml:"description,omitempty"       yaml:"description,omitempty"`
+	Enc               string                 `json:"enc,omitempty"               xml:"enc,omitempty"               yaml:"enc,omitempty"`
+	Prefix            string                 `json:"prefix,omitempty"            xml:"prefix,omitempty"            yaml:"prefix,omitempty"`
+	Padding           *paddingDummy          `json:"padding,omitempty"           xml:"padding,omitempty"           yaml:"padding,omitempty"`
+	Tag               *tagDummy              `json:"tag,omitempty"               xml:"tag,omitempty"               yaml:"tag,omitempty"`
+	Subfields         map[string]*fieldDummy `json:"subfields,omitempty"         xml:"subfields:omitempty"         yaml:"subfields,omitempty"`
+	Bitmap            *fieldDummy            `json:"bitmap,omitempty"            xml:"bitmap,omitempty"            yaml:"bitmap,omitempty"`
+	DisableAutoExpand bool                   `json:"disableAutoExpand,omitempty" xml:"disableAutoExpand,omitempty" yaml:"disableAutoExpand,omitempty"`
 }
 
 type paddingDummy struct {
-	Type string `json:"type" xml:"type"`
-	Pad  string `json:"pad"  xml:"pad"`
+	Type string `json:"type" xml:"type" yaml:"type"`
+	Pad  string `json:"pad"  xml:"pad"  yaml:"pad"`
 }
 
 type tagDummy struct {
-	Length              int           `json:"length,omitempty"               xml:"length,omitempty"`
-	Enc                 string        `json:"enc,omitempty"                  xml:"enc,omitempty"`
-	Padding             *paddingDummy `json:"padding,omitempty"              xml:"padding,omitempty"`
-	Sort                string        `json:"sort,omitempty"                 xml:"sort,omitempty"`
-	SkipUnknownTLVTags  bool          `json:"skipUnknownTLVTags,omitempty"   xml:"skipUnknownTLVTags,omitempty"`
-	StoreUnknownTLVTags bool          `json:"storeUnknownTLVTags,omitempty"  xml:"storeUnknownTLVTags,omitempty"`
-	PrefUnknownTLV      string        `json:"prefUnknownTLV,omitempty"       xml:"prefUnknownTLV,omitempty"`
+	Length              int           `json:"length,omitempty"               xml:"length,omitempty"               yaml:"length,omitempty"`
+	Enc                 string        `json:"enc,omitempty"                  xml:"enc,omitempty"                  yaml:"enc,omitempty"`
+	Padding             *paddingDummy `json:"padding,omitempty"              xml:"padding,omitempty"              yaml:"padding,omitempty"`
+	Sort                string        `json:"sort,omitempty"                 xml:"sort,omitempty"                 yaml:"sort,omitempty"`
+	SkipUnknownTLVTags  bool          `json:"skipUnknownTLVTags,omitempty"   xml:"skipUnknownTLVTags,omitempty"   yaml:"skipUnknownTLVTags,omitempty"`
+	StoreUnknownTLVTags bool          `json:"storeUnknownTLVTags,omitempty"  xml:"storeUnknownTLVTags,omitempty"  yaml:"storeUnknownTLVTags,omitempty"`
+	PrefUnknownTLV      string        `json:"prefUnknownTLV,omitempty"       xml:"prefUnknownTLV,omitempty"       yaml:"prefUnknownTLV,omitempty"`
 }
 
 func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
@@ -239,15 +242,9 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 	return fieldSpec, nil
 }
 
-func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec, error) {
-	dummySpec := specDummy{}
-	err := json.Unmarshal(raw, &dummySpec)
-	if err != nil {
-		return nil, utils.NewSafeError(err, "failed to JSON unmarshal bytes to MessageSpec")
-	}
-
+func importSpec(dummySpec *specDummy) (*iso8583.MessageSpec, error) {
 	if len(dummySpec.Fields) == 0 {
-		return nil, fmt.Errorf("no fields in JSON file")
+		return nil, fmt.Errorf("no fields defined in spec")
 	}
 
 	spec := iso8583.MessageSpec{
@@ -276,6 +273,41 @@ func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec,
 	}
 
 	return &spec, nil
+}
+
+func exportSpec(origSpec *iso8583.MessageSpec) (*specDummy, error) {
+	if origSpec == nil {
+		return nil, fmt.Errorf("invalid message spec")
+	}
+	dummy := &specDummy{
+		Name:   origSpec.Name,
+		Fields: map[string]*fieldDummy{},
+	}
+
+	for index, origField := range origSpec.Fields {
+		f, err := exportField(origField)
+		if err != nil {
+			return nil, fmt.Errorf("failed to export field: %d. %w", index, err)
+		}
+		dummy.Fields[strconv.Itoa(index)] = f
+	}
+
+	return dummy, nil
+}
+
+// ImportJSON unmarshals a JSON spec into a MessageSpec.
+func ImportJSON(raw []byte) (*iso8583.MessageSpec, error) {
+	dummySpec := specDummy{}
+	err := json.Unmarshal(raw, &dummySpec)
+	if err != nil {
+		return nil, utils.NewSafeError(err, "failed to JSON unmarshal bytes to MessageSpec")
+	}
+
+	return importSpec(&dummySpec)
+}
+
+func (builder *messageSpecBuilder) ImportJSON(raw []byte) (*iso8583.MessageSpec, error) {
+	return ImportJSON(raw)
 }
 
 func exportField(internalField field.Field) (*fieldDummy, error) {
@@ -393,21 +425,11 @@ func exportEnc(enc encoding.Encoder) (string, error) {
 	}
 }
 
-func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]byte, error) {
-	if origSpec == nil {
-		return nil, fmt.Errorf("invalid message spec")
-	}
-	dummy := specDummy{
-		Name:   origSpec.Name,
-		Fields: map[string]*fieldDummy{},
-	}
-
-	for index, origField := range origSpec.Fields {
-		f, err := exportField(origField)
-		if err != nil {
-			return nil, fmt.Errorf("failed to export field: %d. %w", index, err)
-		}
-		dummy.Fields[strconv.Itoa(index)] = f
+// ExportJSON marshals a MessageSpec into indented JSON.
+func ExportJSON(origSpec *iso8583.MessageSpec) ([]byte, error) {
+	dummy, err := exportSpec(origSpec)
+	if err != nil {
+		return nil, err
 	}
 
 	outputBuffer := new(bytes.Buffer)
@@ -422,7 +444,70 @@ func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]
 	return outputBuffer.Bytes(), nil
 }
 
+func (builder *messageSpecBuilder) ExportJSON(origSpec *iso8583.MessageSpec) ([]byte, error) {
+	return ExportJSON(origSpec)
+}
+
+// ImportYAML unmarshals a YAML spec into a MessageSpec.
+func ImportYAML(raw []byte) (*iso8583.MessageSpec, error) {
+	dummySpec := specDummy{}
+	err := yaml.Unmarshal(raw, &dummySpec)
+	if err != nil {
+		return nil, utils.NewSafeError(err, "failed to YAML unmarshal bytes to MessageSpec")
+	}
+
+	return importSpec(&dummySpec)
+}
+
+// ExportYAML marshals a MessageSpec into YAML.
+func ExportYAML(origSpec *iso8583.MessageSpec) ([]byte, error) {
+	dummy, err := exportSpec(origSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := yaml.Marshal(dummy)
+	if err != nil {
+		return nil, utils.NewSafeError(err, "failed to perform YAML encoding")
+	}
+
+	return data, nil
+}
+
 type orderedFieldMap map[string]*fieldDummy
+
+func (om orderedFieldMap) MarshalYAML() (interface{}, error) {
+	keys := make([]int, 0, len(om))
+	for k := range om {
+		index, err := strconv.Atoi(k)
+		if err != nil {
+			return nil, fmt.Errorf("converting field index into int: %w", err)
+		}
+		keys = append(keys, index)
+	}
+
+	sort.Ints(keys)
+
+	node := &yaml.Node{Kind: yaml.MappingNode}
+	for _, key := range keys {
+		strIndex := strconv.Itoa(key)
+
+		keyNode := &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Tag:   "!!str",
+			Value: strIndex,
+		}
+
+		valNode := &yaml.Node{}
+		if err := valNode.Encode(om[strIndex]); err != nil {
+			return nil, err
+		}
+
+		node.Content = append(node.Content, keyNode, valNode)
+	}
+
+	return node, nil
+}
 
 func (om orderedFieldMap) MarshalJSON() ([]byte, error) {
 	keys := make([]int, 0, len(om))
