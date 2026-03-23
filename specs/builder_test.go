@@ -258,6 +258,54 @@ func TestSpecWithCompositeBitmapedFields(t *testing.T) {
 	require.Equal(t, "22004000000000000011 456", string(packed))
 }
 
+func TestExportImportTagSpecTLVFields(t *testing.T) {
+	spec := &iso8583.MessageSpec{
+		Name: "TLV Spec",
+		Fields: map[int]field.Field{
+			1: field.NewComposite(&field.Spec{
+				Length:      999,
+				Description: "TLV field with unknown tag handling",
+				Pref:        prefix.ASCII.LLL,
+				Tag: &field.TagSpec{
+					Length:              2,
+					Enc:                 encoding.ASCII,
+					Pad:                 padding.Left('0'),
+					Sort:                sort.StringsByInt,
+					SkipUnknownTLVTags:  true,
+					StoreUnknownTLVTags: true,
+					PrefUnknownTLV:      prefix.ASCII.LL,
+				},
+				Subfields: map[string]field.Field{
+					"1": field.NewString(&field.Spec{
+						Length:      10,
+						Description: "Sub 1",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.LL,
+					}),
+				},
+			}),
+		},
+	}
+
+	specJSON, err := Builder.ExportJSON(spec)
+	require.NoError(t, err)
+
+	importedSpec, err := Builder.ImportJSON(specJSON)
+	require.NoError(t, err)
+
+	// Verify the TLV-specific tag fields round-tripped correctly
+	importedTag := importedSpec.Fields[1].Spec().Tag
+	require.True(t, importedTag.SkipUnknownTLVTags)
+	require.True(t, importedTag.StoreUnknownTLVTags)
+	require.NotNil(t, importedTag.PrefUnknownTLV)
+	require.Equal(t, "ASCII.LL", importedTag.PrefUnknownTLV.Inspect())
+
+	// Verify JSON re-export is stable
+	reexportedJSON, err := Builder.ExportJSON(importedSpec)
+	require.NoError(t, err)
+	require.Equal(t, specJSON, reexportedJSON)
+}
+
 func TestExportImportWithNonePrefixField(t *testing.T) {
 	spec := &iso8583.MessageSpec{
 		Fields: map[int]field.Field{
