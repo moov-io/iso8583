@@ -85,5 +85,5 @@ func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {
 		return nil, fmt.Errorf("reading file %s: %w", path, err)
 	}
 
-	return specs.Builder.ImportJSON(raw)
+	return specs.ImportJSON(raw)
 }
