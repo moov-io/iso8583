@@ -835,7 +835,8 @@ func TestCompositePacking(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = composite.Pack()
-		require.EqualError(t, err, "failed to pack subfield 1: failed to encode length: field length: 4 should be fixed: 2")
+		require.EqualError(t, err, "failed to pack subfield 1: failed to encode length: data length: 4 should be fixed: 2")
+		require.True(t, prefix.IsLengthError(err), "error should be a length error")
 	})
 
 	t.Run("Pack returns error when encoded data length is larger than specified fixed max length", func(t *testing.T) {
@@ -876,7 +877,8 @@ func TestCompositePacking(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = composite.Pack()
-		require.EqualError(t, err, "failed to encode length: field length: 6 should be fixed: 4")
+		require.EqualError(t, err, "failed to encode length: data length: 6 should be fixed: 4")
+		require.True(t, prefix.IsLengthError(err), "error should be a length error")
 	})
 
 	t.Run("Pack correctly serializes data with padded tags to bytes", func(t *testing.T) {
@@ -1026,6 +1028,7 @@ func TestCompositePacking(t *testing.T) {
 		require.Equal(t, 0, read)
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to decode length: data length: 7 is larger than maximum 4")
+		require.True(t, prefix.IsLengthError(err), "error should be a length error")
 	})
 
 	t.Run("Unpack without error when not all subfields are set", func(t *testing.T) {
@@ -1178,7 +1181,8 @@ func TestCompositePackingWithTags(t *testing.T) {
 		b, err := composite.Pack()
 		require.Nil(t, b)
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to encode length: field length: 12 should be fixed: 6")
+		require.EqualError(t, err, "failed to encode length: data length: 12 should be fixed: 6")
+		require.True(t, prefix.IsLengthError(err), "error should be a length error")
 	})
 
 	t.Run("Pack returns error when encoded data length is larger than specified variable max length", func(t *testing.T) {
@@ -1221,7 +1225,8 @@ func TestCompositePackingWithTags(t *testing.T) {
 
 		b, err := composite.Pack()
 		require.Nil(t, b)
-		require.EqualError(t, err, "failed to encode length: field length: 12 is larger than maximum: 8")
+		require.EqualError(t, err, "failed to encode length: data length: 12 is larger than maximum: 8")
+		require.True(t, prefix.IsLengthError(err), "error should be a length error")
 	})
 
 	t.Run("Pack correctly serializes fully populated data to bytes", func(t *testing.T) {
@@ -1430,7 +1435,8 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 		b, err := composite.Pack()
 		require.Nil(t, b)
 		require.Error(t, err)
-		require.EqualError(t, err, "failed to encode length: field length: 14 should be fixed: 20")
+		require.EqualError(t, err, "failed to encode length: data length: 14 should be fixed: 20")
+		require.True(t, prefix.IsLengthError(err), "error should be a length error")
 	})
 
 	t.Run("Pack returns error when encoded data length is larger than specified variable max length", func(t *testing.T) {
@@ -1473,7 +1479,8 @@ func TestCompositePackingWithBitmap(t *testing.T) {
 
 		b, err := composite.Pack()
 		require.Nil(t, b)
-		require.EqualError(t, err, "failed to encode length: field length: 14 is larger than maximum: 5")
+		require.EqualError(t, err, "failed to encode length: data length: 14 is larger than maximum: 5")
+		require.True(t, prefix.IsLengthError(err), "error should be a length error")
 	})
 
 	t.Run("Pack correctly serializes fully populated data to bytes with default bitmap", func(t *testing.T) {
