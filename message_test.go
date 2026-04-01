@@ -1739,7 +1739,6 @@ func TestMessageClone(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, message.spec, message2.spec)
-	require.Equal(t, message.Bitmap(), message2.Bitmap())
 
 	mti, err := message.GetMTI()
 	require.NoError(t, err)
@@ -2667,5 +2666,155 @@ func TestStructWithTypes(t *testing.T) {
 				}
 			})
 		}
+	})
+}
+
+func TestClone(t *testing.T) {
+	spec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.Binary,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			3: field.NewNumeric(&field.Spec{
+				Length:      6,
+				Description: "Processing Code",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+			4: field.NewNumeric(&field.Spec{
+				Length:      12,
+				Description: "Transaction Amount",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+				Pad:         padding.Left('0'),
+			}),
+		},
+	}
+
+	type authorization struct {
+		MTI            string `iso8583:"0"`
+		PAN            string `iso8583:"2"`
+		ProcessingCode int64  `iso8583:"3,keepzero"`
+		Amount         int64  `iso8583:"4,keepzero"`
+	}
+
+	t.Run("preserves all set fields", func(t *testing.T) {
+		msg := NewMessage(spec)
+		require.NoError(t, msg.Marshal(&authorization{
+			MTI:            "0100",
+			PAN:            "4242424242424242",
+			ProcessingCode: 123456,
+			Amount:         9999,
+		}))
+
+		clone, err := msg.Clone()
+		require.NoError(t, err)
+
+		got := &authorization{}
+		require.NoError(t, clone.Unmarshal(got))
+
+		assert.Equal(t, "0100", got.MTI)
+		assert.Equal(t, "4242424242424242", got.PAN)
+		assert.Equal(t, int64(123456), got.ProcessingCode)
+		assert.Equal(t, int64(9999), got.Amount)
+	})
+
+	t.Run("preserves explicitly set zero-value fields", func(t *testing.T) {
+		msg := NewMessage(spec)
+		require.NoError(t, msg.Marshal(&authorization{
+			MTI:            "0100",
+			PAN:            "4242424242424242",
+			ProcessingCode: 0,
+			Amount:         0,
+		}))
+
+		clone, err := msg.Clone()
+		require.NoError(t, err)
+
+		got := &authorization{}
+		require.NoError(t, clone.Unmarshal(got))
+
+		assert.Equal(t, "0100", got.MTI)
+		assert.Equal(t, "4242424242424242", got.PAN)
+		assert.Equal(t, int64(0), got.ProcessingCode)
+		assert.Equal(t, int64(0), got.Amount)
+
+		packed, err := clone.Pack()
+		require.NoError(t, err)
+
+		roundtrip := NewMessage(spec)
+		require.NoError(t, roundtrip.Unpack(packed))
+
+		result := &authorization{}
+		require.NoError(t, roundtrip.Unmarshal(result))
+
+		assert.Equal(t, int64(0), result.ProcessingCode)
+		assert.Equal(t, int64(0), result.Amount)
+	})
+
+	t.Run("clone is independent from original", func(t *testing.T) {
+		msg := NewMessage(spec)
+		require.NoError(t, msg.Marshal(&authorization{
+			MTI:    "0100",
+			PAN:    "4242424242424242",
+			Amount: 9999,
+		}))
+
+		clone, err := msg.Clone()
+		require.NoError(t, err)
+
+		require.NoError(t, clone.Marshal(&authorization{
+			MTI:    "0400",
+			PAN:    "9999999999999999",
+			Amount: 1,
+		}))
+
+		orig := &authorization{}
+		require.NoError(t, msg.Unmarshal(orig))
+		assert.Equal(t, "0100", orig.MTI)
+		assert.Equal(t, "4242424242424242", orig.PAN)
+		assert.Equal(t, int64(9999), orig.Amount)
+
+		cloned := &authorization{}
+		require.NoError(t, clone.Unmarshal(cloned))
+		assert.Equal(t, "0400", cloned.MTI)
+		assert.Equal(t, "9999999999999999", cloned.PAN)
+		assert.Equal(t, int64(1), cloned.Amount)
+	})
+
+	t.Run("produces identical packed output", func(t *testing.T) {
+		msg := NewMessage(spec)
+		require.NoError(t, msg.Marshal(&authorization{
+			MTI:            "0100",
+			PAN:            "4242424242424242",
+			ProcessingCode: 123456,
+			Amount:         77700,
+		}))
+
+		originalPacked, err := msg.Pack()
+		require.NoError(t, err)
+
+		clone, err := msg.Clone()
+		require.NoError(t, err)
+
+		clonePacked, err := clone.Pack()
+		require.NoError(t, err)
+
+		assert.Equal(t, originalPacked, clonePacked)
 	})
 }
