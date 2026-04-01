@@ -377,33 +377,35 @@ func (m *Message) packableFieldIDs() ([]int, error) {
 	return populatedFieldIDs, nil
 }
 
-// Clone clones the message by creating a new message from the binary
-// representation of the original message
+// Clone clones the message by creating a deep copy of each set field's value
+// directly, preserving explicitly set zero-value fields without a binary round-trip.
 func (m *Message) Clone() (*Message, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	newMessage := NewMessage(m.spec)
+	clone := NewMessage(m.spec)
 
-	bytes, err := m.wrapErrorPack()
-	if err != nil {
-		return nil, err
+	for id := range m.fieldsMap {
+		if id == bitmapIdx {
+			continue
+		}
+
+		src := m.fields[id]
+		dst := clone.fields[id]
+
+		raw, err := src.Bytes()
+		if err != nil {
+			return nil, fmt.Errorf("cloning field %d: %w", id, err)
+		}
+
+		if err := dst.SetBytes(raw); err != nil {
+			return nil, fmt.Errorf("setting cloned field %d: %w", id, err)
+		}
+
+		clone.fieldsMap[id] = struct{}{}
 	}
 
-	mti, err := m.GetMTI()
-	if err != nil {
-		return nil, err
-	}
-
-	newMessage.MTI(mti)
-	newMessage.Unpack(bytes)
-
-	_, err = newMessage.Pack()
-	if err != nil {
-		return nil, err
-	}
-
-	return newMessage, nil
+	return clone, nil
 }
 
 // Marshal populates message fields with v struct field values. It traverses
