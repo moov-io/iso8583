@@ -471,7 +471,7 @@ func TestCompositeField_MarshalPath(t *testing.T) {
 		require.Contains(t, err.Error(), "field FF is not defined in the spec")
 	})
 
-	t.Run("allows persisting a field no tin spec if the composite field is configured for unknown TLV support", func(t *testing.T) {
+	t.Run("allows persisting a field not in spec if the composite field is configured for unknown TLV support", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpecWithTagPaddingAndUnknownTLVSupport)
 		err := composite.MarshalPath("11.FF",
 			&Binary{value: []byte{7, 4, 3}})
