@@ -66,6 +66,12 @@ func TestUnknownTags(t *testing.T) {
 		},
 	}
 
+	t.Run("returns empty map for nil message", func(t *testing.T) {
+		unknownTags := UnknownTags(nil)
+		require.NotNil(t, unknownTags)
+		require.Empty(t, unknownTags)
+	})
+
 	t.Run("returns unknown tags from nested composites", func(t *testing.T) {
 		msg := NewMessage(spec)
 
@@ -215,6 +221,12 @@ func TestUnknownCompositeTags(t *testing.T) {
 			}),
 		},
 	}
+
+	t.Run("returns empty map for nil composite", func(t *testing.T) {
+		unknownTags := UnknownCompositeTags(nil)
+		require.NotNil(t, unknownTags)
+		require.Empty(t, unknownTags)
+	})
 
 	t.Run("returns unknown tags from nested composites", func(t *testing.T) {
 		// Build data with known + unknown TLV tags inside field 2
