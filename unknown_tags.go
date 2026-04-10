@@ -16,6 +16,20 @@ func UnknownTags(message *Message) map[string]field.Field {
 	return result
 }
 
+// UnknownCompositeTags returns unknown TLV tags found in the composite field after unpacking,
+// keyed by their dot separated paths (e.g., "9F36" for unknown tag 9F36 inside the composite).
+// This requires StoreUnknownTLVTags to be enabled in the composite field specs that may contain
+// unknown tags.
+func UnknownCompositeTags(composite *field.Composite) map[string]field.Field {
+	if composite == nil {
+		return make(map[string]field.Field)
+	}
+
+	result := make(map[string]field.Field)
+	collectUnknownTags(composite, composite.Spec().Subfields, "", result)
+	return result
+}
+
 // collectUnknownTags recursively walks a field container, comparing
 // subfield keys against the spec's subfield definitions. Any key present
 // in GetSubfields() but missing from specSubfields is an unknown tag.

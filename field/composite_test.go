@@ -98,6 +98,60 @@ var (
 		},
 	}
 
+	compositeTestSpecWithTagPaddingAndUnknownTLVSupport = &Spec{
+		Length:      30,
+		Description: "Test Spec",
+		Pref:        prefix.ASCII.LL,
+		Tag: &TagSpec{
+			Length: 2,
+			Enc:    encoding.ASCII,
+			Pad:    padding.Left('0'),
+			Sort:   sort.StringsByInt,
+		},
+		Subfields: map[string]Field{
+			"1": NewString(&Spec{
+				Length:      2,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"2": NewString(&Spec{
+				Length:      2,
+				Description: "String Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"3": NewNumeric(&Spec{
+				Length:      2,
+				Description: "Numeric Field",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			"11": NewComposite(&Spec{
+				Length:      6,
+				Description: "Sub-Composite Field",
+				Pref:        prefix.ASCII.LL,
+				Tag: &TagSpec{
+					Length:              2,
+					Enc:                 encoding.ASCII,
+					Pad:                 padding.Left('0'),
+					Sort:                sort.StringsByInt,
+					SkipUnknownTLVTags:  true,
+					StoreUnknownTLVTags: true,
+					PrefUnknownTLV:      prefix.ASCII.LL,
+				},
+				Subfields: map[string]Field{
+					"1": NewString(&Spec{
+						Length:      2,
+						Description: "String Field",
+						Enc:         encoding.ASCII,
+						Pref:        prefix.ASCII.LL,
+					}),
+				},
+			}),
+		},
+	}
+
 	compositeTestSpecWithDefaultBitmap = &Spec{
 		Length:      36,
 		Description: "Test Spec",
@@ -415,6 +469,23 @@ func TestCompositeField_MarshalPath(t *testing.T) {
 		composite := NewComposite(compositeTestSpecWithTagPadding)
 		err := composite.MarshalPath("11.FF", 743)
 		require.Contains(t, err.Error(), "field FF is not defined in the spec")
+	})
+
+	t.Run("allows persisting a field no tin spec if the composite field is configured for unknown TLV support", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPaddingAndUnknownTLVSupport)
+		err := composite.MarshalPath("11.FF",
+			&Binary{value: []byte{7, 4, 3}})
+		require.NoError(t, err)
+
+		// check that the value was set correctly
+		subfield, ok := composite.subfields["11"]
+		require.True(t, ok)
+
+		unknownTLV, ok := subfield.(*Composite).subfields["FF"]
+		require.True(t, ok)
+
+		val, err := unknownTLV.Bytes()
+		require.Equal(t, []byte{7, 4, 3}, val)
 	})
 
 	t.Run("non-composite nested error", func(t *testing.T) {
