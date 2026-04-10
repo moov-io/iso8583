@@ -658,6 +658,16 @@ Tag: &field.TagSpec{
 
 When enabled, unknown tags are stored as `Binary` fields inside the composite. Packing the message again will include them in the output, preserving the original data.
 
+You can also manually set unknown tags on a composite field using `MarshalPath`. This is useful when you want to set a packable unknown field on the composite — for example, when reconstructing a message or adding tags that are not defined in the spec. The following conditions must be met:
+
+- Both `SkipUnknownTLVTags` and `StoreUnknownTLVTags` are enabled in the `TagSpec`
+- The value implements `field.Field` (e.g., `*field.Binary`)
+
+```go
+// Set an unknown tag on field 55
+err := msg.MarshalPath("55.9F36", &field.Binary{...})
+```
+
 #### Finding Unknown Tags with `UnknownTags`
 
 If you store unknown tags, you can use the `UnknownTags` helper to retrieve them from a message after unpacking. It returns a map of unknown fields keyed by their dot-separated path (e.g., `"55.9F36"` for unknown tag `9F36` inside field 55):
@@ -676,7 +686,23 @@ for path, f := range unknownTags {
 }
 ```
 
-> **Note:** `UnknownTags` only returns results when `StoreUnknownTLVTags` is enabled in the composite field specs. If unknown tags are skipped but not stored, they are discarded during unpacking and cannot be retrieved.
+If you're working with a standalone `*field.Composite` (not a full message), use `UnknownCompositeTags` instead:
+
+```go
+composite := field.NewComposite(spec)
+_, err := composite.Unpack(rawData)
+if err != nil {
+    // handle error
+}
+
+unknownTags := iso8583.UnknownCompositeTags(composite)
+for path, f := range unknownTags {
+    val, _ := f.Bytes()
+    fmt.Printf("Unknown tag at %s: %X\n", path, val)
+}
+```
+
+> **Note:** `UnknownTags` and `UnknownCompositeTags` only return results when `StoreUnknownTLVTags` is enabled in the composite field specs. If unknown tags are skipped but not stored, they are discarded during unpacking and cannot be retrieved.
 
 ### Sending and Receiving Messages
 
