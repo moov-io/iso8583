@@ -38,50 +38,50 @@ func NewMessageScanner(spec *MessageSpec, src []byte) *MessageScanner {
 
 // ScanField parses the message up to and including the field with the given
 // id, returning the parsed field. Fields between the current cursor position
-// and the target field are consumed but discarded.
+// and the target field are consumed but discarded. MTI and bitmap are parsed
+// automatically when needed.
 //
-// Field 0 (MTI) must be scanned before any other field. Fields must be
-// scanned in strictly ascending order. Any error is returned as
-// *iso8583errors.UnpackError.
+// Fields must be scanned in strictly ascending order. Any error is returned
+// as *iso8583errors.UnpackError.
 func (s *MessageScanner) ScanField(id int) (field.Field, error) {
-	f, err := s.scanField(id)
+	f, fieldID, err := s.scanField(id)
 	if err != nil {
 		return nil, &iso8583errors.UnpackError{
 			Err:        err,
-			FieldID:    strconv.Itoa(id),
+			FieldID:    fieldID,
 			RawMessage: s.src,
 		}
 	}
 	return f, nil
 }
 
-func (s *MessageScanner) scanField(id int) (field.Field, error) {
+func (s *MessageScanner) scanField(id int) (field.Field, string, error) {
 	if id < 0 {
-		return nil, fmt.Errorf("invalid field id: %d", id)
+		return nil, strconv.Itoa(id), fmt.Errorf("invalid field id: %d", id)
 	}
 
 	if id <= s.lastID {
-		return nil, fmt.Errorf("field %d is at or before current position %d: scanner is forward-only", id, s.lastID)
+		return nil, strconv.Itoa(id), fmt.Errorf("field %d is at or before current position %d: scanner is forward-only", id, s.lastID)
 	}
 
 	// Ensure MTI is scanned; return it if that's what was requested.
 	if s.lastID == -1 {
 		f, err := s.scanMTI()
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan MTI: %w", err)
+			return nil, strconv.Itoa(mtiIdx), err
 		}
 		if id == mtiIdx {
-			return f, nil
+			return f, "", nil
 		}
 	}
 
 	// Ensure bitmap is scanned; return it if that's what was requested.
 	if !s.scannedBitmap {
 		if err := s.parseBitmap(); err != nil {
-			return nil, fmt.Errorf("failed to parse bitmap: %w", err)
+			return nil, strconv.Itoa(bitmapIdx), err
 		}
 		if id == bitmapIdx {
-			return s.bitmap, nil
+			return s.bitmap, "", nil
 		}
 	}
 
@@ -98,26 +98,25 @@ func (s *MessageScanner) scanField(id int) (field.Field, error) {
 
 		specField, ok := s.spec.Fields[i]
 		if !ok {
-			return nil, fmt.Errorf("field %d is not defined in the spec", i)
+			return nil, strconv.Itoa(i), fmt.Errorf("field %d is not defined in the spec", i)
 		}
 
 		f := field.NewInstanceOf(specField)
 
 		read, err := f.Unpack(s.src[s.offset:])
 		if err != nil {
-			return nil, fmt.Errorf("failed to unpack field %d (%s): %w", i, f.Spec().Description, err)
+			return nil, strconv.Itoa(i), fmt.Errorf("failed to unpack field %d (%s): %w", i, f.Spec().Description, err)
 		}
 
 		s.offset += read
 		s.lastID = i
 
 		if i == id {
-			return f, nil
+			return f, "", nil
 		}
 	}
 
-	// Field was not present in the bitmap
-	return nil, fmt.Errorf("field %d is not set in the bitmap", id)
+	return nil, strconv.Itoa(id), fmt.Errorf("field %d is not set in the bitmap", id)
 }
 
 func (s *MessageScanner) scanMTI() (field.Field, error) {
