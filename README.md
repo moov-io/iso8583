@@ -37,6 +37,7 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
     - [Working with ISO 8583 Messages](#working-with-iso-8583-messages)
     - [Setting Message Data](#setting-message-data)
     - [Getting Message Data](#getting-message-data)
+    - [Partial Message Parsing (MessageScanner)](#partial-message-parsing-messagescanner)
 	- [Inspecting message fields](#inspecting-message-fields)
 	- [JSON Encoding and Decoding](#json-encoding-and-decoding)
 	- [Working with Unknown TLV Tags](#working-with-unknown-tlv-tags)
@@ -477,6 +478,52 @@ fmt.Println(auth.MTI.Value())
 fmt.Println(auth.Amount.Value())
 ```
 </details>
+
+### Partial Message Parsing (MessageScanner)
+
+When you only need to inspect a few fields from a raw message — for example, reading the MTI to decide how to route, or extracting the STAN for logging — you can use `MessageScanner` instead of unpacking the entire message.
+
+`MessageScanner` is a forward-only cursor that parses fields on demand. It consumes bytes sequentially but only returns the fields you ask for, making it lightweight and suitable for proxies and routers.
+
+```go
+s := iso8583.NewMessageScanner(spec, rawBytes)
+
+// Scan MTI to decide how to handle the message
+f, err := s.ScanField(0)
+if err != nil {
+    // handle error
+}
+
+mti, err := f.String()
+if err != nil {
+    // handle error
+}
+
+if mti == "0800" {
+    // Network management message — forward raw bytes to a
+    // dedicated handler without further parsing
+    handleNetworkMessage(rawBytes)
+    return
+}
+
+// For other messages, continue scanning to get STAN
+f, err = s.ScanField(11)
+if err != nil {
+    // handle error
+}
+
+stan, err := f.String()
+if err != nil {
+    // handle error
+}
+
+// Route or log based on MTI and STAN
+fmt.Printf("MTI: %s, STAN: %s\n", mti, stan)
+```
+
+Key behaviors:
+- **Forward-only**: fields must be scanned in ascending order. Scanning a field at or before the current position returns an error.
+- **Minimal allocations**: fields between the current position and the target are consumed from the byte stream but discarded. Only the requested field is allocated and returned.
 
 ### Inspecting Message Fields
 
