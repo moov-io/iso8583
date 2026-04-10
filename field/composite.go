@@ -806,6 +806,15 @@ func (m *Composite) MarshalPath(path string, value any) error {
 
 	field, err := m.getOrCreateField(id)
 	if err != nil {
+		// at the moment getOrCreateField only returns an error if the field is not in spec
+		// if the passed value is of type Field, and there is no subPath, we can set it directly without returning an error
+		// this allows us to restore subfields corresponding to unknown TLV tags
+		if v, ok := value.(Field); !hasSubPath && m.skipUnknownTLVTags() &&
+			m.spec.Tag.StoreUnknownTLVTags && ok {
+			m.subfields[id] = v
+
+			return nil
+		}
 		return fmt.Errorf("getting or creating subfield %s: %w", id, err)
 	}
 

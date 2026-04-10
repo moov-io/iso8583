@@ -66,6 +66,12 @@ func TestUnknownTags(t *testing.T) {
 		},
 	}
 
+	t.Run("returns empty map for nil message", func(t *testing.T) {
+		unknownTags := UnknownTags(nil)
+		require.NotNil(t, unknownTags)
+		require.Empty(t, unknownTags)
+	})
+
 	t.Run("returns unknown tags from nested composites", func(t *testing.T) {
 		msg := NewMessage(spec)
 
@@ -81,8 +87,8 @@ func TestUnknownTags(t *testing.T) {
 		data = append(data, 0x9a, 0x03, 0x21, 0x07, 0x20)                         // 9A
 		data = append(data, 0x9f, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01) // 9F02
 		// Unknown tags
-		data = append(data, 0x9f, 0x36, 0x02, 0x01, 0x57)                   // 9F36
-		data = append(data, 0x9f, 0x37, 0x04, 0x9b, 0xad, 0xbc, 0xab)       // 9F37
+		data = append(data, 0x9f, 0x36, 0x02, 0x01, 0x57)             // 9F36
+		data = append(data, 0x9f, 0x37, 0x04, 0x9b, 0xad, 0xbc, 0xab) // 9F37
 
 		err := msg.Unpack(data)
 		require.NoError(t, err)
@@ -171,6 +177,145 @@ func TestUnknownTags(t *testing.T) {
 
 		// Unknown tags are not stored, so UnknownTags returns empty
 		unknownTags := UnknownTags(msg)
+		require.Empty(t, unknownTags)
+	})
+}
+
+func TestUnknownCompositeTags(t *testing.T) {
+	spec := &field.Spec{
+		Length:      999,
+		Description: "Processing Code",
+		Pref:        prefix.ASCII.LLL,
+		Tag: &field.TagSpec{
+			Sort: sort.StringsByInt,
+		},
+		Subfields: map[string]field.Field{
+			"1": field.NewString(&field.Spec{
+				Length:      2,
+				Description: "Transaction Type",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			"2": field.NewComposite(&field.Spec{
+				Length:      100,
+				Description: "Nested TLV",
+				Pref:        prefix.ASCII.LLL,
+				Tag: &field.TagSpec{
+					Enc:                 encoding.BerTLVTag,
+					Sort:                sort.StringsByHex,
+					SkipUnknownTLVTags:  true,
+					StoreUnknownTLVTags: true,
+				},
+				Subfields: map[string]field.Field{
+					"9A": field.NewHex(&field.Spec{
+						Description: "Transaction Date",
+						Enc:         encoding.Binary,
+						Pref:        prefix.BerTLV,
+					}),
+					"9F02": field.NewHex(&field.Spec{
+						Description: "Amount, Authorized (Numeric)",
+						Enc:         encoding.Binary,
+						Pref:        prefix.BerTLV,
+					}),
+				},
+			}),
+		},
+	}
+
+	t.Run("returns empty map for nil composite", func(t *testing.T) {
+		unknownTags := UnknownCompositeTags(nil)
+		require.NotNil(t, unknownTags)
+		require.Empty(t, unknownTags)
+	})
+
+	t.Run("returns unknown tags from nested composites", func(t *testing.T) {
+		// Build data with known + unknown TLV tags inside field 2
+		data := make([]byte, 0, 34)
+		// LLL = 31
+		data = append(data, []byte("031")...)
+		// Subfield 1 value
+		data = append(data, []byte("00")...)
+		// LLL for TLV field 2
+		data = append(data, []byte("026")...)
+		// Known tags
+		data = append(data, 0x9a, 0x03, 0x21, 0x07, 0x20)                         // 9A
+		data = append(data, 0x9f, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01) // 9F02
+		// Unknown tags
+		data = append(data, 0x9f, 0x36, 0x02, 0x01, 0x57)             // 9F36
+		data = append(data, 0x9f, 0x37, 0x04, 0x9b, 0xad, 0xbc, 0xab) // 9F37
+
+		f := field.NewComposite(spec)
+		_, err := f.Unpack(data)
+		require.NoError(t, err)
+
+		unknownTags := UnknownCompositeTags(f)
+		require.Len(t, unknownTags, 2)
+		require.Contains(t, unknownTags, "2.9F36")
+		require.Contains(t, unknownTags, "2.9F37")
+
+		// verify we can inspect the field data
+		f9F36Bytes, err := unknownTags["2.9F36"].Bytes()
+		require.NoError(t, err)
+		require.Equal(t, []byte{0x01, 0x57}, f9F36Bytes)
+	})
+
+	t.Run("returns empty map when no unknown tags", func(t *testing.T) {
+		// Build data with only known tags
+		data := make([]byte, 0, 22)
+		// LLL = 19
+		data = append(data, []byte("019")...)
+		// Subfield 1 value
+		data = append(data, []byte("00")...)
+		// LLL for TLV field 2
+		data = append(data, []byte("014")...)
+		// Only known tags
+		data = append(data, 0x9a, 0x03, 0x21, 0x07, 0x20)                         // 9A
+		data = append(data, 0x9f, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01) // 9F02
+
+		f := field.NewComposite(spec)
+		_, err := f.Unpack(data)
+		require.NoError(t, err)
+
+		unknownTags := UnknownCompositeTags(f)
+		require.Empty(t, unknownTags)
+	})
+
+	t.Run("returns empty when StoreUnknownTLVTags is disabled", func(t *testing.T) {
+		noStoreSpec := &field.Spec{
+			Length:      999,
+			Description: "Processing Code",
+			Pref:        prefix.ASCII.LLL,
+			Tag: &field.TagSpec{
+				Enc:                 encoding.BerTLVTag,
+				Sort:                sort.StringsByHex,
+				SkipUnknownTLVTags:  true,
+				StoreUnknownTLVTags: false,
+			},
+			Subfields: map[string]field.Field{
+				"9A": field.NewHex(&field.Spec{
+					Description: "Transaction Date",
+					Enc:         encoding.Binary,
+					Pref:        prefix.BerTLV,
+				}),
+			},
+		}
+
+		// Build data with unknown tags
+		data := make([]byte, 0, 20)
+		// LLL = 17
+		data = append(data, []byte("017")...)
+		// Known tag
+		data = append(data, 0x9a, 0x03, 0x21, 0x07, 0x20) // 9A
+		// Unknown tags - skipped but not stored
+		data = append(data, 0x9f, 0x36, 0x02, 0x01, 0x57)             // 9F36
+		data = append(data, 0x9f, 0x37, 0x04, 0x9b, 0xad, 0xbc, 0xab) // 9F37
+
+		f := field.NewComposite(noStoreSpec)
+		_, err := f.Unpack(data)
+		require.NoError(t, err)
+
+		// Unknown tags are not stored, so UnknownTags returns empty
+		unknownTags := UnknownCompositeTags(f)
 		require.Empty(t, unknownTags)
 	})
 }
