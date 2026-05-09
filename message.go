@@ -199,11 +199,17 @@ func (m *Message) GetField(id int) field.Field {
 func (m *Message) getField(id int) (field.Field, error) {
 	f := m.fields[id]
 	if f == nil {
-		if _, ok := m.spec.Fields[id]; !ok {
+		specField, ok := m.spec.Fields[id]
+		if !ok {
 			return nil, fmt.Errorf("field %d is not defined in the spec", id)
 		}
 
-		return nil, nil
+		t := reflect.TypeOf(specField)
+		if t == nil {
+			return nil, fmt.Errorf("field %d has nil type in the spec", id)
+		}
+
+		return reflect.Zero(t).Interface().(field.Field), nil
 	}
 
 	return f, nil
