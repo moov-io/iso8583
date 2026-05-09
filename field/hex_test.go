@@ -165,7 +165,8 @@ func TestHexPack(t *testing.T) {
 		str := NewHex(spec)
 		_, err := str.Pack()
 
-		require.EqualError(t, err, "failed to encode length: field length: 0 should be fixed: 10")
+		require.EqualError(t, err, "failed to encode length: data length: 0 should be fixed: 10")
+		require.True(t, prefix.IsLengthError(err), "error should be a length error")
 	})
 }
 
