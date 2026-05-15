@@ -684,7 +684,7 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 
 				// store unknown field as Binary if StoreUnknownTLVTags is enabled
 				if f.spec.Tag.StoreUnknownTLVTags {
-					if offset+read+fieldLength > len(data) {
+					if fieldLength < 0 || fieldLength > len(data)-offset-read {
 						return 0, tag, fmt.Errorf("not enough data to unpack unknown TLV tag %s: need %d bytes, have %d", tag, fieldLength, len(data)-offset-read)
 					}
 					fieldData := data[offset+read : offset+read+fieldLength]
