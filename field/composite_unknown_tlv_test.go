@@ -226,3 +226,20 @@ func TestStoreUnknownTLVTagsDisabled(t *testing.T) {
 		require.NotContains(t, subfields, "9F37")
 	})
 }
+
+func TestStoreUnknownTLVTagsTruncated(t *testing.T) {
+	t.Run("Unpack returns an error when an unknown TLV value is longer than the remaining data", func(t *testing.T) {
+		composite := NewComposite(storeUnknownTLVSpec)
+
+		// 9F36 (unknown) declares length 4 but only 2 value bytes follow.
+		inputData := []byte{
+			0x30, 0x31, 0x30, // ASCII "010" - length prefix
+			0x9a, 0x03, 0x21, 0x07, 0x20, // 9A: length 3, value 210720
+			0x9f, 0x36, 0x04, 0x01, 0x57, // 9F36: declares length 4 but only 2 bytes remain
+		}
+
+		_, err := composite.Unpack(inputData)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "not enough data to unpack unknown TLV tag")
+	})
+}
