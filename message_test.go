@@ -1237,6 +1237,40 @@ func TestPackUnpack(t *testing.T) {
 	})
 }
 
+func TestMessageGetField(t *testing.T) {
+	spec := &MessageSpec{
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Description: "Bitmap",
+				Enc:         encoding.BytesToASCIIHex,
+				Pref:        prefix.Hex.Fixed,
+			}),
+			2: field.NewString(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+		},
+	}
+
+	t.Run("When field is not set, GetField returns typed nil", func(t *testing.T) {
+		message := NewMessage(spec)
+		pan := message.GetField(2)
+		require.Nil(t, pan)
+
+		s, err := pan.String()
+		require.NoError(t, err)
+		require.Empty(t, s)
+	})
+}
+
 func TestMessageJSON(t *testing.T) {
 	spec := &MessageSpec{
 		Fields: map[int]field.Field{
