@@ -7,7 +7,7 @@ import (
 )
 
 func TestLenientASCII(t *testing.T) {
-	enc := &lenientAsciiEncoder{}
+	enc := &lenientASCIIEncoder{}
 
 	t.Run("Decode plain ASCII passes through unchanged", func(t *testing.T) {
 		res, read, err := enc.Decode([]byte("hello"), 5)
@@ -158,7 +158,7 @@ func TestLenientASCIISingleton(t *testing.T) {
 }
 
 func FuzzDecodeLenientASCII(f *testing.F) {
-	enc := &lenientAsciiEncoder{}
+	enc := &lenientASCIIEncoder{}
 
 	f.Fuzz(func(t *testing.T, data []byte, length int) {
 		enc.Decode(data, length)
@@ -166,7 +166,7 @@ func FuzzDecodeLenientASCII(f *testing.F) {
 }
 
 func FuzzEncodeLenientASCII(f *testing.F) {
-	enc := &lenientAsciiEncoder{}
+	enc := &lenientASCIIEncoder{}
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		enc.Encode(data)

@@ -5,8 +5,8 @@ import (
 )
 
 var (
-	_            Encoder = (*lenientAsciiEncoder)(nil)
-	LenientASCII         = &lenientAsciiEncoder{}
+	_            Encoder = (*lenientASCIIEncoder)(nil)
+	LenientASCII         = &lenientASCIIEncoder{}
 )
 
 // LenientASCII is like ASCII but passes bytes > 0x7F through without raising
@@ -30,22 +30,31 @@ var (
 // Use LenientASCII for fields where you want robust receive behavior over
 // strict spec compliance. Continue using ASCII for fields where any
 // non-ASCII byte should hard-fail at the encoder layer.
-type lenientAsciiEncoder struct{}
+type lenientASCIIEncoder struct{}
 
-func (e lenientAsciiEncoder) Encode(data []byte) ([]byte, error) {
-	out := append([]byte(nil), data...)
+func (e lenientASCIIEncoder) Encode(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, nil
+	}
+	out := make([]byte, len(data))
+	copy(out, data)
 	return out, nil
 }
 
-func (e lenientAsciiEncoder) Decode(data []byte, length int) ([]byte, int, error) {
+func (e lenientASCIIEncoder) Decode(data []byte, length int) ([]byte, int, error) {
 	if length < 0 {
 		return nil, 0, fmt.Errorf("invalid length: %d", length)
+	}
+
+	if length == 0 {
+		return nil, 0, nil
 	}
 
 	if len(data) < length {
 		return nil, 0, fmt.Errorf("not enough data to decode. expected len %d, got %d", length, len(data))
 	}
 
-	out := append([]byte(nil), data[:length]...)
+	out := make([]byte, length)
+	copy(out, data[:length])
 	return out, length, nil
 }
