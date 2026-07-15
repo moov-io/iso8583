@@ -44,6 +44,13 @@ type TagSpec struct {
 	StoreUnknownTLVTags bool
 	// PrefUnknownTLV is used for skipping unknown TLV if it is not nil
 	PrefUnknownTLV prefix.Prefixer
+	// Prefix is an optional byte sequence in wire format that appears once
+	// before all tag-value pairs in the composite field content. It is
+	// commonly used for Tag Class Characters (TCC) in protocols like
+	// Mastercard DE 48, where a framing byte (e.g., EBCDIC 'T' = 0xE3)
+	// precedes the TLV structure to indicate the tag encoding scheme.
+	// This only applies to tagged composites (Tag.Enc != nil).
+	Prefix []byte
 }
 
 // Spec defines the structure of a field.
