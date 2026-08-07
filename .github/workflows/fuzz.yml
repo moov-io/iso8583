@@ -16,19 +16,21 @@ jobs:
       fail-fast: false
       matrix:
         command:
-          - "go test . -fuzz FuzzUnpackPackSpec87 -fuzztime 10m"
-          - "go test . -fuzz FuzzUnpackPackSpec87ASCII -fuzztime 10m"
-          - "go test . -fuzz FuzzMessageScanner -fuzztime 10m"
-          - "go test . -fuzz FuzzUnpack -fuzztime 10m"
-          - "go test ./encoding -fuzz FuzzDecodeASCII -fuzztime 10m"
-          - "go test ./encoding -fuzz FuzzDecodeBCD -fuzztime 10m"
-          - "go test ./encoding -fuzz FuzzDecodeLBCD -fuzztime 10m"
-          - "go test ./encoding -fuzz FuzzDecodeEBCDIC -fuzztime 10m"
-          - "go test ./encoding -fuzz FuzzDecodeEBCDIC1047 -fuzztime 10m"
-          - "go test ./encoding -fuzz FuzzDecodeBinary -fuzztime 10m"
-          - "go test ./encoding -fuzz FuzzDecodeBerTLV -fuzztime 10m"
-          - "go test ./encoding -fuzz FuzzDecodeBytesToASCIIHex -fuzztime 10m"
-          - "go test ./encoding -fuzz FuzzDecodeASCIIHexToBytes -fuzztime 10m"
+          # Anchor patterns with ^...$ so substrings do not match multiple tests
+          # (e.g. FuzzUnpack must not also match FuzzUnpackPackSpec87).
+          - "go test . -run=^$ -fuzz=^FuzzUnpackPackSpec87$ -fuzztime 10m"
+          - "go test . -run=^$ -fuzz=^FuzzUnpackPackSpec87ASCII$ -fuzztime 10m"
+          - "go test . -run=^$ -fuzz=^FuzzMessageScanner$ -fuzztime 10m"
+          - "go test . -run=^$ -fuzz=^FuzzUnpack$ -fuzztime 10m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeASCII$ -fuzztime 10m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBCD$ -fuzztime 10m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeLBCD$ -fuzztime 10m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeEBCDIC$ -fuzztime 10m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeEBCDIC1047$ -fuzztime 10m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBinary$ -fuzztime 10m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBerTLV$ -fuzztime 10m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBytesToASCIIHex$ -fuzztime 10m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeASCIIHexToBytes$ -fuzztime 10m"
 
     steps:
     - name: Set up Go 1.x
