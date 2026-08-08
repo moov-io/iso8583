@@ -23,7 +23,9 @@ type binaryFixedPrefixer struct {
 
 func (p *binaryFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	if dataLen != fixLen {
-		return nil, fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen)
+		return nil, &LengthError{
+			fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen),
+		}
 	}
 
 	return []byte{}, nil
@@ -71,7 +73,9 @@ func bytesToInt(b []byte) (int, error) {
 
 func (p *binaryVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	if dataLen > maxLen {
-		return nil, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
+		return nil, &LengthError{
+			fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen),
+		}
 	}
 
 	res, err := intToBytes(dataLen)
@@ -83,7 +87,9 @@ func (p *binaryVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	res = bytes.TrimLeft(res, "\x00")
 
 	if len(res) > p.Digits {
-		return nil, fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.Digits)
+		return nil, &LengthError{
+			fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.Digits),
+		}
 	}
 
 	// if len of res is less than p.Digits prepend with 0x00
@@ -99,7 +105,9 @@ func (p *binaryVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 // and the number of bytes read.
 func (p *binaryVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	if len(data) < p.Digits {
-		return 0, 0, fmt.Errorf(notEnoughDataToRead, len(data), p.Digits)
+		return 0, 0, &LengthError{
+			fmt.Errorf(notEnoughDataToRead, len(data), p.Digits),
+		}
 	}
 
 	prefBytes := data[:p.Digits]
@@ -114,11 +122,15 @@ func (p *binaryVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, err
 
 	dataLen, err := bytesToInt(prefBytes)
 	if err != nil {
-		return 0, 0, fmt.Errorf("decode length: %w", err)
+		return 0, 0, &LengthError{
+			fmt.Errorf("decode length: %w", err),
+		}
 	}
 
 	if dataLen > maxLen {
-		return 0, 0, fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen)
+		return 0, 0, &LengthError{
+			fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen),
+		}
 	}
 
 	return dataLen, p.Digits, nil

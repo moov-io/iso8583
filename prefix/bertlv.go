@@ -36,7 +36,9 @@ func (p *berTLVPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	// checking maxLen for a 0 is a way to disable check and also support
 	// backwards compatibility with the old contract that didn't have maxLen
 	if maxLen != 0 && dataLen > maxLen {
-		return nil, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
+		return nil, &LengthError{
+			fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen),
+		}
 	}
 
 	buf := big.NewInt(int64(dataLen)).Bytes()
@@ -74,7 +76,9 @@ func (p *berTLVPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error)
 		// checking maxLen for a 0 is a way to disable check and also support
 		// backwards compatibility with the old contract that didn't have maxLen
 		if maxLen != 0 && dataLen > maxLen {
-			return 0, read, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
+			return 0, read, &LengthError{
+				fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen),
+			}
 		}
 
 		return dataLen, read, nil
@@ -92,7 +96,9 @@ func (p *berTLVPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error)
 	// checking maxLen for a 0 is a way to disable check and also support
 	// backwards compatibility with the old contract that didn't have maxLen
 	if maxLen != 0 && dataLen > maxLen {
-		return 0, read, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
+		return 0, read, &LengthError{
+			fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen),
+		}
 	}
 
 	return dataLen, read, nil
