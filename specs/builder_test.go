@@ -499,3 +499,166 @@ func TestExportImportWithNonePrefixField(t *testing.T) {
 	spec, err = ImportJSON(specJSON)
 	require.NoError(t, err)
 }
+
+// Export names field types with reflection, so any field type in the library
+// can be written to a spec document, while import resolves them through
+// FieldConstructor. This pins the round trip for every field type so the two
+// directions cannot drift apart.
+func TestExportImportAllFieldTypes(t *testing.T) {
+	spec := &iso8583.MessageSpec{
+		Name: "all field types",
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{
+				Length:      4,
+				Description: "Message Type Indicator",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.Fixed,
+			}),
+			1: field.NewBitmap(&field.Spec{
+				Length:      16,
+				Description: "Bitmap",
+				Enc:         encoding.BytesToASCIIHex,
+				Pref:        prefix.Hex.Fixed,
+			}),
+			2: field.NewNumeric(&field.Spec{
+				Length:      19,
+				Description: "Primary Account Number",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			3: field.NewBinary(&field.Spec{
+				Length:      8,
+				Description: "Binary field",
+				Enc:         encoding.Binary,
+				Pref:        prefix.Binary.Fixed,
+			}),
+			52: field.NewHex(&field.Spec{
+				Length:      8,
+				Description: "PIN Data",
+				Enc:         encoding.Binary,
+				Pref:        prefix.Binary.Fixed,
+			}),
+			35: field.NewTrack2(&field.Spec{
+				Length:      37,
+				Description: "Track 2 Data",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+			36: field.NewTrack3(&field.Spec{
+				Length:      104,
+				Description: "Track 3 Data",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LLL,
+			}),
+			45: field.NewTrack1(&field.Spec{
+				Length:      76,
+				Description: "Track 1 Data",
+				Enc:         encoding.ASCII,
+				Pref:        prefix.ASCII.LL,
+			}),
+		},
+	}
+
+	jsonData, err := ExportJSON(spec)
+	require.NoError(t, err)
+
+	fromJSON, err := ImportJSON(jsonData)
+	require.NoError(t, err)
+	require.Exactly(t, spec, fromJSON)
+
+	yamlData, err := ExportYAML(spec)
+	require.NoError(t, err)
+
+	fromYAML, err := ImportYAML(yamlData)
+	require.NoError(t, err)
+	require.Exactly(t, spec, fromYAML)
+}
+
+// emvICCDataSpecYAML is a BER-TLV composite as it appears in a real spec
+// document. It exercises the composite tag encoding and Hex subfields
+// together, which is how EMV data is described.
+const emvICCDataSpecYAML = `name: EMV ICC Data
+fields:
+    "55":
+        type: Composite
+        length: 999
+        description: ICC Data, EMV having multiple tags
+        prefix: ASCII.LLL
+        tag:
+            enc: BerTLVTag
+            sort: StringsByHex
+        subfields:
+            "82":
+                type: Hex
+                description: Application Interchange Profile
+                enc: Binary
+                prefix: BerTLV
+            "95":
+                type: Hex
+                description: Terminal Verification Results
+                enc: Binary
+                prefix: BerTLV
+            "9A":
+                type: Hex
+                description: Transaction Date
+                enc: Binary
+                prefix: BerTLV
+            "9F02":
+                type: Hex
+                description: Amount, Authorized
+                enc: Binary
+                prefix: BerTLV
+            "9F26":
+                type: Hex
+                description: Application Cryptogram
+                enc: Binary
+                prefix: BerTLV
+            "9F36":
+                type: Hex
+                description: Application Transaction Counter
+                enc: Binary
+                prefix: BerTLV
+`
+
+func TestImportExportEMVCompositeSpec(t *testing.T) {
+	spec, err := ImportYAML([]byte(emvICCDataSpecYAML))
+	require.NoError(t, err)
+
+	iccSpec := spec.Fields[55].Spec()
+	require.Equal(t, encoding.BerTLVTag, iccSpec.Tag.Enc)
+	require.Len(t, iccSpec.Subfields, 6)
+	require.Equal(t, "Application Cryptogram", iccSpec.Subfields["9F26"].Spec().Description)
+
+	exported, err := ExportYAML(spec)
+	require.NoError(t, err)
+
+	// Exporting is stable: importing the exported document and exporting it
+	// again produces the same bytes.
+	reimported, err := ImportYAML(exported)
+	require.NoError(t, err)
+	reexported, err := ExportYAML(reimported)
+	require.NoError(t, err)
+	require.Equal(t, string(exported), string(reexported))
+}
+
+// EBCDIC1047 is resolvable by name on import and by struct name on export.
+func TestExportImportEBCDIC1047Encoding(t *testing.T) {
+	spec := &iso8583.MessageSpec{
+		Name: "ebcdic 1047",
+		Fields: map[int]field.Field{
+			2: field.NewString(&field.Spec{
+				Length:      10,
+				Description: "EBCDIC 1047 field",
+				Enc:         encoding.EBCDIC1047,
+				Pref:        prefix.EBCDIC.Fixed,
+			}),
+		},
+	}
+
+	jsonData, err := ExportJSON(spec)
+	require.NoError(t, err)
+
+	fromJSON, err := ImportJSON(jsonData)
+	require.NoError(t, err)
+	require.Exactly(t, spec, fromJSON)
+}

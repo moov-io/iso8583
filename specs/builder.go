@@ -30,6 +30,9 @@ var (
 		"Binary":    func(spec *field.Spec) field.Field { return field.NewBinary(spec) },
 		"Bitmap":    func(spec *field.Spec) field.Field { return field.NewBitmap(spec) },
 		"Composite": func(spec *field.Spec) field.Field { return field.NewComposite(spec) },
+		"Hex":       func(spec *field.Spec) field.Field { return field.NewHex(spec) },
+		"Track1":    func(spec *field.Spec) field.Field { return field.NewTrack1(spec) },
+		"Track3":    func(spec *field.Spec) field.Field { return field.NewTrack3(spec) },
 	}
 
 	PrefixesExtToInt = map[string]prefix.Prefixer{
@@ -71,6 +74,7 @@ var (
 		"ASCIIToHex": encoding.ASCIIHexToBytes,
 		"LBCD":       encoding.LBCD,
 		"BerTLVTag":  encoding.BerTLVTag,
+		"EBCDIC1047": encoding.EBCDIC1047,
 	}
 
 	EncodingsIntToExt = map[string]string{
@@ -81,6 +85,8 @@ var (
 		"hexToASCIIEncoder": "HexToASCII",
 		"asciiToHexEncoder": "ASCIIToHex",
 		"lBCDEncoder":       "LBCD",
+		"berTLVEncoderTag":  "BerTLVTag",
+		"ebcdic1047Encoder": "EBCDIC1047",
 	}
 
 	PaddersIntToExt = map[string]string{
