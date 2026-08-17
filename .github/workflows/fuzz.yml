@@ -11,26 +11,29 @@ jobs:
   fuzz:
     name: Fuzz
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         command:
           # Anchor patterns with ^...$ so substrings do not match multiple tests
           # (e.g. FuzzUnpack must not also match FuzzUnpackPackSpec87).
-          - "go test . -run=^$ -fuzz=^FuzzUnpackPackSpec87$ -fuzztime 10m"
-          - "go test . -run=^$ -fuzz=^FuzzUnpackPackSpec87ASCII$ -fuzztime 10m"
-          - "go test . -run=^$ -fuzz=^FuzzMessageScanner$ -fuzztime 10m"
-          - "go test . -run=^$ -fuzz=^FuzzUnpack$ -fuzztime 10m"
-          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeASCII$ -fuzztime 10m"
-          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBCD$ -fuzztime 10m"
-          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeLBCD$ -fuzztime 10m"
-          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeEBCDIC$ -fuzztime 10m"
-          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeEBCDIC1047$ -fuzztime 10m"
-          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBinary$ -fuzztime 10m"
-          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBerTLV$ -fuzztime 10m"
-          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBytesToASCIIHex$ -fuzztime 10m"
-          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeASCIIHexToBytes$ -fuzztime 10m"
+          # -timeout must exceed -fuzztime; the default 10m test timeout
+          # expires at the same time as fuzztime and fails the job
+          # (context deadline exceeded).
+          - "go test . -run=^$ -fuzz=^FuzzUnpackPackSpec87$ -fuzztime 10m -timeout 20m"
+          - "go test . -run=^$ -fuzz=^FuzzUnpackPackSpec87ASCII$ -fuzztime 10m -timeout 20m"
+          - "go test . -run=^$ -fuzz=^FuzzMessageScanner$ -fuzztime 10m -timeout 20m"
+          - "go test . -run=^$ -fuzz=^FuzzUnpack$ -fuzztime 10m -timeout 20m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeASCII$ -fuzztime 10m -timeout 20m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBCD$ -fuzztime 10m -timeout 20m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeLBCD$ -fuzztime 10m -timeout 20m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeEBCDIC$ -fuzztime 10m -timeout 20m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeEBCDIC1047$ -fuzztime 10m -timeout 20m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBinary$ -fuzztime 10m -timeout 20m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBerTLV$ -fuzztime 10m -timeout 20m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeBytesToASCIIHex$ -fuzztime 10m -timeout 20m"
+          - "go test ./encoding -run=^$ -fuzz=^FuzzDecodeASCIIHexToBytes$ -fuzztime 10m -timeout 20m"
 
     steps:
     - name: Set up Go 1.x
