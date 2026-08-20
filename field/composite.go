@@ -1,6 +1,7 @@
 package field
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -500,6 +501,11 @@ func (f *Composite) packByTag() ([]byte, error) {
 		return nil, errors.New("cannot pack composite field by tag when Tag spec is not defined")
 	}
 
+	// prepend tag prefix (e.g. TCC byte) only if there are subfields to pack
+	if len(f.spec.Tag.Prefix) > 0 && len(f.subfields) > 0 {
+		packed = append(packed, f.spec.Tag.Prefix...)
+	}
+
 	for _, tag := range orderedKeys(f.subfields, f.spec.Tag.Sort) {
 		field := f.subfields[tag]
 
@@ -646,6 +652,23 @@ func (f *Composite) unpackSubfieldsByTag(data []byte) (int, string, error) {
 	f.subfields = make(map[string]Field)
 
 	offset := 0
+
+	// read and validate tag prefix (e.g. TCC byte) before the first tag
+	if len(f.spec.Tag.Prefix) > 0 {
+		// empty data is valid — no subfields to unpack
+		if len(data) == 0 {
+			return 0, "", nil
+		}
+		if len(data) < len(f.spec.Tag.Prefix) {
+			return 0, "", fmt.Errorf("data too short for tag prefix: need %d bytes, got %d",
+				len(f.spec.Tag.Prefix), len(data))
+		}
+		if !bytes.Equal(data[:len(f.spec.Tag.Prefix)], f.spec.Tag.Prefix) {
+			return 0, "", fmt.Errorf("unexpected tag prefix: got %X, want %X",
+				data[:len(f.spec.Tag.Prefix)], f.spec.Tag.Prefix)
+		}
+		offset = len(f.spec.Tag.Prefix)
+	}
 
 	for offset < len(data) {
 		tagBytes, read, err := f.spec.Tag.Enc.Decode(data[offset:], f.spec.Tag.Length)
