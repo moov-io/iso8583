@@ -123,25 +123,25 @@ func TestEBCDIC1047PrefixersEncodeErrors(t *testing.T) {
 				prefixer:      EBCDIC1047.L,
 				maxLen:        8,
 				dataLen:       9,
-				expectedError: "field length: 9 is larger than maximum: 8",
+				expectedError: "data length: 9 is larger than maximum: 8",
 			},
 			{
 				prefixer:      EBCDIC1047.LL,
 				maxLen:        52,
 				dataLen:       73,
-				expectedError: "field length: 73 is larger than maximum: 52",
+				expectedError: "data length: 73 is larger than maximum: 52",
 			},
 			{
 				prefixer:      EBCDIC1047.LLL,
 				maxLen:        512,
 				dataLen:       999,
-				expectedError: "field length: 999 is larger than maximum: 512",
+				expectedError: "data length: 999 is larger than maximum: 512",
 			},
 			{
 				prefixer:      EBCDIC1047.LLLL,
 				maxLen:        1024,
 				dataLen:       2048,
-				expectedError: "field length: 2048 is larger than maximum: 1024",
+				expectedError: "data length: 2048 is larger than maximum: 1024",
 			},
 		} {
 			encoded, err := testCase.prefixer.EncodeLength(testCase.maxLen, testCase.dataLen)
@@ -189,6 +189,7 @@ func TestEBCDIC1047PrefixersEncodeErrors(t *testing.T) {
 			encoded, err := testCase.prefixer.EncodeLength(testCase.maxLen, testCase.dataLen)
 			require.Nil(t, encoded)
 			require.EqualError(t, err, testCase.expectedError)
+			require.True(t, IsLengthError(err), "error should be a length error")
 		}
 	})
 
@@ -196,7 +197,8 @@ func TestEBCDIC1047PrefixersEncodeErrors(t *testing.T) {
 		t.Parallel()
 		encoded, err := EBCDIC1047.Fixed.EncodeLength(128, 127)
 		require.Nil(t, encoded)
-		require.EqualError(t, err, "field length: 127 should be fixed: 128")
+		require.EqualError(t, err, "data length: 127 should be fixed: 128")
+		require.True(t, IsLengthError(err), "error should be a length error")
 	})
 }
 
@@ -334,6 +336,7 @@ func TestEBCDIC1047PrefixersDecodeErrors(t *testing.T) {
 			require.Zero(t, length)
 			require.Zero(t, read)
 			require.EqualError(t, err, testCase.expectedError)
+			require.True(t, IsLengthError(err), "error should be a length error")
 		}
 	})
 

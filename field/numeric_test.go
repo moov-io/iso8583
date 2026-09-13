@@ -84,7 +84,8 @@ func TestNumericPack(t *testing.T) {
 		_, err := numeric.Pack()
 
 		// zero value for Numeric is 0, so we have default field length 1
-		require.EqualError(t, err, "failed to encode length: field length: 1 should be fixed: 10")
+		require.EqualError(t, err, "failed to encode length: data length: 1 should be fixed: 10")
+		require.True(t, prefix.IsLengthError(err), "error should be a length error")
 	})
 }
 
