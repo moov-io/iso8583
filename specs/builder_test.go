@@ -662,3 +662,57 @@ func TestExportImportEBCDIC1047Encoding(t *testing.T) {
 	require.NoError(t, err)
 	require.Exactly(t, spec, fromJSON)
 }
+
+// A sort function the importer cannot resolve used to be exported by name and
+// then rejected on the way back in, so the round trip produced a document that
+// looked complete and would not load. The export is where a developer can still
+// do something about it.
+func TestExportRejectsASortTheImportCannotResolve(t *testing.T) {
+	custom := func(x []string) { _ = x }
+
+	spec := &iso8583.MessageSpec{
+		Name: "custom sort",
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{Length: 4, Description: "MTI", Enc: encoding.ASCII, Pref: prefix.ASCII.Fixed}),
+			1: field.NewBitmap(&field.Spec{Description: "Bitmap", Enc: encoding.BytesToASCIIHex, Pref: prefix.Hex.Fixed}),
+			3: field.NewComposite(&field.Spec{
+				Length: 2, Description: "Composite", Pref: prefix.ASCII.Fixed,
+				Tag:       &field.TagSpec{Sort: custom},
+				Subfields: map[string]field.Field{"1": field.NewString(&field.Spec{Length: 2, Description: "a", Enc: encoding.ASCII, Pref: prefix.ASCII.Fixed})},
+			}),
+		},
+	}
+
+	_, err := ExportYAML(spec)
+	require.Error(t, err, "a spec whose sort cannot be resolved was exported anyway")
+	require.Contains(t, err.Error(), "unknown sort function")
+	require.Contains(t, err.Error(), "StringsByInt", "the error does not say which names are exportable")
+
+	_, err = ExportJSON(spec)
+	require.Error(t, err, "JSON export accepted what YAML export refused")
+}
+
+// The registered ones still export, and still come back.
+func TestAKnownSortStillRoundTrips(t *testing.T) {
+	spec := &iso8583.MessageSpec{
+		Name: "known sort",
+		Fields: map[int]field.Field{
+			0: field.NewString(&field.Spec{Length: 4, Description: "MTI", Enc: encoding.ASCII, Pref: prefix.ASCII.Fixed}),
+			1: field.NewBitmap(&field.Spec{Description: "Bitmap", Enc: encoding.BytesToASCIIHex, Pref: prefix.Hex.Fixed}),
+			3: field.NewComposite(&field.Spec{
+				Length: 2, Description: "Composite", Pref: prefix.ASCII.Fixed,
+				Tag:       &field.TagSpec{Sort: sort.StringsByInt},
+				Subfields: map[string]field.Field{"1": field.NewString(&field.Spec{Length: 2, Description: "a", Enc: encoding.ASCII, Pref: prefix.ASCII.Fixed})},
+			}),
+		},
+	}
+
+	out, err := ExportYAML(spec)
+	require.NoError(t, err)
+
+	back, err := ImportYAML(out)
+	require.NoError(t, err, "a spec this package exported could not be imported")
+	composite, ok := back.Fields[3].(*field.Composite)
+	require.True(t, ok)
+	require.Len(t, composite.Spec().Subfields, 1)
+}
