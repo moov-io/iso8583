@@ -161,6 +161,24 @@ type tagDummy struct {
 	PrefUnknownTLV      string        `json:"prefUnknownTLV,omitempty"       xml:"prefUnknownTLV,omitempty"       yaml:"prefUnknownTLV,omitempty"`
 }
 
+// constructField builds a field from its spec, turning a spec-validation panic
+// into an error.
+//
+// Field constructors panic on an invalid spec by design, and for static specs
+// that is the right call: a mistake is a programming error and failing at init
+// beats failing mid-transaction. Import is where that assumption stops holding.
+// The spec arrives as a document at runtime, so a malformed one is bad data
+// rather than a bug, and ImportJSON/ImportYAML already promise an error for it.
+// The panic value carries the specific reason, so it becomes the message.
+func constructField(constructor FieldConstructorFunc, spec *field.Spec, index string) (f field.Field, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("invalid spec for field: %s. %v", index, r)
+		}
+	}()
+	return constructor(spec), nil
+}
+
 func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 	fieldSpec := &field.Spec{
 		Length:      dummyField.Length,
@@ -197,7 +215,11 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 			if !ok {
 				return nil, fmt.Errorf("no constructor for filed type: %s for field: %s", dummyField.Type, index)
 			}
-			fieldSpec.Subfields[key] = constructor(subfieldSpec)
+			subfield, err := constructField(constructor, subfieldSpec, key)
+			if err != nil {
+				return nil, err
+			}
+			fieldSpec.Subfields[key] = subfield
 		}
 
 		if dummyField.Tag != nil {
@@ -275,7 +297,11 @@ func importSpec(dummySpec *specDummy) (*iso8583.MessageSpec, error) {
 				index,
 			)
 		}
-		spec.Fields[index] = constructor(fieldSpec)
+		f, err := constructField(constructor, fieldSpec, key)
+		if err != nil {
+			return nil, err
+		}
+		spec.Fields[index] = f
 	}
 
 	return &spec, nil
