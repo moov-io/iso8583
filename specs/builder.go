@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/encoding"
@@ -402,7 +403,11 @@ func exportTag(tag *field.TagSpec) (*tagDummy, error) {
 		}
 	}
 	if tag.Sort != nil {
-		dummy.Sort = getFunctionName(tag.Sort)
+		name, err := exportSort(tag.Sort)
+		if err != nil {
+			return nil, err
+		}
+		dummy.Sort = name
 	}
 	if tag.PrefUnknownTLV != nil {
 		dummy.PrefUnknownTLV = tag.PrefUnknownTLV.Inspect()
@@ -419,6 +424,30 @@ func exportPad(pad padding.Padder) (*paddingDummy, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("unknown padding type: %s", paddingType)
+}
+
+// exportSort names a sort function so a spec can be read back. Only the
+// functions ImportJSON and ImportYAML can resolve are nameable: exporting any
+// other one produced a document that the importer then rejected with "unknown
+// sort function", so a custom sort turned a round trip into a file that looked
+// fine and could not be loaded. Failing here puts the error in front of whoever
+// can act on it.
+func exportSort(sort moovsort.StringSlice) (string, error) {
+	name := getFunctionName(sort)
+	if _, ok := SortExtToInt[name]; !ok {
+		return "", fmt.Errorf("unknown sort function: %s; only %s can be exported, "+
+			"because those are the ones an import can resolve", name, knownSortNames())
+	}
+	return name, nil
+}
+
+func knownSortNames() string {
+	names := make([]string, 0, len(SortExtToInt))
+	for name := range SortExtToInt {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
 }
 
 func exportEnc(enc encoding.Encoder) (string, error) {
