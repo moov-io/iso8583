@@ -4,6 +4,10 @@
 
 Composite fields in ISO8583 messages can represent complex data structures like TLV (Tag-Length-Value) or structured fields with subfields. This guide covers how to define and work with composite fields.
 
+The examples here build specs in Go. The same shapes can be written as a YAML or
+JSON document and loaded at runtime; see [Defining a Spec as a
+Document](declarative-specs.md).
+
 ## Field Packing and Unpacking Flow
 
 Composite fields follow a general structure of `[tag][length][value]` and are processed recursively:
