@@ -2372,4 +2372,209 @@ var (
 			"54": NewComposite(field54),
 		},
 	}
+
+	// EBCDIC tag spec with TCC prefix, simulating Mastercard DE 48 structure:
+	// [TCC(0xE3='T')][Tag][Len][Value]...
+	compositeTestSpecWithTagPrefix = &Spec{
+		Length:      999,
+		Description: "Test Spec with Tag Prefix (TCC)",
+		Pref:        prefix.ASCII.LLL,
+		Tag: &TagSpec{
+			Length: 2,               // 2-byte fixed EBCDIC tag
+			Enc:    encoding.EBCDIC, // EBCDIC tag encoding
+			Sort:   sort.StringsByInt,
+			Prefix: []byte{0xE3}, // EBCDIC 'T' — TCC
+		},
+		Subfields: map[string]Field{
+			"87": NewString(&Spec{
+				Length:      3,
+				Description: "Field 87",
+				Enc:         encoding.EBCDIC,
+				Pref:        prefix.EBCDIC.LL,
+			}),
+			"92": NewString(&Spec{
+				Length:      3,
+				Description: "Field 92",
+				Enc:         encoding.EBCDIC,
+				Pref:        prefix.EBCDIC.LL,
+			}),
+		},
+	}
+
+	// EBCDIC tag spec without TCC prefix but with tag padding (for comparison)
+	compositeTestSpecWithEBCDICTags = &Spec{
+		Length:      999,
+		Description: "Test Spec with EBCDIC Tags",
+		Pref:        prefix.ASCII.LLL,
+		Tag: &TagSpec{
+			Length: 2,
+			Enc:    encoding.EBCDIC,
+			Sort:   sort.StringsByInt,
+		},
+		Subfields: map[string]Field{
+			"87": NewString(&Spec{
+				Length:      3,
+				Description: "Field 87",
+				Enc:         encoding.EBCDIC,
+				Pref:        prefix.EBCDIC.LL,
+			}),
+			"92": NewString(&Spec{
+				Length:      3,
+				Description: "Field 92",
+				Enc:         encoding.EBCDIC,
+				Pref:        prefix.EBCDIC.LL,
+			}),
+		},
+	}
 )
+
+type EBCDICTagTestData struct {
+	F87 *String
+	F92 *String
+}
+
+func TestCompositePackingWithTagPrefix(t *testing.T) {
+	t.Run("Pack prepends tag prefix (TCC) before tags", func(t *testing.T) {
+		data := &EBCDICTagTestData{
+			F87: NewStringValue("ABC"),
+			F92: NewStringValue("XYZ"),
+		}
+
+		composite := NewComposite(compositeTestSpecWithTagPrefix)
+		err := composite.Marshal(data)
+		require.NoError(t, err)
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		// Manual verification of the structure:
+		// Length prefix (ASCII LLL): "015"
+		// TCC: 0xE3
+		// Tag 87: EBCDIC('8','7') = 0xF8, 0xF7
+		// Len 87 (EBCDIC LL=3): EBCDIC('0','3') = 0xF0, 0xF3
+		// Value 87: EBCDIC('A','B','C') = 0xC1, 0xC2, 0xC3
+		// Tag 92: EBCDIC('9','2') = 0xF9, 0xF2
+		// Len 92 (EBCDIC LL=3): EBCDIC('0','3') = 0xF0, 0xF3
+		// Value 92: EBCDIC('X','Y','Z') = 0xE7, 0xE8, 0xE9
+		expected := []byte{
+			0x30, 0x31, 0x35, // ASCII LLL "015"
+			0xE3,       // TCC 'T'
+			0xF8, 0xF7, // EBCDIC tag "87"
+			0xF0, 0xF3, // EBCDIC len "03"
+			0xC1, 0xC2, 0xC3, // EBCDIC "ABC"
+			0xF9, 0xF2, // EBCDIC tag "92"
+			0xF0, 0xF3, // EBCDIC len "03"
+			0xE7, 0xE8, 0xE9, // EBCDIC "XYZ"
+		}
+		require.Equal(t, expected, packed)
+	})
+
+	t.Run("Unpack reads and validates tag prefix", func(t *testing.T) {
+		raw := []byte{
+			0x30, 0x31, 0x35, // ASCII LLL "015"
+			0xE3,       // TCC 'T'
+			0xF8, 0xF7, // EBCDIC tag "87"
+			0xF0, 0xF3, // EBCDIC len "03"
+			0xC1, 0xC2, 0xC3, // EBCDIC "ABC"
+			0xF9, 0xF2, // EBCDIC tag "92"
+			0xF0, 0xF3, // EBCDIC len "03"
+			0xE7, 0xE8, 0xE9, // EBCDIC "XYZ"
+		}
+
+		composite := NewComposite(compositeTestSpecWithTagPrefix)
+		read, err := composite.Unpack(raw)
+		require.NoError(t, err)
+		require.Equal(t, len(raw), read)
+
+		data := &EBCDICTagTestData{}
+		require.NoError(t, composite.Unmarshal(data))
+		require.Equal(t, "ABC", data.F87.Value())
+		require.Equal(t, "XYZ", data.F92.Value())
+	})
+
+	t.Run("Unpack returns error on wrong tag prefix", func(t *testing.T) {
+		// Provide correct total length so the outer length check passes,
+		// but with wrong TCC byte to trigger the inner prefix validation.
+		raw := []byte{
+			0x30, 0x31, 0x35, // ASCII LLL "015" (15 bytes of content)
+			0x00,       // WRONG TCC (should be 0xE3)
+			0xF8, 0xF7, // EBCDIC tag "87"
+			0xF0, 0xF3, // EBCDIC len "03"
+			0xC1, 0xC2, 0xC3, // EBCDIC "ABC"
+			0xF9, 0xF2, // EBCDIC tag "92"
+			0xF0, 0xF3, // EBCDIC len "03"
+			0xE7, 0xE8, 0xE9, // EBCDIC "XYZ"
+		}
+
+		composite := NewComposite(compositeTestSpecWithTagPrefix)
+		_, err := composite.Unpack(raw)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unexpected tag prefix")
+	})
+
+	t.Run("Unpack returns error when data too short for tag prefix", func(t *testing.T) {
+		// 2-byte prefix, data only has 1 byte
+		spec := &Spec{
+			Length: 999,
+			Pref:   prefix.ASCII.LLL,
+			Tag: &TagSpec{
+				Length: 2,
+				Enc:    encoding.ASCII,
+				Sort:   sort.StringsByInt,
+				Prefix: []byte{0xE3, 0xE4}, // 2-byte prefix
+			},
+			Subfields: map[string]Field{
+				"87": NewString(&Spec{
+					Length: 3,
+					Enc:    encoding.ASCII,
+					Pref:   prefix.ASCII.LL,
+				}),
+			},
+		}
+		composite := NewComposite(spec)
+		err := composite.SetBytes([]byte{0xE3}) // only 1 byte, need 2
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "data too short for tag prefix")
+	})
+
+	t.Run("Unpack empty data with prefix succeeds", func(t *testing.T) {
+		// Empty content should succeed and reset subfields
+		// (no subfields to unpack is a valid state)
+		composite := NewComposite(compositeTestSpecWithTagPrefix)
+		err := composite.SetBytes([]byte{})
+		require.NoError(t, err)
+		require.Empty(t, composite.GetSubfields())
+	})
+
+	t.Run("Pack with empty subfields omits prefix", func(t *testing.T) {
+		// When no subfields are set, prefix should not be written
+		composite := NewComposite(compositeTestSpecWithTagPrefix)
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+		// Should be just length prefix "000" for 0 content bytes
+		expected := []byte{0x30, 0x30, 0x30}
+		require.Equal(t, expected, packed)
+	})
+	t.Run("Pack with EBCDIC tags works without prefix", func(t *testing.T) {
+		// Verify that without prefix the EBCDIC tag spec still works correctly
+		data := &EBCDICTagTestData{
+			F87: NewStringValue("HI"),
+		}
+
+		composite := NewComposite(compositeTestSpecWithEBCDICTags)
+		err := composite.Marshal(data)
+		require.NoError(t, err)
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		// Tag87(2) + Len87(2) + "HI"(2) = 6 bytes content
+		expected := []byte{
+			0x30, 0x30, 0x36, // ASCII LLL "006"
+			0xF8, 0xF7, // EBCDIC tag "87"
+			0xF0, 0xF2, // EBCDIC len "02"
+			0xC8, 0xC9, // EBCDIC "HI"
+		}
+		require.Equal(t, expected, packed)
+	})
+}
