@@ -41,6 +41,7 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 	- [Inspecting message fields](#inspecting-message-fields)
 	- [JSON Encoding and Decoding](#json-encoding-and-decoding)
 	- [Working with Unknown TLV Tags](#working-with-unknown-tlv-tags)
+	- [Packed BCD-HEX Fields (PackedBCDHex)](#packed-bcd-hex-fields-packedbcdhex)
 - [ISO8583 CLI](#cli)
 - [Learn more](#learn-more)
 - [Getting help](#getting-help)
@@ -209,7 +210,7 @@ Each field specification consists of these elements:
 |------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
 | `Length`         | Maximum length of field (bytes, characters or digits), for both fixed and variable lengths.                                                                                                                                 | `10`                       |
 | `Description`    | Describes what the data field holds.                                                                                                                                                                                        | `"Primary Account Number"` |
-| `Enc`            | Sets the encoding type (`ASCII`, `Binary`, `BCD`, `LBCD`, `EBCDIC`).                                                                                                                                                           | `encoding.ASCII`           |
+| `Enc`            | Sets the encoding type (`ASCII`, `Binary`, `BCD`, `LBCD`, `PackedBCDHex`, `EBCDIC`).                                                                                                                                           | `encoding.ASCII`           |
 | `Pref`           | Sets the encoding (`ASCII`, `Binary`, `BCD`, `EBCDIC`) of the field length and its type as fixed or variable (`Fixed`, `L`, `LL`, `LLL`, `LLLL`). The number of 'L's corresponds to the number of digits in a variable length. | `prefix.ASCII.Fixed`       |
 | `Pad` (optional) | Sets padding direction and type.                                                                                                                                                                                            | `padding.Left('0')`        |
 
@@ -703,6 +704,42 @@ for path, f := range unknownTags {
 ```
 
 > **Note:** `UnknownTags` and `UnknownCompositeTags` only return results when `StoreUnknownTLVTags` is enabled in the composite field specs. If unknown tags are skipped but not stored, they are discarded during unpacking and cannot be retrieved.
+
+### Packed BCD-HEX Fields (PackedBCDHex)
+
+Some payment network specifications define variable-length fields as
+unsigned packed BCD where the binary length prefix counts **digits**,
+not bytes, and where the packed data legitimately contains nibbles
+`A`-`F`. The canonical case is VisaNet Track 2 Data (field 35):
+
+> Field 35 - Variable length 1 byte, binary + 37 N, 4-bit BCD
+> (unsigned packed); maximum 20 bytes
+
+There the LL prefix holds up to 37 track 2 *digits*, the data occupies
+`ceil(LL/2)` bytes, and the nibbles include the `'D'` track separator
+and `'F'` padding. The `BCD`/`LBCD` encoders consume `ceil(len/2)`
+bytes but reject non-decimal nibbles; `ASCIIToHex`/`Binary` accept any
+nibbles but consume `len` *bytes* - an 18-byte over-read on field 35
+that misaligns every later field of the message.
+
+`encoding.PackedBCDHex` combines the two behaviors: it consumes
+`ceil(len/2)` bytes and decodes every nibble to its hexadecimal
+character:
+
+```go
+35: field.NewTrack2(&field.Spec{
+	Length:      37,
+	Description: "Track 2 Data",
+	Enc:         encoding.PackedBCDHex,
+	Pref:        prefix.Binary.L,
+})
+```
+
+Odd-length values are right-aligned (left-padded with a fill nibble),
+exactly as with `BCD`. In JSON/YAML message specifications the encoding
+is available as `"enc": "PackedBCDHex"`. See
+[encoding/packedbcdhex_visa_test.go](encoding/packedbcdhex_visa_test.go)
+for a worked Track 2 unpack/pack example.
 
 ### Sending and Receiving Messages
 

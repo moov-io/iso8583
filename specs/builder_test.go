@@ -662,3 +662,25 @@ func TestExportImportEBCDIC1047Encoding(t *testing.T) {
 	require.NoError(t, err)
 	require.Exactly(t, spec, fromJSON)
 }
+
+func TestExportImportPackedBCDHexEncoding(t *testing.T) {
+	spec := &iso8583.MessageSpec{
+		Name: "packed bcd hex",
+		Fields: map[int]field.Field{
+			35: field.NewTrack2(&field.Spec{
+				Length:      37,
+				Description: "Track 2 Data",
+				Enc:         encoding.PackedBCDHex,
+				Pref:        prefix.Binary.L,
+			}),
+		},
+	}
+
+	jsonData, err := ExportJSON(spec)
+	require.NoError(t, err)
+	require.Contains(t, string(jsonData), `"PackedBCDHex"`)
+
+	fromJSON, err := ImportJSON(jsonData)
+	require.NoError(t, err)
+	require.Exactly(t, spec, fromJSON)
+}

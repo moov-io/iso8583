@@ -73,20 +73,24 @@ var (
 		"HexToASCII": encoding.BytesToASCIIHex,
 		"ASCIIToHex": encoding.ASCIIHexToBytes,
 		"LBCD":       encoding.LBCD,
-		"BerTLVTag":  encoding.BerTLVTag,
-		"EBCDIC1047": encoding.EBCDIC1047,
+		// PackedBCDHex decodes non-decimal nibbles, the packed BCD
+		// fields of payment network specs such as VisaNet Track 2 (DE35).
+		"PackedBCDHex": encoding.PackedBCDHex,
+		"BerTLVTag":    encoding.BerTLVTag,
+		"EBCDIC1047":   encoding.EBCDIC1047,
 	}
 
 	EncodingsIntToExt = map[string]string{
-		"asciiEncoder":      "ASCII",
-		"bcdEncoder":        "BCD",
-		"ebcdicEncoder":     "EBCDIC",
-		"binaryEncoder":     "Binary",
-		"hexToASCIIEncoder": "HexToASCII",
-		"asciiToHexEncoder": "ASCIIToHex",
-		"lBCDEncoder":       "LBCD",
-		"berTLVEncoderTag":  "BerTLVTag",
-		"ebcdic1047Encoder": "EBCDIC1047",
+		"asciiEncoder":        "ASCII",
+		"bcdEncoder":          "BCD",
+		"ebcdicEncoder":       "EBCDIC",
+		"binaryEncoder":       "Binary",
+		"hexToASCIIEncoder":   "HexToASCII",
+		"asciiToHexEncoder":   "ASCIIToHex",
+		"lBCDEncoder":         "LBCD",
+		"packedBCDHexEncoder": "PackedBCDHex",
+		"berTLVEncoderTag":    "BerTLVTag",
+		"ebcdic1047Encoder":   "EBCDIC1047",
 	}
 
 	PaddersIntToExt = map[string]string{
