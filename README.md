@@ -851,6 +851,7 @@ Please, check the example of the JSON spec file [spec87ascii.json](./examples/sp
 - [Mastering ISO 8583 messages with Golang](https://alovak.com/2024/08/15/mastering-iso-8583-messages-with-golang/)
 - [Mastering ISO 8583 Message Networking with Golang](https://alovak.com/2024/08/27/mastering-iso-8583-message-networking-with-golang/)
 - [ISO 8583 Terms and Definitions](https://www.iso.org/obp/ui/#iso:std:iso:8583:-1:ed-1:v1:en)
+- [Annotated ISO 8583 message examples](https://iso8583parser.com/en/articles/iso8583-message-examples)
 
 ## Getting help
 
