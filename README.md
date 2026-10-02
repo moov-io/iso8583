@@ -215,8 +215,8 @@ Each field specification consists of these elements:
 
 Note: While some ISO 8583 specifications do not have field 0 and field 1, we use them for MTI and Bitmap as they are technically regular fields. We use `String` field for MTI and `Bitmap` field for the bitmap.
 
-A spec can also be written as a YAML or JSON document and loaded at runtime,
-instead of being compiled in. See [Defining a Spec as a
+You can also write a spec as a YAML or JSON document and load it at runtime.
+For more information, see [Defining a Spec as a
 Document](./docs/declarative-specs.md).
 
 For more advanced examples including handling of BER-TLV data, positional subfields, and various encoding types, see:

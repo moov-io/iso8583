@@ -1,23 +1,24 @@
 # Defining a Spec as a Document
 
-A `MessageSpec` can be written in Go, and it can be written as YAML or JSON and
-loaded at runtime. Both produce the same spec. This guide covers the second
-form. The rest of the documentation builds specs in Go.
+You can write a `MessageSpec` in Go. You can also write it as a YAML or JSON
+document and load it at runtime. The two forms give the same spec. This guide
+is about the document form. The other guides use Go.
 
-Not to be confused with [JSON Encoding and
-Decoding](../README.md#json-encoding-and-decoding): that serialises a *message*,
-its field values. This is about the *spec*, the definition those messages are
-parsed against.
+This guide is not about [JSON Encoding and
+Decoding](../README.md#json-encoding-and-decoding). That section serializes a
+*message*, which is the field values. This guide is about the *spec*, which is
+the definition that the library uses to parse messages.
 
 ## Why a document
 
-A spec in Go lives inside the binary. Changing a dialect means a build and a
-deploy, and nothing outside this program can read the spec: not a validator, not
-a documentation generator, not the operations team looking at what the switch
-expects.
+A spec in Go is part of the binary. To change a dialect, you must build and
+deploy the program again. Other tools cannot read the spec. For example, a
+validator, a documentation generator, or an operations team cannot see what the
+switch expects.
 
-A spec as a document can be versioned on its own, diffed when a scheme bulletin
-arrives, and loaded by a build that never changes.
+A spec in a document has its own version history. When a card scheme sends a
+bulletin, you can compare the old and the new document. The same binary can
+load the new document without a new build.
 
 ## Reading and writing
 
@@ -28,8 +29,11 @@ spec, err := specs.ImportYAML(raw)   // or ImportJSON
 raw, err := specs.ExportYAML(spec)   // or ExportJSON
 ```
 
-`ExportYAML` on a spec built in Go is the fastest way to get a first document:
-build it once the way you already do, export it, and keep the file.
+To make your first document, use `ExportYAML`:
+
+1. Build the spec in Go, as you do now.
+2. Export it with `ExportYAML`.
+3. Keep the file.
 
 ## What a document looks like
 
@@ -64,21 +68,22 @@ fields:
             pad: "0"
 ```
 
-Field keys are strings because JSON object keys are. The `type`, `enc`, `prefix`
-and `padding.type` values are names the importer resolves. The lists below give
-every name it accepts.
+Field keys are strings, because JSON object keys must be strings. The values of
+`type`, `enc`, `prefix` and `padding.type` are names. The importer finds the
+Go value for each name. The lists in [What the importer
+accepts](#what-the-importer-accepts) give all the names.
 
-A complete one ships with the library:
-[`examples/specs/spec87ascii.yaml`](../examples/specs/spec87ascii.yaml), and the
-same spec as
+The library includes a complete document:
+[`examples/specs/spec87ascii.yaml`](../examples/specs/spec87ascii.yaml). The
+same spec is also in JSON:
 [`spec87ascii.json`](../examples/specs/spec87ascii.json).
 
 ## Composite fields
 
-A composite carries its `subfields` and either a `tag` block or a `bitmap`,
-exactly one of the two: a composite that declares neither cannot be built, and
-the import fails. See the [composite fields guide](composite-fields.md) for what
-each shape means.
+A composite has `subfields`. It also has a `tag` block or a `bitmap`, but not
+both. If a composite has neither, the library cannot build it, and the import
+fails. For the meaning of each shape, see the [composite fields
+guide](composite-fields.md).
 
 ### Positional subfields
 
@@ -111,15 +116,16 @@ each shape means.
                 prefix: ASCII.Fixed
 ```
 
-The `tag` block also takes `length`, `enc`, `padding`, `skipUnknownTLVTags`,
-`storeUnknownTLVTags` and `prefUnknownTLV`, matching `field.TagSpec`. Its
-`padding` is the same `{type, pad}` block a field takes, even though the Go
-field it fills is a single `Pad`.
+The `tag` block can also have `length`, `enc`, `padding`, `skipUnknownTLVTags`,
+`storeUnknownTLVTags` and `prefUnknownTLV`. These keys match the fields of
+`field.TagSpec`. The `padding` key in the `tag` block has the same `{type, pad}`
+form as the `padding` key of a field. In Go, the `TagSpec` field is one `Pad`
+value.
 
 ### TLV
 
-A BER-TLV field is the same shape with the tag encoded rather than positional.
-Written in Go, DE 55 looks like this:
+A BER-TLV field has the same shape, but the tag is encoded in the data. It is
+not a position. This is DE 55 in Go:
 
 ```go
 55: field.NewComposite(&field.Spec{
@@ -146,7 +152,7 @@ Written in Go, DE 55 looks like this:
 }),
 ```
 
-`ExportYAML` on that spec gives:
+This is the `ExportYAML` output for that spec:
 
 ```yaml
     "55":
@@ -171,22 +177,31 @@ Written in Go, DE 55 looks like this:
                 prefix: BerTLV
 ```
 
-Subfields of one composite can be encoded differently, as they are here: the
-serial number is ASCII text, the amount is hex digits.
+The subfields of one composite can have different encodings. In this example,
+the serial number is ASCII text, and the amount is hex digits.
 
-Two things are easy to trip on. Go calls the encoding `BytesToASCIIHex`, and the
-document calls it `HexToASCII`. The lists below give the document's names, not
-the Go identifiers. And subfield order in the file is not the packing order.
-`sort` decides that, which is why it has to be there.
+Be careful with these two points:
 
-Two more keys exist on a field and appear where they apply: `bitmap`, a nested
-field spec for a composite that carries one, and `disableAutoExpand`, on a
-bitmap field.
+- Go and the document use different names for one encoding. Go uses
+  `BytesToASCIIHex`. The document uses `HexToASCII`. The lists below give the
+  names for the document, not the Go identifiers.
+- The order of the subfields in the file is not the packing order. The `sort`
+  key sets the packing order. For this reason, a `tag` block must have `sort`.
+  If it does not, the import fails.
+
+A field can also have two more keys, when they apply:
+
+- `bitmap`: a nested field spec, for a composite that has a bitmap.
+- `disableAutoExpand`: for a bitmap field.
 
 ## What the importer accepts
 
-The importer rejects anything outside these lists as it reads the document, and
-names the field it came from.
+The importer rejects an unknown `type`, `enc`, `prefix` or `tag.sort`. The
+error message gives the field that has the value.
+
+The importer does not reject an unknown `padding.type` on a field, or an unknown
+`tag.enc`. It ignores the value, and the spec has no padder or no tag encoding.
+Make sure that these two values are in the lists.
 
 **`type`**
 
@@ -211,16 +226,20 @@ names the field it came from.
 
 `StringsByInt`, `StringsByHex`
 
-A document names a sort rather than writing it out, so a spec can only use one
-the importer knows. A dialect that needs its own ordering has to register it, or
-stay in Go.
+A document gives the name of a sort function. It cannot contain the function.
+Thus a document can only use a sort function that the importer knows. If a
+dialect needs a different order, register the sort function, or keep the spec
+in Go.
 
 ## Round trip
 
-A document exported by this package imports back into an equivalent spec,
-composites and their subfields included. That is worth a test in your own
-repository: export the spec you use, import it back, and pack the same message
-with both.
+When this package exports a document, you can import the document again. The
+result is an equivalent spec, with all composites and subfields. To make sure
+that this is true for your spec, add a test to your repository:
+
+1. Export your spec.
+2. Import the document again.
+3. Pack the same message with the two specs, and compare the results.
 
 ```go
 raw, err := specs.ExportYAML(mySpec)
@@ -232,10 +251,14 @@ require.NoError(t, err)
 
 ## What a document cannot carry
 
-Everything in a spec that is a Go value rather than a name. A custom field
-type, a custom encoder, a sort function that is not one of the two above: these
-have no representation in the document, and a spec that uses them stays in Go.
+A document cannot contain a Go value. It can only contain a name. Thus a
+document cannot contain these items:
 
-This is also the boundary worth knowing about before designing anything that
-puts behaviour in a spec. Behaviour survives the round trip when it can be
-named or written down, and not otherwise.
+- A custom field type.
+- A custom encoder.
+- A sort function that is not `StringsByInt` or `StringsByHex`.
+
+If your spec uses one of these items, keep the spec in Go.
+
+This limit also applies if you add behavior to a spec. The behavior stays after
+an export and an import only if a document can give it as a name or as data.
