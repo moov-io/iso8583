@@ -24,11 +24,15 @@ type ebcdic1047Prefixer struct {
 
 func (p *ebcdic1047Prefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	if dataLen > maxLen {
-		return nil, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
+		return nil, &LengthError{
+			fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen),
+		}
 	}
 
 	if len(strconv.Itoa(dataLen)) > p.digits {
-		return nil, fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.digits)
+		return nil, &LengthError{
+			fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.digits),
+		}
 	}
 
 	strLen := fmt.Sprintf("%0*d", p.digits, dataLen)
@@ -41,7 +45,9 @@ func (p *ebcdic1047Prefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 
 func (p *ebcdic1047Prefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	if len(data) < p.digits {
-		return 0, 0, fmt.Errorf(notEnoughDataToRead, len(data), p.digits)
+		return 0, 0, &LengthError{
+			fmt.Errorf(notEnoughDataToRead, len(data), p.digits),
+		}
 	}
 
 	decodedData, _, err := encoding.EBCDIC1047.Decode(data[:p.digits], p.digits)
@@ -55,7 +61,9 @@ func (p *ebcdic1047Prefixer) DecodeLength(maxLen int, data []byte) (int, int, er
 	}
 
 	if dataLen > maxLen {
-		return 0, 0, fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen)
+		return 0, 0, &LengthError{
+			fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen),
+		}
 	}
 
 	return dataLen, p.digits, nil
@@ -69,7 +77,9 @@ type ebcdic1047FixedPrefixer struct{}
 
 func (p *ebcdic1047FixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	if dataLen != fixLen {
-		return nil, fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen)
+		return nil, &LengthError{
+			fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen),
+		}
 	}
 
 	return []byte{}, nil

@@ -24,7 +24,9 @@ type hexFixedPrefixer struct {
 func (p *hexFixedPrefixer) EncodeLength(fixLen, dataLen int) ([]byte, error) {
 	// for ascii hex the length is x2 (ascii hex digit takes one byte)
 	if dataLen != fixLen*2 {
-		return nil, fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen*2)
+		return nil, &LengthError{
+			fmt.Errorf(fieldLengthShouldBeFixed, dataLen, fixLen*2),
+		}
 	}
 
 	return []byte{}, nil
@@ -44,12 +46,16 @@ type hexVarPrefixer struct {
 
 func (p *hexVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 	if dataLen > maxLen {
-		return nil, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
+		return nil, &LengthError{
+			fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen),
+		}
 	}
 
 	maxPossibleLength := 1<<(p.Digits*8) - 1
 	if dataLen > maxPossibleLength {
-		return nil, fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.Digits)
+		return nil, &LengthError{
+			fmt.Errorf(numberOfDigitsInLengthExceeds, dataLen, p.Digits),
+		}
 	}
 
 	strLen := strconv.FormatInt(int64(dataLen), 16)
@@ -61,7 +67,9 @@ func (p *hexVarPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error) {
 	length := hex.EncodedLen(p.Digits)
 	if len(data) < length {
-		return 0, 0, fmt.Errorf(notEnoughDataToRead, length, len(data))
+		return 0, 0, &LengthError{
+			fmt.Errorf(notEnoughDataToRead, length, len(data)),
+		}
 	}
 
 	dataLen, err := strconv.ParseUint(string(data[:length]), 16, p.Digits*8)
@@ -70,12 +78,16 @@ func (p *hexVarPrefixer) DecodeLength(maxLen int, data []byte) (int, int, error)
 	}
 
 	if dataLen > math.MaxInt {
-		return 0, 0, fmt.Errorf("data length %d exceeds maximum int value", dataLen)
+		return 0, 0, &LengthError{
+			fmt.Errorf("data length %d exceeds maximum int value", dataLen),
+		}
 	}
 
 	// #nosec G115 -- dataLen is validated to be within MaxInt range above
 	if int(dataLen) > maxLen {
-		return 0, 0, fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen)
+		return 0, 0, &LengthError{
+			fmt.Errorf(dataLengthIsLargerThanMax, dataLen, maxLen),
+		}
 	}
 
 	// #nosec G115 -- dataLen is validated to be within MaxInt range above
