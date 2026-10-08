@@ -662,3 +662,65 @@ func TestExportImportEBCDIC1047Encoding(t *testing.T) {
 	require.NoError(t, err)
 	require.Exactly(t, spec, fromJSON)
 }
+
+// An invalid composite spec must be reported, not fatal. Field constructors
+// panic on a bad spec by design, which is right for the static specs in this
+// package but not for a document arriving at runtime: ImportJSON and ImportYAML
+// promise an error, and a malformed file should not take the process with it.
+func TestImportRejectsInvalidCompositeSpecs(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want string
+	}{
+		{
+			name: "encoding on a composite",
+			yaml: `
+name: test
+fields:
+  "55": {type: Composite, length: 999, enc: ASCII, prefix: ASCII.LLL}
+`,
+			want: "only supports a nil Enc value",
+		},
+		{
+			name: "neither tag nor bitmap",
+			yaml: `
+name: test
+fields:
+  "55":
+    type: Composite
+    length: 999
+    prefix: ASCII.LLL
+    subfields:
+      "1": {type: String, length: 2, enc: ASCII, prefix: ASCII.Fixed}
+`,
+			want: "definition of Bitmap or Tag",
+		},
+		{
+			name: "padding on a composite",
+			yaml: `
+name: test
+fields:
+  "55":
+    type: Composite
+    length: 999
+    prefix: ASCII.LLL
+    padding: {type: Left, pad: "0"}
+    tag: {enc: BerTLVTag, sort: StringsByInt}
+    subfields:
+      "9F02": {type: String, length: 2, enc: ASCII, prefix: ASCII.Fixed}
+`,
+			want: "nil or None spec padding",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			spec, err := ImportYAML([]byte(tc.yaml))
+			require.Error(t, err)
+			require.Nil(t, spec)
+			require.Contains(t, err.Error(), tc.want)
+			require.Contains(t, err.Error(), "55")
+		})
+	}
+}
