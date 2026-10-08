@@ -60,6 +60,10 @@ run: update build
 test: update
 	go test -cover github.com/moov-io/iso8583/...
 
+.PHONY: bench
+bench:
+	go test . -count=1 -run '^$$' -bench '^(BenchmarkMarshaling|BenchmarkUnpacking)$$' -benchmem | tee output.txt
+
 .PHONY: clean
 clean:
 ifeq ($(OS),Windows_NT)
