@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/encoding"
@@ -165,6 +166,24 @@ type tagDummy struct {
 	PrefUnknownTLV      string        `json:"prefUnknownTLV,omitempty"       xml:"prefUnknownTLV,omitempty"       yaml:"prefUnknownTLV,omitempty"`
 }
 
+// constructField builds a field from its spec, turning a spec-validation panic
+// into an error.
+//
+// Field constructors panic on an invalid spec by design, and for static specs
+// that is the right call: a mistake is a programming error and failing at init
+// beats failing mid-transaction. Import is where that assumption stops holding.
+// The spec arrives as a document at runtime, so a malformed one is bad data
+// rather than a bug, and ImportJSON/ImportYAML already promise an error for it.
+// The panic value carries the specific reason, so it becomes the message.
+func constructField(constructor FieldConstructorFunc, spec *field.Spec, index string) (f field.Field, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("invalid spec for field: %s. %v", index, r)
+		}
+	}()
+	return constructor(spec), nil
+}
+
 func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 	fieldSpec := &field.Spec{
 		Length:      dummyField.Length,
@@ -201,7 +220,11 @@ func importField(dummyField *fieldDummy, index string) (*field.Spec, error) {
 			if !ok {
 				return nil, fmt.Errorf("no constructor for filed type: %s for field: %s", dummyField.Type, index)
 			}
-			fieldSpec.Subfields[key] = constructor(subfieldSpec)
+			subfield, err := constructField(constructor, subfieldSpec, key)
+			if err != nil {
+				return nil, err
+			}
+			fieldSpec.Subfields[key] = subfield
 		}
 
 		if dummyField.Tag != nil {
@@ -279,7 +302,11 @@ func importSpec(dummySpec *specDummy) (*iso8583.MessageSpec, error) {
 				index,
 			)
 		}
-		spec.Fields[index] = constructor(fieldSpec)
+		f, err := constructField(constructor, fieldSpec, key)
+		if err != nil {
+			return nil, err
+		}
+		spec.Fields[index] = f
 	}
 
 	return &spec, nil
@@ -406,7 +433,11 @@ func exportTag(tag *field.TagSpec) (*tagDummy, error) {
 		}
 	}
 	if tag.Sort != nil {
-		dummy.Sort = getFunctionName(tag.Sort)
+		name, err := exportSort(tag.Sort)
+		if err != nil {
+			return nil, err
+		}
+		dummy.Sort = name
 	}
 	if tag.PrefUnknownTLV != nil {
 		dummy.PrefUnknownTLV = tag.PrefUnknownTLV.Inspect()
@@ -423,6 +454,30 @@ func exportPad(pad padding.Padder) (*paddingDummy, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("unknown padding type: %s", paddingType)
+}
+
+// exportSort names a sort function so a spec can be read back. Only the
+// functions ImportJSON and ImportYAML can resolve are nameable: exporting any
+// other one produced a document that the importer then rejected with "unknown
+// sort function", so a custom sort turned a round trip into a file that looked
+// fine and could not be loaded. Failing here puts the error in front of whoever
+// can act on it.
+func exportSort(sort moovsort.StringSlice) (string, error) {
+	name := getFunctionName(sort)
+	if _, ok := SortExtToInt[name]; !ok {
+		return "", fmt.Errorf("unknown sort function: %s; only %s can be exported, "+
+			"because those are the ones an import can resolve", name, knownSortNames())
+	}
+	return name, nil
+}
+
+func knownSortNames() string {
+	names := make([]string, 0, len(SortExtToInt))
+	for name := range SortExtToInt {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
 }
 
 func exportEnc(enc encoding.Encoder) (string, error) {

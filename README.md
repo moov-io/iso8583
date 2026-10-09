@@ -216,6 +216,10 @@ Each field specification consists of these elements:
 
 Note: While some ISO 8583 specifications do not have field 0 and field 1, we use them for MTI and Bitmap as they are technically regular fields. We use `String` field for MTI and `Bitmap` field for the bitmap.
 
+You can also write a spec as a YAML or JSON document and load it at runtime.
+For more information, see [Defining a Spec as a
+Document](./docs/declarative-specs.md).
+
 For more advanced examples including handling of BER-TLV data, positional subfields, and various encoding types, see:
 - [message_test.go](message_test.go) - Complex message specifications and field types
 - [field/composite_test.go](field/composite_test.go) - Working with composite fields and subfields
@@ -880,6 +884,7 @@ Please, check the example of the JSON spec file [spec87ascii.json](./examples/sp
 ## Learn more
 
 - [How to Define Composite Fields](./docs/composite-fields.md)
+- [Defining a Spec as a Document](./docs/declarative-specs.md)
 - [Intro to ISO 8583](./docs/intro.md)
 - [Message Type Indicator](./docs/mti.md)
 - [Bitmaps](./docs/bitmap.md)

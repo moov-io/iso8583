@@ -462,6 +462,31 @@ func TestTrack2TypedAPI(t *testing.T) {
 	})
 }
 
+func TestTrackSetBytesReportsInvalidData(t *testing.T) {
+	invalid := []byte("this is not valid track data")
+
+	tests := []struct {
+		name  string
+		track interface{ SetBytes([]byte) error }
+	}{
+		{"Track1", field.NewTrack1(&field.Spec{
+			Length: 76, Description: "Track 1 Data", Enc: encoding.ASCII, Pref: prefix.ASCII.LL,
+		})},
+		{"Track2", field.NewTrack2(&field.Spec{
+			Length: 37, Description: "Track 2 Data", Enc: encoding.ASCII, Pref: prefix.ASCII.LL,
+		})},
+		{"Track3", field.NewTrack3(&field.Spec{
+			Length: 104, Description: "Track 3 Data", Enc: encoding.ASCII, Pref: prefix.ASCII.LLL,
+		})},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Error(t, tt.track.SetBytes(invalid))
+		})
+	}
+}
+
 func TestTrack3TypedAPI(t *testing.T) {
 	t.Run("Track 3 untyped", func(t *testing.T) {
 		samples := []TestSample{

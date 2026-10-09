@@ -43,10 +43,7 @@ func (f *Track3) SetSpec(spec *Spec) {
 }
 
 func (f *Track3) SetBytes(b []byte) error {
-	if err := f.unpack(b); err != nil {
-		return nil
-	}
-	return nil
+	return f.unpack(b)
 }
 
 func (f *Track3) Bytes() ([]byte, error) {
