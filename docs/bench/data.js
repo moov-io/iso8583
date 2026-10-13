@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791805646304,
+  "lastUpdate": 1791891282041,
   "repoUrl": "https://github.com/moov-io/iso8583",
   "entries": {
     "moov-io/iso8583": [
@@ -2240,6 +2240,76 @@ window.BENCHMARK_DATA = {
             "value": 286,
             "unit": "allocs/op",
             "extra": "83725 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "renovate[bot]",
+            "username": "renovate[bot]",
+            "email": "29139614+renovate[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "df0df42f34e0831c10c6c73eb7445b290dbf8c97",
+          "message": "fix(deps): update module golang.org/x/text to v0.43.0 (#462)\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2026-10-09T17:01:11Z",
+          "url": "https://github.com/moov-io/iso8583/commit/df0df42f34e0831c10c6c73eb7445b290dbf8c97"
+        },
+        "date": 1791891281678,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkMarshaling",
+            "value": 29710,
+            "unit": "ns/op\t   13680 B/op\t     275 allocs/op",
+            "extra": "39285 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshaling - ns/op",
+            "value": 29710,
+            "unit": "ns/op",
+            "extra": "39285 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshaling - B/op",
+            "value": 13680,
+            "unit": "B/op",
+            "extra": "39285 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMarshaling - allocs/op",
+            "value": 275,
+            "unit": "allocs/op",
+            "extra": "39285 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnpacking",
+            "value": 20470,
+            "unit": "ns/op\t   14784 B/op\t     286 allocs/op",
+            "extra": "57757 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnpacking - ns/op",
+            "value": 20470,
+            "unit": "ns/op",
+            "extra": "57757 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnpacking - B/op",
+            "value": 14784,
+            "unit": "B/op",
+            "extra": "57757 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnpacking - allocs/op",
+            "value": 286,
+            "unit": "allocs/op",
+            "extra": "57757 times\n4 procs"
           }
         ]
       }
