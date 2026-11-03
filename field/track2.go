@@ -27,7 +27,11 @@ const (
 	defaultSeparator = "="
 )
 
-var track2Regex = regexp.MustCompile(`^([0-9]{1,19})(=|D)([0-9]{4})([0-9]{3})([^?]+)$`)
+// track2Regex splits Track 2 into PAN, separator, expiration date (YYMM),
+// service code and discretionary data. Discretionary data may be empty: both
+// ISO/IEC 7813 and EMV Book 3 (tag 57, Track 2 Equivalent Data) let the track
+// end directly after the service code.
+var track2Regex = regexp.MustCompile(`^([0-9]{1,19})(=|D)([0-9]{4})([0-9]{3})([^?]*)$`)
 
 func NewTrack2(spec *Spec) *Track2 {
 	return &Track2{
