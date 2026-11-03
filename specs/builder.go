@@ -113,6 +113,7 @@ var (
 	}
 
 	SortExtToInt = map[string]moovsort.StringSlice{
+		"Strings":      moovsort.Strings,
 		"StringsByInt": moovsort.StringsByInt,
 		"StringsByHex": moovsort.StringsByHex,
 	}
