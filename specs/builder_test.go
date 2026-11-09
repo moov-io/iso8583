@@ -700,8 +700,13 @@ func TestAKnownSortStillRoundTrips(t *testing.T) {
 			0: field.NewString(&field.Spec{Length: 4, Description: "MTI", Enc: encoding.ASCII, Pref: prefix.ASCII.Fixed}),
 			1: field.NewBitmap(&field.Spec{Description: "Bitmap", Enc: encoding.BytesToASCIIHex, Pref: prefix.Hex.Fixed}),
 			3: field.NewComposite(&field.Spec{
-				Length: 2, Description: "Composite", Pref: prefix.ASCII.Fixed,
+				Length: 2, Description: "Numeric composite", Pref: prefix.ASCII.Fixed,
 				Tag:       &field.TagSpec{Sort: sort.StringsByInt},
+				Subfields: map[string]field.Field{"1": field.NewString(&field.Spec{Length: 2, Description: "a", Enc: encoding.ASCII, Pref: prefix.ASCII.Fixed})},
+			}),
+			4: field.NewComposite(&field.Spec{
+				Length: 2, Description: "Lexical composite", Pref: prefix.ASCII.Fixed,
+				Tag:       &field.TagSpec{Sort: sort.Strings},
 				Subfields: map[string]field.Field{"1": field.NewString(&field.Spec{Length: 2, Description: "a", Enc: encoding.ASCII, Pref: prefix.ASCII.Fixed})},
 			}),
 		},
@@ -709,12 +714,23 @@ func TestAKnownSortStillRoundTrips(t *testing.T) {
 
 	out, err := ExportYAML(spec)
 	require.NoError(t, err)
+	require.Contains(t, string(out), "sort: StringsByInt")
+	require.Contains(t, string(out), "sort: Strings")
 
 	back, err := ImportYAML(out)
 	require.NoError(t, err, "a spec this package exported could not be imported")
-	composite, ok := back.Fields[3].(*field.Composite)
+
+	numeric, ok := back.Fields[3].(*field.Composite)
 	require.True(t, ok)
-	require.Len(t, composite.Spec().Subfields, 1)
+	numericSorted := []string{"11", "2", "1"}
+	numeric.Spec().Tag.Sort(numericSorted)
+	require.Equal(t, []string{"1", "2", "11"}, numericSorted)
+
+	lexical, ok := back.Fields[4].(*field.Composite)
+	require.True(t, ok)
+	lexicalSorted := []string{"11", "2", "1"}
+	lexical.Spec().Tag.Sort(lexicalSorted)
+	require.Equal(t, []string{"1", "11", "2"}, lexicalSorted)
 }
 
 // An invalid composite spec must be reported, not fatal. Field constructors
