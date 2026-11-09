@@ -83,9 +83,13 @@ var (
 type ebcdicEncoder struct{}
 
 func (e *ebcdicEncoder) Encode(src []byte) ([]byte, error) {
-	var dst []byte
-	for _, v := range src {
-		dst = append(dst, asciiToEbcdic[v])
+	if len(src) == 0 {
+		return nil, nil
+	}
+
+	dst := make([]byte, len(src))
+	for i, v := range src {
+		dst[i] = asciiToEbcdic[v]
 	}
 	return dst, nil
 }
@@ -98,10 +102,14 @@ func (e *ebcdicEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 	if len(src) < length {
 		return nil, 0, fmt.Errorf("not enough data to decode. expected len %d, got %d", length, len(src))
 	}
+	if length == 0 {
+		return nil, 0, nil
+	}
+
 	src = src[:length]
-	var dst []byte
-	for _, v := range src {
-		dst = append(dst, ebcdicToAscii[v])
+	dst := make([]byte, length)
+	for i, v := range src {
+		dst[i] = ebcdicToAscii[v]
 	}
 
 	return dst, length, nil
