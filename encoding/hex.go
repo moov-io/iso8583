@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/moov-io/iso8583/utils"
 )
@@ -28,11 +27,9 @@ type hexToASCIIEncoder struct{}
 func (e hexToASCIIEncoder) Encode(data []byte) ([]byte, error) {
 	out := make([]byte, hex.EncodedLen(len(data)))
 	hex.Encode(out, data)
+	upperHex(out)
 
-	str := string(out)
-	str = strings.ToUpper(str)
-
-	return []byte(str), nil
+	return out, nil
 }
 
 // Decodes ASCII hex and returns bytes
@@ -101,6 +98,17 @@ func (e asciiToHexEncoder) Decode(data []byte, length int) ([]byte, int, error) 
 
 	out := make([]byte, hex.EncodedLen(length))
 	hex.Encode(out, data[:length])
+	upperHex(out)
 
-	return []byte(strings.ToUpper(string(out))), length, nil
+	return out, length, nil
+}
+
+// upperHex converts the lowercase hex digits produced by encoding/hex to
+// uppercase in place.
+func upperHex(data []byte) {
+	for i, c := range data {
+		if 'a' <= c && c <= 'f' {
+			data[i] = c - ('a' - 'A')
+		}
+	}
 }

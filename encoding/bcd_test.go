@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -68,6 +69,47 @@ func TestBCD(t *testing.T) {
 		require.EqualError(t, err, "failed to perform BCD encoding")
 		require.ErrorIs(t, err, bcd.ErrBadInput)
 	})
+}
+
+func BenchmarkBCDEncode(b *testing.B) {
+	src := []byte("1234567890123456")
+
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if _, err := BCD.Encode(src); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkBCDecode(b *testing.B) {
+	src := []byte{0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56}
+
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		if _, _, err := BCD.Decode(src, len(src)*2); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkBCDRoundTrip(b *testing.B) {
+	src := []byte("1234567890123456")
+
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		encoded, err := BCD.Encode(src)
+		if err != nil {
+			b.Fatal(err)
+		}
+		decoded, _, err := BCD.Decode(encoded, len(src))
+		if err != nil {
+			b.Fatal(err)
+		}
+		if !bytes.Equal(decoded, src) {
+			b.Fatal("BCD round trip mismatch")
+		}
+	}
 }
 
 func FuzzDecodeBCD(f *testing.F) {
