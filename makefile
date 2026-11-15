@@ -62,7 +62,8 @@ test: update
 
 .PHONY: bench
 bench:
-	go test . -count=1 -run '^$$' -bench '^(BenchmarkMarshaling|BenchmarkUnpacking)$$' -benchmem | tee output.txt
+	go test . -count=6 -cpu=2 -run '^$$' -bench '^(BenchmarkMarshaling|BenchmarkUnpacking)$$' -benchmem > output.raw.txt
+	python3 scripts/bench-median.py output.raw.txt | tee output.txt
 
 .PHONY: clean
 clean:

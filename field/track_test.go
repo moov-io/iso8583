@@ -621,3 +621,28 @@ func TestTrack3TypedAPI(t *testing.T) {
 		})
 	})
 }
+
+// TestTrack2EmptyDiscretionaryData covers a Track 2 that ends directly after
+// the service code. Discretionary data is variable-length with no minimum in
+// both ISO/IEC 7813 and EMV Book 3 (tag 57, Track 2 Equivalent Data), so this
+// is valid track data and must parse and round-trip unchanged.
+func TestTrack2EmptyDiscretionaryData(t *testing.T) {
+	for _, raw := range []string{
+		"4000340000000506=2512111",
+		"4000340000000506D2512111",
+	} {
+		t.Run(raw, func(t *testing.T) {
+			tracker := field.NewTrack2(track2Spec)
+			require.NoError(t, tracker.SetBytes([]byte(raw)))
+
+			require.Equal(t, "4000340000000506", tracker.PrimaryAccountNumber)
+			require.Equal(t, "2512", tracker.ExpirationDate.Format(expiryDateFormat))
+			require.Equal(t, "111", tracker.ServiceCode)
+			require.Empty(t, tracker.DiscretionaryData)
+
+			buf, err := tracker.Bytes()
+			require.NoError(t, err)
+			require.Equal(t, raw, string(buf))
+		})
+	}
+}

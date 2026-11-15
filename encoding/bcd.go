@@ -10,6 +10,11 @@ import (
 var (
 	_   Encoder = (*bcdEncoder)(nil)
 	BCD         = &bcdEncoder{}
+
+	// The BCD codecs are immutable after construction, so we build them once
+	// and reuse them for every field.
+	bcdStandardEncoder = bcd.NewEncoder(bcd.Standard)
+	bcdStandardDecoder = bcd.NewDecoder(bcd.Standard)
 )
 
 type bcdEncoder struct{}
@@ -19,7 +24,7 @@ func (e *bcdEncoder) Encode(src []byte) ([]byte, error) {
 		src = append([]byte("0"), src...)
 	}
 
-	enc := bcd.NewEncoder(bcd.Standard)
+	enc := bcdStandardEncoder
 	dst := make([]byte, bcd.EncodedLen(len(src)))
 	n, err := enc.Encode(dst, src)
 	if err != nil {
@@ -48,7 +53,7 @@ func (e *bcdEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 		return nil, 0, fmt.Errorf("not enough data to decode. expected len %d, got %d", read, len(src))
 	}
 
-	dec := bcd.NewDecoder(bcd.Standard)
+	dec := bcdStandardDecoder
 	dst := make([]byte, decodedLen)
 	_, err := dec.Decode(dst, src[:read])
 	if err != nil {

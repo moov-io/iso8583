@@ -16,6 +16,11 @@ func TestASCII(t *testing.T) {
 		require.Equal(t, []byte("hello"), res)
 		require.Equal(t, 5, read)
 
+		res, read, err = enc.Decode([]byte("hello"), 0)
+		require.NoError(t, err)
+		require.Nil(t, res)
+		require.Equal(t, 0, read)
+
 		_, _, err = enc.Decode([]byte("hello, 世界!"), 10)
 		require.Error(t, err)
 		require.EqualError(t, err, "failed to perform ASCII decoding")
@@ -34,6 +39,10 @@ func TestASCII(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, []byte("hello"), res)
+
+		res, err = enc.Encode(nil)
+		require.NoError(t, err)
+		require.Nil(t, res)
 
 		_, err = enc.Encode([]byte("hello, 世界!"))
 		require.Error(t, err)

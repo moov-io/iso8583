@@ -22,11 +22,15 @@ func (e binaryEncoder) Decode(data []byte, length int) ([]byte, int, error) {
 		return nil, 0, fmt.Errorf("length should be positive, got %d", length)
 	}
 
-	out := append([]byte(nil), data...)
-
 	if length > len(data) {
 		return nil, 0, fmt.Errorf("failed to perform binary decoding: length %v exceeds the data size %v", length, len(data))
 	}
+	if length == 0 {
+		return nil, 0, nil
+	}
 
-	return out[:length], length, nil
+	out := make([]byte, length)
+	copy(out, data[:length])
+
+	return out, length, nil
 }

@@ -1,7 +1,7 @@
 package encoding
 
 import (
-	"bytes"
+	"io"
 	"math/bits"
 
 	"github.com/moov-io/iso8583/utils"
@@ -33,12 +33,11 @@ func (berTLVEncoderTag) Encode(data []byte) ([]byte, error) {
 // number of bytes read e.g. []byte{0x5F, 0x2A} would be converted to
 // []byte("5F2A")
 func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
-	r := bytes.NewReader(data)
-
-	firstByte, err := r.ReadByte()
-	if err != nil {
-		return nil, 0, utils.NewSafeError(err, "failed to read byte")
+	if len(data) == 0 {
+		return nil, 0, utils.NewSafeError(io.EOF, "failed to read byte")
 	}
+
+	firstByte := data[0]
 	tagLenBytes := 1
 
 	shouldReadSubsequentByte := false
@@ -47,10 +46,10 @@ func (berTLVEncoderTag) Decode(data []byte, length int) ([]byte, int, error) {
 	}
 
 	for shouldReadSubsequentByte {
-		b, err := r.ReadByte()
-		if err != nil {
-			return nil, tagLenBytes, utils.NewSafeError(err, "failed to decode TLV tag")
+		if tagLenBytes >= len(data) {
+			return nil, tagLenBytes, utils.NewSafeError(io.EOF, "failed to decode TLV tag")
 		}
+		b := data[tagLenBytes]
 		tagLenBytes++
 		// We read subsequent bytes to extract the tag by checking if
 		// the most significant bit is set.

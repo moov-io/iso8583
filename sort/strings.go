@@ -1,11 +1,9 @@
 package sort
 
 import (
-	"math/big"
 	"sort"
 	"strconv"
-
-	"github.com/moov-io/iso8583/encoding"
+	"strings"
 )
 
 // StringSlice is a function type used to sort a slice of strings in increasing
@@ -38,16 +36,68 @@ func StringsByInt(x []string) {
 // representation of a hex value must be of even length.
 func StringsByHex(x []string) {
 	sort.Slice(x, func(i, j int) bool {
-		valI, err := encoding.ASCIIHexToBytes.Encode([]byte(x[i]))
-		if err != nil {
-			// we will ignore the error and sort the strings as normal
-			return x[i] < x[j]
-		}
-		valJ, err := encoding.ASCIIHexToBytes.Encode([]byte(x[j]))
-		if err != nil {
-			// we will ignore the error and sort the strings as normal
-			return x[i] < x[j]
-		}
-		return new(big.Int).SetBytes(valI).Int64() < new(big.Int).SetBytes(valJ).Int64()
+		return compareHex(x[i], x[j]) < 0
 	})
+}
+
+// compareHex compares a and b as big-endian hexadecimal numbers. If either
+// value is not valid hexadecimal, compareHex compares the strings
+// lexicographically.
+func compareHex(a, b string) int {
+	aValue, aOK := trimHex(a)
+	bValue, bOK := trimHex(b)
+	if !aOK || !bOK {
+		return strings.Compare(a, b)
+	}
+
+	if len(aValue) != len(bValue) {
+		return len(aValue) - len(bValue)
+	}
+
+	for i := 0; i < len(aValue); i++ {
+		aNibble, _ := hexNibble(aValue[i])
+		bNibble, _ := hexNibble(bValue[i])
+		if aNibble != bNibble {
+			return int(aNibble) - int(bNibble)
+		}
+	}
+
+	return 0
+}
+
+// trimHex validates an even-length hexadecimal string and removes leading zero
+// digits so that remaining values can be compared by length and digits.
+func trimHex(s string) (string, bool) {
+	if len(s)%2 != 0 {
+		return s, false
+	}
+
+	firstNonZero := -1
+	for i := 0; i < len(s); i++ {
+		if _, ok := hexNibble(s[i]); !ok {
+			return s, false
+		}
+		if firstNonZero == -1 && s[i] != '0' {
+			firstNonZero = i
+		}
+	}
+
+	if firstNonZero == -1 {
+		return "", true
+	}
+
+	return s[firstNonZero:], true
+}
+
+func hexNibble(c byte) (byte, bool) {
+	switch {
+	case '0' <= c && c <= '9':
+		return c - '0', true
+	case 'a' <= c && c <= 'f':
+		return c - 'a' + 10, true
+	case 'A' <= c && c <= 'F':
+		return c - 'A' + 10, true
+	}
+
+	return 0, false
 }

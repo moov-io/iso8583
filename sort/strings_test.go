@@ -19,7 +19,21 @@ func TestSortStringsByInt(t *testing.T) {
 }
 
 func TestSortStringsByHex(t *testing.T) {
-	x := []string{"B0", "10", "ABCD"}
-	StringsByHex(x)
-	require.Equal(t, []string{"10", "B0", "ABCD"}, x)
+	t.Run("sorts by numeric hex value", func(t *testing.T) {
+		x := []string{"B0", "10", "ABCD"}
+		StringsByHex(x)
+		require.Equal(t, []string{"10", "B0", "ABCD"}, x)
+	})
+
+	t.Run("ignores leading zeros and hex case", func(t *testing.T) {
+		x := []string{"0010", "0001", "ab"}
+		StringsByHex(x)
+		require.Equal(t, []string{"0001", "0010", "ab"}, x)
+	})
+
+	t.Run("falls back to string comparison for invalid hex", func(t *testing.T) {
+		x := []string{"xyz", "10", "ABC"}
+		StringsByHex(x)
+		require.Equal(t, []string{"10", "ABC", "xyz"}, x)
+	})
 }

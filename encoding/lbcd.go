@@ -19,7 +19,7 @@ func (e *lBCDEncoder) Encode(src []byte) ([]byte, error) {
 		src = append(src, []byte("0")...)
 	}
 
-	enc := bcd.NewEncoder(bcd.Standard)
+	enc := bcdStandardEncoder
 	dst := make([]byte, bcd.EncodedLen(len(src)))
 	n, err := enc.Encode(dst, src)
 	if err != nil {
@@ -41,7 +41,7 @@ func (e *lBCDEncoder) Decode(src []byte, length int) ([]byte, int, error) {
 
 	read := bcd.EncodedLen(decodedLen)
 
-	dec := bcd.NewDecoder(bcd.Standard)
+	dec := bcdStandardDecoder
 	dst := make([]byte, decodedLen)
 
 	if len(src) < read {

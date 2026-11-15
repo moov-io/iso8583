@@ -442,7 +442,9 @@ func (m *Message) Clone() (*Message, error) {
 	}
 
 	newMessage.MTI(mti)
-	newMessage.Unpack(bytes)
+	if err := newMessage.Unpack(bytes); err != nil {
+		return nil, err
+	}
 
 	_, err = newMessage.Pack()
 	if err != nil {
