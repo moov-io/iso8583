@@ -23,7 +23,7 @@ install:
 	go mod vendor
 
 build:
-	go build -mod=vendor -ldflags "-X github.com/moov-io/iso8583.Version=${VERSION}" -o bin/iso8583 github.com/moov-io/iso8583/cmd/iso8583
+	go build -ldflags "-X github.com/moov-io/iso8583.Version=${VERSION}" -o bin/iso8583 github.com/moov-io/iso8583/cmd/iso8583
 
 .PHONY: setup
 setup:

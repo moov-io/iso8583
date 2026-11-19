@@ -41,7 +41,7 @@ func main() {
 	availableSpecNames := strings.Join(specNames, ", ")
 
 	specName := describeCommand.String("spec", "87ascii", fmt.Sprintf("name of built-in spec: %s", availableSpecNames))
-	specFileName := describeCommand.String("spec-file", "", "path to customized specification file in JSON format")
+	specFileName := describeCommand.String("spec-file", "", "path to customized specification file in JSON or YAML format")
 
 	flag.Parse()
 
@@ -83,7 +83,7 @@ func main() {
 			os.Exit(1)
 		}
 	default:
-		fmt.Fprintf(os.Stdout, "Uknown command: %s\n\n", command)
+		fmt.Fprintf(os.Stdout, "Unknown command: %s\n\n", command)
 		flag.Usage()
 		os.Exit(1)
 	}
