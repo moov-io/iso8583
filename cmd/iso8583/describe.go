@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/moov-io/iso8583"
+	"github.com/moov-io/iso8583/adapters"
 	"github.com/moov-io/iso8583/specs"
 )
 
@@ -66,13 +67,10 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 		return nil, fmt.Errorf("reading file %s: %w", path, err)
 	}
 
-	message := iso8583.NewMessage(spec)
-	err = message.Unpack(raw)
-	if err != nil {
-		return message, fmt.Errorf("unpacking message: %w", err)
-	}
-
-	return message, nil
+	// UnpackWith looks the spec up in the adapters package's static
+	// registry. Specs with no registered adapter fall through to a
+	// plain Unpack, so the CLI stays spec-agnostic.
+	return adapters.UnpackWith(spec, raw)
 }
 
 func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {
