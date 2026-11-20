@@ -746,6 +746,37 @@ func TestTLVPacking(t *testing.T) {
 		require.Equal(t, []byte{0x30, 0x31, 0x34, 0x9a, 0x3, 0x21, 0x7, 0x20, 0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1}, packed)
 	})
 
+	t.Run("Pack keeps the length of an empty value", func(t *testing.T) {
+		data := &TLVTestData{
+			F9A:   NewHexValue(""),
+			F9F02: NewHexValue("000000000501"),
+		}
+
+		composite := NewComposite(tlvTestSpec)
+		require.NoError(t, composite.Marshal(data))
+
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+
+		// Tag 9A is followed by its zero length (0x00), so tag 9F02 starts
+		// where a reader expects it
+		want := []byte{0x30, 0x31, 0x31, 0x9a, 0x0, 0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1}
+		require.Equal(t, want, packed)
+
+		composite = NewComposite(tlvTestSpec)
+		_, err = composite.Unpack(packed)
+		require.NoError(t, err)
+
+		repacked, err := composite.Pack()
+		require.NoError(t, err)
+		require.Equal(t, want, repacked)
+
+		unpacked := &TLVTestData{}
+		require.NoError(t, composite.Unmarshal(unpacked))
+		require.Equal(t, "", unpacked.F9A.Value())
+		require.Equal(t, "000000000501", unpacked.F9F02.Value())
+	})
+
 	t.Run("Unpack correctly deserialises bytes to the data struct", func(t *testing.T) {
 		composite := NewComposite(tlvTestSpec)
 
