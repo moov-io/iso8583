@@ -13,7 +13,10 @@ func TestBerTLVPrefixer(t *testing.T) {
 		length   int
 		data     []byte
 	}{
+		{"zero length", 1, 0, []byte{0b00000000}},
 		{"single byte prefix", 1, 126, []byte{0b01111110}},
+		{"largest single byte prefix", 1, 127, []byte{0b01111111}},
+		{"smallest two byte prefix", 2, 128, []byte{0b10000001, 0b10000000}},
 		{"two byte prefix", 2, 131, []byte{0b10000001, 0b10000011}},
 		{"three byte prefix", 3, 65039, []byte{0b10000010, 0b11111110, 0b00001111}},
 	}
