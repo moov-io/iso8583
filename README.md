@@ -16,7 +16,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/moov-io/iso8583)](https://goreportcard.com/report/github.com/moov-io/iso8583)
 [![Repo Size](https://img.shields.io/github/languages/code-size/moov-io/iso8583?label=project%20size)](https://github.com/moov-io/iso8583)
 [![Apache 2 License](https://img.shields.io/badge/license-Apache2-blue.svg)](https://raw.githubusercontent.com/moov-io/iso8583/master/LICENSE)
-[![Slack Channel](https://slack.moov.io/badge.svg?bg=e01563&fgColor=fffff)](https://slack.moov.io/)
+[![Slack Channel](https://img.shields.io/badge/Slack-Moov-e01563)](https://slack.moov.io/)
 [![GitHub Stars](https://img.shields.io/github/stars/moov-io/iso8583)](https://github.com/moov-io/iso8583)
 [![Twitter](https://img.shields.io/twitter/follow/moov?style=social)](https://twitter.com/moov?lang=en)
 
@@ -50,13 +50,13 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
 
 ## Project status
 
-Moov ISO8583 is a Go package that's been **thoroughly tested and trusted in the real world**. The project has proven its reliability and robustness in real-world, high-stakes scenarios. Please let us know if you encounter any missing feature/bugs/unclear documentation by opening up [an issue](https://github.com/moov-io/iso8583/issues/new) or asking on our [#iso8583 Community Slack channel](https://moov-io.slack.com/archives/C014UT7C3ST).
-. Thanks!
+Moov ISO8583 is a Go package that's been **thoroughly tested and trusted in the real world**. The project has proven its reliability and robustness in real-world, high-stakes scenarios. Please let us know if you encounter any missing feature/bugs/unclear documentation by opening up [an issue](https://github.com/moov-io/iso8583/issues/new) or asking on our [#iso8583 Community Slack channel](https://moov-io.slack.com/archives/C014UT7C3ST). Thanks!
 
 ## Installation
 
 ```
 go get github.com/moov-io/iso8583
+go mod tidy
 ```
 
 ## Quick Start
@@ -256,9 +256,17 @@ After defining your specification, you can set message data in two ways: working
 
 #### Using Go Structs (Recommended)
 
-Define a struct that maps your business data to ISO 8583 fields using native Go types and `iso8583` tags:
+Define a struct that maps your business data to ISO 8583 fields using native Go types and `iso8583` tags. The following program packs an authorization using `examples.Spec`, whose field 43 is a composite (unlike `specs.Spec87ASCII`, where F43 is a string):
+
 
 ```go
+package main
+
+import (
+    "github.com/moov-io/iso8583"
+    "github.com/moov-io/iso8583/examples"
+)
+
 type Authorization struct {
     MTI                  string    `iso8583:"0"`  // Message Type Indicator
     PrimaryAccountNumber string    `iso8583:"2"`  // PAN
@@ -276,43 +284,43 @@ type Acceptor struct {
     City    string `iso8583:"2"`
     Country string `iso8583:"3"`
 }
-```
 
-Then create and populate your message:
+func main() {
+    // Create new message. Use examples.Spec (not specs.Spec87ASCII) when
+    // field 43 is the composite *Acceptor; in Spec87ASCII, F43 is a String.
+    msg := iso8583.NewMessage(examples.Spec)
 
-```go
-// Create new message
-msg := iso8583.NewMessage(Spec)
+    // Prepare transaction data
+    auth := &Authorization{
+        MTI:                  "0100",
+        PrimaryAccountNumber: "4242424242424242",
+        ProcessingCode:       "000000",
+        Amount:               9999,
+        STAN:                 "000123",
+        LocalTime:            "152059",
+        LocalDate:            "0205",
+        MerchantType:         "5411",
+        AcceptorInfo: &Acceptor{
+            Name:    "ACME Store",
+            City:    "New York",
+            Country: "US",
+        },
+    }
 
-// Prepare transaction data
-auth := &Authorization{
-    MTI:                  "0100",
-    PrimaryAccountNumber: "4242424242424242",
-    ProcessingCode:       "000000",
-    Amount:               9999,
-    STAN:                 "000123",
-    LocalTime:            "152059",
-    LocalDate:            "0205",
-    MerchantType:         "5411",
-    AcceptorInfo: &Acceptor{
-        Name:    "ACME Store",
-        City:    "New York",
-        Country: "US",
-    },
+    // Marshal data into message
+    err := msg.Marshal(auth)
+    if err != nil {
+        panic(err)
+    }
+
+    // Pack for transmission
+    data, err := msg.Pack()
+    if err != nil {
+        panic(err)
+    }
+    // data is ready to be sent
+    _ = data
 }
-
-// Marshal data into message
-err := msg.Marshal(auth)
-if err != nil {
-    panic(err)
-}
-
-// Pack for transmission
-data, err := msg.Pack()
-if err != nil {
-    panic(err)
-}
-// data is ready to be sent
 ```
 
 If you want empty values to be included in the message, you can use the `keepzero` option in the `iso8583` field tag:
@@ -386,19 +394,29 @@ When you receive a packed ISO 8583 message, you can unpack and access its data i
 
 #### Using Go Structs (Recommended)
 
-Define a struct matching your expected message format using native Go types:
+Use the same `Authorization` and `Acceptor` types as in [Setting Message Data](#setting-message-data), and unpack with `examples.Spec` (field 43 is a composite). For `specs.Spec87ASCII`, map field 43 to a `string` instead.
 
 ```go
+package main
+
+import (
+    "fmt"
+    "os"
+
+    "github.com/moov-io/iso8583"
+    "github.com/moov-io/iso8583/examples"
+)
+
 type Authorization struct {
-    MTI                  string    `iso8583:"0"`  // Message Type Indicator
-    PrimaryAccountNumber string    `iso8583:"2"`  // PAN
-    ProcessingCode       string    `iso8583:"3"`  // Processing code
-    Amount              int64     `iso8583:"4"`  // Transaction amount
-    STAN                string    `iso8583:"11"` // System Trace Audit Number
-    LocalTime           string    `iso8583:"12"` // HHmmss
-    LocalDate           string    `iso8583:"13"` // MMDD
-    MerchantType        string    `iso8583:"18"` // Merchant category code
-    AcceptorInfo        *Acceptor `iso8583:"43"` // Merchant details
+    MTI                  string    `iso8583:"0"`
+    PrimaryAccountNumber string    `iso8583:"2"`
+    ProcessingCode       string    `iso8583:"3"`
+    Amount               int64     `iso8583:"4"`
+    STAN                 string    `iso8583:"11"`
+    LocalTime            string    `iso8583:"12"`
+    LocalDate            string    `iso8583:"13"`
+    MerchantType         string    `iso8583:"18"`
+    AcceptorInfo         *Acceptor `iso8583:"43"`
 }
 
 type Acceptor struct {
@@ -406,33 +424,53 @@ type Acceptor struct {
     City    string `iso8583:"2"`
     Country string `iso8583:"3"`
 }
-```
 
-Then unpack and parse your message:
+func main() {
+    // receivedData is a packed ISO 8583 message (for example, bytes just
+    // read from the network). Here we pack a sample so the program is runnable.
+    packedMsg := iso8583.NewMessage(examples.Spec)
+    err := packedMsg.Marshal(&Authorization{
+        MTI:                  "0100",
+        PrimaryAccountNumber: "4242424242424242",
+        ProcessingCode:       "000000",
+        Amount:               9999,
+        STAN:                 "000123",
+        LocalTime:            "152059",
+        LocalDate:            "0205",
+        MerchantType:         "5411",
+        AcceptorInfo:         &Acceptor{Name: "ACME Store", City: "New York", Country: "US"},
+    })
+    if err != nil {
+        panic(err)
+    }
+    receivedData, err := packedMsg.Pack()
+    if err != nil {
+        panic(err)
+    }
 
-```go
-// Create message with appropriate spec
-msg := iso8583.NewMessage(specs.Spec87ASCII)
+    // Create message with the same spec used to pack the data
+    msg := iso8583.NewMessage(examples.Spec)
 
-// Unpack received bytes
-err := msg.Unpack(receivedData)
-if err != nil {
-    panic(err)
+    // Unpack received bytes
+    err = msg.Unpack(receivedData)
+    if err != nil {
+        panic(err)
+    }
+
+    // Parse into struct
+    var auth Authorization
+    err = msg.Unmarshal(&auth)
+    if err != nil {
+        panic(err)
+    }
+
+    // Work with parsed data
+    fmt.Printf("Transaction amount: %d\n", auth.Amount)
+    fmt.Printf("Merchant: %s, %s\n", auth.AcceptorInfo.Name, auth.AcceptorInfo.City)
+
+    // Print full message contents (with sensitive data masked)
+    iso8583.Describe(msg, os.Stdout)
 }
-
-// Parse into struct
-var auth Authorization
-err = msg.Unmarshal(&auth)
-if err != nil {
-    panic(err)
-}
-
-// Work with parsed data
-fmt.Printf("Transaction amount: %d\n", auth.Amount)
-fmt.Printf("Merchant: %s, %s\n", auth.AcceptorInfo.Name, auth.AcceptorInfo.City)
-
-// Print full message contents (with sensitive data masked)
-iso8583.Describe(msg, os.Stdout)
 ```
 
 #### Working with Individual Fields
@@ -544,19 +582,22 @@ iso8583.Describe(message, os.Stdout)
 and it will produce the following output:
 
 ```
-MTI........................................: 0100
-Bitmap.....................................: 000000000000000000000000000000000000000000000000
-Bitmap bits................................: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-F000 Message Type Indicator................: 0100
-F002 Primary Account Number................: 4242****4242
-F003 Processing Code.......................: 123456
-F004 Transaction Amount....................: 100
-F020 PAN Extended Country Code.............: 4242****4242
-F035 Track 2 Data..........................: 4000****0506=2512111123400001230
-F036 Track 3 Data..........................: 011234****3445=724724000000000****00300XXXX020200099010=********************==1=100000000000000000**
-F045 Track 1 Data..........................: B4815****1896^YATES/EUGENE L^^^356858      00998000000
-F052 PIN Data..............................: 12****78
-F055 ICC Data – EMV Having Multiple Tags...: ICC  ... Tags
+ISO 8583 v1987 ASCII Message:
+MTI..........: 0100
+Bitmap HEX...: 0000000000000000
+Bitmap bits..:
+    [1-8]00000000    [9-16]00000000   [17-24]00000000   [25-32]00000000
+  [33-40]00000000   [41-48]00000000   [49-56]00000000   [57-64]00000000
+F0   Message Type Indicator...............: 0100
+F2   Primary Account Number...............: 4242****4242
+F3   Processing Code......................: 123456
+F4   Transaction Amount...................: 100
+F20  PAN Extended Country Code............: 4242****4242
+F35  Track 2 Data.........................: 4000****0506=2512111123400001230
+F36  Track 3 Data.........................: 011234****3445=724724000000000****00300XXXX020200099010=********************==1=100000000000000000**
+F45  Track 1 Data.........................: B4815****1896^YATES/EUGENE L^^^356858      00998000000
+F52  PIN Data.............................: 12****78
+F55  ICC Data – EMV Having Multiple Tags..: ICC  ... Tags
 ```
 
 by default, we apply `iso8583.DefaultFilters` to mask the values of the fields
@@ -564,24 +605,24 @@ with sensitive data. You can define your filter functions and redact specific
 fields like this:
 
 ```go
-filterAll = func(in string, data field.Field) string {
+filterAll := func(in string, data field.Field) string {
 	runesInString := utf8.RuneCountInString(in)
 
 	return strings.Repeat("*", runesInString)
 }
 
 // filter only value of the field 2
-iso8583.Describe(message, os.Stdout, filterAll(2, filterAll))
+iso8583.Describe(message, os.Stdout, iso8583.FilterField("2", filterAll))
 
 // outputs:
-// F002 Primary Account Number................: ************
+// F2   Primary Account Number...............: ****************
 ```
 
 If you want to view unfiltered values, you can use no-op filters `iso8583.DoNotFilterFields` that we defined:
 
 ```go
 // display unfiltered field values
-iso8583.Describe(message, os.Stdout, DoNotFilterFields()...)
+iso8583.Describe(message, os.Stdout, iso8583.DoNotFilterFields()...)
 ```
 
 ### JSON Encoding and Decoding
@@ -592,14 +633,15 @@ You can serialize message into JSON format:
 jsonMessage, err := json.Marshal(message)
 ```
 
-it will produce the following JSON (bitmap is not included, as it's only used to unpack message from the binary representation):
+it will produce the following JSON (including the bitmap in field `1`, which is generated when the message is packed during marshaling):
 
 ```json
 {
-   "0":"0100",
-   "2":"4242424242424242",
-   "3":123456,
-   "4":"100"
+   "0": "0100",
+   "1": "7000000000000000",
+   "2": "4242424242424242",
+   "3": 123456,
+   "4": "100"
 }
 ```
 
@@ -613,7 +655,7 @@ if err := json.Unmarshal([]byte(input), message); err != nil {
     // handle err
 }
 
-// access indidual fields or using struct
+// access individual fields or using struct
 ```
 
 ### Working with Unknown TLV Tags
@@ -785,7 +827,7 @@ read, err := io.ReadFull(conn, buf)
 if err != nil {
 	// handle error
 }
-if reqLen != header.Length() {
+if read != header.Length() {
 	// handle error
 }
 
@@ -814,19 +856,40 @@ if err != nil {
 
 ## CLI
 
-CLI suports following command:
+The CLI supports the following command:
 
-* `display` to display ISO8583 message in a human-readable format
+* `describe` to display an ISO 8583 message in a human-readable format
 
 ### Installation
 
-`iso8583` CLI is available as downloadable binaries from the [releases page](https://github.com/moov-io/iso8583/releases/latest) for MacOS, Windows and Linux.
+#### Binaries
 
-Here is an example how to install MacOS version:
+`iso8583` CLI is available as downloadable binaries from the [releases page](https://github.com/moov-io/iso8583/releases/latest) for macOS, Linux, and Windows.
 
 ```
-wget -O ./iso8583 https://github.com/moov-io/iso8583/releases/download/v0.4.6/iso8583_0.4.6_darwin_amd64 && chmod +x ./iso8583
+# macOS
+wget -O ./iso8583 https://github.com/moov-io/iso8583/releases/latest/download/iso8583-darwin-amd64 && chmod +x ./iso8583
+
+# Linux
+wget -O ./iso8583 https://github.com/moov-io/iso8583/releases/latest/download/iso8583-linux-amd64 && chmod +x ./iso8583
 ```
+
+```
+# Windows (PowerShell)
+Invoke-WebRequest -Uri https://github.com/moov-io/iso8583/releases/latest/download/iso8583.exe -OutFile iso8583.exe
+```
+
+#### Build from source
+
+```
+# from a checkout of this repository
+go build -o bin/iso8583 ./cmd/iso8583
+
+# or, without a checkout
+go install github.com/moov-io/iso8583/cmd/iso8583@latest
+```
+
+`make build` also writes `bin/iso8583`.
 
 Now you can run CLI:
 
@@ -842,43 +905,41 @@ Available commands:
 ```
 
 
-### Display
+### Describe
 
-To display ISO8583 message in a human-readable format
-
-Example:
+To display an ISO 8583 message in a human-readable format:
 
 ```
 ➜ ./bin/iso8583 describe msg.bin
-MTI........................................: 0100
-Bitmap.....................................: 000000000000000000000000000000000000000000000000
-Bitmap bits................................: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-F000 Message Type Indicator................: 0100
-F002 Primary Account Number................: 4242****4242
-F003 Processing Code.......................: 123456
-F004 Transaction Amount....................: 100
-F020 PAN Extended Country Code.............: 4242****4242
-F035 Track 2 Data..........................: 4000****0506=2512111123400001230
-F036 Track 3 Data..........................: 011234****3445=724724000000000****00300XXXX020200099010=********************==1=100000000000000000**
-F045 Track 1 Data..........................: B4815****1896^YATES/EUGENE L^^^356858      00998000000
-F052 PIN Data..............................: 12****78
-F055 ICC Data – EMV Having Multiple Tags...: ICC  ... Tags
+ISO 8583 v1987 ASCII Message:
+MTI..........: 0100
+Bitmap HEX...: 70000000000000000000000000000000
+Bitmap bits..:
+    [1-8]01110000    [9-16]00000000   [17-24]00000000   [25-32]00000000
+  [33-40]00000000   [41-48]00000000   [49-56]00000000   [57-64]00000000
+  [65-72]00000000   [73-80]00000000   [81-88]00000000   [89-96]00000000
+ [97-104]00000000 [105-112]00000000 [113-120]00000000 [121-128]00000000
+F0   Message Type Indicator..: 0100
+F2   Primary Account Number..: 4242****4242
+F3   Processing Code.........: 123456
+F4   Transaction Amount......: 100
 ```
 
-You can specify which of the built-in specs to use to the describe message via
-the `spec` flag:
+You can specify which of the built-in specs to use to describe the message via
+the `spec` flag (`87ascii` or `87hex`; the default is `87ascii`):
 
 ```
-➜ ./bin/iso8583 describe -spec spec87ascii msg.bin
+➜ ./bin/iso8583 describe -spec 87ascii msg.bin
 ```
 
-You can also define your spec in JSON format and describe message using the spec file with `spec-file` flag:
+You can also define your spec in JSON or YAML and describe a message using the spec file with the `spec-file` flag:
 
 ```
 ➜ ./bin/iso8583 describe -spec-file ./examples/specs/spec87ascii.json msg.bin
+➜ ./bin/iso8583 describe -spec-file ./examples/specs/spec87ascii.yaml msg.bin
 ```
 
-Please, check the example of the JSON spec file [spec87ascii.json](./examples/specs/spec87ascii.json).
+Please, check the example spec files [spec87ascii.json](./examples/specs/spec87ascii.json) and [spec87ascii.yaml](./examples/specs/spec87ascii.yaml).
 
 
 ## Learn more
@@ -907,7 +968,7 @@ Twitter [@moov](https://twitter.com/moov)	| You can follow Moov.io's Twitter fee
 
 Please review our [Contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started! Check out our [issues for first time contributors](https://github.com/moov-io/iso8583/contribute) for something to help out with.
 
-This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.18 or newer. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
+This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.26 or newer. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/iso8583/releases/latest) as well. We highly recommend you use a tagged release for production.
 
 ## Related projects
 As part of Moov's initiative to offer open source fintech infrastructure, we have a large collection of active projects you may find useful:
