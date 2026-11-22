@@ -5,9 +5,24 @@ import (
 	"testing"
 
 	"github.com/moov-io/iso8583"
+	"github.com/moov-io/iso8583/field"
 	"github.com/moov-io/iso8583/specs"
 	"github.com/stretchr/testify/require"
 )
+
+// A spec missing a mandatory field returns a clean error, not a panic.
+func TestPrepSpec87HexWire_MissingMandatoryField(t *testing.T) {
+	fields := map[int]field.Field{}
+	for num, f := range specs.Spec87Hex.Fields {
+		if num == 0 {
+			continue
+		}
+		fields[num] = f
+	}
+
+	_, err := PrepSpec87HexWire(&iso8583.MessageSpec{Fields: fields}, []byte("3030"))
+	require.ErrorContains(t, err, "field 0 not defined")
+}
 
 // spec87HexFixture is the canonical set of Spec87Hex field values. Each
 // fixed field is a hex string of length 2*Spec.Length (the double-encode

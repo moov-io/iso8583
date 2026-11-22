@@ -1,25 +1,13 @@
-// Package adapters provides optional wire-format preprocessors and
-// display post-processors for specs whose built-in pack/unpack is
-// asymmetric (for example specs.Spec87Hex, where fixed-length string
-// fields are double-encoded on the wire).
+// Package adapters applies optional per-spec fixups around Unpack for
+// specs whose pack/unpack is asymmetric, such as specs.Spec87Hex.
 //
-// Design shape:
+// A WirePrepper rewrites raw wire bytes before Unpack; a DisplayRenderer
+// post-processes the unpacked message for readable output. UnpackWithAdapter
+// runs both around a normal Unpack, or a plain Unpack when the adapter is nil.
 //
-//   - WirePrepper transforms raw wire bytes before Unpack.
-//   - DisplayRenderer post-processes an unpacked message before
-//     Describe.
-//   - Adapter combines both. Package-ships adapters live in registry.go
-//     as a static map keyed by *iso8583.MessageSpec.
-//   - UnpackWith reads the static map; no setup, no mutation, no
-//     registry argument to thread through call sites.
-//
-// Typical use:
-//
-//	msg, err := adapters.UnpackWith(spec, wire)
-//
-// If spec has an entry in the static map, the registered adapter runs
-// around the normal Unpack. If not, UnpackWith reduces to
-// iso8583.NewMessage + Unpack with no behavioral change.
+// PrepWire is the inverse of a specific Pack, so apply an adapter only to wire
+// this library produced for the matching spec. For wire of unknown provenance,
+// pass a nil adapter (plain Unpack).
 package adapters
 
 import (
@@ -28,38 +16,27 @@ import (
 	"github.com/moov-io/iso8583"
 )
 
-// WirePrepper preprocesses raw wire bytes before Unpack. Returning an
-// error aborts the unpack.
+// WirePrepper rewrites raw wire bytes before Unpack.
 type WirePrepper interface {
 	PrepWire(spec *iso8583.MessageSpec, wire []byte) ([]byte, error)
 }
 
-// DisplayRenderer post-processes an unpacked message so Describe (or
-// any string-rendering caller) produces human-readable output.
-// Implementations mutate msg in place.
+// DisplayRenderer post-processes an unpacked message for readable output.
 type DisplayRenderer interface {
 	RenderForDisplay(msg *iso8583.Message) error
 }
 
-// Adapter is the combined interface. The static registry in
-// registry.go stores values of this type, so every built-in adapter
-// must implement both methods. An adapter that logically needs only
-// one side can stub the other with a no-op.
+// Adapter combines both sides of the fixup.
 type Adapter interface {
 	WirePrepper
 	DisplayRenderer
 }
 
-// UnpackWith applies the adapter registered for spec (if any) around
-// a normal Unpack. Looks the adapter up in the static registry
-// defined in registry.go.
-//
-// The returned message may be non-nil even when err is non-nil (for
-// example when Unpack fails after preprocessing) so callers can still
-// describe partial results.
-func UnpackWith(spec *iso8583.MessageSpec, wire []byte) (*iso8583.Message, error) {
-	adapter := adapterFor[spec]
-
+// UnpackWithAdapter unpacks wire against spec. A non-nil adapter preps the
+// wire before Unpack and renders the message after; a nil adapter is a plain
+// Unpack. The returned message may be non-nil alongside an error so callers
+// can still describe partial results.
+func UnpackWithAdapter(spec *iso8583.MessageSpec, wire []byte, adapter Adapter) (*iso8583.Message, error) {
 	if adapter != nil {
 		prepped, err := adapter.PrepWire(spec, wire)
 		if err != nil {

@@ -9,8 +9,7 @@
 // fixed-field value with one hex.Decode pass, and leaves variable
 // fields untouched. RenderSpec87HexForDisplay re-encodes the shrunk
 // fields so Describe prints the hex-string form the caller passed to
-// Marshal. Spec87HexAdapter bundles both as a single Adapter value
-// that callers hand to NewRegistry explicitly.
+// Marshal. Spec87HexAdapter bundles both as a single Adapter.
 
 package adapters
 
@@ -31,18 +30,31 @@ import (
 // implemented as *field.String with encoding.BytesToASCIIHex, using
 // Hex.Fixed or Hex.L/LL/LLL prefixes. Other combinations return an
 // error naming the offending field.
+//
+// Precondition: wire must be the double-hex-encoded output of this
+// library's Spec87Hex Pack. This shrink is the inverse of that Pack;
+// running it on wire a peer packed in the single-hex-encoded form will
+// consume the wrong byte count and corrupt (or fail) the parse.
 func PrepSpec87HexWire(spec *iso8583.MessageSpec, wire []byte) ([]byte, error) {
 	var out bytes.Buffer
 	pos := 0
 
-	consumed, err := handleField(spec.Fields[0], wire[pos:], &out)
+	mti, ok := spec.Fields[0]
+	if !ok {
+		return nil, fmt.Errorf("field 0 not defined in spec")
+	}
+	consumed, err := handleField(mti, wire[pos:], &out)
 	if err != nil {
 		return nil, fmt.Errorf("field 0: %w", err)
 	}
 	pos += consumed
 
+	bitmapField, ok := spec.Fields[1]
+	if !ok {
+		return nil, fmt.Errorf("field 1 not defined in spec")
+	}
 	bmpWireStart := pos
-	consumed, err = handleField(spec.Fields[1], wire[pos:], &out)
+	consumed, err = handleField(bitmapField, wire[pos:], &out)
 	if err != nil {
 		return nil, fmt.Errorf("field 1: %w", err)
 	}
@@ -73,6 +85,10 @@ func PrepSpec87HexWire(spec *iso8583.MessageSpec, wire []byte) ([]byte, error) {
 			return nil, fmt.Errorf("field %d: %w", num, err)
 		}
 		pos += consumed
+	}
+
+	if pos != len(wire) {
+		return nil, fmt.Errorf("%d unexpected trailing bytes after last field", len(wire)-pos)
 	}
 	return out.Bytes(), nil
 }
@@ -174,13 +190,11 @@ func bitSet(bitmap []byte, n int) bool {
 	return bitmap[idx]&(1<<bit) != 0
 }
 
-// Spec87HexAdapter adapts specs.Spec87Hex (and structurally identical
-// specs) by preprocessing the wire before Unpack and re-rendering
-// fixed-field values after Unpack for human-readable display.
-//
-// The adapter holds no state; its methods delegate to the free
-// functions PrepSpec87HexWire and RenderSpec87HexForDisplay, which
-// remain usable directly without going through a Registry.
+// Spec87HexAdapter adapts specs.Spec87Hex by preprocessing the wire
+// before Unpack and re-rendering fixed-field values after Unpack for
+// human-readable display. It holds no state; its methods delegate to
+// PrepSpec87HexWire and RenderSpec87HexForDisplay, which are also usable
+// directly.
 type Spec87HexAdapter struct{}
 
 // Compile-time assertion that Spec87HexAdapter satisfies the combined

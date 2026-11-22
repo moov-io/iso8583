@@ -8,15 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestUnpackWith_Spec87Hex exercises the full pipeline through the real
-// static registry: a registered spec gets its wire prepped and its fixed
-// fields re-rendered for display.
-func TestUnpackWith_Spec87Hex(t *testing.T) {
+// Spec87Hex wire, prepped and rendered through the adapter, round-trips.
+func TestUnpackWithAdapter_Spec87Hex(t *testing.T) {
 	wire := packSpec87Hex(t, sampleFixture())
 
-	msg, err := UnpackWith(specs.Spec87Hex, wire)
+	msg, err := UnpackWithAdapter(specs.Spec87Hex, wire, &Spec87HexAdapter{})
 	require.NoError(t, err)
-	require.NotNil(t, msg)
 
 	mti, err := msg.GetMTI()
 	require.NoError(t, err)
@@ -27,11 +24,8 @@ func TestUnpackWith_Spec87Hex(t *testing.T) {
 	require.Equal(t, "4242424242424242", pan)
 }
 
-// TestUnpackWith_NoAdapterPassthrough: a spec absent from the registry
-// must behave exactly like a plain NewMessage + Unpack.
-func TestUnpackWith_NoAdapterPassthrough(t *testing.T) {
-	require.Nil(t, adapterFor[specs.Spec87ASCII], "precondition: Spec87ASCII must not be registered")
-
+// A nil adapter is a plain Unpack: no prep, no render.
+func TestUnpackWithAdapter_NilIsPlainUnpack(t *testing.T) {
 	type ascii struct {
 		MTI string `iso8583:"0"`
 		PAN string `iso8583:"2"`
@@ -41,38 +35,90 @@ func TestUnpackWith_NoAdapterPassthrough(t *testing.T) {
 	wire, err := src.Pack()
 	require.NoError(t, err)
 
-	// Reference: plain unpack.
-	want := iso8583.NewMessage(specs.Spec87ASCII)
-	require.NoError(t, want.Unpack(wire))
-
-	got, err := UnpackWith(specs.Spec87ASCII, wire)
+	msg, err := UnpackWithAdapter(specs.Spec87ASCII, wire, nil)
 	require.NoError(t, err)
 
-	wantMTI, _ := want.GetMTI()
-	gotMTI, _ := got.GetMTI()
-	require.Equal(t, wantMTI, gotMTI)
-
-	wantPAN, _ := want.GetString(2)
-	gotPAN, _ := got.GetString(2)
-	require.Equal(t, wantPAN, gotPAN)
+	mti, _ := msg.GetMTI()
+	require.Equal(t, "0100", mti)
 }
 
-// TestUnpackWith_PrepError: a registered spec fed malformed wire must
-// surface the prep failure wrapped with the "prep wire" context.
-func TestUnpackWith_PrepError(t *testing.T) {
-	// Valid MTI segment + bitmap flagging a secondary bitmap the adapter
-	// does not support.
-	wire := []byte("30303030303030308000000000000000")
-	_, err := UnpackWith(specs.Spec87Hex, wire)
-	require.ErrorContains(t, err, "prep wire")
+// The adapter is bound by argument, not by spec pointer, so a spec rebuilt
+// into a different pointer still round-trips.
+func TestUnpackWithAdapter_RebuiltSpec(t *testing.T) {
+	wire := packSpec87Hex(t, sampleFixture())
+
+	rebuilt := *specs.Spec87Hex
+	msg, err := UnpackWithAdapter(&rebuilt, wire, &Spec87HexAdapter{})
+	require.NoError(t, err)
+
+	mti, err := msg.GetMTI()
+	require.NoError(t, err)
+	require.Equal(t, "00000100", mti)
 }
 
-// TestRegistry guards the static registry contract: every entry is a
-// usable Adapter, and the known spec is present.
-func TestRegistry(t *testing.T) {
-	require.NotEmpty(t, adapterFor)
-	for spec, a := range adapterFor {
-		require.NotNilf(t, a, "adapter for %q is nil", spec.Name)
+// AdapterForSpec resolves a built-in spec and errors on an unregistered one.
+func TestAdapterForSpec(t *testing.T) {
+	a, err := AdapterForSpec(specs.Spec87Hex)
+	require.NoError(t, err)
+	require.NotNil(t, a)
+
+	_, err = AdapterForSpec(specs.Spec87ASCII)
+	require.Error(t, err)
+}
+
+// Variable-length fields (Hex.LL and Hex.LLL) pass through the prep unchanged
+// and round-trip across different lengths.
+func TestUnpackWithAdapter_VariableLengthFields(t *testing.T) {
+	type msg struct {
+		MTI    string `iso8583:"0"`
+		PAN    string `iso8583:"2"`  // Hex.LL
+		Track3 string `iso8583:"36"` // Hex.LLL
 	}
-	require.NotNil(t, adapterFor[specs.Spec87Hex])
+
+	cases := []struct {
+		name   string
+		pan    string
+		track3 string
+	}{
+		{"short", "123", "4567"},
+		{"longer", "1234567890123456", "0123456789abcdef0123"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			src := iso8583.NewMessage(specs.Spec87Hex)
+			require.NoError(t, src.Marshal(&msg{MTI: "00000100", PAN: tc.pan, Track3: tc.track3}))
+			wire, err := src.Pack()
+			require.NoError(t, err)
+
+			got, err := UnpackWithAdapter(specs.Spec87Hex, wire, &Spec87HexAdapter{})
+			require.NoError(t, err)
+
+			pan, err := got.GetString(2)
+			require.NoError(t, err)
+			require.Equal(t, tc.pan, pan)
+
+			track3, err := got.GetString(36)
+			require.NoError(t, err)
+			require.Equal(t, tc.track3, track3)
+		})
+	}
+}
+
+// Trailing bytes after the last field are reported, not silently dropped.
+func TestUnpackWithAdapter_TrailingBytes(t *testing.T) {
+	wire := packSpec87Hex(t, sampleFixture())
+	wire = append(wire, '0', '0')
+
+	_, err := UnpackWithAdapter(specs.Spec87Hex, wire, &Spec87HexAdapter{})
+	require.ErrorContains(t, err, "trailing bytes")
+}
+
+// A prep failure is wrapped with "prep wire" context.
+func TestUnpackWithAdapter_PrepError(t *testing.T) {
+	// Valid MTI segment + bitmap flagging an unsupported secondary bitmap.
+	wire := []byte("30303030303030308000000000000000")
+
+	_, err := UnpackWithAdapter(specs.Spec87Hex, wire, &Spec87HexAdapter{})
+	require.ErrorContains(t, err, "prep wire")
 }
