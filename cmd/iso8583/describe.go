@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/adapters"
@@ -89,5 +91,10 @@ func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {
 		return nil, fmt.Errorf("reading file %s: %w", path, err)
 	}
 
-	return specs.ImportJSON(raw)
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".yaml", ".yml":
+		return specs.ImportYAML(raw)
+	default:
+		return specs.ImportJSON(raw)
+	}
 }
