@@ -28,7 +28,7 @@ func packedTestMessage(t *testing.T) string {
 
 func TestDescribeWithBuiltInSpec(t *testing.T) {
 	path := packedTestMessage(t)
-	require.NoError(t, Describe([]string{path}, "87ascii"))
+	require.NoError(t, Describe([]string{path}, "87ascii", false))
 }
 
 func TestDescribeWithSpecFileJSON(t *testing.T) {
