@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795350212072,
+  "lastUpdate": 1795443279895,
   "repoUrl": "https://github.com/moov-io/iso8583",
   "entries": {
     "moov-io/iso8583": [
@@ -5320,6 +5320,76 @@ window.BENCHMARK_DATA = {
             "value": 285,
             "unit": "allocs/op",
             "extra": "66336 times\n2 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Adam Shannon",
+            "username": "adamdecaf",
+            "email": "adamkshannon@gmail.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "f8c3c5031577f445dd7d0fae6ab61dcd4ab1b18e",
+          "message": "docs: fix ISO 8583 README examples, CLI install, and spec names (#477)\n\nMake the Setting and Getting Message Data examples compile and run\nwith examples.Spec, whose field 43 is a composite *Acceptor (unlike\nspecs.Spec87ASCII, where F43 is a string). Fix the field-filter,\nnetwork-header, and JSON snippets, and regenerate Describe output.\n\nDocument CLI install from releases/latest (iso8583-<os>-amd64 and\niso8583.exe), building with go build / go install / make build, and\nthe built-in -spec names 87ascii and 87hex. Drop -mod=vendor from\nthe makefile so make build works without a vendor directory.\n\nHave the CLI accept YAML as well as JSON for -spec-file, match the\ngo directive (1.26), and fix stale links and typos.\n\nCo-authored-by: Adam Shannon <120951+adamdecaf@users.noreply.github.com>",
+          "timestamp": "2026-11-20T17:20:15Z",
+          "url": "https://github.com/moov-io/iso8583/commit/f8c3c5031577f445dd7d0fae6ab61dcd4ab1b18e"
+        },
+        "date": 1795443279060,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkMarshaling",
+            "value": 19063,
+            "unit": "ns/op\t13680 B/op\t275 allocs/op",
+            "extra": "62791 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkMarshaling - ns/op",
+            "value": 19063,
+            "unit": "ns/op",
+            "extra": "62791 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkMarshaling - B/op",
+            "value": 13680,
+            "unit": "B/op",
+            "extra": "62791 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkMarshaling - allocs/op",
+            "value": 275,
+            "unit": "allocs/op",
+            "extra": "62791 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnpacking",
+            "value": 12466.5,
+            "unit": "ns/op\t13872 B/op\t285 allocs/op",
+            "extra": "96067 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnpacking - ns/op",
+            "value": 12466.5,
+            "unit": "ns/op",
+            "extra": "96067 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnpacking - B/op",
+            "value": 13872,
+            "unit": "B/op",
+            "extra": "96067 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnpacking - allocs/op",
+            "value": 285,
+            "unit": "allocs/op",
+            "extra": "96067 times\n2 procs"
           }
         ]
       }
