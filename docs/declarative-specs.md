@@ -201,7 +201,8 @@ error message gives the field that has the value.
 
 The importer does not reject an unknown `padding.type` on a field, or an unknown
 `tag.enc`. It ignores the value, and the spec has no padder or no tag encoding.
-Make sure that these two values are in the lists.
+The failure then shows at runtime instead of at import, so check these two
+values against the lists below.
 
 **`type`**
 
@@ -224,12 +225,47 @@ Make sure that these two values are in the lists.
 
 **`tag.sort`**
 
-`StringsByInt`, `StringsByHex`
+`Strings`, `StringsByInt`, `StringsByHex`
 
 A document gives the name of a sort function. It cannot contain the function.
 Thus a document can only use a sort function that the importer knows. If a
 dialect needs a different order, register the sort function, or keep the spec
 in Go.
+
+### Go names and document names
+
+`type`, `prefix`, `padding.type` and `tag.sort` use the same names in Go
+and in the document: `ASCII.Fixed` is `prefix.ASCII.Fixed`, `Left` is
+`padding.Left`, `StringsByHex` is `sort.StringsByHex`. Only `enc` renames
+two values:
+
+| Document name | Go value |
+|---|---|
+| `ASCII` | `encoding.ASCII` |
+| `ASCIIToHex` | `encoding.ASCIIHexToBytes` |
+| `BCD` | `encoding.BCD` |
+| `BerTLVTag` | `encoding.BerTLVTag` |
+| `Binary` | `encoding.Binary` |
+| `EBCDIC` | `encoding.EBCDIC` |
+| `EBCDIC1047` | `encoding.EBCDIC1047` |
+| `HexToASCII` | `encoding.BytesToASCIIHex` |
+| `LBCD` | `encoding.LBCD` |
+
+## Composing specs from a base document
+
+Export a shipped base, edit the YAML, and re-import it. This is how a
+dialect stays close to a standard spec while its differences stay in
+version history:
+
+1. Export the base: `specs.ExportYAML(specs.Spec87ASCII)`.
+2. Copy the fields that differ into your own file, keeping the shape the
+   importer accepts.
+3. Load the file at runtime with `specs.ImportYAML`.
+
+The result is a full spec. The same binary loads the old and the new
+document without a new build, and a diff of the two files is the review
+of the bulletin. Close the loop with the pack-compare test from
+[Round trip](#round-trip).
 
 ## Round trip
 
@@ -249,6 +285,13 @@ back, err := specs.ImportYAML(raw)
 require.NoError(t, err)
 ```
 
+That test covers the spec document. It does not cover the wire: packing a
+message and unpacking it again only round-trips for compatible encoding
+and prefix combinations. `String` with `Hex.Fixed` is one combination
+that does not round-trip (see issue #326): `Pack` writes twice-encoded
+bytes while `Unpack` reads single-encoded bytes. An `adapters` package
+for these specs is under discussion in PR #476.
+
 ## What a document cannot carry
 
 A document cannot contain a Go value. It can only contain a name. Thus a
@@ -256,7 +299,7 @@ document cannot contain these items:
 
 - A custom field type.
 - A custom encoder.
-- A sort function that is not `StringsByInt` or `StringsByHex`.
+- A sort function that is not `Strings`, `StringsByInt` or `StringsByHex`.
 
 If your spec uses one of these items, keep the spec in Go.
 
