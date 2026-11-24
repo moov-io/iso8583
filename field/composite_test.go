@@ -746,6 +746,46 @@ func TestTLVPacking(t *testing.T) {
 		require.Equal(t, []byte{0x30, 0x31, 0x34, 0x9a, 0x3, 0x21, 0x7, 0x20, 0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1}, packed)
 	})
 
+	t.Run("Pack keeps the length of an empty value", func(t *testing.T) {
+		tests := []struct {
+			desc  string
+			f9A   string
+			f9F02 string
+			want  []byte
+		}{
+			{"empty first tag", "", "000000000501", []byte{0x30, 0x31, 0x31, 0x9a, 0x0, 0x9f, 0x2, 0x6, 0x0, 0x0, 0x0, 0x0, 0x5, 0x1}},
+			{"empty last tag", "210720", "", []byte{0x30, 0x30, 0x38, 0x9a, 0x3, 0x21, 0x7, 0x20, 0x9f, 0x2, 0x0}},
+			{"all tags empty", "", "", []byte{0x30, 0x30, 0x35, 0x9a, 0x0, 0x9f, 0x2, 0x0}},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.desc, func(t *testing.T) {
+				composite := NewComposite(tlvTestSpec)
+				require.NoError(t, composite.Marshal(&TLVTestData{
+					F9A:   NewHexValue(tt.f9A),
+					F9F02: NewHexValue(tt.f9F02),
+				}))
+
+				packed, err := composite.Pack()
+				require.NoError(t, err)
+				require.Equal(t, tt.want, packed)
+
+				composite = NewComposite(tlvTestSpec)
+				_, err = composite.Unpack(packed)
+				require.NoError(t, err)
+
+				repacked, err := composite.Pack()
+				require.NoError(t, err)
+				require.Equal(t, tt.want, repacked)
+
+				unpacked := &TLVTestData{}
+				require.NoError(t, composite.Unmarshal(unpacked))
+				require.Equal(t, tt.f9A, unpacked.F9A.Value())
+				require.Equal(t, tt.f9F02, unpacked.F9F02.Value())
+			})
+		}
+	})
+
 	t.Run("Unpack correctly deserialises bytes to the data struct", func(t *testing.T) {
 		composite := NewComposite(tlvTestSpec)
 

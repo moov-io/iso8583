@@ -39,10 +39,12 @@ func (p *berTLVPrefixer) EncodeLength(maxLen, dataLen int) ([]byte, error) {
 		return nil, fmt.Errorf(fieldLengthIsLargerThanMax, dataLen, maxLen)
 	}
 
-	buf := big.NewInt(int64(dataLen)).Bytes()
 	if dataLen <= 127 {
-		return buf, nil
+		// #nosec G115 -- dataLen is a length between 0 and 127
+		return []byte{uint8(dataLen)}, nil
 	}
+
+	buf := big.NewInt(int64(dataLen)).Bytes()
 
 	if len(buf) > 127 { // the maximum length of the long form
 		return nil, fmt.Errorf("data length %d exceeds maximum length of 127 bytes to store it", dataLen)
