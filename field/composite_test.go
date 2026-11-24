@@ -446,6 +446,27 @@ func TestCompositeField_Marshal(t *testing.T) {
 	})
 }
 
+func TestCompositeField_SetDataCompatibility(t *testing.T) {
+	data := &struct {
+		First string `iso8583:"1"`
+	}{First: "AB"}
+	for _, tc := range []struct {
+		name string
+		set  func(*Composite, any) error
+	}{
+		{"Marshal", (*Composite).Marshal},
+		{"SetData", (*Composite).SetData},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			composite := NewComposite(compositeTestSpecWithTagPadding)
+			require.NoError(t, tc.set(composite, data))
+			packed, err := composite.Pack()
+			require.NoError(t, err)
+			require.Equal(t, []byte("060102AB"), packed)
+		})
+	}
+}
+
 func TestCompositeField_MarshalPath(t *testing.T) {
 	t.Run("sets value of the field by path", func(t *testing.T) {
 		composite := NewComposite(compositeTestSpecWithTagPadding)
@@ -637,6 +658,39 @@ func TestCompositeField_UnmarshalPath(t *testing.T) {
 }
 
 func TestCompositeField_Unset(t *testing.T) {
+	t.Run("removing one subfield preserves its sibling in packed data", func(t *testing.T) {
+		for _, tc := range []struct {
+			name  string
+			unset func(*Composite) error
+		}{
+			{"UnsetSubfield", func(c *Composite) error {
+				c.UnsetSubfield("1")
+				return nil
+			}},
+			{"UnsetPath", func(c *Composite) error { return c.UnsetPath("1") }},
+			{"UnsetSubfields", func(c *Composite) error { return c.UnsetSubfields("1") }},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				composite := NewComposite(compositeTestSpecWithTagPadding)
+				require.NoError(t, composite.MarshalPath("1", "AB"))
+				require.NoError(t, composite.MarshalPath("2", "CD"))
+				require.NoError(t, tc.unset(composite))
+				packed, err := composite.Pack()
+				require.NoError(t, err)
+				require.Equal(t, []byte("060202CD"), packed)
+			})
+		}
+	})
+
+	t.Run("cannot unset a path through a scalar subfield", func(t *testing.T) {
+		composite := NewComposite(compositeTestSpecWithTagPadding)
+		require.NoError(t, composite.MarshalPath("1", "AB"))
+		require.ErrorContains(t, composite.UnsetPath("1.2"), "field 1 is not a composite field")
+		packed, err := composite.Pack()
+		require.NoError(t, err)
+		require.Equal(t, []byte("060102AB"), packed)
+	})
+
 	t.Run("Unset creates new empty field when it deletes it", func(t *testing.T) {
 		composite := NewComposite(constructedBERTLVTestSpec)
 		err := composite.Marshal(&ConstructedTLVTestData{
@@ -2185,6 +2239,14 @@ func TestComposite_concurrency(t *testing.T) {
 }
 
 func TestOptionalFields_UnpackEmpty(t *testing.T) {
+	t.Run("zero length consumes only the prefix", func(t *testing.T) {
+		composite := NewComposite(compositeOptionalFieldsFullSpec)
+		read, err := composite.Unpack([]byte("000AB"))
+		require.NoError(t, err)
+		require.Equal(t, 3, read)
+		require.Empty(t, composite.GetSubfields())
+	})
+
 	t.Run("Unpack without error when not all subfields are set", func(t *testing.T) {
 
 		data := &CompositeTestDataOptionalFields{}

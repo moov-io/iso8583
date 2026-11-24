@@ -17,6 +17,16 @@ func TestFixedHex(t *testing.T) {
 	require.Equal(t, 0, read)
 }
 
+func TestFixedHexEncodeLength(t *testing.T) {
+	encoded, err := Hex.Fixed.EncodeLength(2, 4)
+	require.NoError(t, err)
+	require.Empty(t, encoded)
+
+	encoded, err = Hex.Fixed.EncodeLength(2, 3)
+	require.ErrorContains(t, err, "field length: 3 should be fixed: 4")
+	require.Nil(t, encoded)
+}
+
 func Test_hexVarPrefixer_EncodeLength(t *testing.T) {
 	type fields struct {
 		Digits int

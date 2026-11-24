@@ -17,6 +17,29 @@ func TestFixedBinary(t *testing.T) {
 	require.Equal(t, 0, read)
 }
 
+func TestBinaryLEncodesOneByteLength(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		length int
+		want   []byte
+		err    string
+	}{
+		{name: "negative length", length: -1, err: "negative number: -1"},
+		{name: "maximum length", length: 255, want: []byte{0xFF}},
+		{name: "length cannot fit in one byte", length: 256, err: "number of digits in length: 256 exceeds: 1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			encoded, err := Binary.L.EncodeLength(300, tc.length)
+			if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.want, encoded)
+		})
+	}
+}
+
 func Test_binaryVarPrefixer_EncodeLength(t *testing.T) {
 	type fields struct {
 		Digits int

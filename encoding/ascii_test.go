@@ -50,6 +50,13 @@ func TestASCII(t *testing.T) {
 	})
 }
 
+func TestASCIIDecodeRejectsNegativeLength(t *testing.T) {
+	decoded, read, err := ASCII.Decode([]byte("A"), -1)
+	require.ErrorContains(t, err, "invalid length: -1")
+	require.Nil(t, decoded)
+	require.Zero(t, read)
+}
+
 func FuzzDecodeASCII(f *testing.F) {
 	enc := &asciiEncoder{}
 

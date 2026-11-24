@@ -77,3 +77,9 @@ func TestFuzzWithValidData(t *testing.T) {
 		t.Errorf("Expected value is 1 (got %v)", ret)
 	}
 }
+
+func TestFuzzWithEmptyMessage(t *testing.T) {
+	if got := Fuzz(nil); got != -1 {
+		t.Errorf("Fuzz(nil) = %d, want -1", got)
+	}
+}

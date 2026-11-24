@@ -1,6 +1,7 @@
 package specs
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -12,7 +13,91 @@ import (
 	"github.com/moov-io/iso8583/padding"
 	"github.com/moov-io/iso8583/prefix"
 	"github.com/moov-io/iso8583/sort"
+	"gopkg.in/yaml.v3"
 )
+
+func TestImportRejectsInvalidFields(t *testing.T) {
+	formats := []struct {
+		name   string
+		encode func(any) ([]byte, error)
+		decode func([]byte) (*iso8583.MessageSpec, error)
+	}{
+		{"JSON", json.Marshal, ImportJSON},
+		{"YAML", yaml.Marshal, ImportYAML},
+	}
+	cases := []struct {
+		name   string
+		mutate func(map[string]*fieldDummy)
+		want   []string
+	}{
+		{name: "valid spec"},
+		{"no fields", func(fields map[string]*fieldDummy) { clear(fields) }, []string{"no fields defined in spec"}},
+		{"non-numeric field index", func(fields map[string]*fieldDummy) {
+			fields["invalid"] = fields["55"]
+			delete(fields, "55")
+		}, []string{"invalid field index", `"invalid"`}},
+		{"unknown prefix", func(fields map[string]*fieldDummy) {
+			fields["0"].Prefix = "UnknownPrefix"
+		}, []string{"unknown prefix: UnknownPrefix", "for field: 0"}},
+		{"unknown encoding", func(fields map[string]*fieldDummy) {
+			fields["0"].Enc = "UnknownEncoding"
+		}, []string{"unknown encoding: UnknownEncoding", "for field: 0"}},
+		{"unknown nested field type", func(fields map[string]*fieldDummy) {
+			fields["55"].Subfields["1"].Type = "UnknownType"
+		}, []string{"no constructor", "UnknownType", "error importing field: 55"}},
+	}
+	for _, format := range formats {
+		t.Run(format.name, func(t *testing.T) {
+			for _, tc := range cases {
+				t.Run(tc.name, func(t *testing.T) {
+					fields := map[string]*fieldDummy{
+						"0": {Type: "String", Length: 4, Enc: "ASCII", Prefix: "ASCII.Fixed"},
+						"1": {Type: "Bitmap", Length: 8, Enc: "HexToASCII", Prefix: "Hex.Fixed"},
+						"55": {
+							Type: "Composite", Length: 99, Prefix: "ASCII.LL",
+							Tag: &tagDummy{Length: 1, Enc: "ASCII", Sort: "StringsByInt"},
+							Subfields: map[string]*fieldDummy{
+								"1": {Type: "String", Length: 2, Enc: "ASCII", Prefix: "ASCII.Fixed"},
+							},
+						},
+					}
+					if tc.mutate != nil {
+						tc.mutate(fields)
+					}
+					data, err := format.encode(map[string]any{"name": "Test spec", "fields": fields})
+					require.NoError(t, err)
+					spec, err := format.decode(data)
+					if tc.want == nil {
+						require.NoError(t, err)
+						require.NotNil(t, spec)
+						require.NoError(t, spec.Validate())
+						return
+					}
+					require.Nil(t, spec)
+					for _, want := range tc.want {
+						require.ErrorContains(t, err, want)
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestExportRejectsNilSpec(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		export func(*iso8583.MessageSpec) ([]byte, error)
+	}{
+		{"JSON", ExportJSON},
+		{"YAML", ExportYAML},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := tc.export(nil)
+			require.ErrorContains(t, err, "invalid message spec")
+			require.Nil(t, data)
+		})
+	}
+}
 
 func TestBuilder(t *testing.T) {
 	asciiJson, err := ExportJSON(Spec87ASCII)

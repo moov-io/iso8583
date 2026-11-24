@@ -6,6 +6,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestHexDecodeRejectsNegativeLength(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		enc  Encoder
+	}{
+		{"BytesToASCIIHex", BytesToASCIIHex},
+		{"ASCIIHexToBytes", ASCIIHexToBytes},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			decoded, read, err := tc.enc.Decode([]byte("AB"), -1)
+			require.ErrorContains(t, err, "length should be positive, got -1")
+			require.Nil(t, decoded)
+			require.Zero(t, read)
+		})
+	}
+}
+
 func TestHexToASCIIEncoder(t *testing.T) {
 	enc := BytesToASCIIHex
 

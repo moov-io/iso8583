@@ -2,6 +2,7 @@ package network
 
 import (
 	"bytes"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,5 +41,13 @@ func TestASCII4BytesHeader(t *testing.T) {
 		_, err := header.ReadFrom(bytes.NewReader(packed))
 
 		require.Error(t, err)
+	})
+
+	t.Run("Read rejects a non-digit", func(t *testing.T) {
+		header := NewASCII4BytesHeader()
+		n, err := header.ReadFrom(bytes.NewBufferString("12X4"))
+		require.ErrorContains(t, err, "converting header to int")
+		require.ErrorIs(t, err, strconv.ErrSyntax)
+		require.Zero(t, n)
 	})
 }
