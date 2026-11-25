@@ -41,6 +41,7 @@ ISO8583 implements an ISO 8583 message reader and writer in Go. ISO 8583 is an i
   - [Inspecting message fields](#inspecting-message-fields)
   - [JSON Encoding and Decoding](#json-encoding-and-decoding)
   - [Working with Unknown TLV Tags](#working-with-unknown-tlv-tags)
+  - [Network Headers](#network-headers)
 - [ISO8583 CLI](#cli)
 - [Learn more](#learn-more)
 - [Getting help](#getting-help)
@@ -816,6 +817,57 @@ if err != nil {
 	// handle error
 }
 ```
+
+##### Implementing a custom header
+
+Define a type that implements `network.Header`. This example uses a header of
+three ASCII digits to encode the length of the packed ISO 8583 message in bytes.
+The length excludes the header itself. It ranges from 0 to 999, so a 27-byte
+message has the header `027`.
+
+This assignment checks at compile time that the type implements the interface.
+
+```go
+var _ network.Header = (*ascii3Header)(nil)
+```
+
+`SetLength` stores the length because its signature has no error return.
+`WriteTo` checks the range before writing. `ReadFrom` reads exactly three bytes
+with `io.ReadFull` and updates the stored length after validating all three digits.
+Both I/O methods return the number of bytes transferred and any error.
+
+With a populated `msg` and the `ascii3Header` type defined, a `bytes.Buffer`
+can hold the complete message frame for a local round trip.
+
+```go
+func roundTrip(msg *iso8583.Message) (bool, error) {
+	body, err := msg.Pack()
+	if err != nil {
+		return false, err
+	}
+
+	var frame bytes.Buffer
+	var outgoing ascii3Header
+	outgoing.SetLength(len(body))
+	if _, err := outgoing.WriteTo(&frame); err != nil {
+		return false, err
+	}
+	frame.Write(body)
+
+	var incoming ascii3Header
+	if _, err := incoming.ReadFrom(&frame); err != nil {
+		return false, err
+	}
+	received := make([]byte, incoming.Length())
+	if _, err := io.ReadFull(&frame, received); err != nil {
+		return false, err
+	}
+
+	return bytes.Equal(body, received), nil
+}
+```
+
+See the [complete runnable example](./examples/custom_header_test.go).
 
 ## CLI
 
