@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/moov-io/iso8583"
+	"github.com/moov-io/iso8583/adapters"
 	"github.com/moov-io/iso8583/specs"
 )
 
@@ -16,9 +17,9 @@ var availableSpecs = map[string]*iso8583.MessageSpec{
 	"87hex":   specs.Spec87Hex,
 }
 
-func describeMessage(paths []string, spec *iso8583.MessageSpec) error {
+func describeMessage(paths []string, spec *iso8583.MessageSpec, adapter adapters.Adapter) error {
 	for _, path := range paths {
-		message, err := createMessageFromFile(path, spec)
+		message, err := createMessageFromFile(path, spec, adapter)
 		if err != nil {
 			if message == nil {
 				return fmt.Errorf("creating message from file: %w", err)
@@ -36,13 +37,22 @@ func describeMessage(paths []string, spec *iso8583.MessageSpec) error {
 	return nil
 }
 
-func Describe(paths []string, specName string) error {
+func Describe(paths []string, specName string, useAdapter bool) error {
 	spec := availableSpecs[specName]
 	if spec == nil {
 		return fmt.Errorf("unknown built-in spec %s", specName)
 	}
 
-	return describeMessage(paths, spec)
+	var adapter adapters.Adapter
+	if useAdapter {
+		a, err := adapters.AdapterForSpec(spec)
+		if err != nil {
+			return err
+		}
+		adapter = a
+	}
+
+	return describeMessage(paths, spec, adapter)
 }
 
 func DescribeWithSpecFile(paths []string, specFileName string) error {
@@ -51,10 +61,10 @@ func DescribeWithSpecFile(paths []string, specFileName string) error {
 		return fmt.Errorf("creating spec from file: %w", err)
 	}
 
-	return describeMessage(paths, spec)
+	return describeMessage(paths, spec, nil)
 }
 
-func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Message, error) {
+func createMessageFromFile(path string, spec *iso8583.MessageSpec, adapter adapters.Adapter) (*iso8583.Message, error) {
 	fd, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("opening file %s: %w", path, err)
@@ -66,13 +76,7 @@ func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Mes
 		return nil, fmt.Errorf("reading file %s: %w", path, err)
 	}
 
-	message := iso8583.NewMessage(spec)
-	err = message.Unpack(raw)
-	if err != nil {
-		return message, fmt.Errorf("unpacking message: %w", err)
-	}
-
-	return message, nil
+	return adapters.UnpackWithAdapter(spec, raw, adapter)
 }
 
 func createSpecFromFile(path string) (*iso8583.MessageSpec, error) {

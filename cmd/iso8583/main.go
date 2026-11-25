@@ -42,6 +42,7 @@ func main() {
 
 	specName := describeCommand.String("spec", "87ascii", fmt.Sprintf("name of built-in spec: %s", availableSpecNames))
 	specFileName := describeCommand.String("spec-file", "", "path to customized specification file in JSON or YAML format")
+	useAdapter := describeCommand.Bool("adapter", false, "apply the spec's wire-format adapter (only for wire packed by this library; see the adapters package)")
 
 	flag.Parse()
 
@@ -67,11 +68,16 @@ func main() {
 
 		describeCommand.Parse(os.Args[2:])
 
+		if *useAdapter && *specFileName != "" {
+			fmt.Fprintf(os.Stdout, "--adapter is not supported with --spec-file\n")
+			os.Exit(1)
+		}
+
 		var err error
 		if specFileName != nil && *specFileName != "" {
 			err = DescribeWithSpecFile(describeCommand.Args(), *specFileName)
 		} else if availableSpecs[*specName] != nil {
-			err = Describe(describeCommand.Args(), *specName)
+			err = Describe(describeCommand.Args(), *specName, *useAdapter)
 		} else {
 			fmt.Fprintf(os.Stdout, "Unknown spec: %s\n\n", *specName)
 			fmt.Fprintf(os.Stdout, "Supported specs: %s\n\n", availableSpecNames)
