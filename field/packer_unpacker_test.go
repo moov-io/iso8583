@@ -12,6 +12,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestUnpackerFunc(t *testing.T) {
+	spec := field.NewSpec(2, "Test field", encoding.ASCII, prefix.ASCII.LL)
+	packed := []byte("02ABmore")
+	unpacker := field.UnpackerFunc(func(data []byte, gotSpec *field.Spec) ([]byte, int, error) {
+		require.Equal(t, packed, data)
+		require.Same(t, spec, gotSpec)
+		return []byte("AB"), 4, nil
+	})
+	value, read, err := unpacker.Unpack(packed, spec)
+	require.NoError(t, err)
+	require.Equal(t, []byte("AB"), value)
+	require.Equal(t, 4, read)
+}
+
 func TestCustomPackerAndUnpacker(t *testing.T) {
 	// let's say we have a requirements that the lentgh prefix should
 	// contain the length of the data we pass, not the length of the field

@@ -47,6 +47,38 @@ var (
 	expiryDateFormat = "0601"
 )
 
+func TestTrackNewInstance(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		prototype interface {
+			field.Field
+			NewInstance() field.Field
+		}
+		first, second string
+	}{
+		{"Track2", field.NewTrack2(track2Spec), "4242424242424242=2912251", "4000000000000002=3012251"},
+		{"Track3", field.NewTrack3(track3Spec), "014242424242424242=123", "014000000000000002=456"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			first := tc.prototype.NewInstance()
+			second := tc.prototype.NewInstance()
+			require.IsType(t, tc.prototype, first)
+			require.IsType(t, tc.prototype, second)
+			require.Same(t, tc.prototype.Spec(), first.Spec())
+			require.Same(t, tc.prototype.Spec(), second.Spec())
+			require.NoError(t, first.SetBytes([]byte(tc.first)))
+			require.NoError(t, second.SetBytes([]byte(tc.second)))
+
+			firstValue, err := first.Bytes()
+			require.NoError(t, err)
+			require.Equal(t, []byte(tc.first), firstValue)
+			secondValue, err := second.Bytes()
+			require.NoError(t, err)
+			require.Equal(t, []byte(tc.second), secondValue)
+		})
+	}
+}
+
 func TestTrack1(t *testing.T) {
 	t.Run("Track 1 untyped", func(t *testing.T) {
 		samples := []TestSample{

@@ -171,6 +171,11 @@ func TestBinaryFieldUnmarshal(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, testValue, refBytesValue.Bytes())
 
+	ints := []int{123}
+	err = binaryField.Unmarshal(reflect.ValueOf(&ints).Elem())
+	require.ErrorContains(t, err, "binary data can only be unmarshaled into []byte, got []int")
+	require.Equal(t, []int{123}, ints)
+
 	refStr := reflect.ValueOf(s)
 	err = binaryField.Unmarshal(refStr)
 	require.Error(t, err)

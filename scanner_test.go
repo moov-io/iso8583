@@ -1,6 +1,7 @@
 package iso8583
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/moov-io/iso8583/encoding"
@@ -92,6 +93,44 @@ func TestMessageScanner(t *testing.T) {
 		require.NoError(t, err)
 		return packed
 	}
+
+	t.Run("scan bitmap directly", func(t *testing.T) {
+		s := NewMessageScanner(spec, packMessage(t))
+		f, err := s.ScanField(1)
+		require.NoError(t, err)
+		bitmap, ok := f.(*field.Bitmap)
+		require.True(t, ok)
+		for _, id := range []int{2, 3, 4, 11} {
+			require.True(t, bitmap.IsSet(id), "field %d", id)
+		}
+		require.False(t, bitmap.IsSet(5))
+	})
+
+	t.Run("invalid field IDs", func(t *testing.T) {
+		packed := packMessage(t)
+		incompleteSpec := &MessageSpec{Fields: maps.Clone(spec.Fields)}
+		delete(incompleteSpec.Fields, 3)
+		for _, tc := range []struct {
+			name string
+			id   int
+			want string
+			err  string
+		}{
+			{"negative ID", -1, "-1", "invalid field id: -1"},
+			{"bitmap references undefined field", 4, "3", "field 3 is not defined in the spec"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				s := NewMessageScanner(incompleteSpec, packed)
+				f, err := s.ScanField(tc.id)
+				require.Nil(t, f)
+				var unpackErr *iso8583errors.UnpackError
+				require.ErrorAs(t, err, &unpackErr)
+				require.Equal(t, tc.want, unpackErr.FieldID)
+				require.Equal(t, packed, unpackErr.RawMessage)
+				require.ErrorContains(t, unpackErr, tc.err)
+			})
+		}
+	})
 
 	t.Run("scan MTI only", func(t *testing.T) {
 		packed := packMessage(t)

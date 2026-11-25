@@ -2,6 +2,8 @@ package network
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,6 +33,25 @@ func TestVMLHeader(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("Write accepts the maximum message length", func(t *testing.T) {
+		header := NewVMLHeader()
+		require.NoError(t, header.SetLength(MaxMessageLength))
+		var buf bytes.Buffer
+		n, err := header.WriteTo(&buf)
+		require.NoError(t, err)
+		require.Equal(t, 4, n)
+		require.Equal(t, []byte{0x08, 0x00, 0x00, 0x00}, buf.Bytes())
+	})
+
+	t.Run("Write preserves the writer error", func(t *testing.T) {
+		header := NewVMLHeader()
+		require.NoError(t, header.SetLength(1))
+		cause := errors.New("test writer error")
+		n, err := header.WriteTo(errorWriter{err: cause})
+		require.ErrorIs(t, err, cause)
+		require.Zero(t, n)
+	})
+
 	t.Run("ReadFrom reads 4 bytes and decode length with session control", func(t *testing.T) {
 		header := NewVMLHeader()
 
@@ -49,6 +70,13 @@ func TestVMLHeader(t *testing.T) {
 		require.Equal(t, 4, read)
 
 		require.True(t, header.IsSessionControl)
+	})
+
+	t.Run("Read rejects a truncated header", func(t *testing.T) {
+		header := NewVMLHeader()
+		n, err := header.ReadFrom(bytes.NewReader([]byte{0x00, 0x0F, 0x00}))
+		require.ErrorIs(t, err, io.ErrUnexpectedEOF)
+		require.Zero(t, n)
 	})
 
 	t.Run("ReadFrom returns error when message length exceeds max message length", func(t *testing.T) {

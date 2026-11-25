@@ -16,7 +16,7 @@ var availableSpecs = map[string]*iso8583.MessageSpec{
 	"87hex":   specs.Spec87Hex,
 }
 
-func describeMessage(paths []string, spec *iso8583.MessageSpec) error {
+func describeMessage(paths []string, spec *iso8583.MessageSpec, out io.Writer) error {
 	for _, path := range paths {
 		message, err := createMessageFromFile(path, spec)
 		if err != nil {
@@ -24,11 +24,11 @@ func describeMessage(paths []string, spec *iso8583.MessageSpec) error {
 				return fmt.Errorf("creating message from file: %w", err)
 			}
 
-			fmt.Fprintf(os.Stdout, "Failed to create message from file: %v\n", err)
-			fmt.Fprintf(os.Stdout, "Trying to describe file anyway...\n")
+			fmt.Fprintf(out, "Failed to create message from file: %v\n", err)
+			fmt.Fprintln(out, "Trying to describe file anyway...")
 		}
 
-		err = iso8583.Describe(message, os.Stdout)
+		err = iso8583.Describe(message, out)
 		if err != nil {
 			return fmt.Errorf("describing message: %w", err)
 		}
@@ -42,16 +42,20 @@ func Describe(paths []string, specName string) error {
 		return fmt.Errorf("unknown built-in spec %s", specName)
 	}
 
-	return describeMessage(paths, spec)
+	return describeMessage(paths, spec, os.Stdout)
 }
 
 func DescribeWithSpecFile(paths []string, specFileName string) error {
+	return describeWithSpecFile(paths, specFileName, os.Stdout)
+}
+
+func describeWithSpecFile(paths []string, specFileName string, out io.Writer) error {
 	spec, err := createSpecFromFile(specFileName)
 	if err != nil || spec == nil {
 		return fmt.Errorf("creating spec from file: %w", err)
 	}
 
-	return describeMessage(paths, spec)
+	return describeMessage(paths, spec, out)
 }
 
 func createMessageFromFile(path string, spec *iso8583.MessageSpec) (*iso8583.Message, error) {

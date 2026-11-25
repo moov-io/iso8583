@@ -36,4 +36,22 @@ func TestSortStringsByHex(t *testing.T) {
 		StringsByHex(x)
 		require.Equal(t, []string{"10", "ABC", "xyz"}, x)
 	})
+
+	t.Run("falls back for even-length non-hex input", func(t *testing.T) {
+		x := []string{"GG", "10"}
+		StringsByHex(x)
+		require.Equal(t, []string{"10", "GG"}, x)
+	})
+}
+
+func TestCompareHexEqualValues(t *testing.T) {
+	for _, tc := range []struct{ a, b string }{
+		{"00", "0000"},
+		{"0A", "000a"},
+	} {
+		t.Run(tc.a+" and "+tc.b, func(t *testing.T) {
+			require.Zero(t, compareHex(tc.a, tc.b))
+			require.Zero(t, compareHex(tc.b, tc.a))
+		})
+	}
 }

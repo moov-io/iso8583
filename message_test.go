@@ -3,6 +3,8 @@ package iso8583
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"maps"
 	"reflect"
 	"strings"
 	"sync"
@@ -18,6 +20,90 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type fieldWithBytesError struct {
+	field.Field
+	err error
+}
+
+func (f fieldWithBytesError) Bytes() ([]byte, error) {
+	return nil, f.err
+}
+
+func TestMessageGetBytes(t *testing.T) {
+	spec := &MessageSpec{Fields: maps.Clone(Spec87.Fields)}
+	spec.Fields[52] = field.NewBinary(field.NewSpec(8, "Binary field", encoding.Binary, prefix.Binary.Fixed))
+	msg := NewMessage(spec)
+	value := []byte{0x00, 0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06}
+	require.NoError(t, msg.BinaryField(52, value))
+
+	got, err := msg.GetBytes(52)
+	require.NoError(t, err)
+	require.Equal(t, value, got)
+
+	got, err = msg.GetBytes(4)
+	require.NoError(t, err)
+	require.Nil(t, got)
+
+	got, err = msg.GetBytes(999)
+	require.ErrorContains(t, err, "field 999 is not defined in the spec")
+	require.Nil(t, got)
+
+	cause := errors.New("test field bytes error")
+	msg.fields[52] = fieldWithBytesError{Field: msg.GetField(52), err: cause}
+	got, err = msg.GetBytes(52)
+	require.ErrorIs(t, err, cause)
+	require.ErrorContains(t, err, "getting bytes for field 52")
+	require.Nil(t, got)
+}
+
+func TestMessageUnsetField(t *testing.T) {
+	msg := NewMessage(Spec87)
+	msg.MTI("0200")
+	require.NoError(t, msg.Field(3, "123456"))
+	require.NoError(t, msg.Field(4, "100"))
+	_, err := msg.Pack()
+	require.NoError(t, err)
+	require.True(t, msg.Bitmap().IsSet(3))
+
+	msg.UnsetField(3)
+	msg.UnsetField(3)
+	require.Nil(t, msg.GetField(3))
+	packed, err := msg.Pack()
+	require.NoError(t, err)
+	require.False(t, msg.Bitmap().IsSet(3))
+
+	decoded := NewMessage(Spec87)
+	require.NoError(t, decoded.Unpack(packed))
+	require.False(t, decoded.Bitmap().IsSet(3))
+	require.True(t, decoded.Bitmap().IsSet(4))
+	require.Nil(t, decoded.GetField(3))
+	value, err := decoded.GetString(4)
+	require.NoError(t, err)
+	require.Equal(t, "100", value)
+}
+
+func TestMessageSetDataCompatibility(t *testing.T) {
+	data := &struct {
+		MTI    string `iso8583:"0"`
+		Amount string `iso8583:"4"`
+	}{MTI: "0200", Amount: "100"}
+	for _, tc := range []struct {
+		name string
+		set  func(*Message, any) error
+	}{
+		{"Marshal", (*Message).Marshal},
+		{"SetData", (*Message).SetData},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			msg := NewMessage(Spec87)
+			require.NoError(t, tc.set(msg, data))
+			packed, err := msg.Pack()
+			require.NoError(t, err)
+			require.Equal(t, []byte("0200"+"1000000000000000"+"000000000100"), packed)
+		})
+	}
+}
 
 func TestMessage(t *testing.T) {
 	spec := &MessageSpec{

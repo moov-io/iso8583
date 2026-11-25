@@ -12,9 +12,13 @@ import (
 
 func packedTestMessage(t *testing.T) string {
 	t.Helper()
+	return writeTestMessage(t, "0100")
+}
 
+func writeTestMessage(t *testing.T, mti string) string {
+	t.Helper()
 	msg := iso8583.NewMessage(specs.Spec87ASCII)
-	msg.MTI("0100")
+	msg.MTI(mti)
 	require.NoError(t, msg.Field(2, "4242424242424242"))
 	require.NoError(t, msg.Field(3, "123456"))
 	require.NoError(t, msg.Field(4, "100"))
@@ -57,4 +61,8 @@ func TestCreateSpecFromFileRejectsInvalidJSON(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte("not-json"), 0o644))
 	_, err := createSpecFromFile(path)
 	require.Error(t, err)
+}
+
+func TestDescribeRejectsUnknownBuiltInSpec(t *testing.T) {
+	require.ErrorContains(t, Describe(nil, "unknown"), "unknown built-in spec unknown")
 }

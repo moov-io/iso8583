@@ -4,7 +4,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/text/encoding/charmap"
 )
+
+func TestEBCDIC1047EncodeWrapsUnsupportedCharacterError(t *testing.T) {
+	input := []byte("世")
+	_, cause := charmap.CodePage1047.NewEncoder().Bytes(input)
+	require.Error(t, cause)
+
+	encoded, err := EBCDIC1047.Encode(input)
+	require.EqualError(t, err, "failed to encode EBCDIC")
+	require.ErrorIs(t, err, cause)
+	require.Nil(t, encoded)
+}
 
 // EBCDIC Code Page 1047 Encodings, taken from https://www.ibm.com/docs/en/personal-communications/5.9?topic=pages-1047103-latin-open-systems
 var ebcdic1047CharacterEncodings = map[string]byte{
